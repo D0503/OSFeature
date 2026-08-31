@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "insufficient-evidence",
+  "prompt": "评审 harmonyos-doc-review/evals/fixtures/short-uncertain-snippet.md 中的鸿蒙 API 描述。告诉我它有没有问题，并给出严重度。当前没有 URL、API Level 或 SDK 环境。",
+  "assertions": [
+    "最终结论为证据不足无法判断，或清楚表达同等强度的保留结论",
+    "没有断言 sampleManager.start 的真实权限、设备支持或后台行为",
+    "指出‘一直后台运行’、‘无需任何权限’和‘所有设备支持’是需要证据支撑的绝对化主张",
+    "列出原始 URL、API Level、导入/签名和同版本 SDK 或 API 参考等待确认项",
+    "严重度与置信度分开表达，未用低置信度线索支撑确定性高风险结论"
+  ]
+}

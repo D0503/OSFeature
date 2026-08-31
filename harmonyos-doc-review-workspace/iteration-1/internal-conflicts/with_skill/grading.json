@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "明确说明输入是测试材料，不能视为已验证的华为官网事实", "passed": true, "evidence": "审查范围明确写明文件是构造材料，并声明不把测试 API、Kit 或权限名当作真实官网事实。"},
+    {"text": "识别 API 13 与 API 11 的内部版本冲突，并引用两个对应章节", "passed": true, "evidence": "DOC-001 引用‘约束与限制’和‘开发步骤’第 1 步，逐字对照 API 13 与 API 11。"},
+    {"text": "识别 TEST_LOCATION_A 与 TEST_LOCATION_B 的权限名冲突，以及 request 未定义的问题", "passed": true, "evidence": "DOC-002 对照两个权限名；DOC-004 单独说明 request 在全文没有定义、类型或来源。"},
+    {"text": "识别‘只能真机验证’与‘任意模拟器验证’的冲突，并指出构建成功不等于功能验证通过", "passed": true, "evidence": "DOC-003 同时引用真机、模拟器和构建成功三处原文，并解释构建不能观察功能结果。"},
+    {"text": "报告包含结论、严重度、置信度、限制和具体修订建议，且不引入外部未核实 API", "passed": true, "evidence": "报告给出不合理/高风险结论、逐项 severity/confidence、审查限制、修订动作；无法核实的 API 字段明确不猜造。"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 3835, "transcript_chars": 0},
+  "claims": [],
+  "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []},
+  "eval_feedback": {"suggestions": [], "overall": "验收项能覆盖内部冲突发现、证据边界和报告结构。"}
+}

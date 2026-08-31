@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"text": "最终结论为证据不足无法判断，或清楚表达同等强度的保留结论", "passed": true, "evidence": "结论字段明确为‘证据不足无法判断’，综合分为 N/A。"},
+    {"text": "没有断言 sampleManager.start 的真实权限、设备支持或后台行为", "passed": true, "evidence": "关键假设明确不把它当作真实 API，也不补充后台、权限或设备事实。"},
+    {"text": "指出‘一直后台运行’、‘无需任何权限’和‘所有设备支持’是需要证据支撑的绝对化主张", "passed": true, "evidence": "DOC-001 逐一引用三项无条件全范围主张，并解释当前既不能证实也不能证伪。"},
+    {"text": "列出原始 URL、API Level、导入/签名和同版本 SDK 或 API 参考等待确认项", "passed": true, "evidence": "待确认表列出 API 身份、URL、导入路径、签名、API Level、SDK 和同版本参考核验。"},
+    {"text": "严重度与置信度分开表达，未用低置信度线索支撑确定性高风险结论", "passed": true, "evidence": "finding 标为 pending、High、low，并明确 High 仅表示潜在影响，不表示已确认缺陷。"}
+  ],
+  "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0},
+  "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 2407, "transcript_chars": 0},
+  "claims": [],
+  "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []},
+  "eval_feedback": {"suggestions": [], "overall": "该案例有效检查证据不足时的克制和风险/置信度分离。"}
+}

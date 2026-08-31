@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "harmonyos-doc-review", "runs": [{"id": "internal-conflicts-with_skill", "prompt": "\u8bf7\u5ba1\u67e5 harmonyos-doc-review/evals/fixtures/guide-with-internal-conflicts.md\uff0c\u5224\u65ad\u8fd9\u4efd\u9e3f\u8499\u5f00\u53d1\u6307\u5357\u662f\u5426\u5408\u7406\u3002\u91cd\u70b9\u68c0\u67e5\u7248\u672c\u3001\u6743\u9650\u3001\u4ee3\u7801\u6b65\u9aa4\u548c\u9a8c\u8bc1\u63cf\u8ff0\uff1b\u53ea\u6839\u636e\u6587\u4ef6\u4e2d\u80fd\u770b\u5230\u7684\u8bc1\u636e\u4e0b\u7ed3\u8bba\uff0c\u4e0d\u8981\u628a\u6d4b\u8bd5\u6750\u6599\u5f53\u6210\u771f\u5b9e\u5b98\u7f51\u9875\u9762\u3002", "eval_id": 1, "outputs": [{"name": "report.md", "type": "text", "content": "# HarmonyOS \u6587\u6863\u8d28\u91cf\u5ba1\u67e5\u62a5\u544a\uff08\u79bb\u7ebf\u8bc4\u6d4b\u6750\u6599\uff09\n\n## 1. \u5ba1\u67e5\u7ed3\u8bba\n\n- \u6587\u6863\uff1a`\u6d4b\u8bd5\u7528\u4f4d\u7f6e\u80fd\u529b\u63a5\u5165\u6307\u5357`\uff08`D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\guide-with-internal-conflicts.md`\uff09\n- \u6587\u6863\u7c7b\u578b\uff1a\u5f00\u53d1\u6307\u5357 / \u6743\u9650\u914d\u7f6e\u8bf4\u660e / \u4ee3\u7801\u793a\u4f8b\n- \u7248\u672c\u4e0a\u4e0b\u6587\uff1a\u6587\u6863\u5185\u90e8\u540c\u65f6\u58f0\u79f0 API 13 \u548c API 11 \u53ca\u4ee5\u4e0a\uff1b\u672a\u63d0\u4f9b\u771f\u5b9e SDK\u3001API \u53c2\u8003\u6216\u5b98\u65b9 URL\n- \u5ba1\u67e5\u65e5\u671f\uff1a2026-08-31\n- \u7ed3\u8bba\uff1a**\u4e0d\u5408\u7406/\u9ad8\u98ce\u9669**\n- \u7efc\u5408\u5206\uff1a**35/100**\n- \u4e00\u53e5\u8bdd\u4f9d\u636e\uff1a\u540c\u4e00\u6587\u4ef6\u5728\u6700\u4f4e API Level\u3001\u6240\u9700\u6743\u9650\u548c\u9a8c\u8bc1\u8bbe\u5907\u4e0a\u5b58\u5728\u4e09\u7ec4\u76f4\u63a5\u51b2\u7a81\uff0c\u4e14\u6240\u8c13\u201c\u53ef\u8fd0\u884c\u4ee3\u7801\u201d\u4f7f\u7528\u4e86\u672a\u5b9a\u4e49\u7684 `request`\uff0c\u4e3b\u8981\u63a5\u5165\u4e0e\u9a8c\u8bc1\u6d41\u7a0b\u65e0\u6cd5\u6309\u6587\u6863\u590d\u73b0\u3002\n\n## 2. \u5ba1\u67e5\u8303\u56f4\u4e0e\u9650\u5236\n\n- \u5df2\u68c0\u67e5\uff1a\u5b8c\u6574\u672c\u5730 Markdown\u3001\u6807\u9898\u4e0e\u7ae0\u8282\u7ed3\u6784\u3001\u7248\u672c\u4e3b\u5f20\u3001\u6743\u9650\u6b65\u9aa4\u3001\u4ee3\u7801\u4e0a\u4e0b\u6587\u3001\u6b65\u9aa4\u987a\u5e8f\u3001\u9a8c\u8bc1\u73af\u5883\u548c\u6210\u529f\u5224\u636e\uff1b\u6587\u4ef6\u5df2\u901a\u8fc7\u672c Skill \u7684\u672c\u5730\u89e3\u6790\u811a\u672c\u7ed3\u6784\u5316\uff0c\u672a\u53d1\u73b0\u622a\u65ad\u8b66\u544a\u3002\n- \u672a\u68c0\u67e5\uff1a\u771f\u5b9e HarmonyOS \u5b98\u7f51\u9875\u9762\u3001\u672c\u673a SDK \u58f0\u660e\u3001\u6784\u5efa\u3001\u6a21\u62df\u5668\u6216\u771f\u673a\u8fd0\u884c\u3002\u7528\u6237\u8981\u6c42\u79bb\u7ebf\u8bc4\u6d4b\uff0c\u4e14\u6587\u4ef6\u660e\u786e\u8bf4\u660e\u5176\u4e3a\u6784\u9020\u6750\u6599\uff1b\u56e0\u6b64\u672c\u62a5\u544a\u4e0d\u628a\u6d4b\u8bd5 API\u3001Kit \u6216\u6743\u9650\u540d\u5f53\u4f5c\u771f\u5b9e\u5b98\u7f51\u4e8b\u5b9e\u3002\n- \u5173\u952e\u5047\u8bbe\uff1a\u4ec5\u628a\u540c\u4e00\u6d4b\u8bd5\u6587\u4ef6\u5185\u4e24\u4e2a\u660e\u786e\u4f4d\u7f6e\u7684\u4e92\u65a5\u9648\u8ff0\u4f5c\u4e3a\u5185\u90e8\u8bc1\u636e\uff1b\u4e0d\u63a8\u65ad\u771f\u5b9e API \u7684\u7248\u672c\u3001\u6743\u9650\u6a21\u578b\u3001\u7b7e\u540d\u6216\u8bbe\u5907\u652f\u6301\u8303\u56f4\u3002\n\n## 3. \u7ef4\u5ea6\u8bc4\u5206\n\n| \u7ef4\u5ea6 | \u5f97\u5206 | \u4e3b\u8981\u4f9d\u636e |\n|---|---:|---|\n| \u6280\u672f\u6b63\u786e\u6027 | 45 | \u6743\u9650\u4e0e\u9a8c\u8bc1\u4e3b\u5f20\u76f8\u4e92\u51b2\u7a81\uff1b\u4e0d\u8bc4\u4ef7\u6d4b\u8bd5 API \u7684\u771f\u5b9e\u6280\u672f\u4e8b\u5b9e |\n| \u7248\u672c\u4e0e\u517c\u5bb9\u6027 | 20 | \u540c\u9875\u5206\u522b\u5199\u201cAPI 13 \u5f00\u59cb\u201d\u548c\u201cAPI 11 \u53ca\u4ee5\u4e0a\u201d |\n| \u5b8c\u6574\u6027 | 40 | `request` \u65e0\u6765\u6e90\uff0c\u7f3a\u5c11\u660e\u786e\u6743\u9650\u95ed\u73af\u3001\u5931\u8d25\u5206\u652f\u548c\u53ef\u89c2\u5bdf\u8fd0\u884c\u7ed3\u679c |\n| \u4e00\u81f4\u6027 | 10 | \u7248\u672c\u3001\u6743\u9650\u548c\u8bbe\u5907\u9a8c\u8bc1\u5747\u53d1\u751f\u5185\u90e8\u51b2\u7a81 |\n| \u793a\u4f8b\u53ef\u6267\u884c\u6027\u4e0e\u6b65\u9aa4\u53ef\u590d\u73b0\u6027 | 20 | \u4ee3\u7801\u4f7f\u7528\u672a\u5b9a\u4e49\u6807\u8bc6\u7b26\uff0c\u9a8c\u8bc1\u73af\u5883\u4e5f\u4e0e\u7ea6\u675f\u51b2\u7a81 |\n| \u8868\u8fbe\u4e0e\u4fe1\u606f\u7ed3\u6784 | 70 | \u7ae0\u8282\u6e05\u695a\uff0c\u4f46\u201c\u521d\u59cb\u5316\u80fd\u529b\u201d\u4e0e\u5b9e\u9645\u76f4\u63a5\u8c03\u7528\u4e0d\u4e00\u81f4\uff0c\u9a8c\u8bc1\u63aa\u8f9e\u8bef\u5bfc |\n| \u94fe\u63a5\u4e0e\u8d44\u6e90 | N/A | \u6587\u6863\u672a\u63d0\u4f9b\u94fe\u63a5\uff0c\u4e14\u672c\u6b21\u4e0d\u8981\u6c42\u5916\u90e8\u6838\u9a8c |\n| \u5b89\u5168\u3001\u9690\u79c1\u4e0e\u5408\u89c4 | 45 | \u4e24\u4e2a\u6743\u9650\u540d\u53ca\u201c\u65e0\u9700\u5176\u4ed6\u6388\u6743\u201d\u76f8\u4e92\u51b2\u7a81\uff0c\u53ef\u80fd\u5f15\u5bfc\u9519\u8bef\u6388\u6743\u914d\u7f6e |\n\n> \u7efc\u5408\u5206\u6309\u9002\u7528\u7ef4\u5ea6\u6743\u91cd\u91cd\u65b0\u5f52\u4e00\u5316\uff1b\u4e25\u91cd\u95ee\u9898\u95e8\u69db\u4f18\u5148\u4e8e\u5206\u6570\u3002\n\n## 4. \u95ee\u9898\u6e05\u5355\n\n### DOC-001 \u6700\u4f4e\u652f\u6301\u7248\u672c\u5728\u540c\u9875\u4e92\u76f8\u6392\u65a5\n\n- \u7ef4\u5ea6\uff1a\u7248\u672c\u4e0e\u517c\u5bb9\u6027 / \u4e00\u81f4\u6027\n- \u72b6\u6001\uff1a`confirmed`\n- \u4e25\u91cd\u5ea6\uff1a`High`\n- \u7f6e\u4fe1\u5ea6\uff1a`certain`\n- \u539f\u6587\u4f4d\u7f6e\uff1a`\u7ea6\u675f\u4e0e\u9650\u5236`\uff08\u7b2c 7 \u884c\uff09\uff1b`\u5f00\u53d1\u6b65\u9aa4`\u7b2c 1 \u6b65\uff08\u7b2c 15 \u884c\uff09\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a\u201c\u4ece API 13 \u5f00\u59cb\u652f\u6301\u201d\uff1b\u201c\u9002\u7528\u4e8e API 11 \u53ca\u4ee5\u4e0a\u7248\u672c\u201d\n- \u95ee\u9898\u5206\u6790\uff1a\u540c\u4e00\u80fd\u529b\u7684\u6700\u4f4e\u7248\u672c\u4e0d\u80fd\u5728\u540c\u4e00\u9002\u7528\u8303\u56f4\u5185\u540c\u65f6\u4e3a API 13 \u548c API 11\uff1b\u6587\u4ef6\u672a\u7ed9\u51fa\u573a\u666f\u3001\u91cd\u8f7d\u6216\u8bbe\u5907\u5dee\u5f02\u6765\u5316\u89e3\u51b2\u7a81\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7684\u7b2c 7\u300115 \u884c\u6784\u6210\u540c\u9875\u5185\u90e8\u76f4\u63a5\u8bc1\u636e\u94fe\u3002\n- \u5f71\u54cd\uff1aAPI 11/12 \u8bfb\u8005\u65e0\u6cd5\u5224\u65ad\u662f\u5426\u5e94\u63a5\u5165\uff0c\u53ef\u80fd\u5728\u4e0d\u652f\u6301\u7684\u76ee\u6807\u7248\u672c\u4e0a\u5b9e\u65bd\u6838\u5fc3\u6d41\u7a0b\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u5148\u7528\u540c\u7248\u672c API \u53c2\u8003\u6216 SDK \u6838\u5b9e\u552f\u4e00\u7684\u8d77\u59cb API Level\uff0c\u518d\u7edf\u4e00\u201c\u7ea6\u675f\u4e0e\u9650\u5236\u201d\u3001\u6b65\u9aa4\u548c\u793a\u4f8b\u914d\u7f6e\uff1b\u672a\u6838\u5b9e\u524d\u4e0d\u8981\u4fdd\u7559\u4e24\u4e2a\u6570\u5b57\u4e2d\u7684\u4efb\u4e00\u4e2a\u4f5c\u4e3a\u4e8b\u5b9e\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a`\u672c\u80fd\u529b\u4ece API <\u5f85\u540c\u7248\u672c\u8bc1\u636e\u786e\u8ba4> \u5f00\u59cb\u652f\u6301\uff1b\u672c\u6587\u793a\u4f8b\u7684\u76ee\u6807 API Level \u4e0e\u8be5\u8d77\u59cb\u7248\u672c\u4e00\u81f4\u3002`\n\n### DOC-002 \u6743\u9650\u914d\u7f6e\u524d\u540e\u77db\u76fe\n\n- \u7ef4\u5ea6\uff1a\u5b8c\u6574\u6027 / \u4e00\u81f4\u6027 / \u5b89\u5168\u3001\u9690\u79c1\u4e0e\u5408\u89c4\n- \u72b6\u6001\uff1a`confirmed`\n- \u4e25\u91cd\u5ea6\uff1a`High`\n- \u7f6e\u4fe1\u5ea6\uff1a`certain`\n- \u539f\u6587\u4f4d\u7f6e\uff1a`\u914d\u7f6e\u6743\u9650`\uff08\u7b2c 11 \u884c\uff09\uff1b`\u5f00\u53d1\u6b65\u9aa4`\u7b2c 3 \u6b65\uff08\u7b2c 25 \u884c\uff09\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a\u201c\u58f0\u660e `TEST_LOCATION_A`\uff0c\u5b8c\u6210\u540e\u65e0\u9700\u5176\u4ed6\u6388\u6743\u6b65\u9aa4\u201d\uff1b\u201c\u8bf7\u786e\u8ba4\u5df2\u7ecf\u58f0\u660e `TEST_LOCATION_B`\u201d\n- \u95ee\u9898\u5206\u6790\uff1a\u524d\u8005\u6392\u9664\u4e86\u5176\u4ed6\u6388\u6743\u6b65\u9aa4\uff0c\u540e\u8005\u5374\u628a\u53e6\u4e00\u4e2a\u6743\u9650\u58f0\u660e\u4f5c\u4e3a\u5931\u8d25\u6392\u67e5\u6761\u4ef6\uff1b\u672a\u8bf4\u660e\u4e24\u4e2a\u6743\u9650\u662f\u5426\u66ff\u4ee3\u3001\u5e76\u5b58\u6216\u6309\u573a\u666f\u9009\u62e9\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7684\u7b2c 11\u300125 \u884c\u6784\u6210\u540c\u9875\u5185\u90e8\u76f4\u63a5\u8bc1\u636e\u94fe\u3002\n- \u5f71\u54cd\uff1a\u8bfb\u8005\u65e0\u6cd5\u5f62\u6210\u786e\u5b9a\u7684\u6743\u9650\u6e05\u5355\uff0c\u53ef\u80fd\u5c11\u914d\u3001\u9519\u914d\u6216\u7533\u8bf7\u4e0d\u5fc5\u8981\u7684\u6743\u9650\uff0c\u5bfc\u81f4\u529f\u80fd\u5931\u8d25\u6216\u6269\u5927\u6388\u6743\u8303\u56f4\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u4f9d\u636e\u540c\u7248\u672c\u6743\u9650\u53c2\u8003\u660e\u786e\u552f\u4e00\u6743\u9650\u540d\u3001\u6388\u6743\u7ea7\u522b\u3001\u58f0\u660e\u4f4d\u7f6e\u3001\u662f\u5426\u9700\u8981\u8fd0\u884c\u65f6\u7533\u8bf7\u53ca\u62d2\u7edd\u5206\u652f\uff1b\u5982\u679c\u786e\u6709\u4e24\u4e2a\u6743\u9650\uff0c\u5fc5\u987b\u7ed9\u51fa\u5404\u81ea\u89e6\u53d1\u6761\u4ef6\uff0c\u4e0d\u5f97\u7ee7\u7eed\u5199\u201c\u65e0\u9700\u5176\u4ed6\u6388\u6743\u201d\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a\u65e0\uff1b\u771f\u5b9e\u6743\u9650\u6a21\u578b\u672a\u6838\u5b9e\uff0c\u4e0d\u5e94\u5728\u8bc4\u6d4b\u62a5\u544a\u4e2d\u4f2a\u9020\u5177\u4f53\u914d\u7f6e\u3002\n\n### DOC-003 \u9a8c\u8bc1\u8bbe\u5907\u4e0e\u6210\u529f\u5224\u636e\u5747\u4e0d\u80fd\u8bc1\u660e\u529f\u80fd\u6210\u7acb\n\n- \u7ef4\u5ea6\uff1a\u793a\u4f8b\u53ef\u6267\u884c\u6027\u4e0e\u6b65\u9aa4\u53ef\u590d\u73b0\u6027 / \u4e00\u81f4\u6027\n- \u72b6\u6001\uff1a`confirmed`\n- \u4e25\u91cd\u5ea6\uff1a`High`\n- \u7f6e\u4fe1\u5ea6\uff1a`certain`\n- \u539f\u6587\u4f4d\u7f6e\uff1a`\u7ea6\u675f\u4e0e\u9650\u5236`\uff08\u7b2c 7 \u884c\uff09\uff1b`\u9a8c\u8bc1`\uff08\u7b2c 29 \u884c\uff09\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a\u201c\u53ea\u80fd\u5728\u771f\u673a\u4e0a\u9a8c\u8bc1\u201d\uff1b\u201c\u5728\u4efb\u610f\u6a21\u62df\u5668\u4e2d\u8fd0\u884c\u201d\uff1b\u201c\u5de5\u7a0b\u6784\u5efa\u6210\u529f\u5c31\u8bf4\u660e\u5b9a\u4f4d\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7\u201d\n- \u95ee\u9898\u5206\u6790\uff1a\u771f\u673a\u9650\u5b9a\u4e0e\u4efb\u610f\u6a21\u62df\u5668\u9a8c\u8bc1\u76f4\u63a5\u51b2\u7a81\uff1b\u540c\u65f6\uff0c\u6784\u5efa\u6210\u529f\u53ea\u8868\u793a\u9759\u6001\u6784\u5efa\u9636\u6bb5\u901a\u8fc7\uff0c\u4e0d\u80fd\u89c2\u5bdf\u5230\u5b9a\u4f4d\u8c03\u7528\u662f\u5426\u6210\u529f\u6216\u8fd4\u56de\u6709\u6548\u7ed3\u679c\u3002\u540e\u4e00\u70b9\u662f\u9a8c\u8bc1\u903b\u8f91\u7f3a\u9677\uff0c\u4e0d\u4f9d\u8d56\u771f\u5b9e\u6d4b\u8bd5 API \u7684\u884c\u4e3a\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7684\u7b2c 7\u300129 \u884c\u7ed9\u51fa\u4e92\u65a5\u73af\u5883\u4e0e\u9519\u8bef\u7684\u6210\u529f\u5224\u636e\u3002\n- \u5f71\u54cd\uff1a\u8bfb\u8005\u53ef\u80fd\u5728\u6587\u6863\u660e\u786e\u6392\u9664\u7684\u73af\u5883\u4e2d\u6d4b\u8bd5\uff0c\u5e76\u628a\u672a\u6267\u884c\u6216\u6267\u884c\u5931\u8d25\u7684\u529f\u80fd\u8bef\u62a5\u4e3a\u9a8c\u8bc1\u901a\u8fc7\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u7edf\u4e00\u53d7\u652f\u6301\u7684\u9a8c\u8bc1\u8bbe\u5907\uff1b\u628a\u6210\u529f\u6807\u51c6\u6539\u4e3a\u53ef\u89c2\u5bdf\u7684\u8fd0\u884c\u7ed3\u679c\uff0c\u5e76\u540c\u65f6\u8bb0\u5f55\u8c03\u7528\u6210\u529f\u3001\u7ed3\u679c\u6821\u9a8c\u53ca\u5931\u8d25\u65e5\u5fd7\u3002\u771f\u5b9e\u53ef\u89c2\u5bdf\u5b57\u6bb5\u9700\u5728\u540c\u7248\u672c API \u8bc1\u636e\u786e\u8ba4\u540e\u518d\u5199\u5165\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a`\u8bf7\u5728\u6587\u6863\u786e\u8ba4\u652f\u6301\u7684\u8bbe\u5907\u4e0a\u8fd0\u884c\u793a\u4f8b\uff1b\u4ec5\u5f53\u6838\u5fc3\u8c03\u7528\u6210\u529f\u4e14\u8fd4\u56de\u7ed3\u679c\u6ee1\u8db3\u5df2\u5b9a\u4e49\u7684\u6821\u9a8c\u6761\u4ef6\u65f6\uff0c\u624d\u89c6\u4e3a\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7\u3002\u6784\u5efa\u6210\u529f\u53ea\u4f5c\u4e3a\u524d\u7f6e\u68c0\u67e5\u3002`\n\n### DOC-004 \u793a\u4f8b\u4ee3\u7801\u7f3a\u5c11 `request` \u7684\u5b9a\u4e49\u4e0e\u6765\u6e90\n\n- \u7ef4\u5ea6\uff1a\u5b8c\u6574\u6027 / \u793a\u4f8b\u53ef\u6267\u884c\u6027\u4e0e\u6b65\u9aa4\u53ef\u590d\u73b0\u6027\n- \u72b6\u6001\uff1a`confirmed`\n- \u4e25\u91cd\u5ea6\uff1a`High`\n- \u7f6e\u4fe1\u5ea6\uff1a`certain`\n- \u539f\u6587\u4f4d\u7f6e\uff1a`\u5f00\u53d1\u6b65\u9aa4`\u4ee3\u7801\u5757\uff08\u7b2c 18\u201423 \u884c\uff09\uff0c\u8c03\u7528\u4f4d\u4e8e\u7b2c 21 \u884c\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a`testLocation.getCurrentPosition(request)`\n- \u95ee\u9898\u5206\u6790\uff1a\u5b8c\u6574\u6587\u4ef6\u53ea\u5728\u8be5\u8c03\u7528\u5904\u51fa\u73b0 `request`\uff0c\u6ca1\u6709\u5b9a\u4e49\u3001\u5bfc\u5165\u3001\u7c7b\u578b\u3001\u5fc5\u586b\u5b57\u6bb5\u6216\u201c\u7531\u4e0a\u6587\u63d0\u4f9b\u201d\u7684\u8bf4\u660e\uff1b\u800c\u9a8c\u8bc1\u7ae0\u8282\u8981\u6c42\u8fd0\u884c\u201c\u4ee5\u4e0a\u4ee3\u7801\u201d\u3002\u56e0\u6b64\u4ee3\u7801\u6309\u6587\u6863\u7ed9\u51fa\u7684\u4e0a\u4e0b\u6587\u5e76\u4e0d\u81ea\u5305\u542b\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7684\u5b8c\u6574\u6b63\u6587\u53ca\u7b2c 18\u201423 \u884c\u4ee3\u7801\u5757\uff1b`request` \u65e0\u5176\u4ed6\u6765\u6e90\u3002\n- \u5f71\u54cd\uff1a\u8bfb\u8005\u65e0\u6cd5\u76f4\u63a5\u6784\u5efa\u793a\u4f8b\uff0c\u4e5f\u65e0\u6cd5\u5224\u65ad\u8bf7\u6c42\u5bf9\u8c61\u7684\u5408\u6cd5\u7ed3\u6784\uff0c\u6838\u5fc3\u6b65\u9aa4\u4e0d\u53ef\u590d\u73b0\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u5728\u8c03\u7528\u524d\u8865\u5145\u7ecf\u540c\u7248\u672c API \u53c2\u8003\u6838\u5b9e\u7684\u8bf7\u6c42\u7c7b\u578b\u3001\u521d\u59cb\u5316\u548c\u503c\u57df\uff1b\u82e5\u4ee3\u7801\u53ea\u662f\u7247\u6bb5\uff0c\u660e\u786e\u6807\u6ce8\u7701\u7565\u5185\u5bb9\u53ca\u5176\u6765\u6e90\u3002\u4e0d\u8981\u5728\u6ca1\u6709 API \u8bc1\u636e\u65f6\u731c\u9020\u5b57\u6bb5\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a\u65e0\uff1b\u7f3a\u5c11\u771f\u5b9e\u7b7e\u540d\u4e0e\u8bf7\u6c42\u7c7b\u578b\u8bc1\u636e\u3002\n\n## 5. \u5f85\u786e\u8ba4\u9879\n\n| \u9879\u76ee | \u7f3a\u5c11\u7684\u8bc1\u636e | \u5efa\u8bae\u6838\u9a8c\u52a8\u4f5c |\n|---|---|---|\n| \u771f\u5b9e\u8d77\u59cb\u7248\u672c | \u540c\u7248\u672c API \u53c2\u8003\u6216 SDK \u58f0\u660e | \u5728\u771f\u5b9e\u5ba1\u67e5\u4e2d\u4ee5\u76ee\u6807 API Level \u7684\u5b98\u65b9\u53c2\u8003\u6216 `.d.ts`/`.d.ets` \u6838\u5b9e |\n| \u771f\u5b9e\u6743\u9650\u6a21\u578b | \u6743\u9650\u53c2\u8003\u3001\u6388\u6743\u7ea7\u522b\u548c\u8fd0\u884c\u65f6\u6388\u6743\u8981\u6c42 | \u6838\u5bf9\u6743\u9650\u540d\u3001`module.json5` \u914d\u7f6e\u3001\u7533\u8bf7\u65f6\u673a\u4e0e\u62d2\u7edd\u5206\u652f |\n| \u65b9\u6cd5\u7b7e\u540d\u4e0e\u8bf7\u6c42\u7c7b\u578b | Kit \u5bfc\u51fa\u548c API \u7b7e\u540d | \u6838\u5bf9\u5bfc\u5165\u8def\u5f84\u3001`request` \u7c7b\u578b\u3001\u8fd4\u56de\u503c\u548c\u5f02\u5e38 |\n| \u8bbe\u5907\u652f\u6301\u4e0e\u8fd0\u884c\u7ed3\u679c | \u8bbe\u5907\u7ea6\u675f\u548c\u5e26\u73af\u5883\u8bb0\u5f55\u7684\u8fd0\u884c\u8bc1\u636e | \u660e\u786e\u771f\u673a/\u6a21\u62df\u5668\u8303\u56f4\u540e\u6267\u884c\u53ef\u89c2\u5bdf\u7684\u529f\u80fd\u9a8c\u8bc1 |\n\n## 6. \u603b\u4f53\u4fee\u8ba2\u5efa\u8bae\n\n1. \u5148\u5efa\u7acb\u5355\u4e00\u7248\u672c\u57fa\u7ebf\uff0c\u5220\u9664 API 11 \u4e0e API 13 \u7684\u51b2\u7a81\u3002\n2. \u6309\u540c\u7248\u672c\u6743\u9650\u8bc1\u636e\u91cd\u5199\u6743\u9650\u7ae0\u8282\uff0c\u660e\u786e\u6743\u9650\u4e4b\u95f4\u7684\u5173\u7cfb\u548c\u5b8c\u6574\u6388\u6743\u6d41\u7a0b\u3002\n3. \u8865\u9f50 `request` \u7684\u53ef\u6838\u5b9e\u5b9a\u4e49\u3001\u9519\u8bef\u5904\u7406\u548c\u8fd4\u56de\u7ed3\u679c\u68c0\u67e5\uff0c\u4f7f\u6838\u5fc3\u793a\u4f8b\u81ea\u5305\u542b\u3002\n4. \u7edf\u4e00\u8bbe\u5907\u7ea6\u675f\uff0c\u5e76\u628a\u201c\u6784\u5efa\u6210\u529f\u201d\u548c\u201c\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7\u201d\u62c6\u6210\u4e24\u4e2a\u4e0d\u540c\u5224\u636e\u3002\n5. \u5b8c\u6210\u4e0a\u8ff0\u4e8b\u5b9e\u6838\u9a8c\u540e\u518d\u53d1\u5e03\uff1b\u5f53\u524d\u6587\u672c\u4e0d\u9002\u5408\u4f5c\u4e3a\u53ef\u6267\u884c\u63a5\u5165\u6307\u5357\u3002\n\n## 7. \u8bc1\u636e\u7d22\u5f15\n\n| # | \u6765\u6e90 | \u7248\u672c/\u65e5\u671f | \u5b9a\u4f4d | \u7528\u9014 |\n|---|---|---|---|---|\n| E1 | `D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\guide-with-internal-conflicts.md` | \u6784\u9020\u6750\u6599\uff1b\u7248\u672c\u81ea\u76f8\u77db\u76fe\uff1b\u5ba1\u67e5\u4e8e 2026-08-31 | \u7b2c 7\u300111\u300115\u300118\u201425\u300129 \u884c | \u8bc1\u660e\u7248\u672c\u3001\u6743\u9650\u3001\u4ee3\u7801\u4e0e\u9a8c\u8bc1\u63cf\u8ff0\u7684\u5185\u90e8\u95ee\u9898 |\n\n"}], "grading": {"expectations": [{"text": "\u660e\u786e\u8bf4\u660e\u8f93\u5165\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u4e0d\u80fd\u89c6\u4e3a\u5df2\u9a8c\u8bc1\u7684\u534e\u4e3a\u5b98\u7f51\u4e8b\u5b9e", "passed": true, "evidence": "\u5ba1\u67e5\u8303\u56f4\u660e\u786e\u5199\u660e\u6587\u4ef6\u662f\u6784\u9020\u6750\u6599\uff0c\u5e76\u58f0\u660e\u4e0d\u628a\u6d4b\u8bd5 API\u3001Kit \u6216\u6743\u9650\u540d\u5f53\u4f5c\u771f\u5b9e\u5b98\u7f51\u4e8b\u5b9e\u3002"}, {"text": "\u8bc6\u522b API 13 \u4e0e API 11 \u7684\u5185\u90e8\u7248\u672c\u51b2\u7a81\uff0c\u5e76\u5f15\u7528\u4e24\u4e2a\u5bf9\u5e94\u7ae0\u8282", "passed": true, "evidence": "DOC-001 \u5f15\u7528\u2018\u7ea6\u675f\u4e0e\u9650\u5236\u2019\u548c\u2018\u5f00\u53d1\u6b65\u9aa4\u2019\u7b2c 1 \u6b65\uff0c\u9010\u5b57\u5bf9\u7167 API 13 \u4e0e API 11\u3002"}, {"text": "\u8bc6\u522b TEST_LOCATION_A \u4e0e TEST_LOCATION_B \u7684\u6743\u9650\u540d\u51b2\u7a81\uff0c\u4ee5\u53ca request \u672a\u5b9a\u4e49\u7684\u95ee\u9898", "passed": true, "evidence": "DOC-002 \u5bf9\u7167\u4e24\u4e2a\u6743\u9650\u540d\uff1bDOC-004 \u5355\u72ec\u8bf4\u660e request \u5728\u5168\u6587\u6ca1\u6709\u5b9a\u4e49\u3001\u7c7b\u578b\u6216\u6765\u6e90\u3002"}, {"text": "\u8bc6\u522b\u2018\u53ea\u80fd\u771f\u673a\u9a8c\u8bc1\u2019\u4e0e\u2018\u4efb\u610f\u6a21\u62df\u5668\u9a8c\u8bc1\u2019\u7684\u51b2\u7a81\uff0c\u5e76\u6307\u51fa\u6784\u5efa\u6210\u529f\u4e0d\u7b49\u4e8e\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7", "passed": true, "evidence": "DOC-003 \u540c\u65f6\u5f15\u7528\u771f\u673a\u3001\u6a21\u62df\u5668\u548c\u6784\u5efa\u6210\u529f\u4e09\u5904\u539f\u6587\uff0c\u5e76\u89e3\u91ca\u6784\u5efa\u4e0d\u80fd\u89c2\u5bdf\u529f\u80fd\u7ed3\u679c\u3002"}, {"text": "\u62a5\u544a\u5305\u542b\u7ed3\u8bba\u3001\u4e25\u91cd\u5ea6\u3001\u7f6e\u4fe1\u5ea6\u3001\u9650\u5236\u548c\u5177\u4f53\u4fee\u8ba2\u5efa\u8bae\uff0c\u4e14\u4e0d\u5f15\u5165\u5916\u90e8\u672a\u6838\u5b9e API", "passed": true, "evidence": "\u62a5\u544a\u7ed9\u51fa\u4e0d\u5408\u7406/\u9ad8\u98ce\u9669\u7ed3\u8bba\u3001\u9010\u9879 severity/confidence\u3001\u5ba1\u67e5\u9650\u5236\u3001\u4fee\u8ba2\u52a8\u4f5c\uff1b\u65e0\u6cd5\u6838\u5b9e\u7684 API \u5b57\u6bb5\u660e\u786e\u4e0d\u731c\u9020\u3002"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 3835, "transcript_chars": 0}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [], "overall": "\u9a8c\u6536\u9879\u80fd\u8986\u76d6\u5185\u90e8\u51b2\u7a81\u53d1\u73b0\u3001\u8bc1\u636e\u8fb9\u754c\u548c\u62a5\u544a\u7ed3\u6784\u3002"}}}, {"id": "internal-conflicts-without_skill", "prompt": "\u8bf7\u5ba1\u67e5 harmonyos-doc-review/evals/fixtures/guide-with-internal-conflicts.md\uff0c\u5224\u65ad\u8fd9\u4efd\u9e3f\u8499\u5f00\u53d1\u6307\u5357\u662f\u5426\u5408\u7406\u3002\u91cd\u70b9\u68c0\u67e5\u7248\u672c\u3001\u6743\u9650\u3001\u4ee3\u7801\u6b65\u9aa4\u548c\u9a8c\u8bc1\u63cf\u8ff0\uff1b\u53ea\u6839\u636e\u6587\u4ef6\u4e2d\u80fd\u770b\u5230\u7684\u8bc1\u636e\u4e0b\u7ed3\u8bba\uff0c\u4e0d\u8981\u628a\u6d4b\u8bd5\u6750\u6599\u5f53\u6210\u771f\u5b9e\u5b98\u7f51\u9875\u9762\u3002", "eval_id": 1, "outputs": [{"name": "report.md", "type": "text", "content": "# \u300a\u6d4b\u8bd5\u7528\u4f4d\u7f6e\u80fd\u529b\u63a5\u5165\u6307\u5357\u300b\u5ba1\u67e5\u62a5\u544a\n\n## \u7ed3\u8bba\n\n\u8fd9\u4efd\u6307\u5357\u4e0d\u5408\u7406\uff0c\u4e0d\u80fd\u4f5c\u4e3a\u53ef\u6267\u884c\u7684\u63a5\u5165\u4e0e\u9a8c\u6536\u4f9d\u636e\u3002\u4ec5\u51ed\u6587\u4ef6\u5185\u90e8\u53ef\u89c1\u5185\u5bb9\uff0c\u5c31\u80fd\u786e\u8ba4\u7248\u672c\u8303\u56f4\u3001\u6743\u9650\u58f0\u660e\u3001\u9a8c\u8bc1\u8bbe\u5907\u548c\u9a8c\u6536\u6807\u51c6\u4e4b\u95f4\u5b58\u5728\u76f4\u63a5\u51b2\u7a81\uff1b\u793a\u4f8b\u8fd8\u7f3a\u5c11 `request` \u7684\u5b9a\u4e49\u3002\u7531\u4e8e\u6750\u6599\u660e\u786e\u58f0\u660e\u5176\u4e3a\u8bc4\u6d4b\u6784\u9020\u5185\u5bb9\uff0c\u672c\u62a5\u544a\u4e0d\u628a\u5176\u4e2d\u4efb\u4f55 HarmonyOS/API \u4e3b\u5f20\u89c6\u4e3a\u5b98\u7f51\u4e8b\u5b9e\uff0c\u4e5f\u4e0d\u5224\u65ad\u51b2\u7a81\u53cc\u65b9\u54ea\u4e00\u65b9\u4ee3\u8868\u771f\u5b9e\u5e73\u53f0\u884c\u4e3a\u3002\n\n**\u603b\u4f53\u4e25\u91cd\u5ea6\uff1a\u9ad8\u3002** \u8fd9\u4e9b\u95ee\u9898\u4f1a\u4f7f\u8bfb\u8005\u65e0\u6cd5\u786e\u5b9a\u652f\u6301\u8303\u56f4\u548c\u5fc5\u8981\u6743\u9650\uff0c\u5e76\u53ef\u80fd\u5728\u4e0d\u53d7\u652f\u6301\u7684\u73af\u5883\u4e2d\u8fdb\u884c\u65e0\u6548\u9a8c\u8bc1\u3002\n\n## \u53d1\u73b0\n\n| \u4e25\u91cd\u5ea6 | \u95ee\u9898 | \u6587\u4ef6\u5185\u8bc1\u636e | \u5f71\u54cd\u4e0e\u5224\u65ad |\n| --- | --- | --- | --- |\n| \u9ad8 | \u8d77\u59cb\u7248\u672c\u81ea\u76f8\u77db\u76fe | \u201c\u7ea6\u675f\u4e0e\u9650\u5236\u201d\u79f0\u201c\u4ece API 13 \u5f00\u59cb\u652f\u6301\u201d\uff0c\u6b65\u9aa4 1 \u53c8\u79f0\u201c\u9002\u7528\u4e8e API 11 \u53ca\u4ee5\u4e0a\u7248\u672c\u201d | API 11\u300112 \u662f\u5426\u53ef\u7528\u65e0\u6cd5\u540c\u65f6\u7531\u8fd9\u4e24\u53e5\u8bdd\u6210\u7acb\u3002\u8bfb\u8005\u65e0\u6cd5\u636e\u6b64\u8bbe\u7f6e\u517c\u5bb9\u8303\u56f4\uff1b\u6307\u5357\u5fc5\u987b\u7edf\u4e00\u7248\u672c\u8981\u6c42\u3002 |\n| \u9ad8 | \u6743\u9650\u540d\u79f0\u53ca\u6388\u6743\u6b65\u9aa4\u81ea\u76f8\u77db\u76fe | \u914d\u7f6e\u7ae0\u8282\u8981\u6c42 `ohos.permission.TEST_LOCATION_A`\uff0c\u5e76\u79f0\u201c\u65e0\u9700\u5176\u4ed6\u6388\u6743\u6b65\u9aa4\u201d\uff1b\u5931\u8d25\u6392\u67e5\u5374\u8981\u6c42\u786e\u8ba4 `ohos.permission.TEST_LOCATION_B` | \u65e0\u6cd5\u5224\u65ad\u5b9e\u9645\u5fc5\u9700\u7684\u662f A\u3001B\uff0c\u8fd8\u662f\u4e24\u8005\uff1b\u201c\u65e0\u9700\u5176\u4ed6\u6388\u6743\u201d\u4e5f\u6ca1\u6709\u89e3\u91ca B \u662f\u5426\u4e3a\u989d\u5916\u58f0\u660e\u6216\u8fd0\u884c\u65f6\u6388\u6743\u3002\u6309\u5f53\u524d\u6b65\u9aa4\u64cd\u4f5c\u4e0d\u80fd\u4fdd\u8bc1\u5177\u5907\u8c03\u7528\u524d\u7f6e\u6761\u4ef6\u3002 |\n| \u9ad8 | \u652f\u6301\u7684\u9a8c\u8bc1\u8bbe\u5907\u81ea\u76f8\u77db\u76fe | \u7ea6\u675f\u79f0\u201c\u53ea\u80fd\u5728\u771f\u673a\u4e0a\u9a8c\u8bc1\u201d\uff0c\u9a8c\u8bc1\u7ae0\u8282\u5374\u8981\u6c42\u201c\u5728\u4efb\u610f\u6a21\u62df\u5668\u4e2d\u8fd0\u884c\u201d | \u4e24\u79cd\u9a8c\u8bc1\u8981\u6c42\u4e0d\u53ef\u540c\u65f6\u6210\u7acb\u3002\u201c\u4efb\u610f\u6a21\u62df\u5668\u201d\u8fd8\u628a\u8303\u56f4\u6269\u5927\u5230\u672a\u7ed9\u51fa\u652f\u6301\u6761\u4ef6\u7684\u6240\u6709\u6a21\u62df\u5668\uff0c\u56e0\u6b64\u9a8c\u8bc1\u8def\u5f84\u4e0d\u53ef\u6267\u884c\u6216\u4e0d\u53ef\u4fe1\u3002 |\n| \u9ad8 | \u628a\u6784\u5efa\u6210\u529f\u8bef\u4f5c\u529f\u80fd\u9a8c\u8bc1 | \u9a8c\u8bc1\u7ae0\u8282\u79f0\u201c\u53ea\u8981\u5de5\u7a0b\u6784\u5efa\u6210\u529f\u5c31\u8bf4\u660e\u5b9a\u4f4d\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7\u201d | \u6784\u5efa\u53ea\u80fd\u8bf4\u660e\u9759\u6001\u6784\u5efa\u73af\u8282\u901a\u8fc7\uff0c\u4e0d\u80fd\u8bc1\u660e\u8fd0\u884c\u65f6\u8c03\u7528\u6210\u529f\u3001\u6743\u9650\u6709\u6548\u3001\u8bbe\u5907\u652f\u6301\u6216\u8fd4\u56de\u4e86\u6709\u6548\u4f4d\u7f6e\u7ed3\u679c\u3002\u8fd9\u4e5f\u4e0e\u6587\u4e2d\u201c\u8fd0\u884c\u4ee5\u4e0a\u4ee3\u7801\u201d\u7684\u8868\u8ff0\u6df7\u6dc6\u3002 |\n| \u4e2d | \u4ee3\u7801\u6b65\u9aa4\u4e0d\u5b8c\u6574 | \u793a\u4f8b\u8c03\u7528 `testLocation.getCurrentPosition(request)`\uff0c\u4f46\u5168\u6587\u672a\u5b9a\u4e49 `request`\uff0c\u4e5f\u672a\u8bf4\u660e\u5176\u7c7b\u578b\u548c\u5fc5\u586b\u5b57\u6bb5 | \u7247\u6bb5\u65e0\u6cd5\u72ec\u7acb\u7167\u6284\u6267\u884c\uff1b\u8bfb\u8005\u65e0\u6cd5\u786e\u8ba4\u8bf7\u6c42\u5982\u4f55\u6784\u9020\u3002\u5e94\u8865\u5145\u5bfc\u5165/\u7c7b\u578b\u3001\u521d\u59cb\u5316\u548c\u5408\u6cd5\u53c2\u6570\u793a\u4f8b\u3002 |\n| \u4e2d | \u7f3a\u5c11\u53ef\u89c2\u5bdf\u7684\u529f\u80fd\u9a8c\u6536\u6761\u4ef6 | \u793a\u4f8b\u53ea\u6253\u5370 `result`\uff0c\u6ca1\u6709\u89c4\u5b9a\u6210\u529f\u5224\u636e\u3001\u5fc5\u8981\u5b57\u6bb5\u3001\u5931\u8d25\u5224\u636e\u6216\u9519\u8bef\u5904\u7406\uff1b\u9a8c\u8bc1\u90e8\u5206\u4e5f\u672a\u8981\u6c42\u68c0\u67e5\u8f93\u51fa | \u5373\u4f7f\u7a0b\u5e8f\u8fd0\u884c\uff0c\u4e5f\u6ca1\u6709\u53ef\u91cd\u590d\u7684\u65b9\u5f0f\u5224\u65ad\u201c\u5b9a\u4f4d\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7\u201d\u3002 |\n\n## \u4fee\u8ba2\u8981\u6c42\n\n1. \u9009\u62e9\u5e76\u7edf\u4e00\u552f\u4e00\u7684\u6700\u4f4e API Level\uff0c\u540c\u65f6\u8bf4\u660e\u4f4e\u7248\u672c\u884c\u4e3a\u6216\u517c\u5bb9\u7b56\u7565\u3002\n2. \u660e\u786e\u5217\u51fa\u6240\u6709\u5fc5\u9700\u6743\u9650\uff0c\u533a\u5206\u914d\u7f6e\u6587\u4ef6\u58f0\u660e\u4e0e\u8fd0\u884c\u65f6\u6388\u6743\uff0c\u5e76\u4f7f\u6545\u969c\u6392\u67e5\u4e0e\u63a5\u5165\u6b65\u9aa4\u4e00\u81f4\u3002\n3. \u7edf\u4e00\u771f\u673a/\u6a21\u62df\u5668\u652f\u6301\u8303\u56f4\uff0c\u7ed9\u51fa\u660e\u786e\u8bbe\u5907\u548c\u73af\u5883\u524d\u63d0\u3002\n4. \u8865\u5168 `request` \u7684\u6784\u9020\u53ca\u5f02\u5e38\u5904\u7406\uff0c\u4f7f\u793a\u4f8b\u53ef\u8fd0\u884c\u3002\n5. \u5c06\u9a8c\u8bc1\u6539\u4e3a\u8fd0\u884c\u65f6\u529f\u80fd\u9a8c\u8bc1\uff1a\u786e\u8ba4\u8c03\u7528\u6210\u529f\u3001\u68c0\u67e5\u7ea6\u5b9a\u7684\u7ed3\u679c\u5b57\u6bb5\uff0c\u5e76\u8986\u76d6\u6743\u9650\u62d2\u7edd\u6216\u8c03\u7528\u5931\u8d25\uff1b\u4e0d\u80fd\u4ee5\u201c\u6784\u5efa\u6210\u529f\u201d\u66ff\u4ee3\u529f\u80fd\u9a8c\u6536\u3002\n\n## \u8bc1\u636e\u8fb9\u754c\n\n\u672c\u7ed3\u8bba\u53ea\u4f9d\u636e `guide-with-internal-conflicts.md` \u7684\u5185\u90e8\u6587\u672c\u4e00\u81f4\u6027\u3002\u6ca1\u6709\u4f7f\u7528\u5916\u90e8\u8d44\u6599\uff0c\u56e0\u6b64\u4e0d\u5bf9\u771f\u5b9e API \u7684\u7248\u672c\u3001\u6743\u9650\u540d\u3001\u8bbe\u5907\u652f\u6301\u6216\u8fd4\u56de\u884c\u4e3a\u4f5c\u4e8b\u5b9e\u8ba4\u5b9a\u3002\n"}], "grading": {"expectations": [{"text": "\u660e\u786e\u8bf4\u660e\u8f93\u5165\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u4e0d\u80fd\u89c6\u4e3a\u5df2\u9a8c\u8bc1\u7684\u534e\u4e3a\u5b98\u7f51\u4e8b\u5b9e", "passed": true, "evidence": "\u7ed3\u8bba\u548c\u8bc1\u636e\u8fb9\u754c\u5747\u8bf4\u660e\u6750\u6599\u662f\u8bc4\u6d4b\u6784\u9020\u5185\u5bb9\uff0c\u4e0d\u628a\u4e3b\u5f20\u89c6\u4e3a\u5b98\u7f51\u4e8b\u5b9e\u3002"}, {"text": "\u8bc6\u522b API 13 \u4e0e API 11 \u7684\u5185\u90e8\u7248\u672c\u51b2\u7a81\uff0c\u5e76\u5f15\u7528\u4e24\u4e2a\u5bf9\u5e94\u7ae0\u8282", "passed": true, "evidence": "\u95ee\u9898\u8868\u5f15\u7528\u2018\u7ea6\u675f\u4e0e\u9650\u5236\u2019\u548c\u6b65\u9aa4 1\uff0c\u5e76\u89e3\u91ca API 13/API 11 \u4e0d\u80fd\u540c\u65f6\u6210\u7acb\u3002"}, {"text": "\u8bc6\u522b TEST_LOCATION_A \u4e0e TEST_LOCATION_B \u7684\u6743\u9650\u540d\u51b2\u7a81\uff0c\u4ee5\u53ca request \u672a\u5b9a\u4e49\u7684\u95ee\u9898", "passed": true, "evidence": "\u95ee\u9898\u8868\u5206\u522b\u8bb0\u5f55 A/B \u6743\u9650\u77db\u76fe\u548c request \u672a\u5b9a\u4e49\u3002"}, {"text": "\u8bc6\u522b\u2018\u53ea\u80fd\u771f\u673a\u9a8c\u8bc1\u2019\u4e0e\u2018\u4efb\u610f\u6a21\u62df\u5668\u9a8c\u8bc1\u2019\u7684\u51b2\u7a81\uff0c\u5e76\u6307\u51fa\u6784\u5efa\u6210\u529f\u4e0d\u7b49\u4e8e\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7", "passed": true, "evidence": "\u62a5\u544a\u5206\u522b\u5217\u51fa\u8bbe\u5907\u77db\u76fe\u548c\u2018\u628a\u6784\u5efa\u6210\u529f\u8bef\u4f5c\u529f\u80fd\u9a8c\u8bc1\u2019\u3002"}, {"text": "\u62a5\u544a\u5305\u542b\u7ed3\u8bba\u3001\u4e25\u91cd\u5ea6\u3001\u7f6e\u4fe1\u5ea6\u3001\u9650\u5236\u548c\u5177\u4f53\u4fee\u8ba2\u5efa\u8bae\uff0c\u4e14\u4e0d\u5f15\u5165\u5916\u90e8\u672a\u6838\u5b9e API", "passed": false, "evidence": "\u6709\u7ed3\u8bba\u3001\u4e25\u91cd\u5ea6\u3001\u8bc1\u636e\u8fb9\u754c\u548c\u4fee\u8ba2\u8981\u6c42\uff0c\u4f46\u6ca1\u6709\u4e3a findings \u6216\u6574\u4f53\u7ed3\u8bba\u660e\u786e\u7ed9\u51fa\u7f6e\u4fe1\u5ea6\u3002"}], "summary": {"passed": 4, "failed": 1, "total": 5, "pass_rate": 0.8}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 1428, "transcript_chars": 0}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [], "overall": "\u57fa\u7ebf\u51c6\u786e\u53d1\u73b0\u95ee\u9898\uff0c\u4f46\u7ed3\u6784\u5316\u7f6e\u4fe1\u5ea6\u662f\u53ef\u533a\u5206\u9879\u3002"}}}, {"id": "insufficient-evidence-with_skill", "prompt": "\u8bc4\u5ba1 harmonyos-doc-review/evals/fixtures/short-uncertain-snippet.md \u4e2d\u7684\u9e3f\u8499 API \u63cf\u8ff0\u3002\u544a\u8bc9\u6211\u5b83\u6709\u6ca1\u6709\u95ee\u9898\uff0c\u5e76\u7ed9\u51fa\u4e25\u91cd\u5ea6\u3002\u5f53\u524d\u6ca1\u6709 URL\u3001API Level \u6216 SDK \u73af\u5883\u3002", "eval_id": 2, "outputs": [{"name": "report.md", "type": "text", "content": "# HarmonyOS \u6587\u6863\u8d28\u91cf\u5ba1\u67e5\u62a5\u544a\uff08\u79bb\u7ebf\u77ed\u7247\u6bb5\uff09\n\n## 1. \u5ba1\u67e5\u7ed3\u8bba\n\n- \u6587\u6863\uff1a`\u7528\u6237\u7c98\u8d34\u7684\u77ed\u7247\u6bb5`\uff08`D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\short-uncertain-snippet.md`\uff09\n- \u6587\u6863\u7c7b\u578b\uff1a\u7591\u4f3c API \u884c\u4e3a\u63cf\u8ff0\u7247\u6bb5\uff1b\u65e0\u6cd5\u786e\u8ba4\u662f\u5426\u6765\u81ea\u5b8c\u6574 API \u53c2\u8003\n- \u7248\u672c\u4e0a\u4e0b\u6587\uff1a\u672a\u77e5\uff1b\u6ca1\u6709 URL\u3001\u9875\u9762\u66f4\u65b0\u65f6\u95f4\u3001API Level\u3001SDK\u3001\u6a21\u5757\u6216\u5bfc\u5165\u8def\u5f84\n- \u5ba1\u67e5\u65e5\u671f\uff1a2026-08-31\n- \u7ed3\u8bba\uff1a**\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad**\n- \u7efc\u5408\u5206\uff1a**N/A**\n- \u4e00\u53e5\u8bdd\u4f9d\u636e\uff1a\u7247\u6bb5\u5bf9\u540e\u53f0\u884c\u4e3a\u3001\u6743\u9650\u548c\u8bbe\u5907\u652f\u6301\u4f5c\u4e86\u4e09\u9879\u7edd\u5bf9\u65ad\u8a00\uff0c\u4f46\u6ca1\u6709\u53ef\u5bf9\u9f50\u7248\u672c\u548c API \u8eab\u4efd\uff0c\u4e5f\u6ca1\u6709\u72ec\u7acb\u5bf9\u7167\u8bc1\u636e\uff1b\u56e0\u6b64\u4e0d\u80fd\u786e\u8ba4\u8fd9\u4e9b\u65ad\u8a00\u6b63\u786e\uff0c\u4e5f\u4e0d\u80fd\u628a\u5b83\u4eec\u5224\u4e3a\u6280\u672f\u9519\u8bef\u3002\n\n## 2. \u5ba1\u67e5\u8303\u56f4\u4e0e\u9650\u5236\n\n- \u5df2\u68c0\u67e5\uff1a\u672c\u5730\u6587\u4ef6\u5168\u90e8 5 \u884c\u5185\u5bb9\u3001\u663e\u5f0f\u63d0\u4f9b\u548c\u663e\u5f0f\u7f3a\u5c11\u7684\u5b57\u6bb5\u3001\u65ad\u8a00\u8303\u56f4\u4e0e\u53ef\u6838\u9a8c\u6027\uff1b\u672c Skill \u7684\u89e3\u6790\u5668\u8fd4\u56de `review_required` \u5e76\u63d0\u793a `content_too_short`\u3002\n- \u672a\u68c0\u67e5\uff1a\u5b98\u65b9 URL\u3001API \u53c2\u8003\u3001\u6743\u9650\u53c2\u8003\u3001\u672c\u673a SDK\u3001\u5de5\u7a0b\u914d\u7f6e\u3001\u6784\u5efa\u6216\u8fd0\u884c\u3002\u5f53\u524d\u6ca1\u6709\u8fd9\u4e9b\u8f93\u5165\uff0c\u4e14\u672c\u8bc4\u6d4b\u8981\u6c42\u4e0d\u8054\u7f51\u3002\n- \u5173\u952e\u5047\u8bbe\uff1a\u4e0d\u5047\u8bbe `sampleManager.start()` \u662f\u4efb\u4f55\u771f\u5b9e HarmonyOS API\uff0c\u4e5f\u4e0d\u6839\u636e\u6a21\u578b\u8bb0\u5fc6\u8865\u5145\u540e\u53f0\u3001\u6743\u9650\u6216\u8bbe\u5907\u4e8b\u5b9e\u3002\n\n## 3. \u7ef4\u5ea6\u8bc4\u5206\n\n| \u7ef4\u5ea6 | \u5f97\u5206 | \u4e3b\u8981\u4f9d\u636e |\n|---|---:|---|\n| \u6280\u672f\u6b63\u786e\u6027 | N/A | \u6ca1\u6709 API \u8eab\u4efd\u3001\u7b7e\u540d\u6216\u540c\u7248\u672c\u5bf9\u7167\u8bc1\u636e |\n| \u7248\u672c\u4e0e\u517c\u5bb9\u6027 | N/A | API Level\u3001SDK \u548c\u8bbe\u5907\u57fa\u7ebf\u5747\u672a\u77e5 |\n| \u5b8c\u6574\u6027 | N/A | \u4ec5\u6709\u77ed\u7247\u6bb5\uff0c\u65e0\u6cd5\u786e\u8ba4\u5176\u662f\u5426\u627f\u8bfa\u627f\u62c5\u5b8c\u6574 API \u53c2\u8003\u804c\u8d23 |\n| \u4e00\u81f4\u6027 | N/A | \u6ca1\u6709\u540c\u9875\u5176\u4ed6\u7ae0\u8282\u6216\u5173\u8054\u6750\u6599\u53ef\u6bd4 |\n| \u793a\u4f8b\u53ef\u6267\u884c\u6027\u4e0e\u6b65\u9aa4\u53ef\u590d\u73b0\u6027 | N/A | \u6ca1\u6709\u4ee3\u7801\u793a\u4f8b\u3001\u5de5\u7a0b\u6216\u8fd0\u884c\u6761\u4ef6 |\n| \u8868\u8fbe\u4e0e\u4fe1\u606f\u7ed3\u6784 | N/A | \u53ef\u89c2\u5bdf\u5230\u7edd\u5bf9\u63aa\u8f9e\uff0c\u4f46\u6750\u6599\u8fc7\u77ed\uff0c\u4e0d\u4ee5\u5355\u4e00\u975e\u6838\u5fc3\u7ef4\u5ea6\u751f\u6210\u8bef\u5bfc\u6027\u603b\u5206 |\n| \u94fe\u63a5\u4e0e\u8d44\u6e90 | N/A | \u672a\u63d0\u4f9b URL \u6216\u5173\u8054\u8d44\u6e90 |\n| \u5b89\u5168\u3001\u9690\u79c1\u4e0e\u5408\u89c4 | N/A | \u201c\u4e0d\u9700\u8981\u6743\u9650\u201d\u5c1a\u672a\u5f97\u5230\u6743\u9650\u53c2\u8003\u6216 SDK \u8bc1\u636e\u652f\u6301/\u53cd\u9a73 |\n\n## 4. \u95ee\u9898\u6e05\u5355\n\n### DOC-001 \u4e09\u9879\u6838\u5fc3\u6280\u672f\u65ad\u8a00\u65e0\u6cd5\u6838\u9a8c\n\n- \u7ef4\u5ea6\uff1a\u6280\u672f\u6b63\u786e\u6027 / \u7248\u672c\u4e0e\u517c\u5bb9\u6027 / \u5b8c\u6574\u6027\n- \u72b6\u6001\uff1a`pending`\n- \u4e25\u91cd\u5ea6\uff1a`High`\n- \u7f6e\u4fe1\u5ea6\uff1a`low`\n- \u539f\u6587\u4f4d\u7f6e\uff1a\u6b63\u6587\u7b2c 3 \u884c\uff1b\u8bc1\u636e\u7f3a\u53e3\u8bf4\u660e\u4f4d\u4e8e\u7b2c 5 \u884c\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a\u201c\u4e00\u76f4\u5728\u540e\u53f0\u8fd0\u884c\u201d\u201c\u4e0d\u9700\u8981\u4efb\u4f55\u6743\u9650\u201d\u201c\u6240\u6709\u8bbe\u5907\u5747\u652f\u6301\u201d\n- \u95ee\u9898\u5206\u6790\uff1a\u4e09\u4e2a\u91cf\u8bcd\u90fd\u662f\u65e0\u6761\u4ef6\u3001\u5168\u8303\u56f4\u4e3b\u5f20\uff0c\u4f46\u65e0\u6cd5\u786e\u5b9a API \u6240\u5c5e\u6a21\u5757\u3001\u9002\u7528 API Level\u3001SDK \u7248\u672c\u3001\u8bbe\u5907\u7c7b\u578b\u3001\u540e\u53f0\u9650\u5236\u6216\u6743\u9650\u7c7b\u522b\u3002\u5f53\u524d\u8bc1\u636e\u65e2\u4e0d\u80fd\u8bc1\u660e\u5b83\u4eec\u6210\u7acb\uff0c\u4e5f\u4e0d\u80fd\u8bc1\u660e\u5b83\u4eec\u9519\u8bef\uff1b`High` \u53ea\u8868\u793a\u8fd9\u4e9b\u4e3b\u5f20\u4e00\u65e6\u9519\u8bef\u7684\u6f5c\u5728\u5f71\u54cd\uff0c\u4e0d\u8868\u793a\u5df2\u7ecf\u786e\u8ba4 High \u7f3a\u9677\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7b2c 5 \u884c\u660e\u786e\u8bb0\u5f55\u7f3a\u5c11 URL\u3001\u66f4\u65b0\u65f6\u95f4\u3001API Level\u3001\u5bfc\u5165\u8def\u5f84\u3001\u53c2\u6570\u3001\u8fd4\u56de\u503c\u548c\u9519\u8bef\u7801\uff1b\u672a\u63d0\u4f9b\u72ec\u7acb\u8bc1\u636e\uff0c\u6545\u72b6\u6001\u53ea\u80fd\u662f `pending`\u3002\n- \u5f71\u54cd\uff1a\u82e5\u8fd9\u4e9b\u7edd\u5bf9\u4e3b\u5f20\u4e2d\u4efb\u4e00\u4e0d\u6210\u7acb\uff0c\u8bfb\u8005\u53ef\u80fd\u9047\u5230\u540e\u53f0\u4efb\u52a1\u4e2d\u6b62\u3001\u6743\u9650\u5931\u8d25\u6216\u8bbe\u5907\u4e0d\u517c\u5bb9\uff1b\u8fd9\u89e3\u91ca\u4e86\u6f5c\u5728 `High` \u5f71\u54cd\uff0c\u4f46\u4e0d\u80fd\u63d0\u5347\u4e8b\u5b9e\u7f6e\u4fe1\u5ea6\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u5148\u8865\u5145\u539f\u59cb\u5b98\u65b9 URL\u6216\u540c\u7248\u672c\u5feb\u7167\u3001\u5b8c\u6574 API \u540d\u4e0e\u5bfc\u5165\u8def\u5f84\u3001\u76ee\u6807 API Level/SDK\u3001\u6743\u9650\u4e0e\u8bbe\u5907\u7ea6\u675f\uff1b\u6838\u5b9e\u524d\u628a\u4e09\u9879\u9648\u8ff0\u6807\u4e3a\u5f85\u786e\u8ba4\uff0c\u4e0d\u8981\u76f4\u63a5\u6539\u6210\u53e6\u4e00\u7ec4\u672a\u7ecf\u8bc1\u5b9e\u7684\u6280\u672f\u7ed3\u8bba\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a`\u5173\u4e8e\u540e\u53f0\u6301\u7eed\u65f6\u95f4\u3001\u6240\u9700\u6743\u9650\u548c\u652f\u6301\u8bbe\u5907\u7684\u7ed3\u8bba\uff0c\u9700\u4ee5\u76ee\u6807 API Level \u7684 API/\u6743\u9650\u53c2\u8003\u548c\u8fd0\u884c\u73af\u5883\u4e3a\u51c6\uff1b\u5f53\u524d\u7247\u6bb5\u672a\u63d0\u4f9b\u8db3\u591f\u8bc1\u636e\u3002`\n\n## 5. \u5f85\u786e\u8ba4\u9879\n\n| \u9879\u76ee | \u7f3a\u5c11\u7684\u8bc1\u636e | \u5efa\u8bae\u6838\u9a8c\u52a8\u4f5c |\n|---|---|---|\n| API \u8eab\u4efd | \u539f\u59cb URL\u3001\u6a21\u5757/Kit\u3001\u5bfc\u5165\u8def\u5f84\u548c\u5b8c\u6574\u7b7e\u540d | \u63d0\u4f9b\u5b8c\u6574 API \u53c2\u8003\u9875\u9762\u6216\u53ef\u4fe1\u79bb\u7ebf\u5feb\u7167 |\n| \u7248\u672c\u8303\u56f4 | API Level\u3001SDK \u7248\u672c\u3001\u9875\u9762\u66f4\u65b0\u65f6\u95f4 | \u9009\u62e9\u76ee\u6807\u7248\u672c\u540e\u53ea\u4e0e\u540c\u7248\u672c\u8d44\u6599\u6bd4\u8f83 |\n| \u540e\u53f0\u884c\u4e3a | \u751f\u547d\u5468\u671f\u3001\u540e\u53f0\u8fd0\u884c\u9650\u5236\u53ca\u7ec8\u6b62\u6761\u4ef6 | \u67e5\u540c\u7248\u672c API \u6307\u5357\u5e76\u5728\u8bb0\u5f55\u73af\u5883\u7684\u5de5\u7a0b\u4e2d\u9a8c\u8bc1 |\n| \u6743\u9650\u8981\u6c42 | \u6743\u9650\u53c2\u8003\u3001\u6388\u6743\u7ea7\u522b\u3001\u914d\u7f6e\u4e0e\u7533\u8bf7\u6b65\u9aa4 | \u6838\u5bf9\u662f\u5426\u9700\u8981\u58f0\u660e\u3001\u8fd0\u884c\u65f6\u6388\u6743\u6216\u7cfb\u7edf\u80fd\u529b |\n| \u8bbe\u5907\u652f\u6301 | \u8bbe\u5907\u7c7b\u578b\u4e0e\u7cfb\u7edf\u80fd\u529b\u7ea6\u675f | \u67e5\u540c\u7248\u672c\u8bbe\u5907\u7ea6\u675f\u5e76\u6309\u8bbe\u5907\u5206\u522b\u9a8c\u8bc1 |\n| \u8fd4\u56de\u4e0e\u5931\u8d25\u8bed\u4e49 | \u53c2\u6570\u3001\u8fd4\u56de\u503c\u3001\u5f02\u5e38\u548c\u9519\u8bef\u7801 | \u8865\u9f50\u5b8c\u6574 API \u6761\u76ee\u540e\u5ba1\u67e5 |\n\n## 6. \u603b\u4f53\u4fee\u8ba2\u5efa\u8bae\n\n1. \u5728\u53d6\u5f97 API \u8eab\u4efd\u548c\u76ee\u6807\u7248\u672c\u524d\uff0c\u4e0d\u53d1\u5e03\u201c\u59cb\u7ec8\u201d\u201c\u65e0\u9700\u4efb\u4f55\u6743\u9650\u201d\u201c\u6240\u6709\u8bbe\u5907\u201d\u7b49\u65e0\u6761\u4ef6\u7ed3\u8bba\u3002\n2. \u4f18\u5148\u8865\u9f50 URL/\u79bb\u7ebf API \u53c2\u8003\u5feb\u7167\u3001API Level/SDK \u4e0e\u5bfc\u5165\u8def\u5f84\uff0c\u518d\u5206\u522b\u6838\u5bf9\u540e\u53f0\u3001\u6743\u9650\u548c\u8bbe\u5907\u4e09\u9879\u4e3b\u5f20\u3002\n3. \u8bc1\u636e\u8865\u9f50\u540e\u91cd\u65b0\u5206\u7ea7\uff1b\u5f53\u524d\u6ca1\u6709\u5df2\u786e\u8ba4\u7684\u6280\u672f\u7f3a\u9677\uff0c\u53ea\u6709\u4e00\u4e2a\u6f5c\u5728\u5f71\u54cd\u4e3a `High`\u3001\u72b6\u6001\u4e3a `pending` \u7684\u6838\u9a8c\u9879\u3002\n\n## 7. \u8bc1\u636e\u7d22\u5f15\n\n| # | \u6765\u6e90 | \u7248\u672c/\u65e5\u671f | \u5b9a\u4f4d | \u7528\u9014 |\n|---|---|---|---|---|\n| E1 | `D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\short-uncertain-snippet.md` | \u7248\u672c\u672a\u77e5\uff1b\u5ba1\u67e5\u4e8e 2026-08-31 | \u7b2c 3\u30015 \u884c | \u8bb0\u5f55\u5f85\u6838\u9a8c\u65ad\u8a00\u548c\u6750\u6599\u81ea\u8eab\u660e\u786e\u5217\u51fa\u7684\u8bc1\u636e\u7f3a\u53e3 |\n"}], "grading": {"expectations": [{"text": "\u6700\u7ec8\u7ed3\u8bba\u4e3a\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad\uff0c\u6216\u6e05\u695a\u8868\u8fbe\u540c\u7b49\u5f3a\u5ea6\u7684\u4fdd\u7559\u7ed3\u8bba", "passed": true, "evidence": "\u7ed3\u8bba\u5b57\u6bb5\u660e\u786e\u4e3a\u2018\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad\u2019\uff0c\u7efc\u5408\u5206\u4e3a N/A\u3002"}, {"text": "\u6ca1\u6709\u65ad\u8a00 sampleManager.start \u7684\u771f\u5b9e\u6743\u9650\u3001\u8bbe\u5907\u652f\u6301\u6216\u540e\u53f0\u884c\u4e3a", "passed": true, "evidence": "\u5173\u952e\u5047\u8bbe\u660e\u786e\u4e0d\u628a\u5b83\u5f53\u4f5c\u771f\u5b9e API\uff0c\u4e5f\u4e0d\u8865\u5145\u540e\u53f0\u3001\u6743\u9650\u6216\u8bbe\u5907\u4e8b\u5b9e\u3002"}, {"text": "\u6307\u51fa\u2018\u4e00\u76f4\u540e\u53f0\u8fd0\u884c\u2019\u3001\u2018\u65e0\u9700\u4efb\u4f55\u6743\u9650\u2019\u548c\u2018\u6240\u6709\u8bbe\u5907\u652f\u6301\u2019\u662f\u9700\u8981\u8bc1\u636e\u652f\u6491\u7684\u7edd\u5bf9\u5316\u4e3b\u5f20", "passed": true, "evidence": "DOC-001 \u9010\u4e00\u5f15\u7528\u4e09\u9879\u65e0\u6761\u4ef6\u5168\u8303\u56f4\u4e3b\u5f20\uff0c\u5e76\u89e3\u91ca\u5f53\u524d\u65e2\u4e0d\u80fd\u8bc1\u5b9e\u4e5f\u4e0d\u80fd\u8bc1\u4f2a\u3002"}, {"text": "\u5217\u51fa\u539f\u59cb URL\u3001API Level\u3001\u5bfc\u5165/\u7b7e\u540d\u548c\u540c\u7248\u672c SDK \u6216 API \u53c2\u8003\u7b49\u5f85\u786e\u8ba4\u9879", "passed": true, "evidence": "\u5f85\u786e\u8ba4\u8868\u5217\u51fa API \u8eab\u4efd\u3001URL\u3001\u5bfc\u5165\u8def\u5f84\u3001\u7b7e\u540d\u3001API Level\u3001SDK \u548c\u540c\u7248\u672c\u53c2\u8003\u6838\u9a8c\u3002"}, {"text": "\u4e25\u91cd\u5ea6\u4e0e\u7f6e\u4fe1\u5ea6\u5206\u5f00\u8868\u8fbe\uff0c\u672a\u7528\u4f4e\u7f6e\u4fe1\u5ea6\u7ebf\u7d22\u652f\u6491\u786e\u5b9a\u6027\u9ad8\u98ce\u9669\u7ed3\u8bba", "passed": true, "evidence": "finding \u6807\u4e3a pending\u3001High\u3001low\uff0c\u5e76\u660e\u786e High \u4ec5\u8868\u793a\u6f5c\u5728\u5f71\u54cd\uff0c\u4e0d\u8868\u793a\u5df2\u786e\u8ba4\u7f3a\u9677\u3002"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 2407, "transcript_chars": 0}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [], "overall": "\u8be5\u6848\u4f8b\u6709\u6548\u68c0\u67e5\u8bc1\u636e\u4e0d\u8db3\u65f6\u7684\u514b\u5236\u548c\u98ce\u9669/\u7f6e\u4fe1\u5ea6\u5206\u79bb\u3002"}}}, {"id": "insufficient-evidence-without_skill", "prompt": "\u8bc4\u5ba1 harmonyos-doc-review/evals/fixtures/short-uncertain-snippet.md \u4e2d\u7684\u9e3f\u8499 API \u63cf\u8ff0\u3002\u544a\u8bc9\u6211\u5b83\u6709\u6ca1\u6709\u95ee\u9898\uff0c\u5e76\u7ed9\u51fa\u4e25\u91cd\u5ea6\u3002\u5f53\u524d\u6ca1\u6709 URL\u3001API Level \u6216 SDK \u73af\u5883\u3002", "eval_id": 2, "outputs": [{"name": "report.md", "type": "text", "content": "# `sampleManager.start()` \u77ed\u7247\u6bb5\u5ba1\u67e5\u62a5\u544a\n\n## \u7ed3\u8bba\n\n**\u6709\u95ee\u9898\uff0c\u4e25\u91cd\u5ea6\uff1a\u9ad8\uff08\u6587\u6863\u53ef\u9760\u6027/\u8bef\u7528\u98ce\u9669\uff09\u3002** \u4f46\u73b0\u6709\u6750\u6599\u4e0d\u8db3\u4ee5\u8bc1\u660e `sampleManager.start()` \u7684\u4efb\u4f55\u5177\u4f53\u5e73\u53f0\u4e8b\u5b9e\uff0c\u56e0\u6b64\u4e0d\u80fd\u65ad\u8a00\u8be5 API \u672c\u8eab\u4e00\u5b9a\u201c\u6709\u6743\u9650\u201d\u201c\u4e0d\u5728\u540e\u53f0\u6301\u7eed\u8fd0\u884c\u201d\u6216\u201c\u4e0d\u652f\u6301\u67d0\u4e9b\u8bbe\u5907\u201d\u3002\u53ef\u4ee5\u786e\u5b9a\u7684\u95ee\u9898\u662f\uff1a\u7247\u6bb5\u5728\u6ca1\u6709\u6765\u6e90\u3001\u7248\u672c\u3001SDK \u73af\u5883\u548c\u63a5\u53e3\u7b7e\u540d\u7684\u60c5\u51b5\u4e0b\uff0c\u5bf9\u540e\u53f0\u884c\u4e3a\u3001\u6743\u9650\u548c\u8bbe\u5907\u8303\u56f4\u4f5c\u4e86\u4e09\u4e2a\u7edd\u5bf9\u7ed3\u8bba\uff0c\u4e14\u6ca1\u6709\u53ef\u590d\u6838\u8bc1\u636e\u3002\n\n## \u53d1\u73b0\n\n| \u4e25\u91cd\u5ea6 | \u8868\u8ff0 | \u5ba1\u67e5\u5224\u65ad |\n| --- | --- | --- |\n| \u9ad8 | \u201c\u7cfb\u7edf\u4f1a\u4e00\u76f4\u5728\u540e\u53f0\u8fd0\u884c\u201d | \u201c\u4e00\u76f4\u201d\u6d89\u53ca\u751f\u547d\u5468\u671f\u3001\u8fdb\u7a0b\u5b58\u6d3b\u3001\u540e\u53f0\u7ba1\u63a7\u3001\u505c\u6b62\u6761\u4ef6\u548c\u5f02\u5e38\u573a\u666f\uff0c\u4f46\u7247\u6bb5\u6ca1\u6709\u5b9a\u4e49\u4e3b\u4f53\u3001\u6301\u7eed\u6761\u4ef6\u3001\u9000\u51fa\u65b9\u5f0f\u6216\u7cfb\u7edf\u9650\u5236\u3002\u8fd9\u4e00\u7ed3\u8bba\u76ee\u524d\u4e0d\u53ef\u9a8c\u8bc1\uff0c\u4e14\u53ef\u80fd\u8bf1\u5bfc\u4f9d\u8d56\u4e0d\u53d7\u4fdd\u8bc1\u7684\u540e\u53f0\u884c\u4e3a\u3002 |\n| \u9ad8 | \u201c\u4e0d\u9700\u8981\u4efb\u4f55\u6743\u9650\u201d | \u6ca1\u6709\u6743\u9650\u6e05\u5355\u3001\u914d\u7f6e\u8bf4\u660e\u3001\u8fd0\u884c\u65f6\u6388\u6743\u8bf4\u660e\u3001API Level \u6216\u8c03\u7528\u573a\u666f\uff0c\u65e0\u6cd5\u786e\u8ba4\u201c\u4efb\u4f55\u6743\u9650\u201d\u8fd9\u4e00\u5168\u79f0\u547d\u9898\u3002\u6743\u9650\u9057\u6f0f\u53ef\u80fd\u5bfc\u81f4\u8fd0\u884c\u5931\u8d25\u6216\u5408\u89c4\u95ee\u9898\u3002 |\n| \u9ad8 | \u201c\u6240\u6709\u8bbe\u5907\u5747\u652f\u6301\u201d | \u6ca1\u6709\u8bbe\u5907\u7c7b\u578b\u3001\u7cfb\u7edf\u7248\u672c\u3001\u80fd\u529b\u68c0\u6d4b\u3001\u786c\u4ef6\u8981\u6c42\u6216\u517c\u5bb9\u8303\u56f4\uff0c\u201c\u6240\u6709\u8bbe\u5907\u201d\u65e0\u6cd5\u88ab\u5f53\u524d\u8bc1\u636e\u652f\u6301\u3002 |\n| \u4e2d | \u7f3a\u5c11\u53ef\u5b9e\u73b0\u7684\u63a5\u53e3\u4fe1\u606f | \u672a\u63d0\u4f9b\u5bfc\u5165\u8def\u5f84\u3001\u53c2\u6570\u3001\u8fd4\u56de\u503c\u3001\u5f02\u5e38\u6216\u9519\u8bef\u7801\uff0c\u65e0\u6cd5\u636e\u6b64\u7f16\u5199\u3001\u68c0\u67e5\u6216\u9a8c\u8bc1\u8c03\u7528\u4ee3\u7801\u3002 |\n\n## \u4e25\u91cd\u5ea6\u8bf4\u660e\n\n\u201c\u9ad8\u201d\u662f\u5bf9\u8fd9\u6bb5\u63cf\u8ff0\u4f5c\u4e3a\u5f00\u53d1\u4f9d\u636e\u65f6\u7684\u98ce\u9669\u8bc4\u7ea7\uff0c\u4e0d\u662f\u5bf9\u67d0\u4e2a\u5df2\u8bc1\u5b9e\u5e73\u53f0\u7f3a\u9677\u7684\u8bc4\u7ea7\u3002\u4e09\u4e2a\u6838\u5fc3\u4e3b\u5f20\u90fd\u53ef\u80fd\u5f71\u54cd\u67b6\u6784\u3001\u6743\u9650\u914d\u7f6e\u3001\u517c\u5bb9\u6027\u548c\u6d4b\u8bd5\u65b9\u6848\uff0c\u800c\u5f53\u524d\u65e0\u4ece\u9a8c\u8bc1\uff1b\u56e0\u6b64\u4e0d\u5e94\u53d1\u5e03\u6216\u636e\u6b64\u5b9e\u65bd\u3002\u5bf9\u8fd9\u4e9b\u4e3b\u5f20\u771f\u5b9e\u6027\u7684\u7f6e\u4fe1\u7ed3\u8bba\u5e94\u6807\u4e3a **\u8bc1\u636e\u4e0d\u8db3/\u5f85\u6838\u5b9e**\uff0c\u800c\u4e0d\u662f\u201c\u5df2\u786e\u8ba4\u9519\u8bef\u201d\u6216\u201c\u5df2\u786e\u8ba4\u6b63\u786e\u201d\u3002\n\n## \u6700\u4f4e\u8865\u8bc1\u8981\u6c42\n\n\u5728\u91cd\u65b0\u8bc4\u5ba1\u524d\uff0c\u81f3\u5c11\u9700\u8981\uff1a\u539f\u59cb\u6587\u6863\u6216\u53ef\u8ffd\u6eaf\u6765\u6e90\u3001\u6587\u6863\u66f4\u65b0\u65f6\u95f4\u3001\u76ee\u6807 API Level \u4e0e SDK \u7248\u672c\u3001\u5b8c\u6574\u63a5\u53e3\u5f52\u5c5e\u548c\u5bfc\u5165\u8def\u5f84\u3001\u65b9\u6cd5\u7b7e\u540d\u3001\u6743\u9650\u4e0e\u540e\u53f0\u8fd0\u884c\u524d\u63d0\u3001\u652f\u6301\u8bbe\u5907\u8303\u56f4\uff0c\u4ee5\u53ca\u53ef\u89c2\u5bdf\u7684\u6210\u529f/\u505c\u6b62/\u5931\u8d25\u884c\u4e3a\u3002\u5f97\u5230\u8fd9\u4e9b\u4fe1\u606f\u540e\uff0c\u518d\u9010\u9879\u5224\u65ad\u4e09\u6761\u4e3b\u5f20\u662f\u5426\u4e0e\u8be5\u7279\u5b9a\u73af\u5883\u4e00\u81f4\u3002\n\n## \u8bc1\u636e\u8fb9\u754c\n\n\u672c\u62a5\u544a\u53ea\u5ba1\u67e5 `short-uncertain-snippet.md` \u4e2d\u7684\u6587\u5b57\u53ca\u5176\u660e\u786e\u5217\u51fa\u7684\u7f3a\u5931\u4fe1\u606f\uff0c\u4e0d\u4f7f\u7528\u5916\u90e8\u77e5\u8bc6\u8865\u5168 API \u884c\u4e3a\uff0c\u4e5f\u4e0d\u628a\u8be5\u7247\u6bb5\u5f53\u4f5c\u771f\u5b9e\u5b98\u65b9\u6587\u6863\u3002\n"}], "grading": {"expectations": [{"text": "\u6700\u7ec8\u7ed3\u8bba\u4e3a\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad\uff0c\u6216\u6e05\u695a\u8868\u8fbe\u540c\u7b49\u5f3a\u5ea6\u7684\u4fdd\u7559\u7ed3\u8bba", "passed": true, "evidence": "\u867d\u5c06\u6587\u6863\u53ef\u9760\u6027\u98ce\u9669\u8bc4\u4e3a\u9ad8\uff0c\u4f46\u7ed3\u8bba\u660e\u786e\u8bf4\u73b0\u6709\u6750\u6599\u4e0d\u8db3\u4ee5\u8bc1\u660e\u4efb\u4f55\u5177\u4f53\u5e73\u53f0\u4e8b\u5b9e\uff0c\u4e0d\u80fd\u65ad\u8a00 API \u884c\u4e3a\u3002"}, {"text": "\u6ca1\u6709\u65ad\u8a00 sampleManager.start \u7684\u771f\u5b9e\u6743\u9650\u3001\u8bbe\u5907\u652f\u6301\u6216\u540e\u53f0\u884c\u4e3a", "passed": true, "evidence": "\u7ed3\u8bba\u548c\u8bc1\u636e\u8fb9\u754c\u660e\u786e\u62d2\u7edd\u8865\u5168 API \u884c\u4e3a\u3002"}, {"text": "\u6307\u51fa\u2018\u4e00\u76f4\u540e\u53f0\u8fd0\u884c\u2019\u3001\u2018\u65e0\u9700\u4efb\u4f55\u6743\u9650\u2019\u548c\u2018\u6240\u6709\u8bbe\u5907\u652f\u6301\u2019\u662f\u9700\u8981\u8bc1\u636e\u652f\u6491\u7684\u7edd\u5bf9\u5316\u4e3b\u5f20", "passed": true, "evidence": "\u53d1\u73b0\u8868\u9010\u9879\u5206\u6790\u4e09\u4e2a\u7edd\u5bf9\u8868\u8ff0\u4e3a\u4ec0\u4e48\u65e0\u6cd5\u88ab\u5f53\u524d\u8bc1\u636e\u652f\u6301\u3002"}, {"text": "\u5217\u51fa\u539f\u59cb URL\u3001API Level\u3001\u5bfc\u5165/\u7b7e\u540d\u548c\u540c\u7248\u672c SDK \u6216 API \u53c2\u8003\u7b49\u5f85\u786e\u8ba4\u9879", "passed": true, "evidence": "\u6700\u4f4e\u8865\u8bc1\u8981\u6c42\u5305\u542b\u6765\u6e90\u3001\u66f4\u65b0\u65f6\u95f4\u3001API Level/SDK\u3001\u63a5\u53e3\u5f52\u5c5e\u3001\u5bfc\u5165\u8def\u5f84\u3001\u7b7e\u540d\u548c\u6743\u9650/\u8bbe\u5907\u524d\u63d0\u3002"}, {"text": "\u4e25\u91cd\u5ea6\u4e0e\u7f6e\u4fe1\u5ea6\u5206\u5f00\u8868\u8fbe\uff0c\u672a\u7528\u4f4e\u7f6e\u4fe1\u5ea6\u7ebf\u7d22\u652f\u6491\u786e\u5b9a\u6027\u9ad8\u98ce\u9669\u7ed3\u8bba", "passed": true, "evidence": "\u62a5\u544a\u8bf4\u660e High \u662f\u4f5c\u4e3a\u5f00\u53d1\u4f9d\u636e\u7684\u98ce\u9669\u8bc4\u7ea7\uff0c\u800c\u65ad\u8a00\u771f\u5b9e\u6027\u4ecd\u662f\u8bc1\u636e\u4e0d\u8db3/\u5f85\u6838\u5b9e\u3002"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 983, "transcript_chars": 0}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [], "overall": "\u57fa\u7ebf\u4e5f\u80fd\u7a33\u5b9a\u5904\u7406\u8bc1\u636e\u4e0d\u8db3\uff0c\u672c\u6848\u4f8b\u6682\u672a\u533a\u5206 Skill \u589e\u76ca\u3002"}}}, {"id": "cross-document-version-with_skill", "prompt": "\u6bd4\u8f83 harmonyos-doc-review/evals/fixtures/version-guide.md \u548c harmonyos-doc-review/evals/fixtures/version-api-reference.md\uff0c\u5ba1\u67e5\u524d\u8005\u662f\u5426\u5408\u7406\u3002\u4e24\u4efd\u6587\u4ef6\u90fd\u662f\u4e3a\u6d4b\u8bd5\u6784\u9020\u7684\u5b98\u65b9\u6750\u6599\u5feb\u7167\uff0c\u4e0d\u8981\u8054\u7f51\u8865\u5145\u4e8b\u5b9e\u3002", "eval_id": 3, "outputs": [{"name": "report.md", "type": "text", "content": "# HarmonyOS \u6587\u6863\u8d28\u91cf\u5ba1\u67e5\u62a5\u544a\uff08\u79bb\u7ebf\u7248\u672c\u5bf9\u7167\u8bc4\u6d4b\uff09\n\n## 1. \u5ba1\u67e5\u7ed3\u8bba\n\n- \u76ee\u6807\u6587\u6863\uff1a`\u6d4b\u8bd5\u7528\u5171\u4eab\u80fd\u529b\u6307\u5357`\uff08`D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\version-guide.md`\uff09\n- \u5bf9\u7167\u6587\u6863\uff1a`\u6d4b\u8bd5\u7528\u5171\u4eab\u80fd\u529b API \u53c2\u8003`\uff08`D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\version-api-reference.md`\uff09\n- \u6587\u6863\u7c7b\u578b\uff1a\u76ee\u6807\u4e3a\u5f00\u53d1\u6307\u5357 / \u4ee3\u7801\u793a\u4f8b\uff1b\u5bf9\u7167\u4e3a API \u53c2\u8003\n- \u7248\u672c\u4e0a\u4e0b\u6587\uff1a\u4e24\u4efd\u8bc4\u6d4b\u5feb\u7167\u5747\u6807\u6ce8 API 12\uff1b\u4ec5\u5728\u8be5\u6784\u9020\u6750\u6599\u7684\u5171\u540c\u57fa\u7ebf\u5185\u6bd4\u8f83\n- \u5ba1\u67e5\u65e5\u671f\uff1a2026-08-31\n- \u7ed3\u8bba\uff1a**\u4e0d\u5408\u7406/\u9ad8\u98ce\u9669**\n- \u7efc\u5408\u5206\uff1a**35/100**\n- \u4e00\u53e5\u8bdd\u4f9d\u636e\uff1a\u6307\u5357\u58f0\u79f0 `shareManager.open()` \u4ece API 12 \u8d77\u53ef\u7528\u5e76\u8fd4\u56de `boolean`\uff0c\u800c\u540c\u4e00\u6d4b\u8bd5\u57fa\u7ebf\u7684 API \u53c2\u8003\u660e\u786e\u5199\u4e3a API 13 \u8d77\u3001\u8fd4\u56de `Promise<OpenResult>`\uff1b\u6838\u5fc3\u7248\u672c\u548c\u8fd4\u56de\u7c7b\u578b\u5747\u88ab\u76f4\u63a5\u53cd\u9a73\u3002\n\n## 2. \u5ba1\u67e5\u8303\u56f4\u4e0e\u9650\u5236\n\n- \u5df2\u68c0\u67e5\uff1a\u4e24\u4efd\u672c\u5730 Markdown \u7684\u5b8c\u6574\u5185\u5bb9\u3001\u5feb\u7167\u6807\u6ce8\u3001API \u540d\u3001\u8d77\u59cb\u7248\u672c\u3001\u8fd4\u56de\u503c\u53ca\u6307\u5357\u4ee3\u7801\u8d4b\u503c\uff1b\u672c Skill \u89e3\u6790\u5668\u56e0\u4e24\u4efd\u6750\u6599\u90fd\u5f88\u77ed\u800c\u63d0\u793a `content_too_short`\uff0c\u4f46\u6bd4\u8f83\u6240\u9700\u7684\u56db\u4e2a\u660e\u786e\u5b57\u6bb5\u5747\u53ef\u89c1\u3002\n- \u672a\u68c0\u67e5\uff1a\u771f\u5b9e\u5b98\u7f51\u3001\u771f\u5b9e SDK\u3001`OpenResult` \u5b9a\u4e49\u3001\u6784\u5efa\u548c\u8fd0\u884c\u3002\u7528\u6237\u660e\u786e\u8bf4\u660e\u4e24\u4efd\u6587\u4ef6\u662f\u6d4b\u8bd5\u6784\u9020\u7684\u5b98\u65b9\u6750\u6599\u5feb\u7167\u5e76\u8981\u6c42\u4e0d\u8054\u7f51\uff0c\u56e0\u6b64\u672c\u62a5\u544a\u53ea\u5224\u65ad\u4e24\u4efd\u7ed9\u5b9a\u6750\u6599\u4e4b\u95f4\u662f\u5426\u4e00\u81f4\u3002\n- \u5173\u952e\u5047\u8bbe\uff1a\u5728\u8bc4\u6d4b\u8bed\u5883\u4e2d\uff0c\u628a\u7ed9\u5b9a API \u53c2\u8003\u4f5c\u4e3a\u8be5\u6307\u5357\u7684\u540c\u57fa\u7ebf\u76f4\u63a5\u5bf9\u7167\u8bc1\u636e\uff1b\u4e0d\u628a\u6d4b\u8bd5 API \u6216\u7248\u672c\u7ed3\u8bba\u5916\u63a8\u4e3a\u771f\u5b9e HarmonyOS \u5b98\u7f51\u4e8b\u5b9e\u3002\n\n## 3. \u7ef4\u5ea6\u8bc4\u5206\n\n| \u7ef4\u5ea6 | \u5f97\u5206 | \u4e3b\u8981\u4f9d\u636e |\n|---|---:|---|\n| \u6280\u672f\u6b63\u786e\u6027 | 25 | \u6307\u5357\u8fd4\u56de\u7c7b\u578b\u4e0e API \u53c2\u8003\u76f4\u63a5\u51b2\u7a81 |\n| \u7248\u672c\u4e0e\u517c\u5bb9\u6027 | 10 | \u6307\u5357\u628a API 13 \u7684\u8d77\u59cb\u7248\u672c\u5199\u6210 API 12 |\n| \u5b8c\u6574\u6027 | 70 | \u77ed\u6307\u5357\u7ed9\u51fa\u4e3b\u5f20\u548c\u793a\u4f8b\uff0c\u4f46\u7f3a\u5c11\u5bf9\u7248\u672c\u4e0e\u8fd4\u56de\u7c7b\u578b\u7684\u6b63\u786e\u8bf4\u660e |\n| \u4e00\u81f4\u6027 | 10 | \u4e0e\u540c\u4e00\u8bc4\u6d4b\u57fa\u7ebf\u7684 API \u53c2\u8003\u5728\u4e24\u4e2a\u6838\u5fc3\u5b57\u6bb5\u4e0a\u51b2\u7a81 |\n| \u793a\u4f8b\u53ef\u6267\u884c\u6027\u4e0e\u6b65\u9aa4\u53ef\u590d\u73b0\u6027 | 25 | `boolean` \u63a5\u6536\u7c7b\u578b\u4e0e\u53c2\u8003\u7ed9\u51fa\u7684 `OpenResult` \u4e0d\u4e00\u81f4 |\n| \u8868\u8fbe\u4e0e\u4fe1\u606f\u7ed3\u6784 | 85 | \u8868\u8ff0\u7b80\u6d01\u660e\u786e\uff0c\u4f46\u660e\u786e\u5730\u8868\u8fbe\u4e86\u9519\u8bef\u7684\u5bf9\u7167\u5173\u7cfb |\n| \u94fe\u63a5\u4e0e\u8d44\u6e90 | N/A | \u6784\u9020\u5feb\u7167\u672a\u63d0\u4f9b\u94fe\u63a5\uff0c\u672c\u6b21\u901a\u8fc7\u7ed9\u5b9a\u6587\u4ef6\u76f4\u63a5\u5bf9\u7167 |\n| \u5b89\u5168\u3001\u9690\u79c1\u4e0e\u5408\u89c4 | N/A | \u4e24\u4efd\u6750\u6599\u6ca1\u6709\u6743\u9650\u3001\u9690\u79c1\u6216\u5371\u9669\u64cd\u4f5c\u4e3b\u5f20 |\n\n> \u7efc\u5408\u5206\u6309\u9002\u7528\u7ef4\u5ea6\u6743\u91cd\u91cd\u65b0\u5f52\u4e00\u5316\uff1b`confirmed Blocker` \u95e8\u69db\u4f18\u5148\u4e8e\u5206\u6570\u3002\n\n## 4. \u95ee\u9898\u6e05\u5355\n\n### DOC-001 \u8d77\u59cb API Level \u4e0e\u540c\u57fa\u7ebf API \u53c2\u8003\u76f4\u63a5\u76f8\u53cd\n\n- \u7ef4\u5ea6\uff1a\u7248\u672c\u4e0e\u517c\u5bb9\u6027 / \u4e00\u81f4\u6027\n- \u72b6\u6001\uff1a`confirmed`\n- \u4e25\u91cd\u5ea6\uff1a`Blocker`\n- \u7f6e\u4fe1\u5ea6\uff1a`certain`\n- \u539f\u6587\u4f4d\u7f6e\uff1a\u6307\u5357\u7b2c 5\u20146 \u884c\uff1bAPI \u53c2\u8003\u7b2c 5\u20147 \u884c\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a\u6307\u5357\u79f0\u201c\u4ece API 12 \u8d77\u53ef\u7528\u201d\uff1b\u53c2\u8003\u79f0\u201c\u8d77\u59cb\u7248\u672c\uff1aAPI 13\u201d\n- \u95ee\u9898\u5206\u6790\uff1a\u4e24\u4efd\u6750\u6599\u4f7f\u7528\u540c\u4e00 API \u540d\uff0c\u4e14\u5feb\u7167\u5747\u6807\u6ce8 API 12\uff0c\u6ca1\u6709\u7ed9\u51fa\u91cd\u8f7d\u3001\u8bbe\u5907\u6216\u573a\u666f\u5dee\u5f02\u3002\u6309\u7ed9\u5b9a API \u53c2\u8003\uff0c\u6307\u5357\u5728 API 12 \u57fa\u7ebf\u4e0a\u627f\u8bfa\u4e86\u5c1a\u672a\u8fbe\u5230\u8d77\u59cb\u7248\u672c\u7684\u6838\u5fc3\u8c03\u7528\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7b2c 5\u20146 \u884c\u4e0e [E2] \u7b2c 5\u20147 \u884c\u76f4\u63a5\u5bf9\u7167\uff1bAPI \u53c2\u8003\u5bf9\u8d77\u59cb\u7248\u672c\u7684\u8bf4\u660e\u4f18\u5148\u7528\u4e8e\u6838\u5bf9\u6307\u5357\u7248\u672c\u4e3b\u5f20\u3002\n- \u5f71\u54cd\uff1a\u6309\u6307\u5357\u9762\u5411 API 12 \u5b9e\u65bd\u65f6\uff0c\u6838\u5fc3\u65b9\u6cd5\u7684\u53ef\u7528\u6027\u524d\u63d0\u4e0d\u6210\u7acb\uff0c\u6574\u4e2a\u793a\u4f8b\u76ee\u6807\u88ab\u963b\u65ad\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u628a\u6307\u5357\u7684\u6700\u4f4e API Level \u4e0e\u5bf9\u7167\u53c2\u8003\u7edf\u4e00\u4e3a API 13\uff0c\u5e76\u660e\u786e\u5de5\u7a0b\u76ee\u6807\u7248\u672c\u5fc5\u987b\u6ee1\u8db3\u8be5\u8d77\u59cb\u7248\u672c\uff1b\u82e5\u6307\u5357\u786e\u9700\u4fdd\u7559 API 12\uff0c\u5219\u5fc5\u987b\u53e6\u7ed9\u540c\u57fa\u7ebf\u8bc1\u636e\u548c\u53ef\u7528\u7684\u66ff\u4ee3\u8def\u5f84\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a`shareManager.open() \u4ece API 13 \u8d77\u53ef\u7528\u3002\u4f7f\u7528\u672c\u793a\u4f8b\u524d\uff0c\u8bf7\u786e\u8ba4\u5de5\u7a0b\u76ee\u6807 API Level \u6ee1\u8db3\u8be5\u8981\u6c42\u3002`\n\n### DOC-002 \u8fd4\u56de\u7c7b\u578b\u548c\u793a\u4f8b\u63a5\u6536\u7c7b\u578b\u4e0d\u4e00\u81f4\n\n- \u7ef4\u5ea6\uff1a\u6280\u672f\u6b63\u786e\u6027 / \u793a\u4f8b\u53ef\u6267\u884c\u6027\u4e0e\u6b65\u9aa4\u53ef\u590d\u73b0\u6027 / \u4e00\u81f4\u6027\n- \u72b6\u6001\uff1a`confirmed`\n- \u4e25\u91cd\u5ea6\uff1a`High`\n- \u7f6e\u4fe1\u5ea6\uff1a`certain`\n- \u539f\u6587\u4f4d\u7f6e\uff1a\u6307\u5357\u7b2c 6\u30019 \u884c\uff1bAPI \u53c2\u8003\u7b2c 8 \u884c\n- \u539f\u6587\u77ed\u6458\u5f55\uff1a\u6307\u5357\u79f0\u201c\u8fd4\u56de `boolean`\u201d\u5e76\u5199 `const opened: boolean = await ...`\uff1b\u53c2\u8003\u5199\u201c\u8fd4\u56de\u503c\uff1a`Promise<OpenResult>`\u201d\n- \u95ee\u9898\u5206\u6790\uff1a\u4f9d\u636e\u7ed9\u5b9a\u53c2\u8003\uff0c\u7b49\u5f85 Promise \u540e\u5f97\u5230\u7684\u7ed3\u679c\u7c7b\u578b\u5e94\u4e0e `OpenResult` \u5bf9\u9f50\uff0c\u800c\u6307\u5357\u628a\u7ed3\u679c\u663e\u5f0f\u58f0\u660e\u4e3a `boolean`\uff1b\u4e24\u4e2a\u7c7b\u578b\u4e3b\u5f20\u4e0d\u80fd\u540c\u65f6\u6210\u7acb\u3002\n- \u6838\u9a8c\u8bc1\u636e\uff1a\u8bc1\u636e [E1] \u7b2c 6\u30019 \u884c\u4e0e [E2] \u7b2c 8 \u884c\u76f4\u63a5\u51b2\u7a81\u3002\n- \u5f71\u54cd\uff1a\u82e5\u5b9e\u73b0\u4f7f\u7528\u4e0e\u53c2\u8003\u4e00\u81f4\u7684\u7c7b\u578b\u58f0\u660e\uff0c\u6307\u5357\u793a\u4f8b\u4f1a\u51fa\u73b0\u7c7b\u578b\u4e0d\u5339\u914d\uff0c\u8bfb\u8005\u4e5f\u4f1a\u8bef\u89e3\u8c03\u7528\u7ed3\u679c\u53ca\u540e\u7eed\u5904\u7406\u65b9\u5f0f\u3002\n- \u4fee\u6539\u5efa\u8bae\uff1a\u628a\u6307\u5357\u6b63\u6587\u548c\u53d8\u91cf\u7c7b\u578b\u7edf\u4e00\u4e3a API \u53c2\u8003\u4e2d\u7684\u8fd4\u56de\u6a21\u578b\uff0c\u5e76\u94fe\u63a5\u6216\u89e3\u91ca `OpenResult` \u7684\u5fc5\u8981\u5b57\u6bb5\uff1b\u7531\u4e8e\u5f53\u524d\u5feb\u7167\u6ca1\u6709\u63d0\u4f9b `OpenResult` \u5b9a\u4e49\uff0c\u4e0d\u5e94\u731c\u9020\u5b57\u6bb5\u6216\u5e03\u5c14\u8f6c\u6362\u89c4\u5219\u3002\n- \u5efa\u8bae\u6539\u5199\uff1a`const result: OpenResult = await shareManager.open()`\uff08\u4ec5\u8868\u8fbe\u4e0e\u7ed9\u5b9a\u8fd4\u56de\u7c7b\u578b\u5bf9\u9f50\uff1b\u5b9e\u9645\u5bfc\u5165\u53ca\u7ed3\u679c\u5b57\u6bb5\u4ecd\u9700\u7531\u5b8c\u6574\u53c2\u8003\u8865\u9f50\uff09\u3002\n\n## 5. \u5f85\u786e\u8ba4\u9879\n\n| \u9879\u76ee | \u7f3a\u5c11\u7684\u8bc1\u636e | \u5efa\u8bae\u6838\u9a8c\u52a8\u4f5c |\n|---|---|---|\n| `OpenResult` \u7684\u7ed3\u6784\u4e0e\u5bfc\u5165 | \u5b8c\u6574 API \u53c2\u8003\u6216 SDK \u7c7b\u578b\u58f0\u660e | \u5728\u4fee\u8ba2\u5b8c\u6574\u793a\u4f8b\u524d\u8865\u9f50\u7c7b\u578b\u6765\u6e90\u548c\u5b57\u6bb5\u8bf4\u660e |\n| \u771f\u5b9e\u5b98\u7f51\u4e8b\u5b9e | \u771f\u5b9e URL\u3001\u9875\u9762\u65e5\u671f\u548c\u771f\u5b9e SDK | \u672c\u8bc4\u6d4b\u660e\u786e\u4e0d\u505a\u5916\u90e8\u6838\u9a8c\uff1b\u4e0d\u5f97\u628a\u672c\u62a5\u544a\u7684\u6d4b\u8bd5\u7ed3\u8bba\u5916\u63a8\u5230\u771f\u5b9e API |\n\n## 6. \u603b\u4f53\u4fee\u8ba2\u5efa\u8bae\n\n1. \u9996\u5148\u628a\u6307\u5357\u8d77\u59cb\u7248\u672c\u4ece API 12 \u4fee\u6b63\u4e3a\u7ed9\u5b9a\u53c2\u8003\u6240\u793a\u7684 API 13\uff1b\u8fd9\u662f\u963b\u65ad\u6027\u95ee\u9898\u3002\n2. \u5c06\u6b63\u6587\u8fd4\u56de\u503c\u548c\u4ee3\u7801\u63a5\u6536\u7c7b\u578b\u4ece `boolean` \u7edf\u4e00\u5230 `OpenResult` \u6a21\u578b\u3002\n3. \u53d6\u5f97\u5b8c\u6574\u53c2\u8003\u540e\u8865\u5145 `OpenResult` \u7684\u5bfc\u5165\u3001\u5b57\u6bb5\u548c\u7ed3\u679c\u5904\u7406\uff1b\u4e0d\u8981\u5728\u5f53\u524d\u6750\u6599\u4e4b\u5916\u81ea\u884c\u53d1\u660e\u5b57\u6bb5\u3002\n4. \u4fee\u8ba2\u540e\u518d\u6b21\u9010\u5b57\u6bb5\u6bd4\u8f83 API \u540d\u3001\u8d77\u59cb\u7248\u672c\u3001\u5f02\u6b65\u5f62\u6001\u548c\u8fd4\u56de\u7c7b\u578b\u3002\n\n## 7. \u8bc1\u636e\u7d22\u5f15\n\n| # | \u6765\u6e90 | \u7248\u672c/\u65e5\u671f | \u5b9a\u4f4d | \u7528\u9014 |\n|---|---|---|---|---|\n| E1 | `D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\version-guide.md` | \u6d4b\u8bd5\u5feb\u7167\u6807\u6ce8 API 12\uff1b\u5ba1\u67e5\u4e8e 2026-08-31 | \u7b2c 5\u20146\u30019 \u884c | \u76ee\u6807\u6307\u5357\u7684\u7248\u672c\u3001\u8fd4\u56de\u503c\u4e0e\u4ee3\u7801\u4e3b\u5f20 |\n| E2 | `D:\\HW\\OSFeatureSkill\\harmonyos-doc-review\\evals\\fixtures\\version-api-reference.md` | \u6d4b\u8bd5\u5feb\u7167\u6807\u6ce8 API 12\uff1b\u5ba1\u67e5\u4e8e 2026-08-31 | \u7b2c 5\u20148 \u884c | \u540c\u57fa\u7ebf API \u53c2\u8003\u7684\u8d77\u59cb\u7248\u672c\u4e0e\u8fd4\u56de\u503c\u5bf9\u7167 |\n"}], "grading": {"expectations": [{"text": "\u8bc6\u522b\u6307\u5357\u58f0\u79f0 API 12\u3001API \u53c2\u8003\u58f0\u79f0 API 13 \u7684\u8d77\u59cb\u7248\u672c\u51b2\u7a81", "passed": true, "evidence": "DOC-001 \u76f4\u63a5\u5bf9\u7167\u6307\u5357 API 12 \u4e0e\u53c2\u8003 API 13\u3002"}, {"text": "\u8bc6\u522b\u6307\u5357 boolean \u4e0e API \u53c2\u8003 Promise<OpenResult> \u7684\u8fd4\u56de\u7c7b\u578b\u51b2\u7a81", "passed": true, "evidence": "DOC-002 \u5bf9\u7167 boolean\u3001await \u7ed3\u679c\u4e0e Promise<OpenResult>\u3002"}, {"text": "\u8bc1\u636e\u94fe\u660e\u786e\u5f15\u7528\u4e24\u4efd\u6d4b\u8bd5\u5feb\u7167\uff0c\u5e76\u8bf4\u660e\u5b83\u4eec\u90fd\u6807\u6ce8\u4e3a API 12", "passed": true, "evidence": "\u7248\u672c\u4e0a\u4e0b\u6587\u548c\u8bc1\u636e\u7d22\u5f15\u5206\u522b\u5f15\u7528 E1/E2\uff0c\u5e76\u8bf4\u660e\u4e24\u4efd\u5feb\u7167\u5747\u6807\u6ce8 API 12\u3002"}, {"text": "\u660e\u786e\u8fd9\u4e9b\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u672a\u8054\u7f51\u8865\u5145\u6216\u865a\u6784\u7b2c\u4e09\u65b9/\u7b2c\u4e09\u4efd\u5b98\u65b9\u8bc1\u636e", "passed": true, "evidence": "\u5ba1\u67e5\u8303\u56f4\u660e\u786e\u4ec5\u5224\u65ad\u6784\u9020\u6750\u6599\uff0c\u672a\u68c0\u67e5\u771f\u5b9e\u5b98\u7f51\u6216 SDK\uff0c\u4e5f\u6ca1\u6709\u7b2c\u4e09\u4efd\u6765\u6e90\u3002"}, {"text": "\u7ed9\u51fa\u5c06\u6307\u5357\u4e0e\u7ecf\u786e\u8ba4 API \u53c2\u8003\u5bf9\u9f50\u7684\u5177\u4f53\u6539\u5199\u5efa\u8bae\uff0c\u5e76\u8bf4\u660e\u771f\u5b9e\u5b98\u7f51\u4ecd\u9700\u5355\u72ec\u6838\u9a8c", "passed": true, "evidence": "\u5efa\u8bae\u7edf\u4e00\u4e3a API 13 \u548c OpenResult\uff0c\u540c\u65f6\u628a\u771f\u5b9e URL/SDK \u5217\u4e3a\u5f85\u786e\u8ba4\uff0c\u4e0d\u5916\u63a8\u6d4b\u8bd5\u7ed3\u8bba\u3002"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 3190, "transcript_chars": 0}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [], "overall": "\u9a8c\u6536\u9879\u8986\u76d6\u4e24\u4e2a\u6838\u5fc3\u51b2\u7a81\u53ca\u8bc1\u636e\u8fb9\u754c\u3002"}}}, {"id": "cross-document-version-without_skill", "prompt": "\u6bd4\u8f83 harmonyos-doc-review/evals/fixtures/version-guide.md \u548c harmonyos-doc-review/evals/fixtures/version-api-reference.md\uff0c\u5ba1\u67e5\u524d\u8005\u662f\u5426\u5408\u7406\u3002\u4e24\u4efd\u6587\u4ef6\u90fd\u662f\u4e3a\u6d4b\u8bd5\u6784\u9020\u7684\u5b98\u65b9\u6750\u6599\u5feb\u7167\uff0c\u4e0d\u8981\u8054\u7f51\u8865\u5145\u4e8b\u5b9e\u3002", "eval_id": 3, "outputs": [{"name": "report.md", "type": "text", "content": "# \u300a\u6d4b\u8bd5\u7528\u5171\u4eab\u80fd\u529b\u6307\u5357\u300b\u4ea4\u53c9\u6587\u6863\u5ba1\u67e5\u62a5\u544a\n\n## \u7ed3\u8bba\n\n\u6309\u4e24\u4efd\u7ed9\u5b9a\u5feb\u7167\u4e4b\u95f4\u7684\u53ef\u89c1\u8bc1\u636e\uff0c\u524d\u8005 `version-guide.md` \u4e0d\u5408\u7406\u3002\u5b83\u5bf9 `shareManager.open()` \u7684\u8d77\u59cb\u7248\u672c\u548c\u8fd4\u56de\u7c7b\u578b\u7684\u63cf\u8ff0\uff0c\u5747\u4e0e `version-api-reference.md` \u76f4\u63a5\u51b2\u7a81\uff1b\u5176\u793a\u4f8b\u4e5f\u56e0\u6b64\u4e0d\u80fd\u4e0e\u53c2\u8003\u6587\u4ef6\u4e2d\u7684\u7b7e\u540d\u540c\u65f6\u6210\u7acb\u3002\n\n**\u603b\u4f53\u4e25\u91cd\u5ea6\uff1a\u9ad8\uff1b\u8bc1\u636e\u7f6e\u4fe1\u5ea6\uff1a\u9ad8\uff08\u9488\u5bf9\u4e24\u4efd\u6750\u6599\u4e0d\u4e00\u81f4\u8fd9\u4e00\u4e8b\u5b9e\uff09\u3002** \u4e24\u4efd\u6750\u6599\u90fd\u660e\u786e\u6807\u6ce8\u4e3a\u6d4b\u8bd5\u5feb\u7167\uff0c\u56e0\u6b64\u672c\u62a5\u544a\u53ea\u5224\u65ad\u5b83\u4eec\u4e4b\u95f4\u7684\u4e00\u81f4\u6027\uff0c\u4e0d\u628a\u4efb\u4e00\u4e3b\u5f20\u5916\u63a8\u4e3a\u771f\u5b9e\u5b98\u7f51/API \u4e8b\u5b9e\u3002\n\n## \u9010\u9879\u6bd4\u8f83\n\n| \u9879\u76ee | \u6307\u5357 `version-guide.md` | API \u53c2\u8003 `version-api-reference.md` | \u5224\u65ad |\n| --- | --- | --- | --- |\n| \u5feb\u7167\u6807\u6ce8 | API 12 | API 12 | \u5feb\u7167\u6807\u6ce8\u4e00\u81f4\u3002 |\n| \u8d77\u59cb\u7248\u672c | API 12 | API 13 | \u76f4\u63a5\u51b2\u7a81\u3002\u82e5\u4ee5\u7ed9\u5b9a API \u53c2\u8003\u4f5c\u4e3a\u63a5\u53e3\u5b9a\u4e49\u4f9d\u636e\uff0c\u6307\u5357\u4e0d\u5e94\u5728 API 12 \u58f0\u79f0\u8be5\u63a5\u53e3\u53ef\u7528\u3002\u4e25\u91cd\u5ea6\uff1a\u9ad8\u3002 |\n| \u8fd4\u56de\u503c | `boolean` | `Promise<OpenResult>` | \u76f4\u63a5\u51b2\u7a81\u3002\u6307\u5357\u7684 `const opened: boolean = await shareManager.open()` \u671f\u5f85 `await` \u540e\u5f97\u5230 `boolean`\uff0c\u800c\u53c2\u8003\u6240\u793a\u7b7e\u540d\u610f\u5473\u7740 `await` \u540e\u5f97\u5230 `OpenResult`\u3002\u4e25\u91cd\u5ea6\uff1a\u9ad8\u3002 |\n\n## \u5bf9\u6307\u5357\u793a\u4f8b\u7684\u5f71\u54cd\n\n```ts\nconst opened: boolean = await shareManager.open()\n```\n\n\u4f9d\u636e API \u53c2\u8003\u7ed9\u51fa\u7684 `Promise<OpenResult>`\uff0c\u8be5\u8d4b\u503c\u7684\u58f0\u660e\u7c7b\u578b\u4e0e\u89e3\u6790\u540e\u7684\u7ed3\u679c\u7c7b\u578b\u4e0d\u4e00\u81f4\uff1b\u540c\u65f6\uff0c\u6307\u5357\u6807\u6ce8\u7684 API 12 \u73af\u5883\u4f4e\u4e8e\u53c2\u8003\u6587\u4ef6\u58f0\u660e\u7684 API 13 \u8d77\u59cb\u7248\u672c\u3002\u56e0\u6b64\uff0c\u8be5\u793a\u4f8b\u65e2\u4e0d\u80fd\u8bc1\u660e API 12 \u53ef\u7528\uff0c\u4e5f\u4e0d\u80fd\u6309\u53c2\u8003\u7b7e\u540d\u6b63\u786e\u8868\u8fbe\u8fd4\u56de\u503c\u3002\n\n## \u5efa\u8bae\u4fee\u8ba2\n\n1. \u5c06\u6700\u4f4e\u7248\u672c\u7edf\u4e00\u4e3a API 13\uff0c\u6216\u63d0\u4f9b\u80fd\u591f\u89e3\u91ca API 12 \u5dee\u5f02\u7684\u660e\u786e\u7248\u672c\u5316\u8bc1\u636e\u3002\n2. \u5c06\u793a\u4f8b\u63a5\u6536\u7c7b\u578b\u6539\u4e3a `OpenResult`\uff08\u5e76\u8865\u5145\u5176\u5bfc\u5165\u6216\u7c7b\u578b\u6765\u6e90\uff09\uff0c\u518d\u6839\u636e\u5176\u5b57\u6bb5\u5224\u65ad\u6253\u5f00\u7ed3\u679c\uff1b\u4e0d\u8981\u628a\u7ed3\u679c\u76f4\u63a5\u58f0\u660e\u4e3a `boolean`\uff0c\u9664\u975e\u53e6\u6709\u7b7e\u540d\u8bc1\u636e\u3002\n3. \u4fee\u8ba2\u540e\u589e\u52a0\u9488\u5bf9\u6700\u4f4e\u652f\u6301\u7248\u672c\u7684\u6784\u5efa\u548c\u8fd0\u884c\u9a8c\u8bc1\uff0c\u5e76\u8bb0\u5f55\u5b9e\u9645\u8fd4\u56de\u7ed3\u6784\u3002\n\n## \u8bc1\u636e\u8fb9\u754c\n\n\u672c\u7ed3\u8bba\u53ea\u4f7f\u7528 `version-guide.md` \u4e0e `version-api-reference.md` \u7684\u6587\u672c\u3002\u5b83\u786e\u8ba4\u7684\u662f\u6d4b\u8bd5\u6750\u6599\u5185\u90e8\u7684\u8de8\u6587\u6863\u51b2\u7a81\uff1b\u5728\u6ca1\u6709\u5916\u90e8\u8bc1\u636e\u65f6\uff0c\u4e0d\u5224\u65ad\u771f\u5b9e HarmonyOS API \u7a76\u7adf\u4ece\u54ea\u4e2a\u7248\u672c\u5f00\u59cb\u3001\u771f\u5b9e\u8fd4\u56de\u7c7b\u578b\u4e3a\u4f55\u3002\n"}], "grading": {"expectations": [{"text": "\u8bc6\u522b\u6307\u5357\u58f0\u79f0 API 12\u3001API \u53c2\u8003\u58f0\u79f0 API 13 \u7684\u8d77\u59cb\u7248\u672c\u51b2\u7a81", "passed": true, "evidence": "\u6bd4\u8f83\u8868\u660e\u786e\u8bb0\u5f55 API 12/API 13 \u51b2\u7a81\u3002"}, {"text": "\u8bc6\u522b\u6307\u5357 boolean \u4e0e API \u53c2\u8003 Promise<OpenResult> \u7684\u8fd4\u56de\u7c7b\u578b\u51b2\u7a81", "passed": true, "evidence": "\u6bd4\u8f83\u8868\u548c\u793a\u4f8b\u5f71\u54cd\u6bb5\u5bf9\u7167 boolean \u4e0e Promise<OpenResult>\u3002"}, {"text": "\u8bc1\u636e\u94fe\u660e\u786e\u5f15\u7528\u4e24\u4efd\u6d4b\u8bd5\u5feb\u7167\uff0c\u5e76\u8bf4\u660e\u5b83\u4eec\u90fd\u6807\u6ce8\u4e3a API 12", "passed": true, "evidence": "\u7ed3\u8bba\u548c\u6bd4\u8f83\u8868\u8bf4\u660e\u4e24\u4efd\u6750\u6599\u90fd\u662f API 12 \u5feb\u7167\u5e76\u76f4\u63a5\u5f15\u7528\u4e24\u4e2a\u6587\u4ef6\u3002"}, {"text": "\u660e\u786e\u8fd9\u4e9b\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u672a\u8054\u7f51\u8865\u5145\u6216\u865a\u6784\u7b2c\u4e09\u65b9/\u7b2c\u4e09\u4efd\u5b98\u65b9\u8bc1\u636e", "passed": true, "evidence": "\u8bc1\u636e\u8fb9\u754c\u660e\u786e\u53ea\u4f7f\u7528\u4e24\u4e2a\u6d4b\u8bd5\u6587\u4ef6\uff0c\u4e0d\u5224\u65ad\u771f\u5b9e HarmonyOS API\u3002"}, {"text": "\u7ed9\u51fa\u5c06\u6307\u5357\u4e0e\u7ecf\u786e\u8ba4 API \u53c2\u8003\u5bf9\u9f50\u7684\u5177\u4f53\u6539\u5199\u5efa\u8bae\uff0c\u5e76\u8bf4\u660e\u771f\u5b9e\u5b98\u7f51\u4ecd\u9700\u5355\u72ec\u6838\u9a8c", "passed": true, "evidence": "\u5efa\u8bae\u7edf\u4e00 API 13 \u4e0e OpenResult\uff0c\u5e76\u8bf4\u660e\u65e0\u5916\u90e8\u8bc1\u636e\u65f6\u4e0d\u5224\u65ad\u771f\u5b9e\u8d77\u59cb\u7248\u672c\u548c\u7c7b\u578b\u3002"}], "summary": {"passed": 5, "failed": 0, "total": 5, "pass_rate": 1.0}, "execution_metrics": {"tool_calls": {}, "total_tool_calls": 0, "total_steps": 0, "errors_encountered": 0, "output_chars": 1182, "transcript_chars": 0}, "claims": [], "user_notes_summary": {"uncertainties": [], "needs_review": [], "workarounds": []}, "eval_feedback": {"suggestions": [{"reason": "\u4e24\u79cd\u914d\u7f6e\u90fd\u6ee1\u5206\uff1b\u82e5\u8981\u66f4\u597d\u533a\u5206 Skill \u4ef7\u503c\uff0c\u53ef\u589e\u52a0\u4e00\u4e2a\u542b\u591a\u4e2a\u7248\u672c\u5206\u652f\u3001\u90e8\u5206\u4fe1\u606f\u51b2\u7a81\u4f46\u53ef\u89e3\u91ca\u7684\u590d\u6742\u6848\u4f8b\u3002"}], "overall": "\u5f53\u524d\u65ad\u8a00\u80fd\u9a8c\u8bc1\u6b63\u786e\u6027\uff0c\u4f46\u8de8\u6587\u6863\u6837\u4f8b\u8fc7\u4e8e\u76f4\u63a5\u3002"}}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "harmonyos-doc-review", "skill_path": "D:\\HW\\OSFeatureSkill\\harmonyos-doc-review", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-08-31T02:59:48Z", "evals_run": [1, 2, 3], "runs_per_configuration": 1}, "runs": [{"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 3835, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u660e\u786e\u8bf4\u660e\u8f93\u5165\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u4e0d\u80fd\u89c6\u4e3a\u5df2\u9a8c\u8bc1\u7684\u534e\u4e3a\u5b98\u7f51\u4e8b\u5b9e", "passed": true, "evidence": "\u5ba1\u67e5\u8303\u56f4\u660e\u786e\u5199\u660e\u6587\u4ef6\u662f\u6784\u9020\u6750\u6599\uff0c\u5e76\u58f0\u660e\u4e0d\u628a\u6d4b\u8bd5 API\u3001Kit \u6216\u6743\u9650\u540d\u5f53\u4f5c\u771f\u5b9e\u5b98\u7f51\u4e8b\u5b9e\u3002"}, {"text": "\u8bc6\u522b API 13 \u4e0e API 11 \u7684\u5185\u90e8\u7248\u672c\u51b2\u7a81\uff0c\u5e76\u5f15\u7528\u4e24\u4e2a\u5bf9\u5e94\u7ae0\u8282", "passed": true, "evidence": "DOC-001 \u5f15\u7528\u2018\u7ea6\u675f\u4e0e\u9650\u5236\u2019\u548c\u2018\u5f00\u53d1\u6b65\u9aa4\u2019\u7b2c 1 \u6b65\uff0c\u9010\u5b57\u5bf9\u7167 API 13 \u4e0e API 11\u3002"}, {"text": "\u8bc6\u522b TEST_LOCATION_A \u4e0e TEST_LOCATION_B \u7684\u6743\u9650\u540d\u51b2\u7a81\uff0c\u4ee5\u53ca request \u672a\u5b9a\u4e49\u7684\u95ee\u9898", "passed": true, "evidence": "DOC-002 \u5bf9\u7167\u4e24\u4e2a\u6743\u9650\u540d\uff1bDOC-004 \u5355\u72ec\u8bf4\u660e request \u5728\u5168\u6587\u6ca1\u6709\u5b9a\u4e49\u3001\u7c7b\u578b\u6216\u6765\u6e90\u3002"}, {"text": "\u8bc6\u522b\u2018\u53ea\u80fd\u771f\u673a\u9a8c\u8bc1\u2019\u4e0e\u2018\u4efb\u610f\u6a21\u62df\u5668\u9a8c\u8bc1\u2019\u7684\u51b2\u7a81\uff0c\u5e76\u6307\u51fa\u6784\u5efa\u6210\u529f\u4e0d\u7b49\u4e8e\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7", "passed": true, "evidence": "DOC-003 \u540c\u65f6\u5f15\u7528\u771f\u673a\u3001\u6a21\u62df\u5668\u548c\u6784\u5efa\u6210\u529f\u4e09\u5904\u539f\u6587\uff0c\u5e76\u89e3\u91ca\u6784\u5efa\u4e0d\u80fd\u89c2\u5bdf\u529f\u80fd\u7ed3\u679c\u3002"}, {"text": "\u62a5\u544a\u5305\u542b\u7ed3\u8bba\u3001\u4e25\u91cd\u5ea6\u3001\u7f6e\u4fe1\u5ea6\u3001\u9650\u5236\u548c\u5177\u4f53\u4fee\u8ba2\u5efa\u8bae\uff0c\u4e14\u4e0d\u5f15\u5165\u5916\u90e8\u672a\u6838\u5b9e API", "passed": true, "evidence": "\u62a5\u544a\u7ed9\u51fa\u4e0d\u5408\u7406/\u9ad8\u98ce\u9669\u7ed3\u8bba\u3001\u9010\u9879 severity/confidence\u3001\u5ba1\u67e5\u9650\u5236\u3001\u4fee\u8ba2\u52a8\u4f5c\uff1b\u65e0\u6cd5\u6838\u5b9e\u7684 API \u5b57\u6bb5\u660e\u786e\u4e0d\u731c\u9020\u3002"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 2407, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u6700\u7ec8\u7ed3\u8bba\u4e3a\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad\uff0c\u6216\u6e05\u695a\u8868\u8fbe\u540c\u7b49\u5f3a\u5ea6\u7684\u4fdd\u7559\u7ed3\u8bba", "passed": true, "evidence": "\u7ed3\u8bba\u5b57\u6bb5\u660e\u786e\u4e3a\u2018\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad\u2019\uff0c\u7efc\u5408\u5206\u4e3a N/A\u3002"}, {"text": "\u6ca1\u6709\u65ad\u8a00 sampleManager.start \u7684\u771f\u5b9e\u6743\u9650\u3001\u8bbe\u5907\u652f\u6301\u6216\u540e\u53f0\u884c\u4e3a", "passed": true, "evidence": "\u5173\u952e\u5047\u8bbe\u660e\u786e\u4e0d\u628a\u5b83\u5f53\u4f5c\u771f\u5b9e API\uff0c\u4e5f\u4e0d\u8865\u5145\u540e\u53f0\u3001\u6743\u9650\u6216\u8bbe\u5907\u4e8b\u5b9e\u3002"}, {"text": "\u6307\u51fa\u2018\u4e00\u76f4\u540e\u53f0\u8fd0\u884c\u2019\u3001\u2018\u65e0\u9700\u4efb\u4f55\u6743\u9650\u2019\u548c\u2018\u6240\u6709\u8bbe\u5907\u652f\u6301\u2019\u662f\u9700\u8981\u8bc1\u636e\u652f\u6491\u7684\u7edd\u5bf9\u5316\u4e3b\u5f20", "passed": true, "evidence": "DOC-001 \u9010\u4e00\u5f15\u7528\u4e09\u9879\u65e0\u6761\u4ef6\u5168\u8303\u56f4\u4e3b\u5f20\uff0c\u5e76\u89e3\u91ca\u5f53\u524d\u65e2\u4e0d\u80fd\u8bc1\u5b9e\u4e5f\u4e0d\u80fd\u8bc1\u4f2a\u3002"}, {"text": "\u5217\u51fa\u539f\u59cb URL\u3001API Level\u3001\u5bfc\u5165/\u7b7e\u540d\u548c\u540c\u7248\u672c SDK \u6216 API \u53c2\u8003\u7b49\u5f85\u786e\u8ba4\u9879", "passed": true, "evidence": "\u5f85\u786e\u8ba4\u8868\u5217\u51fa API \u8eab\u4efd\u3001URL\u3001\u5bfc\u5165\u8def\u5f84\u3001\u7b7e\u540d\u3001API Level\u3001SDK \u548c\u540c\u7248\u672c\u53c2\u8003\u6838\u9a8c\u3002"}, {"text": "\u4e25\u91cd\u5ea6\u4e0e\u7f6e\u4fe1\u5ea6\u5206\u5f00\u8868\u8fbe\uff0c\u672a\u7528\u4f4e\u7f6e\u4fe1\u5ea6\u7ebf\u7d22\u652f\u6491\u786e\u5b9a\u6027\u9ad8\u98ce\u9669\u7ed3\u8bba", "passed": true, "evidence": "finding \u6807\u4e3a pending\u3001High\u3001low\uff0c\u5e76\u660e\u786e High \u4ec5\u8868\u793a\u6f5c\u5728\u5f71\u54cd\uff0c\u4e0d\u8868\u793a\u5df2\u786e\u8ba4\u7f3a\u9677\u3002"}], "notes": []}, {"eval_id": 3, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 3190, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u8bc6\u522b\u6307\u5357\u58f0\u79f0 API 12\u3001API \u53c2\u8003\u58f0\u79f0 API 13 \u7684\u8d77\u59cb\u7248\u672c\u51b2\u7a81", "passed": true, "evidence": "DOC-001 \u76f4\u63a5\u5bf9\u7167\u6307\u5357 API 12 \u4e0e\u53c2\u8003 API 13\u3002"}, {"text": "\u8bc6\u522b\u6307\u5357 boolean \u4e0e API \u53c2\u8003 Promise<OpenResult> \u7684\u8fd4\u56de\u7c7b\u578b\u51b2\u7a81", "passed": true, "evidence": "DOC-002 \u5bf9\u7167 boolean\u3001await \u7ed3\u679c\u4e0e Promise<OpenResult>\u3002"}, {"text": "\u8bc1\u636e\u94fe\u660e\u786e\u5f15\u7528\u4e24\u4efd\u6d4b\u8bd5\u5feb\u7167\uff0c\u5e76\u8bf4\u660e\u5b83\u4eec\u90fd\u6807\u6ce8\u4e3a API 12", "passed": true, "evidence": "\u7248\u672c\u4e0a\u4e0b\u6587\u548c\u8bc1\u636e\u7d22\u5f15\u5206\u522b\u5f15\u7528 E1/E2\uff0c\u5e76\u8bf4\u660e\u4e24\u4efd\u5feb\u7167\u5747\u6807\u6ce8 API 12\u3002"}, {"text": "\u660e\u786e\u8fd9\u4e9b\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u672a\u8054\u7f51\u8865\u5145\u6216\u865a\u6784\u7b2c\u4e09\u65b9/\u7b2c\u4e09\u4efd\u5b98\u65b9\u8bc1\u636e", "passed": true, "evidence": "\u5ba1\u67e5\u8303\u56f4\u660e\u786e\u4ec5\u5224\u65ad\u6784\u9020\u6750\u6599\uff0c\u672a\u68c0\u67e5\u771f\u5b9e\u5b98\u7f51\u6216 SDK\uff0c\u4e5f\u6ca1\u6709\u7b2c\u4e09\u4efd\u6765\u6e90\u3002"}, {"text": "\u7ed9\u51fa\u5c06\u6307\u5357\u4e0e\u7ecf\u786e\u8ba4 API \u53c2\u8003\u5bf9\u9f50\u7684\u5177\u4f53\u6539\u5199\u5efa\u8bae\uff0c\u5e76\u8bf4\u660e\u771f\u5b9e\u5b98\u7f51\u4ecd\u9700\u5355\u72ec\u6838\u9a8c", "passed": true, "evidence": "\u5efa\u8bae\u7edf\u4e00\u4e3a API 13 \u548c OpenResult\uff0c\u540c\u65f6\u628a\u771f\u5b9e URL/SDK \u5217\u4e3a\u5f85\u786e\u8ba4\uff0c\u4e0d\u5916\u63a8\u6d4b\u8bd5\u7ed3\u8bba\u3002"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.8, "passed": 4, "failed": 1, "total": 5, "time_seconds": 0.0, "tokens": 1428, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u660e\u786e\u8bf4\u660e\u8f93\u5165\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u4e0d\u80fd\u89c6\u4e3a\u5df2\u9a8c\u8bc1\u7684\u534e\u4e3a\u5b98\u7f51\u4e8b\u5b9e", "passed": true, "evidence": "\u7ed3\u8bba\u548c\u8bc1\u636e\u8fb9\u754c\u5747\u8bf4\u660e\u6750\u6599\u662f\u8bc4\u6d4b\u6784\u9020\u5185\u5bb9\uff0c\u4e0d\u628a\u4e3b\u5f20\u89c6\u4e3a\u5b98\u7f51\u4e8b\u5b9e\u3002"}, {"text": "\u8bc6\u522b API 13 \u4e0e API 11 \u7684\u5185\u90e8\u7248\u672c\u51b2\u7a81\uff0c\u5e76\u5f15\u7528\u4e24\u4e2a\u5bf9\u5e94\u7ae0\u8282", "passed": true, "evidence": "\u95ee\u9898\u8868\u5f15\u7528\u2018\u7ea6\u675f\u4e0e\u9650\u5236\u2019\u548c\u6b65\u9aa4 1\uff0c\u5e76\u89e3\u91ca API 13/API 11 \u4e0d\u80fd\u540c\u65f6\u6210\u7acb\u3002"}, {"text": "\u8bc6\u522b TEST_LOCATION_A \u4e0e TEST_LOCATION_B \u7684\u6743\u9650\u540d\u51b2\u7a81\uff0c\u4ee5\u53ca request \u672a\u5b9a\u4e49\u7684\u95ee\u9898", "passed": true, "evidence": "\u95ee\u9898\u8868\u5206\u522b\u8bb0\u5f55 A/B \u6743\u9650\u77db\u76fe\u548c request \u672a\u5b9a\u4e49\u3002"}, {"text": "\u8bc6\u522b\u2018\u53ea\u80fd\u771f\u673a\u9a8c\u8bc1\u2019\u4e0e\u2018\u4efb\u610f\u6a21\u62df\u5668\u9a8c\u8bc1\u2019\u7684\u51b2\u7a81\uff0c\u5e76\u6307\u51fa\u6784\u5efa\u6210\u529f\u4e0d\u7b49\u4e8e\u529f\u80fd\u9a8c\u8bc1\u901a\u8fc7", "passed": true, "evidence": "\u62a5\u544a\u5206\u522b\u5217\u51fa\u8bbe\u5907\u77db\u76fe\u548c\u2018\u628a\u6784\u5efa\u6210\u529f\u8bef\u4f5c\u529f\u80fd\u9a8c\u8bc1\u2019\u3002"}, {"text": "\u62a5\u544a\u5305\u542b\u7ed3\u8bba\u3001\u4e25\u91cd\u5ea6\u3001\u7f6e\u4fe1\u5ea6\u3001\u9650\u5236\u548c\u5177\u4f53\u4fee\u8ba2\u5efa\u8bae\uff0c\u4e14\u4e0d\u5f15\u5165\u5916\u90e8\u672a\u6838\u5b9e API", "passed": false, "evidence": "\u6709\u7ed3\u8bba\u3001\u4e25\u91cd\u5ea6\u3001\u8bc1\u636e\u8fb9\u754c\u548c\u4fee\u8ba2\u8981\u6c42\uff0c\u4f46\u6ca1\u6709\u4e3a findings \u6216\u6574\u4f53\u7ed3\u8bba\u660e\u786e\u7ed9\u51fa\u7f6e\u4fe1\u5ea6\u3002"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 983, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u6700\u7ec8\u7ed3\u8bba\u4e3a\u8bc1\u636e\u4e0d\u8db3\u65e0\u6cd5\u5224\u65ad\uff0c\u6216\u6e05\u695a\u8868\u8fbe\u540c\u7b49\u5f3a\u5ea6\u7684\u4fdd\u7559\u7ed3\u8bba", "passed": true, "evidence": "\u867d\u5c06\u6587\u6863\u53ef\u9760\u6027\u98ce\u9669\u8bc4\u4e3a\u9ad8\uff0c\u4f46\u7ed3\u8bba\u660e\u786e\u8bf4\u73b0\u6709\u6750\u6599\u4e0d\u8db3\u4ee5\u8bc1\u660e\u4efb\u4f55\u5177\u4f53\u5e73\u53f0\u4e8b\u5b9e\uff0c\u4e0d\u80fd\u65ad\u8a00 API \u884c\u4e3a\u3002"}, {"text": "\u6ca1\u6709\u65ad\u8a00 sampleManager.start \u7684\u771f\u5b9e\u6743\u9650\u3001\u8bbe\u5907\u652f\u6301\u6216\u540e\u53f0\u884c\u4e3a", "passed": true, "evidence": "\u7ed3\u8bba\u548c\u8bc1\u636e\u8fb9\u754c\u660e\u786e\u62d2\u7edd\u8865\u5168 API \u884c\u4e3a\u3002"}, {"text": "\u6307\u51fa\u2018\u4e00\u76f4\u540e\u53f0\u8fd0\u884c\u2019\u3001\u2018\u65e0\u9700\u4efb\u4f55\u6743\u9650\u2019\u548c\u2018\u6240\u6709\u8bbe\u5907\u652f\u6301\u2019\u662f\u9700\u8981\u8bc1\u636e\u652f\u6491\u7684\u7edd\u5bf9\u5316\u4e3b\u5f20", "passed": true, "evidence": "\u53d1\u73b0\u8868\u9010\u9879\u5206\u6790\u4e09\u4e2a\u7edd\u5bf9\u8868\u8ff0\u4e3a\u4ec0\u4e48\u65e0\u6cd5\u88ab\u5f53\u524d\u8bc1\u636e\u652f\u6301\u3002"}, {"text": "\u5217\u51fa\u539f\u59cb URL\u3001API Level\u3001\u5bfc\u5165/\u7b7e\u540d\u548c\u540c\u7248\u672c SDK \u6216 API \u53c2\u8003\u7b49\u5f85\u786e\u8ba4\u9879", "passed": true, "evidence": "\u6700\u4f4e\u8865\u8bc1\u8981\u6c42\u5305\u542b\u6765\u6e90\u3001\u66f4\u65b0\u65f6\u95f4\u3001API Level/SDK\u3001\u63a5\u53e3\u5f52\u5c5e\u3001\u5bfc\u5165\u8def\u5f84\u3001\u7b7e\u540d\u548c\u6743\u9650/\u8bbe\u5907\u524d\u63d0\u3002"}, {"text": "\u4e25\u91cd\u5ea6\u4e0e\u7f6e\u4fe1\u5ea6\u5206\u5f00\u8868\u8fbe\uff0c\u672a\u7528\u4f4e\u7f6e\u4fe1\u5ea6\u7ebf\u7d22\u652f\u6491\u786e\u5b9a\u6027\u9ad8\u98ce\u9669\u7ed3\u8bba", "passed": true, "evidence": "\u62a5\u544a\u8bf4\u660e High \u662f\u4f5c\u4e3a\u5f00\u53d1\u4f9d\u636e\u7684\u98ce\u9669\u8bc4\u7ea7\uff0c\u800c\u65ad\u8a00\u771f\u5b9e\u6027\u4ecd\u662f\u8bc1\u636e\u4e0d\u8db3/\u5f85\u6838\u5b9e\u3002"}], "notes": []}, {"eval_id": 3, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 0.0, "tokens": 1182, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "\u8bc6\u522b\u6307\u5357\u58f0\u79f0 API 12\u3001API \u53c2\u8003\u58f0\u79f0 API 13 \u7684\u8d77\u59cb\u7248\u672c\u51b2\u7a81", "passed": true, "evidence": "\u6bd4\u8f83\u8868\u660e\u786e\u8bb0\u5f55 API 12/API 13 \u51b2\u7a81\u3002"}, {"text": "\u8bc6\u522b\u6307\u5357 boolean \u4e0e API \u53c2\u8003 Promise<OpenResult> \u7684\u8fd4\u56de\u7c7b\u578b\u51b2\u7a81", "passed": true, "evidence": "\u6bd4\u8f83\u8868\u548c\u793a\u4f8b\u5f71\u54cd\u6bb5\u5bf9\u7167 boolean \u4e0e Promise<OpenResult>\u3002"}, {"text": "\u8bc1\u636e\u94fe\u660e\u786e\u5f15\u7528\u4e24\u4efd\u6d4b\u8bd5\u5feb\u7167\uff0c\u5e76\u8bf4\u660e\u5b83\u4eec\u90fd\u6807\u6ce8\u4e3a API 12", "passed": true, "evidence": "\u7ed3\u8bba\u548c\u6bd4\u8f83\u8868\u8bf4\u660e\u4e24\u4efd\u6750\u6599\u90fd\u662f API 12 \u5feb\u7167\u5e76\u76f4\u63a5\u5f15\u7528\u4e24\u4e2a\u6587\u4ef6\u3002"}, {"text": "\u660e\u786e\u8fd9\u4e9b\u662f\u6d4b\u8bd5\u6750\u6599\uff0c\u672a\u8054\u7f51\u8865\u5145\u6216\u865a\u6784\u7b2c\u4e09\u65b9/\u7b2c\u4e09\u4efd\u5b98\u65b9\u8bc1\u636e", "passed": true, "evidence": "\u8bc1\u636e\u8fb9\u754c\u660e\u786e\u53ea\u4f7f\u7528\u4e24\u4e2a\u6d4b\u8bd5\u6587\u4ef6\uff0c\u4e0d\u5224\u65ad\u771f\u5b9e HarmonyOS API\u3002"}, {"text": "\u7ed9\u51fa\u5c06\u6307\u5357\u4e0e\u7ecf\u786e\u8ba4 API \u53c2\u8003\u5bf9\u9f50\u7684\u5177\u4f53\u6539\u5199\u5efa\u8bae\uff0c\u5e76\u8bf4\u660e\u771f\u5b9e\u5b98\u7f51\u4ecd\u9700\u5355\u72ec\u6838\u9a8c", "passed": true, "evidence": "\u5efa\u8bae\u7edf\u4e00 API 13 \u4e0e OpenResult\uff0c\u5e76\u8bf4\u660e\u65e0\u5916\u90e8\u8bc1\u636e\u65f6\u4e0d\u5224\u65ad\u771f\u5b9e\u8d77\u59cb\u7248\u672c\u548c\u7c7b\u578b\u3002"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 3144.0, "stddev": 715.1105, "min": 2407, "max": 3835}}, "without_skill": {"pass_rate": {"mean": 0.9333, "stddev": 0.1155, "min": 0.8, "max": 1.0}, "time_seconds": {"mean": 0.0, "stddev": 0.0, "min": 0.0, "max": 0.0}, "tokens": {"mean": 1197.6667, "stddev": 222.9133, "min": 983, "max": 1428}}, "delta": {"pass_rate": "+0.07", "time_seconds": "+0.0", "tokens": "+1946"}}, "notes": ["\u53ea\u6709 internal-conflicts \u7684\u2018\u663e\u5f0f\u7f6e\u4fe1\u5ea6\u2019\u9a8c\u6536\u9879\u533a\u5206\u4e86\u4e24\u79cd\u914d\u7f6e\uff1awith_skill \u901a\u8fc7\uff0cwithout_skill \u672a\u660e\u786e\u7ed9\u51fa\u7f6e\u4fe1\u5ea6\u3002", "insufficient-evidence \u4e0e cross-document-version \u7684\u6240\u6709\u9a8c\u6536\u9879\u5728\u4e24\u79cd\u914d\u7f6e\u4e2d\u90fd\u901a\u8fc7\uff0c\u8bf4\u660e\u5f53\u524d\u6837\u4f8b\u5bf9\u57fa\u7840\u6a21\u578b\u504f\u7b80\u5355\uff0c\u4e0d\u80fd\u636e\u6b64\u58f0\u79f0 Skill \u5e26\u6765\u5927\u5e45\u6b63\u786e\u7387\u63d0\u5347\u3002", "tokens \u5b57\u6bb5\u5b9e\u9645\u4f7f\u7528 output_chars \u4f5c\u4e3a\u4ee3\u7406\uff1awith_skill \u5e73\u5747 3144 \u5b57\u7b26\uff0cwithout_skill \u5e73\u5747 1198 \u5b57\u7b26\uff1bSkill \u4ee5\u66f4\u957f\u8f93\u51fa\u6362\u53d6\u56fa\u5b9a\u6a21\u677f\u3001\u7ef4\u5ea6\u8bc4\u5206\u3001\u8bc1\u636e\u7d22\u5f15\u548c\u5f85\u786e\u8ba4\u9879\u3002", "\u6267\u884c\u901a\u77e5\u672a\u63d0\u4f9b\u53ef\u6301\u4e45\u5316\u7684 token \u4e0e duration \u6570\u636e\uff0c\u56e0\u6b64 time_seconds=0 \u4ee3\u8868\u672a\u91c7\u96c6\uff0c\u4e0d\u4ee3\u8868\u8fd0\u884c\u6ca1\u6709\u8017\u65f6\u3002", "\u6bcf\u4e2a eval/configuration \u53ea\u8fd0\u884c\u4e00\u6b21\uff1b\u5f53\u524d\u7ed3\u679c\u4e0d\u80fd\u8861\u91cf\u968f\u673a\u6ce2\u52a8\uff0c\u6269\u5927\u6837\u672c\u524d\u4e0d\u5e94\u89e3\u8bfb stddev \u4e3a\u7a33\u5b9a\u6027\u6307\u6807\u3002"]}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

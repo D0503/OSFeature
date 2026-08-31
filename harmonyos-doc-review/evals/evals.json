@@ -1,0 +1,44 @@
+{
+  "skill_name": "harmonyos-doc-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "请审查 evals/fixtures/guide-with-internal-conflicts.md，判断这份鸿蒙开发指南是否合理。重点检查版本、权限、代码步骤和验证描述；只根据文件中能看到的证据下结论，不要把测试材料当成真实官网页面。",
+      "expected_output": "输出完整审查报告，识别文件内可直接证明的版本冲突、权限名冲突和未定义变量，把缺少外部证据的问题降级为待确认，并说明该文件是测试材料而非已验证官网来源。",
+      "files": ["evals/fixtures/guide-with-internal-conflicts.md"],
+      "expectations": [
+        "明确说明输入是测试材料，不能视为已验证的华为官网事实",
+        "识别 API 13 与 API 11 的内部版本冲突，并引用两个对应章节",
+        "识别 TEST_LOCATION_A 与 TEST_LOCATION_B 的权限名冲突，以及 request 未定义的问题",
+        "识别‘只能真机验证’与‘任意模拟器验证’的冲突，并指出构建成功不等于功能验证通过",
+        "报告包含结论、严重度、置信度、限制和具体修订建议，且不引入外部未核实 API"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "评审 evals/fixtures/short-uncertain-snippet.md 中的鸿蒙 API 描述。告诉我它有没有问题，并给出严重度。当前没有 URL、API Level 或 SDK 环境。",
+      "expected_output": "不得武断判定 API 错误；应输出证据不足无法判断，列出版本、原始页面和同版本 API/SDK 声明等待确认项，同时仍可指出文本自身的歧义。",
+      "files": ["evals/fixtures/short-uncertain-snippet.md"],
+      "expectations": [
+        "最终结论为证据不足无法判断，或清楚表达同等强度的保留结论",
+        "没有断言 sampleManager.start 的真实权限、设备支持或后台行为",
+        "指出‘一直后台运行’、‘无需任何权限’和‘所有设备支持’是需要证据支撑的绝对化主张",
+        "列出原始 URL、API Level、导入/签名和同版本 SDK 或 API 参考等待确认项",
+        "严重度与置信度分开表达，未用低置信度线索支撑确定性高风险结论"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "比较 evals/fixtures/version-guide.md 和 evals/fixtures/version-api-reference.md，审查前者是否合理。两份文件都是为测试构造的官方材料快照，不要联网补充事实。",
+      "expected_output": "建立双文档证据链，识别同名 API 的起始版本和返回类型冲突，给出版本上下文限制、严重度与具体改写建议，不虚构第三份资料。",
+      "files": ["evals/fixtures/version-guide.md", "evals/fixtures/version-api-reference.md"],
+      "expectations": [
+        "识别指南声称 API 12、API 参考声称 API 13 的起始版本冲突",
+        "识别指南 boolean 与 API 参考 Promise<OpenResult> 的返回类型冲突",
+        "证据链明确引用两份测试快照，并说明它们都标注为 API 12",
+        "明确这些是测试材料，未联网补充或虚构第三方/第三份官方证据",
+        "给出将指南与经确认 API 参考对齐的具体改写建议，并说明真实官网仍需单独核验"
+      ]
+    }
+  ]
+}

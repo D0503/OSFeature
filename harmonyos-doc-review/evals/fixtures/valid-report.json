@@ -1,0 +1,51 @@
+{
+  "reportVersion": "1.0",
+  "document": {
+    "title": "测试用位置能力接入指南",
+    "source": "evals/fixtures/guide-with-internal-conflicts.md",
+    "docType": "guide",
+    "versionContext": "API 11 / API 13（文档内部冲突）",
+    "reviewedAt": "2026-08-31"
+  },
+  "verdict": {
+    "label": "需要修订",
+    "score": 68,
+    "rationale": "文档内部对起始版本和权限名称的陈述互相冲突。",
+    "limitations": ["这是测试材料，不是真实官网页面，未进行外部事实核验。"]
+  },
+  "dimensions": [
+    {
+      "name": "一致性",
+      "score": 45,
+      "notes": "同一文件对 API 起始版本给出 API 11 和 API 13 两种互斥说法。"
+    }
+  ],
+  "findings": [
+    {
+      "id": "DOC-001",
+      "title": "起始版本前后矛盾",
+      "dimension": "版本与兼容性",
+      "status": "confirmed",
+      "severity": "High",
+      "confidence": "certain",
+      "location": {
+        "section": "约束与限制、开发步骤",
+        "quote": "API 13；API 11"
+      },
+      "analysis": "同一份指南给出了互斥的起始版本。",
+      "evidence": [
+        {
+          "source": "guide-with-internal-conflicts.md",
+          "locator": "约束与限制、开发步骤 1",
+          "claim": "两个章节分别声明 API 13 与 API 11。",
+          "version": "测试快照"
+        }
+      ],
+      "impact": "读者无法判断工程最低 API Level。",
+      "recommendation": "核对真实起始版本，并统一两个章节。"
+    }
+  ],
+  "pendingVerifications": [
+    "如需判断真实 API 行为，应取得原始官网 URL 和同版本 SDK 声明。"
+  ]
+}
