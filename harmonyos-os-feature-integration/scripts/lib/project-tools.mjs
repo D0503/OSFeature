@@ -272,6 +272,8 @@ export function evaluateCompatibility(inspection, profile) {
     status: "insufficient_context",
     recommendedRoute: null,
     availableRoutes: [],
+    upgradeOptions: [],
+    decisionRequired: false,
     applicationLevel: {
       eligible: false,
       reasons: []
@@ -292,28 +294,79 @@ export function evaluateCompatibility(inspection, profile) {
   if (compatible === null) {
     return { ...base, missingConditions: ["Unable to determine compatible API level"] }
   }
-  if (compatible < 23) {
-    return { ...base, status: "unsupported", missingConditions: ["Minimum compatible API must be 23 or later"] }
+
+  const routes = profile.routes
+  const availableRoutes = []
+  const guardedRoutes = []
+  const upgradeOptions = []
+  for (const route of routes) {
+    if (compatible >= route.minApi) {
+      availableRoutes.push(route.id)
+    } else if (target !== null && target >= route.minApi) {
+      availableRoutes.push(route.id)
+      guardedRoutes.push(route.id)
+    } else {
+      upgradeOptions.push({
+        route: route.id,
+        upgradeTargetApi: route.minApi,
+        note: `Upgrade targetSdkVersion/compileSdkVersion to ${route.minApi}, keep compatibleSdkVersion at ${compatible}, and protect lower devices at runtime`
+      })
+    }
   }
 
-  const availableRoutes = compatible >= 26 ? ["hds", "arkui"] : ["hds"]
-  const recommendedRoute = compatible >= 26 ? "arkui" : "hds"
+  if (availableRoutes.length === 0) {
+    return {
+      ...base,
+      status: "upgrade_available",
+      upgradeOptions,
+      decisionRequired: true,
+      missingConditions: [
+        `Compatible API ${compatible} is below every route minimum; integration requires upgrading targetSdkVersion/compileSdkVersion while keeping compatibleSdkVersion for lower devices`
+      ],
+      fallbackRequirements: ["runtime-version-guard", "preserve-standard-background-border"]
+    }
+  }
+
+  const recommendedRoute = [...routes]
+    .filter((route) => availableRoutes.includes(route.id))
+    .sort((a, b) => b.minApi - a.minApi)[0]?.id ?? null
+
   const reasons = []
-  if (target === null) reasons.push("Unable to determine target API for application-level material")
-  else if (target < 26) reasons.push("Application-level material requires target API 26 or later")
-  if (entryModules.length === 0) reasons.push("Application-level material requires an entry module")
+  for (const route of routes.filter((item) => item.applicationLevel && availableRoutes.includes(item.id))) {
+    if (target === null || target < route.applicationLevel.minTargetApi) {
+      reasons.push(`Application-level material requires target API ${route.applicationLevel.minTargetApi} or later (${route.id})`)
+    }
+    if (route.applicationLevel.moduleTypes?.includes("entry") && entryModules.length === 0) {
+      reasons.push(`Application-level material requires an entry module (${route.id})`)
+    }
+  }
+  for (const id of guardedRoutes) {
+    reasons.push(`Route ${id} exceeds compatibleSdkVersion; lower devices need runtime version guards and standard style fallback`)
+  }
+
+  const applicationLevelRoutes = routes.filter(
+    (route) => route.applicationLevel && availableRoutes.includes(route.id)
+  )
+  const applicationLevelEligible = applicationLevelRoutes.some((route) =>
+    target !== null &&
+    target >= route.applicationLevel.minTargetApi &&
+    (!route.applicationLevel.moduleTypes?.includes("entry") || entryModules.length > 0)
+  )
+  const effectiveApi = Math.max(compatible, target ?? compatible)
 
   return {
     ...base,
-    status: reasons.length > 0 && compatible >= 26 ? "conditional" : "supported",
+    status: reasons.length > 0 ? "conditional" : "supported",
     recommendedRoute,
     availableRoutes,
+    upgradeOptions,
+    decisionRequired: availableRoutes.length > 1 || upgradeOptions.length > 0,
     applicationLevel: {
-      eligible: compatible >= 26 && target !== null && target >= 26 && entryModules.length > 0,
+      eligible: applicationLevelEligible,
       reasons
     },
     missingConditions: reasons,
-    fallbackRequirements: compatible >= 26
+    fallbackRequirements: effectiveApi >= 26
       ? ["apiAvailable-26", "isImmersiveMaterialSupported", "preserve-standard-background-border"]
       : ["query-hds-material-types-before-custom-level", "preserve-standard-background-border"]
   }

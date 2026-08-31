@@ -9,12 +9,14 @@
 
 ## 可行性结论
 
-- 状态：supported / conditional / unsupported / insufficient_context
+- 状态：supported / conditional / upgrade_available / unsupported / insufficient_context
+- 升级选项（如适用）：
 - 证据与限制：
 
 ## 路线选择
 
 - 选择路线及理由：
+- 用户确认（多路线或含升级时必填）：
 - 未选择路线及理由：
 
 ## 改动范围

@@ -21,7 +21,7 @@
 
 从工程读取或向用户确认以下信息；能够从文件中发现的内容不要重复询问：
 
-1. `compatibleSdkVersion`、`targetSdkVersion` 或等价 API 版本上下文；
+1. `compatibleSdkVersion`、`targetSdkVersion` 或等价 API 版本上下文，以及低于路线门槛时是否接受升级 `targetSdkVersion` 接入；
 2. 工程是否使用 Stage 模型，目标 module 是否为 `entry`；
 3. 当前使用 ArkUI 原生组件、HDS 组件，还是两者混合；
 4. 目标组件是标题栏、底部导航、普通容器、菜单、弹窗还是其他区域；
@@ -34,10 +34,12 @@
 
 | 工程范围 | 选择 |
 |---|---|
-| API 低于 23 | 当前能力包没有可用的沉浸光感接入路线，保留普通视觉样式 |
+| API 低于 23 | 按通用升级接入处理：可升级 `targetSdkVersion`/`compileSdkVersion` 至路线门槛接入，`compatibleSdkVersion` 保持不变并为低版本设备保留运行时保护和普通样式降级 |
 | API 23～25 | 使用 UI Design Kit / HDS，只覆盖 HDS 标题栏和底部页签等支持组件 |
 | API 26+ | HDS 可继续承担导航框架；普通组件、菜单和弹窗使用 ArkUI `uiMaterial` |
 | 同时支持 API 23～26+ | HDS 作为基础路线；API 26 能力使用版本与设备能力判断保护，并保留普通样式降级 |
+
+路线门槛来自 [profile.json](profile.json) 各路线的 `minApi`。工程 API 低于门槛时，按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，是否升级、选择哪条路线由用户决定；存在多条可用路线或升级选项时必须询问用户，仅一条路线且无需升级时给出建议路线和理由即可。
 
 完整读取 [兼容性与选型](compatibility.md)，完成版本和能力门禁后再设计实现。
 
@@ -55,7 +57,7 @@
 ## 执行流程
 
 1. 扫描工程并记录 API、模型、module、组件体系和目标组件。
-2. 运行 `inspect-project.mjs` 和 `check-compatibility.mjs`，再按兼容性表确定 HDS、ArkUI 或组合路线；不满足条件时给出降级结论。
+2. 运行 `inspect-project.mjs` 和 `check-compatibility.mjs`，列出可用路线与升级选项；涉及升级或多条路线时由用户确认后再确定 HDS、ArkUI 或组合路线，不满足条件时给出降级结论。
 3. 列出将修改的依赖、配置、页面和组件，以及旧版本降级行为。
 4. 用户只要求设计时交付方案并停止；用户明确要求实现时才修改工程。
 5. 实现时复用项目现有架构和类型，不用动态类型或不安全断言掩盖接口差异。

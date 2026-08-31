@@ -96,6 +96,18 @@
         "区分静态检查、构建与真机性能验证",
         "给出减少材质范围或回退普通样式的降级策略"
       ]
+    },
+    {
+      "id": 9,
+      "prompt": "我的工程 compatibleSdkVersion 是 API 20，想接入沉浸光感，能做吗？",
+      "expected_output": "返回 upgrade_available 结论：提供升级 targetSdkVersion/compileSdkVersion 的接入选项，保持 compatibleSdkVersion 兼容低版本设备并要求运行时版本保护与普通样式降级，把可选路线列给用户并由用户决定，不直接判为不支持。",
+      "files": [],
+      "expectations": [
+        "没有直接给出不支持或终止结论",
+        "提供升级 targetSdkVersion/compileSdkVersion 的接入选项",
+        "说明保持 compatibleSdkVersion 并为低版本设备做运行时保护与降级",
+        "把可选接入方式列给用户，由用户决定路线"
+      ]
     }
   ]
 }

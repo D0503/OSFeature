@@ -8,8 +8,9 @@
 | ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26 | 用于支持通用属性的组件、弹窗、菜单和自定义布局；Stage 模型 |
 | API 26 应用级开关 | `targetAPIVersion >= 26.0.0` | 仅 `entry` 类型 module 的 `module.json5` 配置生效 |
 | API 26 跨版本调用 | API 26 接口可用时 | 使用 `deviceInfo.apiAvailable('26.0.0')` 和材质能力判断保护 |
+| 升级接入（通用） | 工程低于路线门槛时 | 升级 `targetSdkVersion`/`compileSdkVersion` 至 23（HDS）或 26（ArkUI），`compatibleSdkVersion` 保持不变；低版本设备需运行时保护与普通样式降级，是否升级与路线由用户决定 |
 
-API 23～25 只选择 HDS 路线。API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。
+API 23～25 只选择 HDS 路线。API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
 
 ## HDS 支持范围
 
@@ -63,6 +64,7 @@ API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；�
 
 ## 特殊限制
 
+- `compatibleSdkVersion` 低于 23 时，HDS 组件在低版本设备不可用，需要按运行时判断做整树条件降级，而不只是属性级保护。
 - API 23 及以前 SDK 的 Web 同层渲染场景中，内嵌 ArkUI 控件开启光感可能变透明；关闭该控件光感或关闭同层渲染。
 - 应用级开关不能配置在非 `entry` module 后期待生效。
 - API 26 接口不能只依靠编译配置判断运行设备支持，还要进行运行时能力判断。
@@ -71,6 +73,7 @@ API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；�
 ## 选型检查清单
 
 - 已确认最低 API 和目标 API；
+- 涉及升级或多条路线时，升级决定与路线选择已由用户确认；
 - 已确认 Stage 模型与目标 module 类型；
 - 已确认目标组件属于 HDS 或 ArkUI 支持范围；
 - API 26 调用有版本和设备能力保护；
