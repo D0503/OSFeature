@@ -1,0 +1,14 @@
+{
+  module: {
+    name: "entry",
+    type: "entry",
+    srcEntry: "./ets/entryability/EntryAbility.ets",
+    metadata: [
+      {
+        name: "ohos.arkui.UIMaterial.state",
+        value: "enable"
+      }
+    ],
+    deviceTypes: ["phone", "tablet", "2in1"]
+  }
+}

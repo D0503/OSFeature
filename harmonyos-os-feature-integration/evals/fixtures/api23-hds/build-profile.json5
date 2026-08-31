@@ -1,0 +1,17 @@
+{
+  app: {
+    products: [
+      {
+        name: "default",
+        compatibleSdkVersion: 23,
+        targetSdkVersion: 23
+      }
+    ]
+  },
+  modules: [
+    {
+      name: "entry",
+      srcPath: "./entry"
+    }
+  ]
+}

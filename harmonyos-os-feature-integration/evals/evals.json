@@ -1,0 +1,101 @@
+{
+  "skill_name": "harmonyos-os-feature-integration",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "这个工程最低支持 API 23，目前使用普通 Navigation 和 Tabs。请设计沉浸光感接入方案，要求 API 23 到 25 也能工作。",
+      "expected_output": "选择 HDS 路线，将导航框架规划为 HdsNavigation/HdsTabs，优先使用 ADAPTIVE 材质；不在 API 23～25 路径使用 uiMaterial，并说明普通视觉降级和验证要求。",
+      "files": [],
+      "expectations": [
+        "明确 API 23～25 选择 UI Design Kit / HDS 路线",
+        "提及 HdsNavigation、HdsTabs 和 ADAPTIVE 材质配置",
+        "没有在 API 23～25 主路径直接使用 API 26 uiMaterial",
+        "包含设备能力、性能和普通样式降级说明"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "给 API 26 的 HarmonyOS Stage 工程接入沉浸光感：普通卡片使用 systemMaterial，entry 模块开启应用级材质，同时还要兼容低性能设备。",
+      "expected_output": "使用 uiMaterial.ImmersiveMaterial 和 entry module metadata，检查 target API、MaterialState、版本与设备能力，并保留背景色或边框降级；区分编译与真机视觉验证。",
+      "files": [],
+      "expectations": [
+        "使用 ArkUI uiMaterial 与 systemMaterial 路线",
+        "应用级配置限定为 targetAPIVersion 不低于 26 且位于 entry module",
+        "包含 apiAvailable 和 isImmersiveMaterialSupported 能力保护",
+        "包含低算力降级、性能约束和验证矩阵"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "请给我的鸿蒙应用接入碰一碰，并生成完整配置和代码。",
+      "expected_output": "报告碰一碰当前未注册并停止，不自动新增注册项，也不借用沉浸光感能力资料。",
+      "files": [],
+      "expectations": [
+        "明确当前注册表未包含碰一碰",
+        "没有生成碰一碰配置、代码或兼容性结论",
+        "没有把请求路由到 immersive-light",
+        "说明需要先完成并注册对应能力包"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "帮我实现 HarmonyOS 窗口沉浸式，让页面延伸到状态栏并处理安全区。",
+      "expected_output": "识别该请求属于窗口沉浸式而不是沉浸光感，说明不属于本 Skill，不套用 immersive-light 能力包。",
+      "files": [],
+      "expectations": [
+        "明确区分窗口沉浸式与沉浸光感",
+        "说明该请求不属于本 Skill",
+        "没有把窗口请求标记为 immersive-light",
+        "没有使用沉浸光感 API 生成窗口适配方案"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "把应用底部的普通 Tabs 改成悬浮导航Tab，要求有胶囊悬浮效果并能适配不同性能的设备。",
+      "expected_output": "将悬浮导航Tab识别为沉浸光感能力，路由到 HDS HdsTabs，使用 barFloatingStyle 和自适应材质，并包含设备能力降级与性能验证。",
+      "files": [],
+      "expectations": [
+        "把悬浮导航Tab路由到 immersive-light 能力包",
+        "选择 HDS HdsTabs 和 barFloatingStyle 路线",
+        "优先使用 ADAPTIVE 材质类型与等级",
+        "包含不支持完整材质设备的降级和验证要求"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "API 26 工程已经设置 systemMaterial，但真机看不到沉浸光感。请只诊断原因，不要改代码。",
+      "expected_output": "按版本、entry metadata、MaterialState、设备能力、组件冲突样式和系统设置顺序排查，引用工程证据；只给诊断结论和下一步检查，不修改文件。",
+      "files": [],
+      "expectations": [
+        "检查 target API、entry module 和 MaterialState",
+        "检查 apiAvailable、isImmersiveMaterialSupported 和设备档位",
+        "检查背景、模糊、阴影等冲突属性",
+        "遵守只诊断不修改工程的边界"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "API 23 的 Web 同层渲染页面接入 HDS 沉浸光感后，内嵌 ArkUI 控件变透明了，怎么处理？",
+      "expected_output": "识别 API 23 Web 同层渲染限制，建议关闭相关控件光感或关闭同层渲染，并保留普通背景降级和复测矩阵。",
+      "files": [],
+      "expectations": [
+        "识别 Web 同层渲染与 API 23 的透明风险",
+        "给出关闭控件光感或关闭同层渲染两个方向",
+        "保留普通背景或边框降级",
+        "要求在真实设备上复测而非只看编译"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "页面里嵌套了很多沉浸光感卡片，滚动时掉帧且功耗上升。请给出性能排查和验收方案。",
+      "expected_output": "检查材质面积、层数、动态背景、透明叠加、动画和冲突属性；按高中低算力设备建立帧率、帧时间、功耗和视觉降级验证矩阵。",
+      "files": [],
+      "expectations": [
+        "覆盖材质面积、嵌套、动态内容和动画风险",
+        "覆盖高、中、低算力设备矩阵",
+        "区分静态检查、构建与真机性能验证",
+        "给出减少材质范围或回退普通样式的降级策略"
+      ]
+    }
+  ]
+}

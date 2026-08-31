@@ -1,0 +1,80 @@
+{
+  "expectations": [
+    {
+      "text": "recognizes 悬浮导航Tab as immersive-light and routes to HDS HdsTabs",
+      "passed": true,
+      "evidence": "response.md opens by classifying the request as ‘沉浸光感（immersive-light）’ and ‘HDS 路线中的悬浮胶囊式底部页签’. It then explicitly routes API 23–25 to HdsTabs and retains HDS for API 26+ navigation."
+    },
+    {
+      "text": "covers barFloatingStyle, systemMaterialEffect, ADAPTIVE material and appropriate device capability handling",
+      "passed": true,
+      "evidence": "The response assigns material to HdsTabsFloatingStyle.systemMaterialEffect and MiniBar structure to barFloatingStyle.miniBar, recommends ADAPTIVE type and level, and uses getSystemMaterialTypes() to gate IMMERSIVE with SMOOTH/plain-style degradation."
+    },
+    {
+      "text": "includes API/system/device fallback and static/build/real-device verification boundaries",
+      "passed": true,
+      "evidence": "Fallbacks cover API <23, non-Stage/HDS-ineligible projects, unsupported material types, disabled system effects, insufficient compute, and Web transparency. Acceptance covers static checks and build separately from a real-device matrix and explicitly rejects treating compilation as real-device visual verification."
+    },
+    {
+      "text": "clearly distinguishes immersive material from window immersive/status bar/safe area behavior",
+      "passed": true,
+      "evidence": "The final paragraph says floating navigation concerns component material and floating form, whereas window immersive concerns fullscreen layout, status/navigation bar visibility, safe areas, and avoidance; it routes system-bar obstruction/transparency and safe-area issues away from this feature package."
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": 8,
+    "total_steps": 7,
+    "errors_encountered": 0,
+    "output_chars": 1382,
+    "transcript_chars": 1136
+  },
+  "claims": [
+    {
+      "claim": "悬浮导航Tab is registered under immersive-light and should use HDS HdsTabs.",
+      "type": "factual",
+      "verified": true,
+      "evidence": "transcript.md records that the baseline registry uniquely matched the alias to immersive-light and that the compatibility material identified HdsTabs as the navigation route."
+    },
+    {
+      "claim": "The answer must remain conditional without project API/model/module evidence.",
+      "type": "quality",
+      "verified": true,
+      "evidence": "The prompt supplies no project context. response.md requests compatibleSdkVersion, targetSdkVersion, Stage/FA, module, Tabs structure, and HDS dependency evidence before final implementation code."
+    },
+    {
+      "claim": "Compilation cannot substitute for real-device material validation.",
+      "type": "quality",
+      "verified": true,
+      "evidence": "response.md explicitly says real-device material appearance, system levels, and device capability must be verified separately and cannot be replaced by compilation success."
+    },
+    {
+      "claim": "The baseline run did not modify a project or claim completed validation.",
+      "type": "process",
+      "verified": true,
+      "evidence": "transcript.md states it only read the snapshot, generated outputs/response.md, and made no claims that a project was changed, built, or verified on-device."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "includes API/system/device fallback and static/build/real-device verification boundaries",
+        "reason": "This compound assertion can pass even if one verification layer is weak. Separate API/system/device degradation from static/build/device evidence-boundary assertions."
+      },
+      {
+        "reason": "The baseline and current answers both perform strongly on this conceptual prompt. Add a fixture-backed variant so future scoring can distinguish advice quality from actual scanner/compatibility/verifier behavior."
+      }
+    ],
+    "overall": "The baseline also fully satisfies the four stated expectations, so this case does not differentiate the expanded framework from the snapshot. A fixture-backed or adversarial mixed-scope case would be more discriminating."
+  }
+}

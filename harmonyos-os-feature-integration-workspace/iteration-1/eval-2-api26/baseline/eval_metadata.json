@@ -1,0 +1,5 @@
+{
+  "eval_id": "api26-review-baseline",
+  "prompt": "请检查给定 API 26 Stage/entry 工程的沉浸光感接入是否完整，区分组件级与应用级配置，列出静态检查、构建和真机验证边界，不修改工程。",
+  "skill": "baseline-snapshot"
+}

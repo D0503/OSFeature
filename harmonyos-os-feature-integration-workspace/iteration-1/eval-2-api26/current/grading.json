@@ -1,0 +1,79 @@
+{
+  "expectations": [
+    {
+      "text": "正确识别 API 26 Stage/entry 工程证据，并选择 ArkUI 路线。",
+      "passed": true,
+      "evidence": "response.md 明确 compatibleSdkVersion=26、targetSdkVersion=26、Stage、entry；兼容性结果为 supported、推荐 arkui，且说明当前源码无 HDS 因而不把 HDS 作为当前实现路线。"
+    },
+    {
+      "text": "准确区分组件级材质与 entry 应用级 metadata，并说明 target API 门槛。",
+      "passed": true,
+      "evidence": "response.md 将 Index.ets 的 uiMaterial/systemMaterial 归为组件级，将 module.json5 的 ohos.arkui.UIMaterial.state=enable 归为应用级；明确应用级生效门槛是 target API 26 且配置位于 entry module。"
+    },
+    {
+      "text": "包含 API 版本保护、设备能力保护和普通样式降级。",
+      "passed": true,
+      "evidence": "response.md 明确列出 deviceInfo.apiAvailable('26.0.0')、uiMaterial.isImmersiveMaterialSupported()、不满足时 Material.empty，以及材质之前保留 backgroundColor 和 borderColor。"
+    },
+    {
+      "text": "清楚区分静态检查、项目构建和真机验证边界。",
+      "passed": true,
+      "evidence": "response.md 明确静态验证 9 pass/0 warn/0 fail/1 not_applicable；因只有三个最小文件而未执行 Hvigor 构建；材质视觉、支持性、算力/强度/主题/状态矩阵均列为真机待验证。"
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "total": 4,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_call_count": 6,
+    "total_steps": 9,
+    "errors_encountered": 0,
+    "output_chars": 1700,
+    "transcript_chars": 2800
+  },
+  "claims": [
+    {
+      "claim": "API 26 夹具的 ArkUI 沉浸光感静态配置完整。",
+      "type": "quality",
+      "verified": true,
+      "evidence": "transcript.md 记录验证器返回 route=arkui、status=passed、9 pass/0 warn/0 fail，且人工核对了全部三个夹具文件。"
+    },
+    {
+      "claim": "应用级 enable 满足 target API 26 和 entry module 两个门槛。",
+      "type": "factual",
+      "verified": true,
+      "evidence": "transcript.md 的扫描结果为 target=26、module=entry、应用材质状态 enable，兼容性工具返回 eligible=true。"
+    },
+    {
+      "claim": "未发现明显性能风险不等于完成性能测量。",
+      "type": "quality",
+      "verified": true,
+      "evidence": "response.md 明确将该结论限定为保守静态扫描，并把动画流畅度等留作真机验证。"
+    },
+    {
+      "claim": "本次没有修改工程。",
+      "type": "process",
+      "verified": true,
+      "evidence": "transcript.md 仅记录只读扫描、兼容性与验证命令及文件读取，并明确全过程未修改夹具或 Skill。"
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [],
+    "needs_review": [],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "reason": "可增加一个反例夹具：target API 低于 26 或 metadata 位于非 entry module，验证应用级门禁会明确失败而非只在正例中通过。"
+      },
+      {
+        "reason": "“未修改工程”仍可用 fixture 前后哈希强化；当前主要依赖转录的只读声明。"
+      }
+    ],
+    "overall": "断言能有效检查 API 26 路线、两级配置、保护降级与验证边界；加入门禁反例会进一步提高判别力。"
+  }
+}

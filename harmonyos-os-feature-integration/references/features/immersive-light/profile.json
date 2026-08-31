@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "immersive-light",
+  "displayName": "沉浸光感",
+  "routes": [
+    {
+      "id": "hds",
+      "minApi": 23,
+      "maxApi": null,
+      "requiresStage": true,
+      "components": [
+        "HdsNavigation",
+        "HdsNavDestination",
+        "HdsTabs"
+      ],
+      "applicationLevel": null
+    },
+    {
+      "id": "arkui",
+      "minApi": 26,
+      "maxApi": null,
+      "requiresStage": true,
+      "components": [
+        "universal-component",
+        "toast",
+        "popup",
+        "tips",
+        "sheet",
+        "menu",
+        "dialog",
+        "select"
+      ],
+      "applicationLevel": {
+        "minTargetApi": 26,
+        "moduleTypes": [
+          "entry"
+        ]
+      }
+    }
+  ],
+  "constraints": [
+    {
+      "id": "web-same-layer-api23",
+      "route": "hds",
+      "maxApi": 23,
+      "scenario": "web-same-layer",
+      "action": "disable-material-or-same-layer"
+    },
+    {
+      "id": "runtime-support",
+      "route": "arkui",
+      "minApi": 26,
+      "scenario": "all",
+      "action": "check-isImmersiveMaterialSupported"
+    },
+    {
+      "id": "fallback-style",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "all",
+      "action": "preserve-standard-background-border"
+    }
+  ],
+  "documents": {
+    "entry": "README.md",
+    "compatibility": "compatibility.md",
+    "implementation": "implementation.md",
+    "validation": "performance-validation.md"
+  },
+  "evidence": {
+    "baselineDate": "2026-08-31",
+    "policy": "snapshot-first-verify-on-change-or-conflict",
+    "sources": [
+      "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-spatiality-immersive",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material"
+    ]
+  }
+}
