@@ -20,7 +20,12 @@ systemMaterialEffect: {
 如果业务必须自定义档位，先查询设备支持类型：
 
 ```typescript
-const types = hdsMaterial.getSystemMaterialTypes();
+  // 获取系统支持的材质类型，用于根据设备能力选择合适的材质等级
+  let materialTypes: Array<hdsMaterial.MaterialType> = hdsMaterial.getSystemMaterialTypes();
+  if (materialTypes.indexOf(hdsMaterial.MaterialType.IMMERSIVE) < 0) {
+    // 当前设备不支持IMMERSIVE材质类型，则使用SMOOTH效果以优化性能，降低卡顿和发热风险
+    this.customMaterialLevel = hdsMaterial.MaterialLevel.SMOOTH;
+  }
 ```
 
 - 支持 `IMMERSIVE` 时可选择 `EXQUISITE` 或 `GENTLE`；
@@ -34,6 +39,37 @@ const types = hdsMaterial.getSystemMaterialTypes();
 - `dynamicHideTitleBar` 控制标题栏和状态栏随滚动显隐；
 - `bindToScrollable` 把效果与内容滚动组件关联。
 
+标题栏包含菜单按钮时，菜单对象必须使用 HDS 的明确类型 `HdsNavigationMenuContentOptions`，并传给 `titleBar.content.menu`。不要把它声明成无类型对象、`object` 或动态类型；没有菜单时无需创建空对象。导入和声明示例：
+
+```typescript
+import {
+  HdsNavigation,
+  HdsNavigationMenuContentOptions,
+  HdsNavigationTitleMode,
+  ScrollEffectType,
+  hdsMaterial
+} from '@kit.UIDesignKit';
+
+private menus: HdsNavigationMenuContentOptions = {
+  value: [
+    {
+      content: {
+        label: '编辑',
+        icon: $r('sys.symbol.square_and_pencil')
+      }
+    },
+    {
+      content: {
+        label: '更多',
+        icon: $r('sys.symbol.more')
+      }
+    }
+  ]
+};
+```
+
+改造真实工程时，继续使用源程序原有菜单项、顺序、图标、文案、点击行为和可访问性信息，只把容器声明对齐到 `HdsNavigationMenuContentOptions`；不要用示例菜单替换业务菜单。
+
 ```typescript
 HdsNavigation() {
   // 页面内容
@@ -42,7 +78,8 @@ HdsNavigation() {
   content: {
     title: {
       mainTitle: 'Title'
-    }
+    },
+    menu: this.menus
   },
   style: {
     scrollEffectOpts: {

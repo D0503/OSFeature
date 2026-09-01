@@ -103,6 +103,7 @@ assert.match(compatibility, /uiMaterial\.Material\.empty/)
 assert.match(compatibility, /低版本整树分支必须保留源程序接入前的体验/)
 
 assert.match(implementation, /HdsNavigation/)
+assert.match(implementation, /menus: HdsNavigationMenuContentOptions[\s\S]*menu: this\.menus/)
 assert.match(implementation, /uiMaterial\.ImmersiveMaterial/)
 assert.match(implementation, /deviceInfo\.apiAvailable\('26\.0\.0'\)/)
 assert.match(implementation, /uiMaterial\.isImmersiveMaterialSupported\(\)/)
@@ -209,4 +210,4 @@ const sourceExperienceEval = evals.evals.find((item) => item.id === 12)
 assert.match(sourceExperienceEval?.prompt ?? "", /API 20～22/)
 assert.ok(sourceExperienceEval?.expectations.some((item) => item.includes("保留源程序原有体验")))
 
-process.stdout.write(`${JSON.stringify({ status: "passed", assertions: 111 })}\n`)
+process.stdout.write(`${JSON.stringify({ status: "passed", assertions: 112 })}\n`)
