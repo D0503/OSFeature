@@ -15,6 +15,8 @@
 
 这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
 
+路线采用可组合模型。`availableRoutes` 表示版本与本机 SDK 允许考虑的路线，`selectedRoutes` 表示根据工程组件信号和当前目标实际加载的路线。API 26 工程若同时改造 HDS 导航/页签与 ArkUI 普通组件，应返回 `selectedRoutes: ["hds", "arkui"]` 并分别加载两套资料；`recommendedRoute` 只是主要建议和旧接口兼容字段，不表示必须二选一。
+
 ## 本机 SDK 举证
 
 选路前必须验证实际参与构建的本机 SDK，不以工程 target API 代替：
@@ -34,6 +36,8 @@
 | `HdsTabs` | `HdsTabsFloatingStyle.systemMaterialEffect` | 悬浮胶囊式底部页签 |
 | HDS 标题栏 | `scrollEffectOpts` | `GRADIENT_BLUR` 或 `IMMERSIVE_GRADIENT_BLUR` 滚动渐变模糊 |
 | HDS 底部页签 | `barFloatingStyle.miniBar` | 可折叠 MiniBar，可与沉浸光感组合 |
+
+MiniBar 核心能力从 API 23 起可用，但 `barLayoutMode` 及 `HdsBarLayoutMode` 从 API 24 起才可用。工程需要兼容 API 23 时，可以使用 MiniBar，但必须省略 `barLayoutMode`；若同时需要自定义 MiniBar 与 TabBar 的横向或纵向排列，则用 `deviceInfo.sdkApiVersion >= 24` 建立单独的运行时分支。MiniBar 在 TV 设备上不生效，不能把它作为关键操作的唯一入口。
 
 HDS 材质接口覆盖 Phone、Tablet、PC/2in1。默认优先使用 `ADAPTIVE` 材质类型和等级；自定义档位前先调用 `hdsMaterial.getSystemMaterialTypes()` 查询设备能力。
 
@@ -92,6 +96,7 @@ API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；�
 - 涉及升级或多条路线时，升级决定与路线选择已由用户确认；
 - 已确认 Stage 模型与目标 module 类型；
 - 已确认目标组件属于 HDS 或 ArkUI 支持范围；
+- `selectedRoutes` 已覆盖所有实际目标组件；组合路线按 HDS、ArkUI 分别实施和验证；
 - API 26 调用有版本和设备能力保护；
 - 已为不支持设备和旧系统保留普通视觉样式；
 - 低版本组件替换分支保留源程序原有的断点、横竖屏、窗口模式、导航位置和交互行为；

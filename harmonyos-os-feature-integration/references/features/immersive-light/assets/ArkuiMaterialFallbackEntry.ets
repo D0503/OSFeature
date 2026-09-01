@@ -7,7 +7,7 @@ import { ImmersiveMaterialGuard } from './ImmersiveMaterialGuard';
  * 来源：官方《@ohos.arkui.uiMaterial》API 参考示例5（查询材质等级与是否支持沉浸式材质）
  * 蒸馏。该示例给出两种"支持与不支持设备复用同一棵组件树"的官方写法，本资产将其
  * 固化为可复制模式；配套门禁与场景材质工厂见 ImmersiveMaterialGuard.ets，
- * 索引见 ../assets-catalog.md。
+ * 索引见 ../routes/arkui/assets.md。
  *
  * 模式1（条件双写）：
  *   .backgroundColor(isSupported ? Color.Transparent : '降级背景色')

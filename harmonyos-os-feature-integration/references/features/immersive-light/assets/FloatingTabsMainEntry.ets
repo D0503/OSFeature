@@ -16,7 +16,8 @@ import { HdsMaterialGuard } from './HdsMaterialGuard';
  *   + barFloatingStyle({ barBottomMargin?, adaptToHandedness: true,
  *   systemMaterialEffect: ADAPTIVE + ADAPTIVE })
  * 其中 56vp 是显示态基线（News 隐藏时为 0）；animationDuration(0) 仅 Mall/News 使用，
- * barBottomMargin: 28 仅 News/Recipes 使用，均不是三组统一必需值。
+ * barBottomMargin: 28 仅 News/Recipes 使用，均不是三组统一必需值。若 HdsTabs 外层已经通过
+ * padding.bottom 预留同一段底部空间，barBottomMargin 必须改为 0，避免双重间距。
  *
  * 迁移时被移除的原生 Tabs 属性（悬浮胶囊为底部形态，这些不再适用）：
  *   vertical / barPosition 动态切换 / barMode / barWidth / divider /
@@ -33,6 +34,9 @@ import { HdsMaterialGuard } from './HdsMaterialGuard';
  * - barOverlap(true) 让内容位于悬浮页签下方；是否再给 TabContent 配置 expandSafeArea
  *   和透明背景取决于页面已有安全区与背景。Mall/Recipes 使用 BOTTOM 扩展，News 未使用，
  *   因此不能把 expandSafeArea 视为材质生效的统一前提；
+ * - 每个真实 Tab 页面若包含 List/Scroll/WaterFlow/Grid 等滚动容器，必须在最后一个滚动项后
+ *   增加足以越过悬浮栏的 contentEndOffset、尾部 Blank 或等价 padding。该空间只在 HDS
+ *   悬浮分支启用；低版本普通 Tabs 共用 Builder 时继续保留源程序原有滚动范围；
  *   深色内容页可按 News 对照在 onWillShow/onWillHide 用 application.setColorMode 联动。
  * - 本资产使用当前 SDK 的 @kit.UIDesignKit 导入；API 23/24 对照工程把 HdsTabs 从
  *   @hms.hds.hdsBaseComponent 导入。落地时沿用目标 SDK/工程能够构建的同版本导入方式。
@@ -67,7 +71,7 @@ struct FloatingTabsMainEntry {
         // Mall/News 使用；若原工程需要内容切换动画，可删除该项（Recipes 未设置）
         .animationDuration(0)
         .barFloatingStyle({
-          // 距屏幕底部边距：News/Recipes 用 28，Mall 未设置；按页面内容留白调整
+          // 仅适用于外层没有承担同一底部间距的布局。若父级/祖先已有 bottom padding，改为 0。
           barBottomMargin: 28,
           // 智感握姿：悬浮页签随用户握持状态调整位置（三组迁移对照均开启）
           adaptToHandedness: true,
@@ -103,6 +107,8 @@ struct FloatingTabsMainEntry {
   /**
    * 页签业务内容（HDS 与原生降级分支共用）。只放两个分支完全相同的属性；
    * HDS 专用的透明背景、安全区扩展或裁剪不能在这里无条件施加给低版本分支。
+   * 替换成真实滚动页面时，为 HDS 分支单独传入尾部遮挡高度，使最后一项可滚到悬浮栏上方；
+   * 不要把该高度无条件加入共用 Builder，避免改变低版本源程序的滚动范围。
    */
   @Builder
   tabContents() {

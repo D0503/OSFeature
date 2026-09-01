@@ -25,6 +25,29 @@ function localLinks(markdown) {
     .filter((target) => target && !/^(?:https?:|mailto:)/i.test(target))
 }
 
+async function validateDocumentMap(errors, packageDir, documents, pathPrefix, requiredKeys) {
+  for (const key of requiredKeys) {
+    const document = documents?.[key]
+    issue(errors, typeof document === "string" && document.length > 0, `${pathPrefix}.${key}`, "缺少必需文档")
+  }
+  for (const [key, document] of Object.entries(documents ?? {})) {
+    if (typeof document !== "string" || !document) {
+      errors.push({ path: `${pathPrefix}.${key}`, message: "文档路径必须是非空字符串" })
+      continue
+    }
+    const absolute = resolve(packageDir, document)
+    const rel = relative(packageDir, absolute)
+    issue(errors, rel.length > 0 && !rel.startsWith("..") && !isAbsolute(rel), `${pathPrefix}.${key}`, "文档必须位于能力包目录内")
+    const documentExists = await exists(absolute)
+    issue(errors, documentExists, `${pathPrefix}.${key}`, "文档不存在")
+    if (!documentExists || !document.endsWith(".md")) continue
+    const markdown = await readFile(absolute, "utf8")
+    for (const target of localLinks(markdown)) {
+      issue(errors, await exists(resolve(dirname(absolute), target)), `${document} -> ${target}`, "相对链接目标不存在")
+    }
+  }
+}
+
 try {
   const args = parseCliArgs(process.argv.slice(2), ["feature"])
   if (!args.feature) throw new Error("Required option: --feature <id>")
@@ -67,6 +90,8 @@ try {
         issue(errors, new Set(values).size === values.length, `profile.fallbackPolicy.${key}`, "fallbackPolicy 数组项不能重复")
       }
       issue(errors, Array.isArray(profile.routes) && profile.routes.length > 0, "profile.routes", "routes 必须是非空数组")
+      issue(errors, profile.routeComposition?.mode === "composable", "profile.routeComposition.mode", "多路线能力包必须声明 composable")
+      issue(errors, profile.routeComposition?.selectionField === "selectedRoutes", "profile.routeComposition.selectionField", "组合路线输出字段必须是 selectedRoutes")
       const routeIds = new Set()
       for (const [index, route] of (profile.routes ?? []).entries()) {
         issue(errors, typeof route.id === "string" && route.id.length > 0, `profile.routes[${index}].id`, "route id 不能为空")
@@ -75,7 +100,10 @@ try {
         issue(errors, Number.isInteger(route.minApi) && route.minApi > 0, `profile.routes[${index}].minApi`, "minApi 必须是正整数")
         issue(errors, route.requiresStage === true, `profile.routes[${index}].requiresStage`, "当前能力路线必须要求 Stage 模型")
         issue(errors, Array.isArray(route.components) && route.components.length > 0, `profile.routes[${index}].components`, "components 必须是非空数组")
+        await validateDocumentMap(errors, packageDir, route.documents, `profile.routes[${index}].documents`, ["implementation", "validation", "assets"])
       }
+      issue(errors, Array.isArray(profile.routeComposition?.allowed) && profile.routeComposition.allowed.length === routeIds.size, "profile.routeComposition.allowed", "allowed 必须覆盖全部路线")
+      issue(errors, (profile.routeComposition?.allowed ?? []).every((id) => routeIds.has(id)), "profile.routeComposition.allowed", "allowed 包含未知路线")
       if (feature.id === "immersive-light") {
         const hds = profile.routes?.find((route) => route.id === "hds")
         const arkui = profile.routes?.find((route) => route.id === "arkui")
@@ -93,27 +121,13 @@ try {
       }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")
 
-      const requiredDocuments = ["entry", "compatibility", "implementation", "validation", "assets"]
-      for (const key of requiredDocuments) {
-        const document = profile.documents?.[key]
-        issue(errors, typeof document === "string" && document.length > 0, `profile.documents.${key}`, "缺少必需文档")
-      }
-      for (const [key, document] of Object.entries(profile.documents ?? {})) {
-        if (typeof document !== "string" || !document) {
-          errors.push({ path: `profile.documents.${key}`, message: "文档路径必须是非空字符串" })
-          continue
-        }
-        const absolute = resolve(packageDir, document)
-        const rel = relative(packageDir, absolute)
-        issue(errors, rel.length > 0 && !rel.startsWith("..") && !isAbsolute(rel), `profile.documents.${key}`, "文档必须位于能力包目录内")
-        const documentExists = await exists(absolute)
-        issue(errors, documentExists, `profile.documents.${key}`, "文档不存在")
-        if (!documentExists || !document.endsWith(".md")) continue
-        const markdown = await readFile(absolute, "utf8")
-        for (const target of localLinks(markdown)) {
-          issue(errors, await exists(resolve(dirname(absolute), target)), `${profile.documents[key]} -> ${target}`, "相对链接目标不存在")
-        }
-      }
+      await validateDocumentMap(
+        errors,
+        packageDir,
+        profile.documents,
+        "profile.documents",
+        ["entry", "compatibility", "implementation", "validation", "assets", "fallback", "sharedValidation"]
+      )
     }
 
     if (entry) {

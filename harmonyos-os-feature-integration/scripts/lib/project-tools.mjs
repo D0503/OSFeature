@@ -368,6 +368,14 @@ const SIGNALS = [
   { id: "barPositionEnd", regex: /\bbarPosition\s*:\s*BarPosition\.End\b|\bbarPosition\s*\(\s*BarPosition\.End\s*\)/ },
   { id: "barOverlapTrue", regex: /\bbarOverlap\s*\(\s*true\s*\)/ },
   { id: "barHeight", regex: /\bbarHeight\s*\(/ },
+  { id: "barBottomMarginPositive", regex: /\bbarBottomMargin\s*:\s*(?:[1-9]\d*(?:\.\d+)?|0\.\d*[1-9]\d*)\b/ },
+  { id: "layoutBottomPadding", regex: /\bpadding\s*\(\s*\{[\s\S]{0,300}?\bbottom\s*:/ },
+  { id: "scrollableContent", regex: /\b(?:List|Scroll|WaterFlow|Grid)\s*\(/ },
+  { id: "contentEndOffset", regex: /\bcontentEndOffset\s*\(/ },
+  { id: "miniBar", regex: /\bminiBar\s*:/ },
+  { id: "miniBarBuilder", regex: /\bminiBarBuilder\s*:/ },
+  { id: "barLayoutMode", regex: /\bbarLayoutMode\s*:/ },
+  { id: "sdkApiVersion24Guard", regex: /\bsdkApiVersion\s*>=\s*24(?:\.0)?\b/ },
   { id: "standardTabs", regex: /\bTabs\s*\(/ },
   { id: "sdkApiVersion", regex: /\bsdkApiVersion\b/ },
   { id: "adaptiveMaterial", regex: /\b(?:MaterialType|MaterialLevel)\.ADAPTIVE\b|\bADAPTIVE\b/ },
@@ -470,6 +478,8 @@ export function evaluateCompatibility(inspection, profile) {
     featureId: profile.featureId,
     status: "insufficient_context",
     recommendedRoute: null,
+    selectedRoutes: [],
+    routeSelectionMode: profile.routeComposition?.mode ?? "exclusive",
     availableRoutes: [],
     upgradeOptions: [],
     decisionRequired: false,
@@ -552,6 +562,15 @@ export function evaluateCompatibility(inspection, profile) {
     .filter((route) => availableRoutes.includes(route.id))
     .sort((a, b) => b.minApi - a.minApi)[0]?.id ?? null
 
+  const detectedRouteSignals = {
+    hds: Boolean(inspection.componentSystem?.hds),
+    arkui: Boolean(inspection.componentSystem?.arkuiMaterial)
+  }
+  const selectedRoutes = routes
+    .filter((route) => availableRoutes.includes(route.id) && detectedRouteSignals[route.id])
+    .map((route) => route.id)
+  if (selectedRoutes.length === 0 && recommendedRoute) selectedRoutes.push(recommendedRoute)
+
   const reasons = []
   for (const route of routes.filter((item) => item.applicationLevel && availableRoutes.includes(item.id))) {
     if (target === null || target < route.applicationLevel.minTargetApi) {
@@ -579,6 +598,7 @@ export function evaluateCompatibility(inspection, profile) {
     ...base,
     status: reasons.length > 0 ? "conditional" : "supported",
     recommendedRoute,
+    selectedRoutes,
     availableRoutes,
     upgradeOptions,
     decisionRequired: availableRoutes.length > 1 || upgradeOptions.length > 0,
@@ -598,7 +618,27 @@ function check(id, label, status, evidence = [], message = "") {
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
-  const route = routeOption === "auto" ? compatibility.recommendedRoute : routeOption
+  if (routeOption === "auto" && (compatibility.selectedRoutes?.length ?? 0) > 1) {
+    const routeResults = compatibility.selectedRoutes.map((route) => verifyInspection(inspection, compatibility, route))
+    const checks = routeResults.flatMap((result) => result.checks.map((item) => ({
+      ...item,
+      id: `${result.route}:${item.id}`,
+      route: result.route
+    })))
+    const counts = Object.fromEntries(["pass", "warn", "fail", "not_applicable"].map((status) => [status, checks.filter((item) => item.status === status).length]))
+    return {
+      schemaVersion: "1.0",
+      featureId: compatibility.featureId,
+      route: "composed",
+      routes: compatibility.selectedRoutes,
+      status: counts.fail > 0 ? "failed" : counts.warn > 0 ? "warnings" : "passed",
+      counts,
+      checks
+    }
+  }
+  const route = routeOption === "auto"
+    ? compatibility.selectedRoutes?.[0] ?? compatibility.recommendedRoute
+    : routeOption
   const s = inspection.signals
   const compatibleApi = Number.isInteger(inspection.api.compatible) ? inspection.api.compatible : null
   const checks = []
@@ -648,6 +688,45 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       !s.hdsTabs.detected ? "not_applicable" : s.barHeight.detected ? "pass" : "warn",
       [...s.hdsTabs.evidence, ...s.barHeight.evidence],
       "Review the visible bar height; the migration snapshots use a 56vp baseline and one switches between 56 and 0 when hidden"
+    ))
+    const mayStackBottomSpacing = s.hdsTabs.detected && s.barBottomMarginPositive.detected && s.layoutBottomPadding.detected
+    checks.push(check(
+      "floating-tabs-bottom-spacing",
+      "Floating tabs bottom spacing ownership",
+      mayStackBottomSpacing ? "warn" : "not_applicable",
+      [...s.barBottomMarginPositive.evidence, ...s.layoutBottomPadding.evidence],
+      mayStackBottomSpacing
+        ? "Positive barBottomMargin and bottom padding were both detected. Confirm component ancestry; if the parent/ancestor padding already moves the whole HdsTabs area, set barBottomMargin to 0. Content-only TabContent padding may serve a separate anti-occlusion purpose"
+        : "No obvious duplicate positive barBottomMargin and bottom padding were detected"
+    ))
+    const hasScrollableTabRisk = s.hdsTabs.detected && s.scrollableContent.detected
+    checks.push(check(
+      "scrollable-tab-tail-clearance",
+      "Scrollable Tab tail clearance",
+      !hasScrollableTabRisk ? "not_applicable" : s.contentEndOffset.detected ? "pass" : "warn",
+      [...s.scrollableContent.evidence, ...s.contentEndOffset.evidence],
+      !hasScrollableTabRisk
+        ? "No obvious scrollable content was detected with HdsTabs"
+        : s.contentEndOffset.detected
+          ? "At least one contentEndOffset was detected; manually verify every scrollable Tab and any Scroll/WaterFlow/Grid tail spacer, and keep HDS-only clearance out of the source fallback"
+          : "Scrollable content and HdsTabs were detected without contentEndOffset. Check every Tab for a tail spacer, content padding, or equivalent clearance so the last actionable item can scroll above the floating bar"
+    ))
+    checks.push(check(
+      "mini-bar-contract",
+      "MiniBar contract",
+      !s.miniBar.detected ? "not_applicable" : s.barFloatingStyle.detected && s.miniBarBuilder.detected ? "pass" : "fail",
+      [...s.miniBar.evidence, ...s.miniBarBuilder.evidence, ...s.barFloatingStyle.evidence],
+      "MiniBar must be configured inside barFloatingStyle and provide the required miniBarBuilder"
+    ))
+    const needsMiniBarLayoutGuard = s.miniBar.detected && s.barLayoutMode.detected && compatibleApi !== null && compatibleApi < 24
+    checks.push(check(
+      "mini-bar-layout-mode-version-guard",
+      "MiniBar barLayoutMode version guard",
+      !needsMiniBarLayoutGuard ? "not_applicable" : s.sdkApiVersion24Guard.detected ? "pass" : "fail",
+      [...s.barLayoutMode.evidence, ...s.sdkApiVersion24Guard.evidence],
+      !needsMiniBarLayoutGuard
+        ? "barLayoutMode is absent or compatibleSdkVersion is API 24 or later"
+        : "barLayoutMode starts at API 24; guard it with deviceInfo.sdkApiVersion >= 24 or omit it from the API 23 branch"
     ))
     const needsLowerVersionTree = compatibleApi !== null && compatibleApi < 23
     checks.push(check(

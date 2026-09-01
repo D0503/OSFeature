@@ -7,10 +7,10 @@ import { uiMaterial } from '@kit.ArkUI';
  * 来源：官方《沉浸光感》开发指导 ImmersiveStyle 场景推荐表、《@ohos.arkui.uiMaterial》
  * API 参考示例5（能力查询与降级适配），以及本机 SDK 声明文件
  * （@ohos.arkui.uiMaterial.d.ts、@ohos.deviceInfo.d.ts）。
- * 与 HDS 路线的 HdsMaterialGuard.ets 对称，索引见 ../assets-catalog.md。
+ * 与 HDS 路线的 HdsMaterialGuard.ets 对称，索引见 ../routes/arkui/assets.md。
  *
  * 职责边界：只回答"当前设备能不能用 ArkUI 沉浸式系统材质"和"常见场景的材质参数用什么"，
- * 不做页面布局、不做弹窗 Options 适配（弹窗入口在 implementation.md 的适配器模式中
+ * 不做页面布局、不做弹窗 Options 适配（弹窗入口在 ../routes/arkui/implementation.md 的适配器模式中
  * 按明确 Options 类型分别封装）。
  *
  * 关键版本与能力事实（官方 API 参考 + SDK d.ts 证据）：

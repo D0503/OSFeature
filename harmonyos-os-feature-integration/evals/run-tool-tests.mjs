@@ -52,6 +52,8 @@ equal(compatibility23.sdk.routes.hds.status, "supported")
 equal(compatibility23.sdk.routes.arkui.status, "sdk_too_old")
 equal(compatibility23.status, "supported")
 equal(compatibility23.recommendedRoute, "hds")
+equal(compatibility23.selectedRoutes.join(","), "hds")
+equal(compatibility23.routeSelectionMode, "composable")
 equal(compatibility23.availableRoutes.join(","), "hds")
 equal(compatibility23.applicationLevel.eligible, false)
 equal(compatibility23.upgradeOptions.map((option) => option.route).join(","), "arkui")
@@ -75,6 +77,48 @@ const warnedFloatingHeight = verifyInspection(missingFloatingHeight, compatibili
 equal(warnedFloatingHeight.status, "warnings")
 ok(warnedFloatingHeight.checks.some((item) => item.id === "floating-tabs-height" && item.status === "warn"))
 
+const duplicateBottomSpacing = structuredClone(inspection23)
+duplicateBottomSpacing.signals.barBottomMarginPositive = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+duplicateBottomSpacing.signals.layoutBottomPadding = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:40"] }
+const warnedBottomSpacing = verifyInspection(duplicateBottomSpacing, compatibility23, "hds")
+equal(warnedBottomSpacing.status, "warnings")
+ok(warnedBottomSpacing.checks.some((item) => item.id === "floating-tabs-bottom-spacing" && item.status === "warn"))
+duplicateBottomSpacing.signals.barBottomMarginPositive = { detected: false, evidence: [] }
+const normalizedBottomSpacing = verifyInspection(duplicateBottomSpacing, compatibility23, "hds")
+equal(normalizedBottomSpacing.status, "passed")
+ok(normalizedBottomSpacing.checks.some((item) => item.id === "floating-tabs-bottom-spacing" && item.status === "not_applicable"))
+
+const missingScrollableTailClearance = structuredClone(inspection23)
+missingScrollableTailClearance.signals.scrollableContent = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:10"] }
+missingScrollableTailClearance.signals.contentEndOffset = { detected: false, evidence: [] }
+const warnedScrollableTailClearance = verifyInspection(missingScrollableTailClearance, compatibility23, "hds")
+equal(warnedScrollableTailClearance.status, "warnings")
+ok(warnedScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn"))
+missingScrollableTailClearance.signals.contentEndOffset = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:30"] }
+const detectedScrollableTailClearance = verifyInspection(missingScrollableTailClearance, compatibility23, "hds")
+equal(detectedScrollableTailClearance.status, "passed")
+ok(detectedScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "pass"))
+
+const missingMiniBarBuilder = structuredClone(inspection23)
+missingMiniBarBuilder.signals.miniBar = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+missingMiniBarBuilder.signals.miniBarBuilder = { detected: false, evidence: [] }
+const failedMiniBarContract = verifyInspection(missingMiniBarBuilder, compatibility23, "hds")
+equal(failedMiniBarContract.status, "failed")
+ok(failedMiniBarContract.checks.some((item) => item.id === "mini-bar-contract" && item.status === "fail"))
+
+const unguardedMiniBarLayout = structuredClone(inspection23)
+unguardedMiniBarLayout.signals.miniBar = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+unguardedMiniBarLayout.signals.miniBarBuilder = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:21"] }
+unguardedMiniBarLayout.signals.barLayoutMode = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:22"] }
+unguardedMiniBarLayout.signals.sdkApiVersion24Guard = { detected: false, evidence: [] }
+const failedMiniBarLayoutGuard = verifyInspection(unguardedMiniBarLayout, compatibility23, "hds")
+equal(failedMiniBarLayoutGuard.status, "failed")
+ok(failedMiniBarLayoutGuard.checks.some((item) => item.id === "mini-bar-layout-mode-version-guard" && item.status === "fail"))
+unguardedMiniBarLayout.signals.sdkApiVersion24Guard = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
+const guardedMiniBarLayout = verifyInspection(unguardedMiniBarLayout, compatibility23, "hds")
+equal(guardedMiniBarLayout.status, "passed")
+ok(guardedMiniBarLayout.checks.some((item) => item.id === "mini-bar-layout-mode-version-guard" && item.status === "pass"))
+
 const inspection26 = await inspectProject(fixture26, { sdkPath: sdk26 })
 equal(inspection26.model, "stage")
 equal(inspection26.api.compatible, 26)
@@ -92,6 +136,7 @@ equal(compatibility26.sdk.routes.hds.status, "supported")
 equal(compatibility26.sdk.routes.arkui.status, "supported")
 equal(compatibility26.status, "supported")
 equal(compatibility26.recommendedRoute, "arkui")
+equal(compatibility26.selectedRoutes.join(","), "arkui")
 equal(compatibility26.availableRoutes.join(","), "hds,arkui")
 equal(compatibility26.applicationLevel.eligible, true)
 equal(compatibility26.upgradeOptions.length, 0)
@@ -99,6 +144,37 @@ equal(compatibility26.decisionRequired, true)
 const verification26 = verifyInspection(inspection26, compatibility26, "auto")
 equal(verification26.status, "passed")
 equal(verification26.counts.fail, 0)
+
+const hybridInspection26 = structuredClone(inspection26)
+hybridInspection26.componentSystem.hds = true
+for (const signal of [
+  "hdsNavigation",
+  "hdsTabs",
+  "barFloatingStyle",
+  "barPositionEnd",
+  "barOverlapTrue",
+  "barHeight",
+  "hdsMaterialEffect",
+  "adaptiveMaterial"
+]) {
+  hybridInspection26.signals[signal] = structuredClone(inspection23.signals[signal])
+}
+const hybridCompatibility26 = evaluateCompatibility(hybridInspection26, profile)
+equal(hybridCompatibility26.selectedRoutes.join(","), "hds,arkui")
+equal(hybridCompatibility26.recommendedRoute, "arkui")
+const hybridVerification26 = verifyInspection(hybridInspection26, hybridCompatibility26, "auto")
+equal(hybridVerification26.route, "composed")
+equal(hybridVerification26.routes.join(","), "hds,arkui")
+equal(hybridVerification26.status, "passed")
+
+const hdsOnlyInspection26 = structuredClone(hybridInspection26)
+hdsOnlyInspection26.componentSystem.arkuiMaterial = false
+hdsOnlyInspection26.signals.uiMaterial = { detected: false, evidence: [] }
+hdsOnlyInspection26.signals.systemMaterial = { detected: false, evidence: [] }
+const hdsOnlyCompatibility26 = evaluateCompatibility(hdsOnlyInspection26, profile)
+equal(hdsOnlyCompatibility26.recommendedRoute, "arkui")
+equal(hdsOnlyCompatibility26.selectedRoutes.join(","), "hds")
+equal(verifyInspection(hdsOnlyInspection26, hdsOnlyCompatibility26, "auto").route, "hds")
 
 const api22 = structuredClone(inspection23)
 api22.api.compatible = 22
@@ -198,6 +274,7 @@ equal(cliInspection.api.compatible, 23)
 equal(cliInspection.localSdk.status, "valid")
 const cliCompatibility = run("check-compatibility.mjs", ["--project", fixture26, "--feature", "immersive-light", "--sdk", sdk26])
 equal(cliCompatibility.recommendedRoute, "arkui")
+equal(cliCompatibility.selectedRoutes.join(","), "arkui")
 equal(cliCompatibility.sdk.routes.arkui.status, "supported")
 const cliVerification = run("verify-integration.mjs", ["--project", fixture26, "--feature", "immersive-light", "--route", "auto", "--sdk", sdk26])
 equal(cliVerification.status, "passed")

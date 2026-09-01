@@ -6,7 +6,7 @@ import { hdsMaterial, SystemMaterialParams } from '@kit.UIDesignKit';
  *
  * 来源：能力包形成阶段完成的运行时版本门禁验证与三组悬浮 Tab 迁移对照快照。
  * 原始工程不随 Skill 分发，本资产已经固化后续接入所需的版本判断模式。
- * 配套页面级资产见 FloatingTabsMainEntry.ets，索引见 ../assets-catalog.md。
+ * 配套页面级资产见 FloatingTabsMainEntry.ets，索引见 ../routes/hds/assets.md。
  *
  * 职责边界：只回答"当前设备能不能用 HDS 材质"和"材质参数用什么"，
  * 不做页面布局、不做属性级屏蔽。整树降级分支由页面资产负责。

@@ -1,6 +1,14 @@
 {
   "schemaVersion": "1.0",
   "featureId": "immersive-light",
+  "routeComposition": {
+    "mode": "composable",
+    "selectionField": "selectedRoutes",
+    "allowed": [
+      "hds",
+      "arkui"
+    ]
+  },
   "displayName": "沉浸光感",
   "fallbackPolicy": {
     "baseline": "pre-integration-source-state",
@@ -45,7 +53,12 @@
         "HdsNavDestination",
         "HdsTabs"
       ],
-      "applicationLevel": null
+      "applicationLevel": null,
+      "documents": {
+        "implementation": "routes/hds/implementation.md",
+        "validation": "routes/hds/validation.md",
+        "assets": "routes/hds/assets.md"
+      }
     },
     {
       "id": "arkui",
@@ -68,6 +81,11 @@
         "moduleTypes": [
           "entry"
         ]
+      },
+      "documents": {
+        "implementation": "routes/arkui/implementation.md",
+        "validation": "routes/arkui/validation.md",
+        "assets": "routes/arkui/assets.md"
       }
     }
   ],
@@ -99,6 +117,27 @@
       "minApi": 23,
       "scenario": "lower-version",
       "action": "preserve-source-layout-breakpoints-orientation-and-interactions"
+    },
+    {
+      "id": "mini-bar-layout-mode-api24",
+      "route": "hds",
+      "minApi": 24,
+      "scenario": "mini-bar-layout-mode",
+      "action": "guard-with-sdk-api-version-or-omit"
+    },
+    {
+      "id": "floating-bar-bottom-spacing-single-owner",
+      "route": "hds",
+      "minApi": 23,
+      "scenario": "floating-tab-bottom-spacing",
+      "action": "avoid-stacking-ancestor-bottom-padding-and-positive-bar-bottom-margin"
+    },
+    {
+      "id": "scrollable-tab-tail-clearance",
+      "route": "hds",
+      "minApi": 23,
+      "scenario": "floating-tab-scrollable-content",
+      "action": "keep-last-actionable-item-scrollable-above-floating-bar-without-changing-source-fallback"
     }
   ],
   "documents": {
@@ -106,7 +145,9 @@
     "compatibility": "compatibility.md",
     "implementation": "implementation.md",
     "validation": "performance-validation.md",
-    "assets": "assets-catalog.md"
+    "assets": "assets-catalog.md",
+    "fallback": "shared/fallback.md",
+    "sharedValidation": "shared/validation.md"
   },
   "evidence": {
     "baselineDate": "2026-09-01",

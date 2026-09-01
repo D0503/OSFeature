@@ -152,6 +152,61 @@
         "保留 vertical、barPosition、栏宽栏高、divider、控制器、自定义 TabBar 和事件",
         "要求在 API 23 以下设备按原窗口矩阵逐项对照"
       ]
+    },
+    {
+      "id": 13,
+      "prompt": "工程 compatibleSdkVersion 是 23、targetSdkVersion 是 24，想在悬浮 HdsTabs 加 MiniBar，并用 barLayoutMode 控制它和 TabBar 横排。如何兼容 API 23？",
+      "expected_output": "先确认本机 SDK 与有效 compile API。MiniBar 核心接口从 API 23 起可用，miniBarBuilder 必填；继续使用 BarPosition.End、vertical(false)、barOverlap(true) 和 barFloatingStyle，并让 MiniBar 复用源程序状态与操作。barLayoutMode 和 HdsBarLayoutMode 从 API 24 起可用，因此用 deviceInfo.sdkApiVersion >= 24 建立单独分支；API 23 分支省略 barLayoutMode 并使用默认排列。不要使用从 API 26 才可用的 apiAvailable 保护 API 24 接口，也不要把 API 24 属性放入两个分支共用的提前求值对象。",
+      "files": [],
+      "expectations": [
+        "区分 MiniBar 核心能力 API 23 与 barLayoutMode API 24",
+        "说明 miniBarBuilder 必填且业务状态和操作来自源程序",
+        "包含 BarPosition.End、vertical(false)、barOverlap(true) 和 barFloatingStyle",
+        "使用 deviceInfo.sdkApiVersion >= 24 保护 API 24 分支",
+        "API 23 分支省略 barLayoutMode，而不是移除整个 MiniBar",
+        "不使用 API 26 才可用的 apiAvailable 保护 API 24 接口"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "悬浮 HdsTabs 配置了 barBottomMargin: 28，但包住它的 Column 已经有 .padding({ bottom: this.vm.windowModel.windowBottomPadding })。barBottomMargin 还应该保留 28 吗？",
+      "expected_output": "先确认 bottom padding 所在的组件层级。该 Column 的 padding 会移动整个 HdsTabs 布局区域，已经承担同一底部间距，因此 barBottomMargin 应设为 0，不能再叠加 28vp。28vp 只是部分迁移工程的常见起点，不是固定规范。如果 bottom padding 仅位于某个 TabContent 的滚动内容内部，用途是避免末项被悬浮栏遮挡，则它与栏的位置可能职责不同，不能只根据关键词清零；需要结合组件树和真机窗口矩阵验证。",
+      "files": [],
+      "expectations": [
+        "先判断 bottom padding 是否位于影响 HdsTabs 布局边界的父级或祖先",
+        "对题目给出的父级 Column 场景明确将 barBottomMargin 设为 0",
+        "说明不能把外层 bottom padding 与 28vp barBottomMargin 重复叠加",
+        "说明 28vp 是迁移经验值而不是固定规范",
+        "区分外层布局 padding 与 TabContent 内部防遮挡 padding",
+        "要求覆盖导航指示区、横竖屏和多窗口验证"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "接入 barOverlap(true) 的悬浮 HdsTabs 后，几个 Tab 页面都能滚动，但最后一张卡片滚到底仍被悬浮栏挡住，按钮不好点。应该怎么改？",
+      "expected_output": "逐个检查所有 Tab 页的真实滚动容器，在最后一个滚动项之后增加足以让末项完整滚到悬浮栏上方的尾部空间。List 可使用 contentEndOffset 或尾部占位项，Scroll + Column 可在真实内容后增加 Blank 或等价 bottom padding；尾部空间按当前布局中的实际遮挡计算，通常覆盖可见 barHeight + barBottomMargin，并避免重复计算外层已承担的安全区。外层 padding 和 barBottomMargin 决定悬浮栏位置，不能替代滚动内容尾部避让。HDS 专用尾部空间不能无条件进入 API 23 以下普通 Tabs 共用 Builder，低版本继续保留源程序原有滚动范围。",
+      "files": [],
+      "expectations": [
+        "要求逐个检查所有可滚动 Tab，而不是只修复默认首页",
+        "在最后一个真实滚动项之后增加尾部空间，使末项和点击热区可滚到悬浮栏上方",
+        "List 给出 contentEndOffset 或尾部占位方案，Scroll 给出尾部 Blank 或等价 padding",
+        "尾部空间结合 barHeight、barBottomMargin 和实际遮挡计算，不机械固定为某个值",
+        "区分滚动内容尾部避让与外层 padding/barBottomMargin 的悬浮栏定位职责",
+        "低版本普通 Tabs 保留源程序原有滚动范围，不无条件增加 HDS 专用留白"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "API 26 工程里 HdsTabs 继续做底部导航，同时普通卡片和菜单要接 uiMaterial。是不是只选 ArkUI 路线就够了？",
+      "expected_output": "不够。该工程同时命中 HDS 和 ArkUI，应输出 selectedRoutes: [\"hds\", \"arkui\"]。分别加载 HDS 的实现、资产与验证资料处理导航和悬浮页签，加载 ArkUI 的实现、资产与验证资料处理普通组件和菜单；共享回退与性能资料只加载一次。recommendedRoute 可以仍为 arkui，但只是主要建议，不能据此跳过 HDS 验证。两条路线分别应用 API 门禁、能力判断、构建和真机检查。",
+      "files": [],
+      "expectations": [
+        "返回 selectedRoutes 同时包含 hds 和 arkui",
+        "说明 recommendedRoute 不是互斥选择",
+        "HDS 资料只处理导航和悬浮页签，ArkUI 资料只处理普通组件与菜单",
+        "共享回退资料只加载一次，两条路线的实现、资产和验证分别加载",
+        "分别报告两条路线的静态检查、构建与真机结果"
+      ]
     }
   ]
 }
