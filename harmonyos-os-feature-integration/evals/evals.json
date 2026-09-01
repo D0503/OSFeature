@@ -4,27 +4,27 @@
     {
       "id": 1,
       "prompt": "这个工程最低支持 API 23，目前使用普通 Navigation 和 Tabs。请设计沉浸光感接入方案，要求 API 23 到 25 也能工作。",
-      "expected_output": "选择 HDS 路线，将导航框架规划为 HdsNavigation/HdsTabs，优先使用 ADAPTIVE 材质；不在 API 23～25 路径使用 uiMaterial，并说明普通视觉降级和验证要求。",
+      "expected_output": "选择 HDS 路线，将导航框架规划为 HdsNavigation/HdsTabs，优先使用 ADAPTIVE 材质；不在 API 23～25 路径使用 uiMaterial，并按 fallbackPolicy 说明所有回退条件如何保留接入前的导航、状态、交互和普通视觉样式。",
       "files": [],
       "expectations": [
         "明确 API 23～25 选择 UI Design Kit / HDS 路线",
         "选路前验证本机 SDK 根清单 API 不低于 23",
         "提及 HdsNavigation、HdsTabs 和 ADAPTIVE 材质配置",
         "没有在 API 23～25 主路径直接使用 API 26 uiMaterial",
-        "包含设备能力、性能和普通样式降级说明"
+        "包含设备能力、性能和保留接入前完整源程序状态的回退说明"
       ]
     },
     {
       "id": 2,
       "prompt": "给 API 26 的 HarmonyOS Stage 工程接入沉浸光感：普通卡片使用 systemMaterial，entry 模块开启应用级材质，同时还要兼容低性能设备。",
-      "expected_output": "使用 uiMaterial.ImmersiveMaterial 和 entry module metadata，检查 target API、MaterialState、版本与设备能力，并保留背景色或边框降级；区分编译与真机视觉验证。",
+      "expected_output": "使用 uiMaterial.ImmersiveMaterial 和 entry module metadata，检查 target API、MaterialState、版本与设备能力；不满足条件时继续使用接入前组件路径，保留状态、事件、业务行为以及原背景色和边框。区分编译与真机视觉验证。",
       "files": [],
       "expectations": [
         "使用 ArkUI uiMaterial 与 systemMaterial 路线",
         "选路前验证本机 SDK 根清单 API 不低于 26",
         "应用级配置限定为 targetAPIVersion 不低于 26 且位于 entry module",
         "包含 apiAvailable 和 isImmersiveMaterialSupported 能力保护",
-        "包含低算力降级、性能约束和验证矩阵"
+        "包含低算力回退、源程序状态保留、性能约束和验证矩阵"
       ]
     },
     {
@@ -54,14 +54,14 @@
     {
       "id": 5,
       "prompt": "把应用底部的普通 Tabs 改成悬浮导航Tab，要求有胶囊悬浮效果并能适配不同性能的设备。",
-      "expected_output": "将悬浮导航Tab识别为沉浸光感能力，路由到 HDS HdsTabs，使用 barFloatingStyle 和自适应材质，并包含设备能力降级与性能验证。",
+      "expected_output": "将悬浮导航Tab识别为沉浸光感能力，路由到 HDS HdsTabs，使用 barFloatingStyle 和自适应材质；所有旧版本或不可用分支保留接入前的普通 Tabs 组件树、响应式布局和交互，并完成性能验证。",
       "files": [],
       "expectations": [
         "把悬浮导航Tab路由到 immersive-light 能力包",
         "核对本机 SDK 根清单 API 达到 HDS 路线门槛后再选路",
         "选择 HDS HdsTabs 和 barFloatingStyle 路线",
         "优先使用 ADAPTIVE 材质类型与等级",
-        "包含不支持完整材质设备的降级和验证要求"
+        "包含不支持完整材质设备时保留接入前源程序状态的回退和验证要求"
       ]
     },
     {
@@ -79,51 +79,78 @@
     {
       "id": 7,
       "prompt": "API 23 的 Web 同层渲染页面接入 HDS 沉浸光感后，内嵌 ArkUI 控件变透明了，怎么处理？",
-      "expected_output": "识别 API 23 Web 同层渲染限制，建议关闭相关控件光感或关闭同层渲染，并保留普通背景降级和复测矩阵。",
+      "expected_output": "识别 API 23 Web 同层渲染限制，建议关闭相关控件光感或关闭同层渲染；所选回退路径继续使用接入前的控件、状态、事件和普通视觉样式，并按原场景复测。",
       "files": [],
       "expectations": [
         "识别 Web 同层渲染与 API 23 的透明风险",
         "给出关闭控件光感或关闭同层渲染两个方向",
-        "保留普通背景或边框降级",
+        "回退时保留接入前的控件行为以及普通背景或边框",
         "要求在真实设备上复测而非只看编译"
       ]
     },
     {
       "id": 8,
       "prompt": "页面里嵌套了很多沉浸光感卡片，滚动时掉帧且功耗上升。请给出性能排查和验收方案。",
-      "expected_output": "检查材质面积、层数、动态背景、透明叠加、动画和冲突属性；按高中低算力设备建立帧率、帧时间、功耗和视觉降级验证矩阵。",
+      "expected_output": "检查材质面积、层数、动态背景、透明叠加、动画和冲突属性；按高中低算力设备建立帧率、帧时间、功耗和回退验证矩阵。减少或关闭材质时继续使用接入前代码路径并保留源程序状态和交互。",
       "files": [],
       "expectations": [
         "覆盖材质面积、嵌套、动态内容和动画风险",
         "覆盖高、中、低算力设备矩阵",
         "区分静态检查、构建与真机性能验证",
-        "给出减少材质范围或回退普通样式的降级策略"
+        "给出减少或关闭材质并保留接入前完整源程序状态的回退策略"
       ]
     },
     {
       "id": 9,
       "prompt": "我的工程 compatibleSdkVersion 是 API 20，想接入沉浸光感，能做吗？",
-      "expected_output": "返回 upgrade_available 结论：提供升级 targetSdkVersion/compileSdkVersion 的接入选项，保持 compatibleSdkVersion 兼容低版本设备并要求运行时版本保护与普通样式降级，把可选路线列给用户并由用户决定，不直接判为不支持。",
+      "expected_output": "返回 upgrade_available 结论：提供升级 targetSdkVersion/compileSdkVersion 的接入选项，保持 compatibleSdkVersion 兼容低版本设备并要求运行时版本保护；低版本分支保留源程序接入前的组件树、断点/横竖屏布局、交互和普通视觉样式。把可选路线列给用户并由用户决定，不直接判为不支持。",
       "files": [],
       "expectations": [
         "没有直接给出不支持或终止结论",
         "先验证本机 SDK，并在 SDK API 低于 23/26 时提供安装或切换 SDK 的选项",
         "提供升级 targetSdkVersion/compileSdkVersion 的接入选项",
-        "说明保持 compatibleSdkVersion 并为低版本设备做运行时保护与降级",
+        "说明保持 compatibleSdkVersion，并为低版本设备做运行时保护且保留源程序原有体验",
         "把可选接入方式列给用户，由用户决定路线"
       ]
     },
     {
       "id": 10,
       "prompt": "我的 API 18 工程已经在用 HdsNavigation，是否说明可以直接加沉浸光感材质？",
-      "expected_output": "明确区分组件版本与材质能力版本：HdsNavigation 组件自身从 API 18 可用，但 HDS 沉浸光感材质接口从 API 23 才可用。先检查本机 SDK 根清单和有效 compile API；当前不应判定材质路线已支持，应提供升级到 API 23 的接入选项，并为 API 18～22 设备保留整树或普通视觉降级。",
+      "expected_output": "明确区分组件版本与材质能力版本：HdsNavigation 组件自身从 API 18 可用，但 HDS 沉浸光感材质接口从 API 23 才可用。先检查本机 SDK 根清单和有效 compile API；当前不应判定材质路线已支持，应提供升级到 API 23 的接入选项，并为 API 18～22 设备保留接入前的整树布局与交互体验。",
       "files": [],
       "expectations": [
         "说明 HdsNavigation 组件自身从 API 18 可用",
         "说明沉浸光感材质接口从 API 23 才可用",
         "没有因扫描到 HdsNavigation 就判定材质路线已支持",
         "仍按本机 SDK 根清单 API 和有效 compile API 进行路线门禁",
-        "提供升级到 API 23 的选项以及旧设备降级要求"
+        "提供升级到 API 23 的选项，并要求旧设备分支保留源程序原有体验"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "我的工程在 LG/XL 大断点使用左侧纵向 Tabs，手机使用底部 Tabs。现在要接入悬浮导航Tab，大断点是否也改到底部？barOverlap、栏宽和栏高应该怎么处理？",
+      "expected_output": "先说明能力包内置的三组迁移对照快照都把大断点或横屏侧栏改为底部 HdsTabs，但这属于已核验工程的迁移选择而非所有大屏应用的强制规则；原始对照工程不是 Skill 运行依赖。给出统一底部与保留大屏侧栏分支两个方案并结合产品目标选择；统一底部方案使用 BarPosition.End、scrollable(false)、barOverlap(true) 和 barFloatingStyle，显示态栏高可参考 56vp，隐藏时同步为 0；默认不沿用旧侧栏 barWidth，28vp 底部间距仅为常见对照值。保留现有 changeIndex、自定义 TabBar、隐藏和刷新行为，并覆盖大屏、多窗口、安全区和遮挡验证。",
+      "files": [],
+      "expectations": [
+        "说明内置迁移对照的大断点或横屏最终都采用底部悬浮 HdsTabs，且原始工程不是运行依赖",
+        "没有把样例选择误写成所有大屏应用的强制规范",
+        "同时给出统一底部和保留大屏侧栏分支的决策依据",
+        "统一底部方案包含 BarPosition.End、barOverlap(true)、barFloatingStyle 和 ADAPTIVE 材质",
+        "说明 56vp 是显示态基线、隐藏时可为 0，且 28vp 底部间距不是固定规范",
+        "不默认沿用旧侧栏 barWidth，并要求验证大屏、多窗口、安全区和内容遮挡"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "工程 compatibleSdkVersion 是 20、targetSdkVersion 是 24。接入后 API 23 以上使用底部悬浮 HdsTabs；源程序在手机竖屏使用底部普通 Tabs，在 LG/XL 和横屏使用左侧纵向 Tabs。API 20～22 的降级分支可以统一写成底部普通 Tabs 吗？",
+      "expected_output": "不可以。使用 deviceInfo.sdkApiVersion 做 API 23 HDS 整树门禁；API 23 以上按已确认方案使用底部悬浮 HdsTabs，API 20～22 的普通 Tabs 分支则保留源程序原有体验，继续沿用原断点、横竖屏和窗口模式条件，在手机竖屏保持底部横向栏，在 LG/XL 与原有横屏场景保持左侧纵向栏。保留原 vertical、barPosition、barWidth、barHeight、divider、控制器、自定义 TabBar、页签顺序及事件，并按旧版本设备矩阵逐项对照，不能把 HDS 分支的统一底部配置复制给低版本分支。",
+      "files": [],
+      "expectations": [
+        "明确使用 deviceInfo.sdkApiVersion 做 API 23 HDS 整树门禁",
+        "明确低版本是保留源程序原有体验，不是重新设计或统一为底部 Tabs",
+        "保留原有断点、横竖屏和窗口模式判断以及底部/侧边形态",
+        "保留 vertical、barPosition、栏宽栏高、divider、控制器、自定义 TabBar 和事件",
+        "要求在 API 23 以下设备按原窗口矩阵逐项对照"
       ]
     }
   ]

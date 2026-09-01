@@ -11,7 +11,7 @@
 | ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26 | 用于支持通用属性的组件、弹窗、菜单和自定义布局；Stage 模型 |
 | API 26 应用级开关 | `targetAPIVersion >= 26.0.0` | 仅 `entry` 类型 module 的 `module.json5` 配置生效 |
 | API 26 跨版本调用 | API 26 接口可用时 | 使用 `deviceInfo.apiAvailable('26.0.0')` 和材质能力判断保护 |
-| 升级接入（通用） | 工程低于路线门槛时 | 升级 `targetSdkVersion`/`compileSdkVersion` 至 23（HDS）或 26（ArkUI），`compatibleSdkVersion` 保持不变；低版本设备需运行时保护与普通样式降级，是否升级与路线由用户决定 |
+| 升级接入（通用） | 工程低于路线门槛时 | 升级 `targetSdkVersion`/`compileSdkVersion` 至 23（HDS）或 26（ArkUI），`compatibleSdkVersion` 保持不变；低版本设备需运行时保护，并保留源程序接入前的布局、交互和普通视觉样式；是否升级与路线由用户决定 |
 
 这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
 
@@ -74,11 +74,13 @@ API 26 应用级开关只在 `entry` module 且 `targetAPIVersion >= 26.0.0` 时
 | `hdsMaterial.MaterialLevel` | 开发者选择的视觉强度：`EXQUISITE`、`GENTLE`、`SMOOTH`、`ADAPTIVE` |
 | `uiMaterial.MaterialLevel` | 设备算力档位；通过 `getGlobalMaterialLevel()` 获取，不可修改 |
 
-API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；不支持时设置材质不会报错，但不会产生材质效果，因此必须保留普通背景色、边框等降级样式。
+API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；不支持时设置材质不会报错，但不会产生材质效果。回退路径必须继续使用组件接入前的属性、状态、事件和业务行为，并保留原背景色、边框等普通视觉样式，不能只补一个背景色就视为已完成兼容。
 
 ## 特殊限制
 
 - `compatibleSdkVersion` 低于 23 时，HDS 组件在低版本设备不可用，需要按运行时判断做整树条件降级，而不只是属性级保护。
+- 整树降级的运行时判断必须使用低版本即可用的 API（`deviceInfo.sdkApiVersion`，@since 8）；`deviceInfo.apiAvailable` 自 API 26 起存在，在低版本设备上调用会崩溃，禁止用作 API 26 以下的降级开关。
+- 低版本整树分支必须保留源程序接入前的体验，不能用一个固定底部普通 `Tabs` 取代原有响应式导航。源程序若在不同断点、横竖屏或窗口模式下切换 `vertical`、`barPosition`、`barWidth`、`barHeight`、`divider` 等属性，降级分支继续沿用原有判断和值，并保留原控制器、自定义 TabBar、页签顺序和事件。
 - API 23 及以前 SDK 的 Web 同层渲染场景中，内嵌 ArkUI 控件开启光感可能变透明；关闭该控件光感或关闭同层渲染。
 - 应用级开关不能配置在非 `entry` module 后期待生效。
 - API 26 接口不能只依靠编译配置判断运行设备支持，还要进行运行时能力判断。
@@ -92,4 +94,5 @@ API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；�
 - 已确认目标组件属于 HDS 或 ArkUI 支持范围；
 - API 26 调用有版本和设备能力保护；
 - 已为不支持设备和旧系统保留普通视觉样式；
+- 低版本组件替换分支保留源程序原有的断点、横竖屏、窗口模式、导航位置和交互行为；
 - 没有混用 HDS 与 ArkUI 的 `MaterialLevel`。

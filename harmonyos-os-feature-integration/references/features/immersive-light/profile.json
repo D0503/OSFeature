@@ -2,6 +2,22 @@
   "schemaVersion": "1.0",
   "featureId": "immersive-light",
   "displayName": "沉浸光感",
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": [
+      "runtime-version-unsupported",
+      "device-capability-unsupported",
+      "feature-disabled",
+      "permission-or-external-condition-unmet"
+    ],
+    "preserve": [
+      "component-tree-or-existing-code-path",
+      "responsive-layout-orientation-and-window-mode",
+      "state-data-controllers-events-and-lifecycle",
+      "existing-error-denial-and-unavailable-behavior",
+      "ordinary-visual-style"
+    ]
+  },
   "routes": [
     {
       "id": "hds",
@@ -76,13 +92,21 @@
       "minApi": 23,
       "scenario": "all",
       "action": "preserve-standard-background-border"
+    },
+    {
+      "id": "fallback-source-experience",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "lower-version",
+      "action": "preserve-source-layout-breakpoints-orientation-and-interactions"
     }
   ],
   "documents": {
     "entry": "README.md",
     "compatibility": "compatibility.md",
     "implementation": "implementation.md",
-    "validation": "performance-validation.md"
+    "validation": "performance-validation.md",
+    "assets": "assets-catalog.md"
   },
   "evidence": {
     "baselineDate": "2026-09-01",
@@ -93,7 +117,8 @@
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
       "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsnavigation",
       "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdstabs",
-      "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsmaterial"
+      "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsmaterial",
+      "https://gitcode.com/HarmonyOS_Samples/Spatialization"
     ]
   }
 }

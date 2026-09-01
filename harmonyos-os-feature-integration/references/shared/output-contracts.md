@@ -2,11 +2,11 @@
 
 ## 方案设计
 
-使用 `assets/templates/integration-plan.md`，包含环境、可行性、路线、改动点、降级、性能风险和验证计划。
+使用 `assets/templates/integration-plan.md`，包含环境、可行性、路线、改动点、接入前源程序状态基线、回退条件与保留维度、性能风险和验证计划。
 
 ## 工程实施
 
-使用 `assets/templates/integration-report.md`，区分实际修改、静态验证、构建、真机验证、未完成条件和证据来源。
+使用 `assets/templates/integration-report.md`，区分实际修改、源程序状态保留对照、静态验证、构建、真机验证、未完成条件和证据来源。
 
 ## 故障排查
 

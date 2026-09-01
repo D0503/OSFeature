@@ -365,6 +365,11 @@ const SIGNALS = [
   { id: "hdsNavigation", regex: /\bHds(?:Navigation|NavDestination)\b/ },
   { id: "hdsTabs", regex: /\bHdsTabs\b/ },
   { id: "barFloatingStyle", regex: /\bbarFloatingStyle\b/ },
+  { id: "barPositionEnd", regex: /\bbarPosition\s*:\s*BarPosition\.End\b|\bbarPosition\s*\(\s*BarPosition\.End\s*\)/ },
+  { id: "barOverlapTrue", regex: /\bbarOverlap\s*\(\s*true\s*\)/ },
+  { id: "barHeight", regex: /\bbarHeight\s*\(/ },
+  { id: "standardTabs", regex: /\bTabs\s*\(/ },
+  { id: "sdkApiVersion", regex: /\bsdkApiVersion\b/ },
   { id: "adaptiveMaterial", regex: /\b(?:MaterialType|MaterialLevel)\.ADAPTIVE\b|\bADAPTIVE\b/ },
   { id: "hdsMaterialEffect", regex: /\bsystemMaterialEffect\b/ },
   { id: "uiMaterial", regex: /\buiMaterial\b|@kit\.ArkUI.*uiMaterial|@ohos\.arkui\.uiMaterial/ },
@@ -472,11 +477,13 @@ export function evaluateCompatibility(inspection, profile) {
       eligible: false,
       reasons: []
     },
+    fallbackPolicy: profile.fallbackPolicy ?? null,
     sdk,
     missingConditions: [],
     fallbackRequirements: [
       "preserve-standard-background-border",
-      "check-device-material-capability"
+      "check-device-material-capability",
+      "preserve-pre-integration-source-state"
     ]
   }
 
@@ -519,7 +526,7 @@ export function evaluateCompatibility(inspection, profile) {
         upgradeCompileApi: route.minApi,
         upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
         sdkStatus: sdkRoute?.status ?? "not_checked",
-        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, upgrade targetSdkVersion when the route requires it, keep compatibleSdkVersion at ${compatible}, and protect lower devices at runtime`
+        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, upgrade targetSdkVersion when the route requires it, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path`
       })
     }
   }
@@ -533,7 +540,11 @@ export function evaluateCompatibility(inspection, profile) {
       missingConditions: [
         `No route is currently supported by both the project configuration and the verified local SDK API; install or select the required SDK version and upgrade compileSdkVersion/targetSdkVersion as needed while keeping compatibleSdkVersion for lower devices`
       ],
-      fallbackRequirements: ["runtime-version-guard", "preserve-standard-background-border"]
+      fallbackRequirements: [
+        "runtime-version-guard",
+        "preserve-standard-background-border",
+        "preserve-pre-integration-source-state"
+      ]
     }
   }
 
@@ -551,7 +562,7 @@ export function evaluateCompatibility(inspection, profile) {
     }
   }
   for (const id of guardedRoutes) {
-    reasons.push(`Route ${id} exceeds compatibleSdkVersion; lower devices need runtime version guards and standard style fallback`)
+    reasons.push(`Route ${id} exceeds compatibleSdkVersion; lower devices need runtime version guards and must preserve the complete pre-integration source state`)
   }
 
   const applicationLevelRoutes = routes.filter(
@@ -577,8 +588,8 @@ export function evaluateCompatibility(inspection, profile) {
     },
     missingConditions: reasons,
     fallbackRequirements: effectiveApi >= 26
-      ? ["apiAvailable-26", "isImmersiveMaterialSupported", "preserve-standard-background-border"]
-      : ["query-hds-material-types-before-custom-level", "preserve-standard-background-border"]
+      ? ["apiAvailable-26", "isImmersiveMaterialSupported", "preserve-standard-background-border", "preserve-pre-integration-source-state"]
+      : ["query-hds-material-types-before-custom-level", "preserve-standard-background-border", "preserve-pre-integration-source-state"]
   }
 }
 
@@ -589,6 +600,7 @@ function check(id, label, status, evidence = [], message = "") {
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
   const route = routeOption === "auto" ? compatibility.recommendedRoute : routeOption
   const s = inspection.signals
+  const compatibleApi = Number.isInteger(inspection.api.compatible) ? inspection.api.compatible : null
   const checks = []
   checks.push(check(
     "stage-model",
@@ -616,7 +628,49 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       [...s.hdsTabs.evidence, ...s.barFloatingStyle.evidence],
       "HdsTabs requires barFloatingStyle for floating navigation"
     ))
-    checks.push(check("version-guard", "Version guard", "not_applicable", [], "HDS is the minimum API 23 route"))
+    checks.push(check(
+      "floating-tabs-bottom-position",
+      "Floating tabs bottom position",
+      !s.hdsTabs.detected ? "not_applicable" : s.barPositionEnd.detected ? "pass" : "fail",
+      [...s.hdsTabs.evidence, ...s.barPositionEnd.evidence],
+      "Bottom floating tabs require BarPosition.End; preserve a separate large-screen branch when side navigation is intentional"
+    ))
+    checks.push(check(
+      "floating-tabs-overlap",
+      "Floating tabs overlap",
+      !s.hdsTabs.detected ? "not_applicable" : s.barOverlapTrue.detected ? "pass" : "fail",
+      [...s.hdsTabs.evidence, ...s.barOverlapTrue.evidence],
+      "Floating HdsTabs require barOverlap(true) so the bar overlays TabContent"
+    ))
+    checks.push(check(
+      "floating-tabs-height",
+      "Floating tabs height",
+      !s.hdsTabs.detected ? "not_applicable" : s.barHeight.detected ? "pass" : "warn",
+      [...s.hdsTabs.evidence, ...s.barHeight.evidence],
+      "Review the visible bar height; the migration snapshots use a 56vp baseline and one switches between 56 and 0 when hidden"
+    ))
+    const needsLowerVersionTree = compatibleApi !== null && compatibleApi < 23
+    checks.push(check(
+      "version-guard",
+      "HDS lower-version guard",
+      !needsLowerVersionTree ? "not_applicable" : s.sdkApiVersion.detected ? "pass" : "fail",
+      s.sdkApiVersion.evidence,
+      !needsLowerVersionTree ? "compatibleSdkVersion is API 23 or later" : "Use deviceInfo.sdkApiVersion for the API 23 HDS tree guard"
+    ))
+    checks.push(check(
+      "source-tabs-fallback",
+      "Source ordinary Tabs fallback",
+      !needsLowerVersionTree || !s.hdsTabs.detected ? "not_applicable" : s.standardTabs.detected ? "pass" : "fail",
+      [...s.hdsTabs.evidence, ...s.standardTabs.evidence],
+      "When compatibleSdkVersion is below 23, keep the source ordinary Tabs tree for lower devices"
+    ))
+    checks.push(check(
+      "source-experience-preservation",
+      "Source experience preservation",
+      !needsLowerVersionTree || !s.hdsTabs.detected ? "not_applicable" : "warn",
+      s.standardTabs.evidence,
+      "Static scanning cannot prove behavioral equivalence; compare the lower-version Tabs branch with the pre-integration breakpoints, orientation/window rules, properties, controllers, and events"
+    ))
     checks.push(check("capability-guard", "Device capability query", s.adaptiveMaterial.detected ? "pass" : "warn", s.adaptiveMaterial.evidence, "Custom material levels need a device capability query"))
   } else if (route === "arkui") {
     checks.push(check("arkui-import", "ArkUI uiMaterial import", s.uiMaterial.detected ? "pass" : "fail", s.uiMaterial.evidence, "uiMaterial usage is required"))
@@ -634,7 +688,6 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
   }
 
   checks.push(check("fallback-style", "Fallback style", s.fallbackStyle.detected ? "pass" : "fail", s.fallbackStyle.evidence, "Keep a standard background or border fallback"))
-  const compatibleApi = Number.isInteger(inspection.api.compatible) ? inspection.api.compatible : null
   const webRisk = s.webComponent.detected && compatibleApi !== null && compatibleApi <= 23 && (s.hdsMaterialEffect.detected || s.systemMaterial.detected)
   checks.push(check(
     "web-same-layer",

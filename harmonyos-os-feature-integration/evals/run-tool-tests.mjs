@@ -42,6 +42,9 @@ equal(inspection23.localSdk.apiVersion, 23)
 equal(inspection23.modules[0].type, "entry")
 equal(inspection23.signals.hdsTabs.detected, true)
 equal(inspection23.signals.barFloatingStyle.detected, true)
+equal(inspection23.signals.barPositionEnd.detected, true)
+equal(inspection23.signals.barOverlapTrue.detected, true)
+equal(inspection23.signals.barHeight.detected, true)
 equal(inspection23.signals.adaptiveMaterial.detected, true)
 
 const compatibility23 = evaluateCompatibility(inspection23, profile)
@@ -57,6 +60,20 @@ equal(compatibility23.decisionRequired, true)
 const verification23 = verifyInspection(inspection23, compatibility23, "auto")
 equal(verification23.status, "passed")
 equal(verification23.counts.fail, 0)
+
+const missingFloatingLayout = structuredClone(inspection23)
+missingFloatingLayout.signals.barPositionEnd = { detected: false, evidence: [] }
+missingFloatingLayout.signals.barOverlapTrue = { detected: false, evidence: [] }
+const failedFloatingLayout = verifyInspection(missingFloatingLayout, compatibility23, "hds")
+equal(failedFloatingLayout.status, "failed")
+ok(failedFloatingLayout.checks.some((item) => item.id === "floating-tabs-bottom-position" && item.status === "fail"))
+ok(failedFloatingLayout.checks.some((item) => item.id === "floating-tabs-overlap" && item.status === "fail"))
+
+const missingFloatingHeight = structuredClone(inspection23)
+missingFloatingHeight.signals.barHeight = { detected: false, evidence: [] }
+const warnedFloatingHeight = verifyInspection(missingFloatingHeight, compatibility23, "hds")
+equal(warnedFloatingHeight.status, "warnings")
+ok(warnedFloatingHeight.checks.some((item) => item.id === "floating-tabs-height" && item.status === "warn"))
 
 const inspection26 = await inspectProject(fixture26, { sdkPath: sdk26 })
 equal(inspection26.model, "stage")
@@ -122,6 +139,25 @@ equal(compatibilityUpgraded.availableRoutes.join(","), "hds,arkui")
 equal(compatibilityUpgraded.upgradeOptions.length, 0)
 equal(compatibilityUpgraded.decisionRequired, true)
 ok(compatibilityUpgraded.missingConditions.some((item) => item.includes("runtime version guards")))
+equal(compatibilityUpgraded.fallbackPolicy.baseline, "pre-integration-source-state")
+ok(compatibilityUpgraded.fallbackRequirements.includes("preserve-pre-integration-source-state"))
+
+const lowCompatibleHds = structuredClone(inspection23)
+lowCompatibleHds.api.compatible = 20
+lowCompatibleHds.api.target = 23
+const lowCompatibleHdsCompatibility = evaluateCompatibility(lowCompatibleHds, profile)
+equal(lowCompatibleHdsCompatibility.status, "conditional")
+equal(lowCompatibleHdsCompatibility.fallbackPolicy.baseline, "pre-integration-source-state")
+ok(lowCompatibleHdsCompatibility.fallbackRequirements.includes("preserve-pre-integration-source-state"))
+const missingSourceFallback = verifyInspection(lowCompatibleHds, lowCompatibleHdsCompatibility, "hds")
+equal(missingSourceFallback.status, "failed")
+ok(missingSourceFallback.checks.some((item) => item.id === "version-guard" && item.status === "fail"))
+ok(missingSourceFallback.checks.some((item) => item.id === "source-tabs-fallback" && item.status === "fail"))
+lowCompatibleHds.signals.sdkApiVersion = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:1"] }
+lowCompatibleHds.signals.standardTabs = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+const preservedSourceFallback = verifyInspection(lowCompatibleHds, lowCompatibleHdsCompatibility, "hds")
+equal(preservedSourceFallback.status, "warnings")
+ok(preservedSourceFallback.checks.some((item) => item.id === "source-experience-preservation" && item.status === "warn"))
 
 const lowTarget = structuredClone(inspection26)
 lowTarget.api.target = 25

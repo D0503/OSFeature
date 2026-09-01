@@ -58,6 +58,14 @@ try {
     if (profile) {
       issue(errors, profile.schemaVersion === "1.0", "profile.schemaVersion", "schemaVersion 必须是 1.0")
       issue(errors, profile.featureId === feature.id, "profile.featureId", "featureId 必须与注册表 id 一致")
+      issue(errors, profile.fallbackPolicy?.baseline === "pre-integration-source-state", "profile.fallbackPolicy.baseline", "fallbackPolicy.baseline 必须是 pre-integration-source-state")
+      issue(errors, Array.isArray(profile.fallbackPolicy?.appliesWhen) && profile.fallbackPolicy.appliesWhen.length > 0, "profile.fallbackPolicy.appliesWhen", "fallbackPolicy.appliesWhen 必须是非空数组")
+      issue(errors, Array.isArray(profile.fallbackPolicy?.preserve) && profile.fallbackPolicy.preserve.length > 0, "profile.fallbackPolicy.preserve", "fallbackPolicy.preserve 必须是非空数组")
+      for (const key of ["appliesWhen", "preserve"]) {
+        const values = Array.isArray(profile.fallbackPolicy?.[key]) ? profile.fallbackPolicy[key] : []
+        issue(errors, values.every((value) => typeof value === "string" && value.length > 0), `profile.fallbackPolicy.${key}`, "fallbackPolicy 数组项必须是非空字符串")
+        issue(errors, new Set(values).size === values.length, `profile.fallbackPolicy.${key}`, "fallbackPolicy 数组项不能重复")
+      }
       issue(errors, Array.isArray(profile.routes) && profile.routes.length > 0, "profile.routes", "routes 必须是非空数组")
       const routeIds = new Set()
       for (const [index, route] of (profile.routes ?? []).entries()) {
@@ -68,35 +76,48 @@ try {
         issue(errors, route.requiresStage === true, `profile.routes[${index}].requiresStage`, "当前能力路线必须要求 Stage 模型")
         issue(errors, Array.isArray(route.components) && route.components.length > 0, `profile.routes[${index}].components`, "components 必须是非空数组")
       }
-      const hds = profile.routes?.find((route) => route.id === "hds")
-      const arkui = profile.routes?.find((route) => route.id === "arkui")
-      issue(errors, hds?.minApi === 23, "profile.routes.hds", "HDS 路线必须从 API 23 开始")
-      issue(errors, hds?.minApiMeaning === "immersive-material-capability", "profile.routes.hds.minApiMeaning", "HDS minApi 必须明确表示沉浸光感材质能力门槛")
-      issue(errors, hds?.componentFamilyMinApi === 18, "profile.routes.hds.componentFamilyMinApi", "HDS 组件家族起点必须与材质路线门槛分开记录为 API 18")
-      const hdsComponentBaselines = new Map((hds?.componentBaselines ?? []).map((item) => [item.component, item.minApi]))
-      issue(errors, hdsComponentBaselines.get("HdsNavigation") === 18, "profile.routes.hds.componentBaselines.HdsNavigation", "HdsNavigation 组件基线必须为 API 18")
-      issue(errors, hdsComponentBaselines.get("HdsNavDestination") === 18, "profile.routes.hds.componentBaselines.HdsNavDestination", "HdsNavDestination 组件基线必须为 API 18")
-      issue(errors, hdsComponentBaselines.get("HdsTabs") === 20, "profile.routes.hds.componentBaselines.HdsTabs", "HdsTabs 组件基线必须为 API 20")
-      issue(errors, arkui?.minApi === 26, "profile.routes.arkui", "ArkUI 路线必须从 API 26 开始")
-      issue(errors, arkui?.minApiMeaning === "immersive-material-capability", "profile.routes.arkui.minApiMeaning", "ArkUI minApi 必须明确表示沉浸光感材质能力门槛")
-      issue(errors, arkui?.applicationLevel?.minTargetApi === 26, "profile.routes.arkui.applicationLevel", "应用级开关必须要求 target API 26")
-      issue(errors, arkui?.applicationLevel?.moduleTypes?.includes("entry"), "profile.routes.arkui.applicationLevel", "应用级开关必须限定 entry module")
+      if (feature.id === "immersive-light") {
+        const hds = profile.routes?.find((route) => route.id === "hds")
+        const arkui = profile.routes?.find((route) => route.id === "arkui")
+        issue(errors, hds?.minApi === 23, "profile.routes.hds", "HDS 路线必须从 API 23 开始")
+        issue(errors, hds?.minApiMeaning === "immersive-material-capability", "profile.routes.hds.minApiMeaning", "HDS minApi 必须明确表示沉浸光感材质能力门槛")
+        issue(errors, hds?.componentFamilyMinApi === 18, "profile.routes.hds.componentFamilyMinApi", "HDS 组件家族起点必须与材质路线门槛分开记录为 API 18")
+        const hdsComponentBaselines = new Map((hds?.componentBaselines ?? []).map((item) => [item.component, item.minApi]))
+        issue(errors, hdsComponentBaselines.get("HdsNavigation") === 18, "profile.routes.hds.componentBaselines.HdsNavigation", "HdsNavigation 组件基线必须为 API 18")
+        issue(errors, hdsComponentBaselines.get("HdsNavDestination") === 18, "profile.routes.hds.componentBaselines.HdsNavDestination", "HdsNavDestination 组件基线必须为 API 18")
+        issue(errors, hdsComponentBaselines.get("HdsTabs") === 20, "profile.routes.hds.componentBaselines.HdsTabs", "HdsTabs 组件基线必须为 API 20")
+        issue(errors, arkui?.minApi === 26, "profile.routes.arkui", "ArkUI 路线必须从 API 26 开始")
+        issue(errors, arkui?.minApiMeaning === "immersive-material-capability", "profile.routes.arkui.minApiMeaning", "ArkUI minApi 必须明确表示沉浸光感材质能力门槛")
+        issue(errors, arkui?.applicationLevel?.minTargetApi === 26, "profile.routes.arkui.applicationLevel", "应用级开关必须要求 target API 26")
+        issue(errors, arkui?.applicationLevel?.moduleTypes?.includes("entry"), "profile.routes.arkui.applicationLevel", "应用级开关必须限定 entry module")
+      }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")
 
-      const requiredDocuments = ["entry", "compatibility", "implementation", "validation"]
+      const requiredDocuments = ["entry", "compatibility", "implementation", "validation", "assets"]
       for (const key of requiredDocuments) {
         const document = profile.documents?.[key]
         issue(errors, typeof document === "string" && document.length > 0, `profile.documents.${key}`, "缺少必需文档")
-        if (typeof document !== "string" || !document) continue
+      }
+      for (const [key, document] of Object.entries(profile.documents ?? {})) {
+        if (typeof document !== "string" || !document) {
+          errors.push({ path: `profile.documents.${key}`, message: "文档路径必须是非空字符串" })
+          continue
+        }
         const absolute = resolve(packageDir, document)
         const rel = relative(packageDir, absolute)
         issue(errors, rel.length > 0 && !rel.startsWith("..") && !isAbsolute(rel), `profile.documents.${key}`, "文档必须位于能力包目录内")
-        issue(errors, await exists(absolute), `profile.documents.${key}`, "文档不存在")
+        const documentExists = await exists(absolute)
+        issue(errors, documentExists, `profile.documents.${key}`, "文档不存在")
+        if (!documentExists || !document.endsWith(".md")) continue
+        const markdown = await readFile(absolute, "utf8")
+        for (const target of localLinks(markdown)) {
+          issue(errors, await exists(resolve(dirname(absolute), target)), `${profile.documents[key]} -> ${target}`, "相对链接目标不存在")
+        }
       }
     }
 
     if (entry) {
-      for (const expected of ["compatibility.md", "implementation.md", "performance-validation.md", "profile.json"]) {
+      for (const expected of ["compatibility.md", "implementation.md", "performance-validation.md", "assets-catalog.md", "profile.json"]) {
         issue(errors, entry.includes(expected), feature.entry, `入口未路由到 ${expected}`)
       }
       for (const target of localLinks(entry)) {
@@ -107,7 +128,7 @@ try {
 
   const contractPath = resolve(skillRoot, "references", "feature-package-contract.md")
   const contract = await readFile(contractPath, "utf8")
-  for (const required of ["profile.json", "兼容", "权限", "设备", "降级", "验证", "故障排查", "证据"]) {
+  for (const required of ["profile.json", "兼容", "权限", "设备", "降级", "验证", "故障排查", "证据", "pre-integration-source-state"]) {
     issue(errors, contract.includes(required), "references/feature-package-contract.md", `能力包契约缺少栏目: ${required}`)
   }
 
