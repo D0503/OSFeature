@@ -2,14 +2,14 @@
 
 状态：`ready`
 
-沉浸光感是由系统材质和空间动效组成的视觉能力，不是窗口沉浸式、状态栏处理或安全区避让。处理请求时先确认 API 范围和组件体系，再选择 HDS 或 ArkUI 路线；不要把两代接口混写成一套实现。
+沉浸光感是由系统材质和空间动效组成的视觉能力，不是窗口沉浸式、状态栏处理或安全区避让。处理请求时先验证本机 SDK，再确认工程 API 范围和组件体系，最后选择 HDS 或 ArkUI 路线；不要把两代接口混写成一套实现。
 
 ## 能力范围
 
 本能力包支持：
 
 - 判断 HarmonyOS 工程可使用的沉浸光感路线；
-- 为 HDS 标题栏、悬浮导航Tab和底部页签选择 API 23+ 接入方案；
+- 为 HDS 标题栏、悬浮导航Tab和底部页签选择 API 23+ **材质能力**接入方案；
 - 为普通 ArkUI 组件、弹窗、菜单和自定义布局选择 API 26+ 接入方案；
 - 生成应用级或组件级改造方案，并在用户明确要求时修改工程；
 - 设计跨版本降级、设备算力适配、性能约束和测试矩阵；
@@ -21,12 +21,13 @@
 
 从工程读取或向用户确认以下信息；能够从文件中发现的内容不要重复询问：
 
-1. `compatibleSdkVersion`、`targetSdkVersion` 或等价 API 版本上下文，以及低于路线门槛时是否接受升级 `targetSdkVersion` 接入；
-2. 工程是否使用 Stage 模型，目标 module 是否为 `entry`；
-3. 当前使用 ArkUI 原生组件、HDS 组件，还是两者混合；
-4. 目标组件是标题栏、底部导航、普通容器、菜单、弹窗还是其他区域；
-5. 需要覆盖的设备形态、最低系统版本和性能档位；
-6. 用户需要方案、代码修改、验证还是故障排查。
+1. 实际参与构建的本机 SDK 根目录、`sdk-pkg.json` 和 API 版本；
+2. `compileSdkVersion`、`compatibleSdkVersion`、`targetSdkVersion` 或等价 API 版本上下文，以及低于路线门槛时是否接受升级接入；
+3. 工程是否使用 Stage 模型，目标 module 是否为 `entry`；
+4. 当前使用 ArkUI 原生组件、HDS 组件，还是两者混合；
+5. 目标组件是标题栏、底部导航、普通容器、菜单、弹窗还是其他区域；
+6. 需要覆盖的设备形态、最低系统版本和性能档位；
+7. 用户需要方案、代码修改、验证还是故障排查。
 
 版本或工程上下文不明确时，不直接生成最终代码。先输出缺失信息以及 API 23 路线和 API 26 路线之间会受影响的选择。
 
@@ -34,12 +35,14 @@
 
 | 工程范围 | 选择 |
 |---|---|
-| API 低于 23 | 按通用升级接入处理：可升级 `targetSdkVersion`/`compileSdkVersion` 至路线门槛接入，`compatibleSdkVersion` 保持不变并为低版本设备保留运行时保护和普通样式降级 |
+| API 18～19 | `HdsNavigation`/`HdsNavDestination` 组件可以存在，但尚无沉浸光感材质接口；按通用升级接入处理至 API 23 |
+| API 20～22 | `HdsNavigation`、`HdsNavDestination`、`HdsTabs` 组件可以存在，但尚无沉浸光感材质接口；按通用升级接入处理至 API 23 |
+| API 低于 18 | HDS 导航组件与沉浸光感材质均不满足；按通用升级接入处理至路线门槛 |
 | API 23～25 | 使用 UI Design Kit / HDS，只覆盖 HDS 标题栏和底部页签等支持组件 |
 | API 26+ | HDS 可继续承担导航框架；普通组件、菜单和弹窗使用 ArkUI `uiMaterial` |
 | 同时支持 API 23～26+ | HDS 作为基础路线；API 26 能力使用版本与设备能力判断保护，并保留普通样式降级 |
 
-路线门槛来自 [profile.json](profile.json) 各路线的 `minApi`。工程 API 低于门槛时，按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，是否升级、选择哪条路线由用户决定；存在多条可用路线或升级选项时必须询问用户，仅一条路线且无需升级时给出建议路线和理由即可。
+路线门槛来自 [profile.json](profile.json) 各路线的 `minApi`，表示该特性的能力门槛，而不是承载组件的起始版本。HDS 组件家族从 API 18 开始出现，其中 `HdsNavigation`/`HdsNavDestination` 从 API 18 可用，`HdsTabs` 从 API 20 可用；沉浸光感材质相关入口从 API 23 才可用。因此，扫描到旧版 HDS 组件不能据此判定沉浸光感可接入。工程 API 低于门槛时，按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，是否升级、选择哪条路线由用户决定；存在多条可用路线或升级选项时必须询问用户，仅一条路线且无需升级时给出建议路线和理由即可。
 
 完整读取 [兼容性与选型](compatibility.md)，完成版本和能力门禁后再设计实现。
 
@@ -56,8 +59,8 @@
 
 ## 执行流程
 
-1. 扫描工程并记录 API、模型、module、组件体系和目标组件。
-2. 运行 `inspect-project.mjs` 和 `check-compatibility.mjs`，列出可用路线与升级选项；涉及升级或多条路线时由用户确认后再确定 HDS、ArkUI 或组合路线，不满足条件时给出降级结论。
+1. 运行 `inspect-project.mjs` 验证本机 SDK 清单并扫描工程，记录 compile/target/compatible API、模型、module、组件体系和目标组件。
+2. 运行 `check-compatibility.mjs`，按本机 SDK API 与路线 `minApi` 列出可用路线和升级选项；涉及升级或多条路线时由用户确认后再确定 HDS、ArkUI 或组合路线，不满足条件时给出降级结论。
 3. 列出将修改的依赖、配置、页面和组件，以及旧版本降级行为。
 4. 用户只要求设计时交付方案并停止；用户明确要求实现时才修改工程。
 5. 实现时复用项目现有架构和类型，不用动态类型或不安全断言掩盖接口差异。
@@ -68,7 +71,7 @@
 
 输出至少包含：
 
-1. **环境与选型**：API 范围、Stage/entry 条件、HDS/ArkUI 路线及理由。
+1. **环境与选型**：本机 SDK 根清单和 API、工程 API 范围、Stage/entry 条件、HDS/ArkUI 路线及理由。
 2. **改动内容**：配置、依赖、文件、组件和关键参数。
 3. **兼容与降级**：旧版本、不支持设备、用户设置和普通视觉备选方案。
 4. **性能约束**：材质面积、嵌套、动态背景、动画和属性冲突。
@@ -76,13 +79,15 @@
 
 ## 资料基线
 
-能力包依据工作区《沉浸光感接入与 API 版本限制》整理，资料日期为 2026-08-31。涉及项目版本或新版 SDK 时，优先核对同版本官方文档，并把资料差异记录在交付结果中。
+能力包依据工作区《沉浸光感接入与 API 版本限制》整理，组件基线与材质门槛于 2026-09-01 使用本机官方 SDK 声明和同版本官方文档复核。涉及项目版本或新版 SDK 时，优先核对同版本官方文档，并把资料差异记录在交付结果中。
 
 主要官方资料：
 
 - [沉浸光感最佳实践](https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-spatiality-immersive)
 - [ArkUI 沉浸光感指南](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense)
 - [UI Design Kit 沉浸光感指南](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material)
+- [HdsNavigation API](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsnavigation)
+- [HdsTabs API](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdstabs)
 - [hdsMaterial API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial)
 - [uiMaterial API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uimaterial)
 - [systemMaterial 通用属性](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-universal-attributes-image-effect#systemmaterial)

@@ -8,6 +8,7 @@
       "files": [],
       "expectations": [
         "明确 API 23～25 选择 UI Design Kit / HDS 路线",
+        "选路前验证本机 SDK 根清单 API 不低于 23",
         "提及 HdsNavigation、HdsTabs 和 ADAPTIVE 材质配置",
         "没有在 API 23～25 主路径直接使用 API 26 uiMaterial",
         "包含设备能力、性能和普通样式降级说明"
@@ -20,6 +21,7 @@
       "files": [],
       "expectations": [
         "使用 ArkUI uiMaterial 与 systemMaterial 路线",
+        "选路前验证本机 SDK 根清单 API 不低于 26",
         "应用级配置限定为 targetAPIVersion 不低于 26 且位于 entry module",
         "包含 apiAvailable 和 isImmersiveMaterialSupported 能力保护",
         "包含低算力降级、性能约束和验证矩阵"
@@ -56,6 +58,7 @@
       "files": [],
       "expectations": [
         "把悬浮导航Tab路由到 immersive-light 能力包",
+        "核对本机 SDK 根清单 API 达到 HDS 路线门槛后再选路",
         "选择 HDS HdsTabs 和 barFloatingStyle 路线",
         "优先使用 ADAPTIVE 材质类型与等级",
         "包含不支持完整材质设备的降级和验证要求"
@@ -104,9 +107,23 @@
       "files": [],
       "expectations": [
         "没有直接给出不支持或终止结论",
+        "先验证本机 SDK，并在 SDK API 低于 23/26 时提供安装或切换 SDK 的选项",
         "提供升级 targetSdkVersion/compileSdkVersion 的接入选项",
         "说明保持 compatibleSdkVersion 并为低版本设备做运行时保护与降级",
         "把可选接入方式列给用户，由用户决定路线"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "我的 API 18 工程已经在用 HdsNavigation，是否说明可以直接加沉浸光感材质？",
+      "expected_output": "明确区分组件版本与材质能力版本：HdsNavigation 组件自身从 API 18 可用，但 HDS 沉浸光感材质接口从 API 23 才可用。先检查本机 SDK 根清单和有效 compile API；当前不应判定材质路线已支持，应提供升级到 API 23 的接入选项，并为 API 18～22 设备保留整树或普通视觉降级。",
+      "files": [],
+      "expectations": [
+        "说明 HdsNavigation 组件自身从 API 18 可用",
+        "说明沉浸光感材质接口从 API 23 才可用",
+        "没有因扫描到 HdsNavigation 就判定材质路线已支持",
+        "仍按本机 SDK 根清单 API 和有效 compile API 进行路线门禁",
+        "提供升级到 API 23 的选项以及旧设备降级要求"
       ]
     }
   ]

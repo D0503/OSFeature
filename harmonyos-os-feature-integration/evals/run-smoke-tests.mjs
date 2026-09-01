@@ -62,6 +62,8 @@ assert.match(skill, /窗口沉浸式.*不是.*沉浸光感/)
 assert.match(skill, /harmonyos-doc-review/)
 assert.match(skill, /普通 ArkUI/)
 assert.match(skill, /悬浮导航Tab/)
+assert.match(skill, /验证本机 SDK/)
+assert.match(skill, /sdk-pkg\.json/)
 
 const entry = await readFile(resolve(featureDir, "README.md"), "utf8")
 const compatibility = await readFile(resolve(featureDir, "compatibility.md"), "utf8")
@@ -78,6 +80,9 @@ assert.match(entry, /performance-validation\.md/)
 assert.match(entry, /悬浮导航Tab/)
 
 assert.match(compatibility, /HarmonyOS 6\.1\.0、API 23/)
+assert.match(compatibility, /HdsNavigation[^\n]*HarmonyOS 5\.1\.0、API 18/)
+assert.match(compatibility, /HdsTabs[^\n]*HarmonyOS 6\.0\.0、API 20/)
+assert.match(compatibility, /组件存在[^\n]*特性可用/)
 assert.match(compatibility, /targetAPIVersion >= 26\.0\.0/)
 assert.match(compatibility, /Stage 模型/)
 assert.match(compatibility, /hdsMaterial\.MaterialLevel[\s\S]*uiMaterial\.MaterialLevel/)
@@ -94,9 +99,18 @@ assert.match(validation, /Web 同层渲染/)
 assert.match(validation, /测试矩阵/)
 assert.match(validation, /验收标准/)
 assert.equal(profile.featureId, "immersive-light")
-assert.equal(profile.routes.find((route) => route.id === "hds")?.minApi, 23)
+const hdsRoute = profile.routes.find((route) => route.id === "hds")
+assert.equal(hdsRoute?.minApi, 23)
+assert.equal(hdsRoute?.minApiMeaning, "immersive-material-capability")
+assert.equal(hdsRoute?.componentFamilyMinApi, 18)
+assert.deepEqual(hdsRoute?.componentBaselines, [
+  { component: "HdsNavigation", minApi: 18 },
+  { component: "HdsNavDestination", minApi: 18 },
+  { component: "HdsTabs", minApi: 20 }
+])
 assert.equal(profile.routes.find((route) => route.id === "arkui")?.minApi, 26)
 assert.equal(profile.routes.find((route) => route.id === "arkui")?.applicationLevel.minTargetApi, 26)
+assert.ok(profile.routes.every((route) => !("sdkRequirements" in route)))
 assert.match(JSON.stringify(profile), /snapshot-first-verify-on-change-or-conflict/)
 
 for (const path of [
@@ -125,7 +139,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-os-feature-integration")
-assert.equal(evals.evals.length, 9)
+assert.equal(evals.evals.length, 10)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)
 assert.match(floatingTabEval?.prompt ?? "", /悬浮导航Tab/)
@@ -133,5 +147,9 @@ assert.ok(floatingTabEval?.expectations.some((item) => item.includes("immersive-
 const upgradeEval = evals.evals.find((item) => item.id === 9)
 assert.match(upgradeEval?.prompt ?? "", /API 20/)
 assert.ok(upgradeEval?.expectations.some((item) => item.includes("由用户决定")))
+const componentBaselineEval = evals.evals.find((item) => item.id === 10)
+assert.match(componentBaselineEval?.prompt ?? "", /HdsNavigation/)
+assert.ok(componentBaselineEval?.expectations.some((item) => item.includes("组件自身")))
+assert.ok(componentBaselineEval?.expectations.some((item) => item.includes("API 23")))
 
-process.stdout.write(`${JSON.stringify({ status: "passed", assertions: 54 })}\n`)
+process.stdout.write(`${JSON.stringify({ status: "passed", assertions: 69 })}\n`)

@@ -5,14 +5,14 @@ import { fileURLToPath } from "node:url"
 import { evaluateCompatibility, inspectProject, loadFeature, parseCliArgs, verifyInspection } from "./lib/project-tools.mjs"
 
 try {
-  const args = parseCliArgs(process.argv.slice(2), ["project", "feature", "route"])
+  const args = parseCliArgs(process.argv.slice(2), ["project", "feature", "route", "sdk"])
   if (!args.project) throw new Error("Required option: --project <path>")
   if (!args.feature) throw new Error("Required option: --feature <id>")
   const route = args.route ?? "auto"
   if (!["auto", "hds", "arkui"].includes(route)) throw new Error("--route must be auto, hds, or arkui")
   const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const { profile } = await loadFeature(skillRoot, args.feature)
-  const inspection = await inspectProject(args.project)
+  const inspection = await inspectProject(args.project, { sdkPath: args.sdk })
   const compatibility = evaluateCompatibility(inspection, profile)
   const result = verifyInspection(inspection, compatibility, route)
   process.stdout.write(`${JSON.stringify({ ...result, project: inspection.projectRoot }, null, 2)}\n`)

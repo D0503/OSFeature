@@ -99,6 +99,172 @@ function parseApiLevel(value) {
   return apiToken ? Number(apiToken[1]) : null
 }
 
+function unescapePropertyPath(value) {
+  return value.trim()
+    .replace(/^['"]|['"]$/g, "")
+    .replace(/\\:/g, ":")
+    .replace(/\\\\/g, "\\")
+}
+
+function parseLocalProperties(content) {
+  const values = new Map()
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim()
+    if (!line || line.startsWith("#") || line.startsWith("!")) continue
+    const separator = line.search(/(?<!\\)[=:]/)
+    if (separator < 1) continue
+    const key = line.slice(0, separator).trim()
+    const value = unescapePropertyPath(line.slice(separator + 1))
+    if (key && value) values.set(key, value)
+  }
+  return values
+}
+
+async function sdkPackageAt(path) {
+  const manifestPath = resolve(path, "sdk-pkg.json")
+  if (!(await exists(manifestPath))) return null
+  try {
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8"))
+    const data = manifest?.data ?? manifest
+    const apiVersion = parseApiLevel(data?.apiVersion)
+    if (apiVersion === null) return { path, manifestPath, manifest, apiVersion: null }
+    return {
+      path,
+      manifestPath,
+      manifest,
+      apiVersion,
+      version: typeof data.version === "string" ? data.version : "unknown",
+      platformVersion: typeof data.platformVersion === "string" ? data.platformVersion : "unknown",
+      releaseType: typeof data.releaseType === "string" ? data.releaseType : "unknown"
+    }
+  } catch (error) {
+    return { path, manifestPath, error: error instanceof Error ? error.message : String(error), apiVersion: null }
+  }
+}
+
+async function findSdkPackages(candidatePath) {
+  const candidate = resolve(candidatePath)
+  const direct = await sdkPackageAt(candidate)
+  if (direct) return [direct]
+
+  const defaultPackage = await sdkPackageAt(resolve(candidate, "default"))
+  if (defaultPackage) return [defaultPackage]
+
+  let entries = []
+  try {
+    entries = await readdir(candidate, { withFileTypes: true })
+  } catch {
+    return []
+  }
+  const packages = []
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const item = await sdkPackageAt(resolve(candidate, entry.name))
+    if (item) packages.push(item)
+  }
+  return packages
+}
+
+async function inspectLocalSdk(projectRoot, explicitSdkPath, preferredApi) {
+  const localPropertiesPath = resolve(projectRoot, "local.properties")
+  const candidates = []
+  if (explicitSdkPath) {
+    candidates.push({ source: "cli", path: explicitSdkPath, authoritative: true })
+  } else if (await exists(localPropertiesPath)) {
+    try {
+      const properties = parseLocalProperties(await readFile(localPropertiesPath, "utf8"))
+      for (const key of ["sdk.dir", "hwsdk.dir"]) {
+        const value = properties.get(key)
+        if (!value) continue
+        candidates.push({
+          source: `local.properties:${key}`,
+          path: isAbsolute(value) ? value : resolve(projectRoot, value),
+          authoritative: true,
+          configurationPath: slash(relative(projectRoot, localPropertiesPath))
+        })
+      }
+    } catch (error) {
+      return {
+        status: "invalid",
+        source: "local.properties",
+        path: null,
+        apiVersion: "unknown",
+        error: error instanceof Error ? error.message : String(error),
+        evidence: []
+      }
+    }
+  }
+
+  if (candidates.length === 0) {
+    for (const key of ["DEVECO_SDK_HOME", "HARMONYOS_SDK_HOME", "OHOS_SDK_HOME"]) {
+      if (process.env[key]) candidates.push({ source: `env:${key}`, path: process.env[key], authoritative: false })
+    }
+  }
+
+  if (candidates.length === 0) {
+    return {
+      status: "missing",
+      source: null,
+      path: null,
+      apiVersion: "unknown",
+      error: "未从 --sdk、local.properties 或受支持的环境变量定位本机 HarmonyOS SDK",
+      evidence: []
+    }
+  }
+
+  for (const candidate of candidates) {
+    const packages = await findSdkPackages(candidate.path)
+    if (packages.length === 0) {
+      if (candidate.authoritative) {
+        return {
+          status: "invalid",
+          source: candidate.source,
+          path: slash(resolve(candidate.path)),
+          apiVersion: "unknown",
+          error: "SDK 路径中未找到可解析的 sdk-pkg.json",
+          evidence: candidate.configurationPath ? [{ kind: "sdk-location", path: candidate.configurationPath }] : []
+        }
+      }
+      continue
+    }
+    const validPackages = packages.filter((item) => Number.isInteger(item.apiVersion))
+    const selected = validPackages.find((item) => item.apiVersion === preferredApi) ??
+      validPackages.sort((a, b) => b.apiVersion - a.apiVersion)[0]
+    if (!selected) {
+      return {
+        status: "invalid",
+        source: candidate.source,
+        path: slash(resolve(candidate.path)),
+        apiVersion: "unknown",
+        error: packages[0]?.error ?? "sdk-pkg.json 缺少有效 apiVersion",
+        evidence: packages.map((item) => ({ kind: "sdk-manifest", path: slash(item.manifestPath) }))
+      }
+    }
+    return {
+      status: "valid",
+      source: candidate.source,
+      path: slash(resolve(selected.path)),
+      apiVersion: selected.apiVersion,
+      version: selected.version,
+      platformVersion: selected.platformVersion,
+      releaseType: selected.releaseType,
+      evidence: [
+        ...(candidate.configurationPath ? [{ kind: "sdk-location", path: candidate.configurationPath }] : []),
+        { kind: "sdk-manifest", path: slash(selected.manifestPath) }
+      ]
+    }
+  }
+
+  return {
+    status: "missing",
+    source: null,
+    path: null,
+    apiVersion: "unknown",
+    error: "候选路径中未找到可用的 HarmonyOS SDK",
+    evidence: []
+  }
+}
+
 function collectMatches(files, definition) {
   const evidence = []
   let count = 0
@@ -210,7 +376,7 @@ const SIGNALS = [
   { id: "materialEmpty", regex: /\bMaterial\.empty\b/ }
 ]
 
-export async function inspectProject(projectPath) {
+export async function inspectProject(projectPath, options = {}) {
   const projectRoot = resolve(projectPath)
   let projectInfo
   try {
@@ -224,6 +390,9 @@ export async function inspectProject(projectPath) {
   const modules = inspectModules(files)
   const compatible = firstConfigValue(files, "compatibleSdkVersion")
   const target = firstConfigValue(files, "targetSdkVersion")
+  const compile = firstConfigValue(files, "compileSdkVersion")
+  const localSdk = await inspectLocalSdk(projectRoot, options.sdkPath, compile.value)
+  const effectiveCompile = compile.value ?? (localSdk.status === "valid" ? localSdk.apiVersion : null)
   const hasStageConfig = modules.length > 0
   const hasFaConfig = files.some((file) => /(?:^|\/)config\.json$/.test(file.path))
   const model = hasStageConfig && !hasFaConfig ? "stage" : hasFaConfig && !hasStageConfig ? "fa" : "unknown"
@@ -232,7 +401,9 @@ export async function inspectProject(projectPath) {
   if (model === "unknown") unknown.push("model")
   if (compatible.value === null) unknown.push("compatibleApi")
   if (target.value === null) unknown.push("targetApi")
+  if (effectiveCompile === null) unknown.push("compileApi")
   if (modules.length === 0) unknown.push("modules")
+  if (localSdk.status !== "valid") unknown.push("localSdk")
 
   return {
     schemaVersion: "1.0",
@@ -240,8 +411,11 @@ export async function inspectProject(projectPath) {
     model,
     api: {
       compatible: compatible.value ?? "unknown",
-      target: target.value ?? "unknown"
+      target: target.value ?? "unknown",
+      compile: effectiveCompile ?? "unknown",
+      compileSource: compile.value === null ? (localSdk.status === "valid" ? "local-sdk-default" : "unknown") : "build-profile"
     },
+    localSdk,
     modules,
     configurationFiles: files
       .filter((file) => /(?:build-profile\.json5|module\.json5|config\.json)$/.test(file.path))
@@ -251,7 +425,7 @@ export async function inspectProject(projectPath) {
       arkuiMaterial: signals.uiMaterial.detected || signals.systemMaterial.detected
     },
     signals,
-    evidence: [compatible.evidence, target.evidence].filter(Boolean),
+    evidence: [compatible.evidence, target.evidence, compile.evidence, ...localSdk.evidence].filter(Boolean),
     unknown,
     scan: {
       filesRead: files.length,
@@ -263,8 +437,28 @@ export async function inspectProject(projectPath) {
 export function evaluateCompatibility(inspection, profile) {
   const compatible = Number.isInteger(inspection.api.compatible) ? inspection.api.compatible : null
   const target = Number.isInteger(inspection.api.target) ? inspection.api.target : null
+  const compile = Number.isInteger(inspection.api.compile) ? inspection.api.compile : null
   const stage = inspection.model === "stage"
   const entryModules = inspection.modules.filter((module) => module.type === "entry")
+  const localSdk = inspection.localSdk
+  const sdkApi = Number.isInteger(localSdk?.apiVersion) ? localSdk.apiVersion : null
+  const sdkValid = localSdk?.status === "valid" && sdkApi !== null
+  const sdk = {
+    status: sdkValid ? "valid" : "insufficient_context",
+    sdkStatus: localSdk?.status ?? "missing",
+    sdkPath: localSdk?.path ?? null,
+    apiVersion: sdkApi ?? "unknown",
+    routes: sdkValid
+      ? Object.fromEntries(profile.routes.map((route) => {
+        const apiSatisfied = sdkApi >= route.minApi
+        return [route.id, {
+          status: apiSatisfied ? "supported" : "sdk_too_old",
+          minApi: route.minApi,
+          apiSatisfied
+        }]
+      }))
+      : {}
+  }
 
   const base = {
     schemaVersion: "1.0",
@@ -278,11 +472,21 @@ export function evaluateCompatibility(inspection, profile) {
       eligible: false,
       reasons: []
     },
+    sdk,
     missingConditions: [],
     fallbackRequirements: [
       "preserve-standard-background-border",
       "check-device-material-capability"
     ]
+  }
+
+  if (!sdkValid) {
+    return {
+      ...base,
+      missingConditions: [
+        localSdk?.error ?? "本机 SDK 未定位或未通过验证；使用 --sdk 指定实际 SDK 路径"
+      ]
+    }
   }
 
   if (!stage) {
@@ -300,16 +504,22 @@ export function evaluateCompatibility(inspection, profile) {
   const guardedRoutes = []
   const upgradeOptions = []
   for (const route of routes) {
-    if (compatible >= route.minApi) {
+    const sdkRoute = sdk.routes[route.id]
+    const sdkAvailable = sdkRoute?.status === "supported"
+    const compileAvailable = compile === null ? sdkApi >= route.minApi : compile >= route.minApi
+    if (sdkAvailable && compileAvailable && compatible >= route.minApi) {
       availableRoutes.push(route.id)
-    } else if (target !== null && target >= route.minApi) {
+    } else if (sdkAvailable && compileAvailable && target !== null && target >= route.minApi) {
       availableRoutes.push(route.id)
       guardedRoutes.push(route.id)
     } else {
       upgradeOptions.push({
         route: route.id,
         upgradeTargetApi: route.minApi,
-        note: `Upgrade targetSdkVersion/compileSdkVersion to ${route.minApi}, keep compatibleSdkVersion at ${compatible}, and protect lower devices at runtime`
+        upgradeCompileApi: route.minApi,
+        upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
+        sdkStatus: sdkRoute?.status ?? "not_checked",
+        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, upgrade targetSdkVersion when the route requires it, keep compatibleSdkVersion at ${compatible}, and protect lower devices at runtime`
       })
     }
   }
@@ -321,7 +531,7 @@ export function evaluateCompatibility(inspection, profile) {
       upgradeOptions,
       decisionRequired: true,
       missingConditions: [
-        `Compatible API ${compatible} is below every route minimum; integration requires upgrading targetSdkVersion/compileSdkVersion while keeping compatibleSdkVersion for lower devices`
+        `No route is currently supported by both the project configuration and the verified local SDK API; install or select the required SDK version and upgrade compileSdkVersion/targetSdkVersion as needed while keeping compatibleSdkVersion for lower devices`
       ],
       fallbackRequirements: ["runtime-version-guard", "preserve-standard-background-border"]
     }

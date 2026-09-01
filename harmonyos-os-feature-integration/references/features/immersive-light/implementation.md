@@ -2,7 +2,9 @@
 
 先按 [兼容性与选型](compatibility.md) 确定路线。示例用于说明接口组合；修改真实工程时应复用项目现有组件、类型、主题资源和状态管理方式。
 
-## HDS 路线：API 23+
+## HDS 沉浸光感材质路线：API 23+
+
+`HdsNavigation`/`HdsNavDestination` 从 API 18 起可用，`HdsTabs` 从 API 20 起可用；下面使用的 `hdsMaterial`、`systemMaterialEffect` 和悬浮页签 `barFloatingStyle` 则从 API 23 起可用。已有旧版 HDS 组件不等于已经具备沉浸光感能力，不能把组件的 since 版本当作本路线门槛。
 
 标题栏或底部导航优先使用系统自适应材质：
 

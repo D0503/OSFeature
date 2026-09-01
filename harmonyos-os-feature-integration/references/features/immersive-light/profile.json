@@ -6,8 +6,24 @@
     {
       "id": "hds",
       "minApi": 23,
+      "minApiMeaning": "immersive-material-capability",
       "maxApi": null,
       "requiresStage": true,
+      "componentFamilyMinApi": 18,
+      "componentBaselines": [
+        {
+          "component": "HdsNavigation",
+          "minApi": 18
+        },
+        {
+          "component": "HdsNavDestination",
+          "minApi": 18
+        },
+        {
+          "component": "HdsTabs",
+          "minApi": 20
+        }
+      ],
       "components": [
         "HdsNavigation",
         "HdsNavDestination",
@@ -18,6 +34,7 @@
     {
       "id": "arkui",
       "minApi": 26,
+      "minApiMeaning": "immersive-material-capability",
       "maxApi": null,
       "requiresStage": true,
       "components": [
@@ -68,12 +85,15 @@
     "validation": "performance-validation.md"
   },
   "evidence": {
-    "baselineDate": "2026-08-31",
+    "baselineDate": "2026-09-01",
     "policy": "snapshot-first-verify-on-change-or-conflict",
     "sources": [
       "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-spatiality-immersive",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense",
-      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material"
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
+      "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsnavigation",
+      "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdstabs",
+      "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsmaterial"
     ]
   }
 }

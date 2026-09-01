@@ -3,7 +3,8 @@
 ## 环境
 
 - 工程：
-- API / SDK：
+- 本机 SDK：根目录、`sdk-pkg.json`、API/版本
+- 工程 API：compile / target / compatible
 - 应用模型与 module：
 - 目标组件与设备：
 

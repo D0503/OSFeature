@@ -1,16 +1,24 @@
 # 兼容性模型
 
-兼容性判断同时考虑最低 API、目标 API、应用模型、module 类型、组件体系、设备能力和运行时开关。
+兼容性判断同时考虑本机 SDK 根清单 API、工程 compile/compatible/target API、应用模型、module 类型、组件体系、设备能力和运行时开关。
 
 - `supported`：所选路线全部必要条件有工程证据。
 - `conditional`：基础路线可用，但目标用法仍有明确条件。
 - `upgrade_available`：工程 API 低于所有路线门槛，但可通过升级接入满足；不是终止结论。
 - `unsupported`：所有路线均被已知工程事实排除，且升级无法补救（如 FA 模型）。
-- `insufficient_context`：关键字段无法发现，不能可靠选路。
+- `insufficient_context`：关键字段、本机 SDK 或根清单无法发现，不能可靠选路。
+
+## 本机 SDK 前置门禁
+
+- 先从显式 `--sdk`、工程 `local.properties` 的 `sdk.dir`/`hwsdk.dir` 或受支持环境变量定位 SDK；自动发现失败时要求提供路径，不扫描整块磁盘猜测安装位置。
+- 只读取 SDK 根目录 `sdk-pkg.json` 取得本机 SDK API 与版本，不扫描 SDK 子包、声明文件或具体接口符号。
+- 路线只有在本机 SDK API 和有效 compile API 均达到能力包 `routes[].minApi` 时才可进入候选集；工程未显式声明 `compileSdkVersion` 时，有效 compile API 来自已验证的活动 SDK，并标记为 `local-sdk-default`。仅有 `targetSdkVersion` 或 `compatibleSdkVersion` 不能证明本机可编译。
+- `routes[].minApi` 表示“该特性路线的能力门槛”，不表示承载组件或所属组件家族的最早版本。能力包可用 `componentFamilyMinApi` 和 `componentBaselines` 记录组件事实，但这些字段不得降低特性路线门槛。例如 HDS 导航组件可早于沉浸光感材质存在。
+- 具体接口是否存在不在路线阶段判断，由实施后的源码静态验证和真实工程构建确认。
 
 ## 升级接入（对所有特性通用）
 
-任何已注册特性都支持“升级接入”：当工程 `compatibleSdkVersion` 低于路线所需 API 时，可升级 `targetSdkVersion` 与 `compileSdkVersion` 至路线门槛来获得接口，`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。
+任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 API 门槛的 SDK，再升级 `targetSdkVersion` 与 `compileSdkVersion` 至路线门槛来获得接口，`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。
 
 - 路线可用性按 `max(compatibleSdkVersion, targetSdkVersion)` 与各路线门槛（profile `routes[].minApi`）判定；
 - `targetSdkVersion` 已达门槛而 `compatibleSdkVersion` 未达时，路线可用，但低版本设备必须做运行时版本保护（如 `deviceInfo.apiAvailable`），并保留普通背景、边框等降级样式；

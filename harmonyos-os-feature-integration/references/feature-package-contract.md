@@ -13,7 +13,7 @@
 - 位于 `references/features/` 下且真实存在的 `entry`。
 - 与入口同属能力目录的机器可读 `profile`。
 
-`profile.json` 至少包含 `schemaVersion`、`featureId`、路线、版本门禁、模型/module 条件、约束、文档映射和证据策略。脚本只读取 profile 中明确声明的字段；未知条件保留为未知，不从文字猜测。
+`profile.json` 至少包含 `schemaVersion`、`featureId`、路线、`minApi` 版本门禁、模型/module 条件、约束、文档映射和证据策略。`routes[].minApi` 必须表示特性能力本身的路线门槛，不得借用承载组件的较早 since 版本。若组件早于特性能力出现，可另外记录 `componentFamilyMinApi` 和逐组件 `componentBaselines`，供解释和迁移分析使用；它们不参与降低路线门槛。本机 SDK 路由只将根目录 `sdk-pkg.json` 的 API 与 `routes[].minApi` 比较，不在 profile 中维护声明路径或接口符号。脚本只读取 profile 中明确声明的字段；未知条件保留为未知，不从文字猜测。
 
 ## 能力入口必备内容
 
@@ -34,6 +34,6 @@
 
 1. 为新特性选择稳定 ID，在 `references/features/<id>/` 中完成自包含能力包与 `profile.json`。
 2. 按上述八类内容逐项核验，并为入口建立清晰的渐进加载规则。
-3. 增加工程夹具或等价输入，覆盖正常接入、版本不满足、能力降级、故障排查和相邻能力误路由。
+3. 增加工程与本机 SDK 夹具或等价输入，覆盖正常接入、SDK 版本不满足、工程版本不满足、能力降级、故障排查和相邻能力误路由。
 4. 运行结构校验、冒烟测试和行为评测，修正资料缺口。
 5. 全部通过后，以 `status: ready` 添加注册项；不要为尚未完成的能力预留注册记录。

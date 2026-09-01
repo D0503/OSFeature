@@ -4,13 +4,27 @@
 
 | 能力 | 起始版本 | 限制 |
 |---|---:|---|
-| HDS 沉浸光感 | HarmonyOS 6.1.0、API 23 | 用于 HDS 标题栏、底部页签等支持组件；Stage 模型 |
+| HDS 组件家族起点 | HarmonyOS 5.1.0、API 18 | 表示 HDS 组件开始出现，不代表沉浸光感材质可用 |
+| `HdsNavigation` / `HdsNavDestination` 组件 | HarmonyOS 5.1.0、API 18 | 仅为导航组件自身的起始版本；Stage 模型 |
+| `HdsTabs` 组件 | HarmonyOS 6.0.0、API 20 | 仅为页签组件自身的起始版本；Stage 模型 |
+| HDS 沉浸光感材质接口 | HarmonyOS 6.1.0、API 23 | `hdsMaterial`、`systemMaterialEffect`、`barFloatingStyle` 等能力从此版本可用；Stage 模型 |
 | ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26 | 用于支持通用属性的组件、弹窗、菜单和自定义布局；Stage 模型 |
 | API 26 应用级开关 | `targetAPIVersion >= 26.0.0` | 仅 `entry` 类型 module 的 `module.json5` 配置生效 |
 | API 26 跨版本调用 | API 26 接口可用时 | 使用 `deviceInfo.apiAvailable('26.0.0')` 和材质能力判断保护 |
 | 升级接入（通用） | 工程低于路线门槛时 | 升级 `targetSdkVersion`/`compileSdkVersion` 至 23（HDS）或 26（ArkUI），`compatibleSdkVersion` 保持不变；低版本设备需运行时保护与普通样式降级，是否升级与路线由用户决定 |
 
-API 23～25 只选择 HDS 路线。API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
+这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
+
+## 本机 SDK 举证
+
+选路前必须验证实际参与构建的本机 SDK，不以工程 target API 代替：
+
+- HDS 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 23；
+- ArkUI 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 26；
+- 路线阶段不扫描 `.d.ts`、`.d.ets`、SDK 子包或具体接口符号；具体接口由实施后的源码检查和真实工程构建确认；
+- 工程 `compileSdkVersion` 也必须达到路线门槛。`compatibleSdkVersion` 决定旧设备范围，`targetSdkVersion` 决定目标行为，两者都不能单独证明接口可编译。
+
+本机 SDK 路由只比较根清单 API 与沉浸光感路线门槛 23，不通过扫描 HDS 组件符号推断材质能力。工程扫描发现 `HdsNavigation` 或 `HdsTabs` 时，只能说明项目采用了相应组件体系；若 SDK 或有效 compile API 仍处于 18～22，结果应为可升级接入，而不是 HDS 沉浸光感已支持。
 
 ## HDS 支持范围
 
