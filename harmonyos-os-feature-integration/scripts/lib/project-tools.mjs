@@ -364,9 +364,16 @@ function inspectModules(files) {
 const SIGNALS = [
   { id: "hdsNavigation", regex: /\bHds(?:Navigation|NavDestination)\b/ },
   { id: "hdsTabs", regex: /\bHdsTabs\b/ },
+  { id: "nativeNavigation", regex: /\b(?:Navigation|NavDestination)\s*\(/ },
+  { id: "nativeTabs", regex: /\bTabs\s*\(/ },
+  { id: "nativeTabsFloatingStyle", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(/ },
+  { id: "nativeTabsFloatingMaterial", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(\s*\{[\s\S]{0,800}?\bsystemMaterial\s*:/ },
   { id: "barFloatingStyle", regex: /\bbarFloatingStyle\b/ },
   { id: "barPositionEnd", regex: /\bbarPosition\s*:\s*BarPosition\.End\b|\bbarPosition\s*\(\s*BarPosition\.End\s*\)/ },
   { id: "barOverlapTrue", regex: /\bbarOverlap\s*\(\s*true\s*\)/ },
+  { id: "verticalFalse", regex: /\bvertical\s*\(\s*false\s*\)|\bvertical\s*:\s*false\b/ },
+  { id: "barStyleStack", regex: /\bbarStyle\s*:\s*BarStyle\.STACK\b/ },
+  { id: "barBackgroundConflict", regex: /\b(?:barBackgroundColor|barBackgroundBlurStyle)\s*\(/ },
   { id: "barHeight", regex: /\bbarHeight\s*\(/ },
   { id: "barBottomMarginPositive", regex: /\bbarBottomMargin\s*:\s*(?:[1-9]\d*(?:\.\d+)?|0\.\d*[1-9]\d*)\b/ },
   { id: "layoutBottomPadding", regex: /\bpadding\s*\(\s*\{[\s\S]{0,300}?\bbottom\s*:/ },
@@ -378,10 +385,18 @@ const SIGNALS = [
   { id: "sdkApiVersion24Guard", regex: /\bsdkApiVersion\s*>=\s*24(?:\.0)?\b/ },
   { id: "standardTabs", regex: /\bTabs\s*\(/ },
   { id: "sdkApiVersion", regex: /\bsdkApiVersion\b/ },
+  { id: "sdkApiVersion26Guard", regex: /\bsdkApiVersion\s*>=\s*26(?:\.0)?\b/ },
   { id: "adaptiveMaterial", regex: /\b(?:MaterialType|MaterialLevel)\.ADAPTIVE\b|\bADAPTIVE\b/ },
   { id: "hdsMaterialEffect", regex: /\bsystemMaterialEffect\b/ },
   { id: "uiMaterial", regex: /\buiMaterial\b|@kit\.ArkUI.*uiMaterial|@ohos\.arkui\.uiMaterial/ },
   { id: "systemMaterial", regex: /\bsystemMaterial\b/ },
+  { id: "menuSystemMaterial", regex: /\bmenuSystemMaterial\b/ },
+  { id: "backgroundSystemMaterial", regex: /\b(?:backgroundSystemMaterial|selectedBackgroundSystemMaterial|iconBackgroundSystemMaterial)\b/ },
+  { id: "alphabetIndexer", regex: /\bAlphabetIndexer\s*\(/ },
+  { id: "selectComponent", regex: /\bSelect\s*\(/ },
+  { id: "toggleCheckbox", regex: /\bToggle\s*\(\s*\{[\s\S]{0,200}?\btype\s*:\s*ToggleType\.Checkbox\b/ },
+  { id: "sliderComponent", regex: /\bSlider\s*\(/ },
+  { id: "popupBackgroundConflict", regex: /\b(?:popupBackground|popupBackgroundBlurStyle)\s*\(/ },
   { id: "apiAvailable26", regex: /apiAvailable\s*\(\s*['"]26\.0\.0['"]\s*\)/ },
   { id: "materialSupported", regex: /isImmersiveMaterialSupported\s*\(/ },
   { id: "fallbackStyle", regex: /\b(?:backgroundColor|borderColor|borderWidth|backgroundBlurStyle)\s*\(/ },
@@ -435,7 +450,9 @@ export async function inspectProject(projectPath, options = {}) {
       .map((file) => file.path),
     componentSystem: {
       hds: signals.hdsNavigation.detected || signals.hdsTabs.detected,
-      arkuiMaterial: signals.uiMaterial.detected || signals.systemMaterial.detected
+      arkuiMaterial: signals.uiMaterial.detected || signals.systemMaterial.detected ||
+        signals.menuSystemMaterial.detected || signals.backgroundSystemMaterial.detected,
+      arkuiNativeNavigation: signals.nativeNavigation.detected || signals.nativeTabs.detected
     },
     signals,
     evidence: [compatible.evidence, target.evidence, compile.evidence, ...localSdk.evidence].filter(Boolean),
@@ -524,19 +541,21 @@ export function evaluateCompatibility(inspection, profile) {
     const sdkRoute = sdk.routes[route.id]
     const sdkAvailable = sdkRoute?.status === "supported"
     const compileAvailable = compile === null ? sdkApi >= route.minApi : compile >= route.minApi
-    if (sdkAvailable && compileAvailable && compatible >= route.minApi) {
+    const requiredTargetApi = route.minTargetApi ?? route.minApi
+    const targetAvailable = route.minTargetApi === undefined || (target !== null && target >= route.minTargetApi)
+    if (sdkAvailable && compileAvailable && targetAvailable && compatible >= route.minApi) {
       availableRoutes.push(route.id)
-    } else if (sdkAvailable && compileAvailable && target !== null && target >= route.minApi) {
+    } else if (sdkAvailable && compileAvailable && targetAvailable && target !== null && target >= route.minApi) {
       availableRoutes.push(route.id)
       guardedRoutes.push(route.id)
     } else {
       upgradeOptions.push({
         route: route.id,
-        upgradeTargetApi: route.minApi,
+        upgradeTargetApi: requiredTargetApi,
         upgradeCompileApi: route.minApi,
         upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
         sdkStatus: sdkRoute?.status ?? "not_checked",
-        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, upgrade targetSdkVersion when the route requires it, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path`
+        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path`
       })
     }
   }
@@ -569,9 +588,14 @@ export function evaluateCompatibility(inspection, profile) {
   const selectedRoutes = routes
     .filter((route) => availableRoutes.includes(route.id) && detectedRouteSignals[route.id])
     .map((route) => route.id)
-  if (selectedRoutes.length === 0 && recommendedRoute) selectedRoutes.push(recommendedRoute)
+  const hasDetectedRouteSignal = Object.values(detectedRouteSignals).some(Boolean)
+  if (selectedRoutes.length === 0 && !hasDetectedRouteSignal && recommendedRoute) selectedRoutes.push(recommendedRoute)
 
   const reasons = []
+  for (const route of routes.filter((item) => detectedRouteSignals[item.id] && !availableRoutes.includes(item.id))) {
+    const requiredTargetApi = route.minTargetApi ?? route.minApi
+    reasons.push(`Detected ${route.id} integration signals, but the route is unavailable; require local SDK/compile API ${route.minApi} and target API ${requiredTargetApi}`)
+  }
   for (const route of routes.filter((item) => item.applicationLevel && availableRoutes.includes(item.id))) {
     if (target === null || target < route.applicationLevel.minTargetApi) {
       reasons.push(`Application-level material requires target API ${route.applicationLevel.minTargetApi} or later (${route.id})`)
@@ -608,7 +632,12 @@ export function evaluateCompatibility(inspection, profile) {
     },
     missingConditions: reasons,
     fallbackRequirements: effectiveApi >= 26
-      ? ["apiAvailable-26", "isImmersiveMaterialSupported", "preserve-standard-background-border", "preserve-pre-integration-source-state"]
+      ? [
+          ...(availableRoutes.includes("arkui") && compatible < 26 ? ["sdkApiVersion-26-tree-guard"] : []),
+          "isImmersiveMaterialSupported",
+          "preserve-standard-background-border",
+          "preserve-pre-integration-source-state"
+        ]
       : ["query-hds-material-types-before-custom-level", "preserve-standard-background-border", "preserve-pre-integration-source-state"]
   }
 }
@@ -753,9 +782,96 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     checks.push(check("capability-guard", "Device capability query", s.adaptiveMaterial.detected ? "pass" : "warn", s.adaptiveMaterial.evidence, "Custom material levels need a device capability query"))
   } else if (route === "arkui") {
     checks.push(check("arkui-import", "ArkUI uiMaterial import", s.uiMaterial.detected ? "pass" : "fail", s.uiMaterial.evidence, "uiMaterial usage is required"))
-    checks.push(check("arkui-material-entry", "ArkUI systemMaterial entry", s.systemMaterial.detected ? "pass" : "fail", s.systemMaterial.evidence, "systemMaterial is required"))
-    checks.push(check("version-guard", "API 26 version guard", s.apiAvailable26.detected ? "pass" : "fail", s.apiAvailable26.evidence, "Protect API 26 calls with apiAvailable"))
+    const materialEntryEvidence = [
+      ...s.systemMaterial.evidence,
+      ...s.menuSystemMaterial.evidence,
+      ...s.backgroundSystemMaterial.evidence
+    ]
+    checks.push(check("arkui-material-entry", "ArkUI material entry", materialEntryEvidence.length ? "pass" : "fail", materialEntryEvidence, "Use systemMaterial or the component-specific material entry"))
+    const needsLowerVersionTree = compatibleApi !== null && compatibleApi < 26
+    checks.push(check(
+      "version-guard",
+      "API 26 lower-version tree guard",
+      !needsLowerVersionTree ? "not_applicable" : s.sdkApiVersion26Guard.detected ? "pass" : "fail",
+      s.sdkApiVersion26Guard.evidence,
+      !needsLowerVersionTree
+        ? "compatibleSdkVersion is API 26 or later"
+        : "compatibleSdkVersion is below 26; guard the whole API 26 tree with deviceInfo.sdkApiVersion >= 26"
+    ))
     checks.push(check("capability-guard", "Material capability guard", s.materialSupported.detected ? "pass" : "fail", s.materialSupported.evidence, "Check isImmersiveMaterialSupported"))
+
+    const nativeNavigationMaterial = s.nativeNavigation.detected && s.systemMaterial.detected
+    checks.push(check(
+      "arkui-navigation-stack",
+      "Native Navigation title material layout",
+      !nativeNavigationMaterial ? "not_applicable" : s.barStyleStack.detected ? "pass" : "warn",
+      [...s.nativeNavigation.evidence, ...s.barStyleStack.evidence],
+      !nativeNavigationMaterial
+        ? "No native Navigation title material target detected"
+        : s.barStyleStack.detected
+          ? "BarStyle.STACK detected for the native Navigation title material"
+          : "BarStyle.STACK is recommended when the source design allows content to extend behind the title bar"
+    ))
+
+    const nativeTabsCandidate = s.nativeTabsFloatingStyle.detected
+    const nativeTabsMaterial = s.nativeTabsFloatingMaterial.detected
+    checks.push(check(
+      "arkui-native-tabs-floating-style",
+      "Native Tabs floating material entry",
+      !nativeTabsCandidate ? "not_applicable" : nativeTabsMaterial ? "pass" : "fail",
+      [...s.nativeTabsFloatingStyle.evidence, ...s.nativeTabsFloatingMaterial.evidence],
+      "Native Tabs material requires FloatingTabBarStyle.systemMaterial"
+    ))
+    for (const [id, title, signal, message] of [
+      ["arkui-native-tabs-overlap", "Native Tabs overlap", s.barOverlapTrue, "Native floating Tabs require barOverlap(true)"],
+      ["arkui-native-tabs-horizontal", "Native Tabs horizontal layout", s.verticalFalse, "Native floating Tabs require vertical(false)"],
+      ["arkui-native-tabs-bottom", "Native Tabs bottom position", s.barPositionEnd, "Native floating Tabs require BarPosition.End"]
+    ]) {
+      checks.push(check(
+        id,
+        title,
+        !nativeTabsMaterial ? "not_applicable" : signal.detected ? "pass" : "fail",
+        [...s.nativeTabs.evidence, ...signal.evidence],
+        message
+      ))
+    }
+    checks.push(check(
+      "arkui-native-tabs-background-conflict",
+      "Native Tabs material background conflict",
+      !nativeTabsMaterial ? "not_applicable" : s.barBackgroundConflict.detected ? "warn" : "pass",
+      [...s.barFloatingStyle.evidence, ...s.barBackgroundConflict.evidence],
+      s.barBackgroundConflict.detected
+        ? "barBackgroundColor/barBackgroundBlurStyle may cover the native Tabs material"
+        : "No native Tabs bar background conflict detected"
+    ))
+
+    checks.push(check(
+      "arkui-alphabet-indexer-background-conflict",
+      "AlphabetIndexer popup material conflict",
+      !s.alphabetIndexer.detected || !s.systemMaterial.detected ? "not_applicable" : s.popupBackgroundConflict.detected ? "warn" : "pass",
+      [...s.alphabetIndexer.evidence, ...s.popupBackgroundConflict.evidence],
+      s.popupBackgroundConflict.detected
+        ? "popupBackground/popupBackgroundBlurStyle conflict with AlphabetIndexer immersive material"
+        : "No AlphabetIndexer popup background conflict detected"
+    ))
+
+    checks.push(check(
+      "arkui-select-dual-entry",
+      "Select button and menu material entries",
+      !s.selectComponent.detected || !s.systemMaterial.detected ? "not_applicable" : s.menuSystemMaterial.detected ? "pass" : "warn",
+      [...s.selectComponent.evidence, ...s.systemMaterial.evidence, ...s.menuSystemMaterial.evidence],
+      s.menuSystemMaterial.detected
+        ? "Select button and menu material entries were both detected"
+        : "Select button and dropdown menu are independent; verify whether menuSystemMaterial is also required"
+    ))
+
+    checks.push(check(
+      "arkui-toggle-checkbox",
+      "Toggle Checkbox support",
+      !s.toggleCheckbox.detected || !s.systemMaterial.detected ? "not_applicable" : "warn",
+      [...s.toggleCheckbox.evidence, ...s.systemMaterial.evidence],
+      "ToggleType.Checkbox currently does not adapt immersive material; preserve the source visual style"
+    ))
     const configured = inspection.modules.filter((module) => module.applicationMaterialState !== null)
     checks.push(check(
       "application-level-config",

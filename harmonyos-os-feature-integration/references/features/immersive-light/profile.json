@@ -63,18 +63,29 @@
     {
       "id": "arkui",
       "minApi": 26,
+      "minTargetApi": 26,
       "minApiMeaning": "immersive-material-capability",
       "maxApi": null,
       "requiresStage": true,
       "components": [
         "universal-component",
+        "Navigation",
+        "NavDestination",
+        "Tabs",
+        "AlphabetIndexer",
         "toast",
         "popup",
         "tips",
         "sheet",
         "menu",
         "dialog",
-        "select"
+        "Button",
+        "Select",
+        "Toggle",
+        "Slider",
+        "ChipGroup",
+        "SegmentButton",
+        "SegmentButtonV2"
       ],
       "applicationLevel": {
         "minTargetApi": 26,
@@ -84,6 +95,12 @@
       },
       "documents": {
         "implementation": "routes/arkui/implementation.md",
+        "activation": "routes/arkui/activation.md",
+        "commonMaterial": "routes/arkui/common-material.md",
+        "componentProfile": "routes/arkui/component-profile.json",
+        "navigation": "routes/arkui/components/navigation.md",
+        "overlays": "routes/arkui/components/overlays.md",
+        "controls": "routes/arkui/components/controls.md",
         "validation": "routes/arkui/validation.md",
         "assets": "routes/arkui/assets.md"
       }
@@ -138,6 +155,27 @@
       "minApi": 23,
       "scenario": "floating-tab-scrollable-content",
       "action": "keep-last-actionable-item-scrollable-above-floating-bar-without-changing-source-fallback"
+    },
+    {
+      "id": "arkui-target-api26",
+      "route": "arkui",
+      "minApi": 26,
+      "scenario": "all",
+      "action": "require-target-sdk-version-26"
+    },
+    {
+      "id": "arkui-native-tabs-contract",
+      "route": "arkui",
+      "minApi": 26,
+      "scenario": "native-tabs-floating-material",
+      "action": "require-bar-overlap-vertical-false-and-bottom-position"
+    },
+    {
+      "id": "arkui-explicit-disable",
+      "route": "arkui",
+      "minApi": 26,
+      "scenario": "component-opt-out",
+      "action": "use-material-empty-unless-component-documents-an-exception"
     }
   ],
   "documents": {
@@ -155,6 +193,8 @@
     "sources": [
       "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-spatiality-immersive",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
       "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsnavigation",
       "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdstabs",

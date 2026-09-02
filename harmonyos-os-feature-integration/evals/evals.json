@@ -207,6 +207,58 @@
         "共享回退资料只加载一次，两条路线的实现、资产和验证分别加载",
         "分别报告两条路线的静态检查、构建与真机结果"
       ]
+    },
+    {
+      "id": 17,
+      "prompt": "本机 SDK 和 compileSdkVersion 都是 26，但 targetSdkVersion 还是 25。我只想给一个普通 Button 显式设置 systemMaterial，可以直接接 ArkUI 沉浸光感吗？",
+      "expected_output": "不能直接接。targetSdkVersion >= 26 是 ArkUI 沉浸光感整条路线的门禁，不只限制应用级 metadata。应把升级 target API 26 作为待用户确认的接入选项；compatibleSdkVersion 可以保持原值，但 API 26 以下设备必须保留接入前 Button 的组件状态、点击反馈和普通样式。完成 target/compile/本机 SDK 门禁后，再检查 isImmersiveMaterialSupported，并评估 lightEffect 是否会替代原按压态和悬浮态。",
+      "files": [],
+      "expectations": [
+        "把 target API 26 作为整个 ArkUI 路线门禁",
+        "没有把 target API 限制误写成只针对应用级 metadata",
+        "将升级 target API 交由用户确认",
+        "compatibleSdkVersion 可保持不变且低版本保留源 Button 行为",
+        "检查能力支持及原按压态和悬浮态"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "这是原生 ArkUI Tabs，不是 HdsTabs。我想给底部 TabBar 做沉浸光感悬浮效果，应该选哪条路线？",
+      "expected_output": "选择 ArkUI 路线。使用 FloatingTabBarStyle.systemMaterial，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End；应用级 ENABLE 不会自动给底部 Tabs 开启材质。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
+      "files": [],
+      "expectations": [
+        "原生 Tabs 路由到 ArkUI 而不是 HDS",
+        "包含 FloatingTabBarStyle.systemMaterial",
+        "同时要求 barOverlap(true)、vertical(false) 和 BarPosition.End",
+        "说明应用级 ENABLE 不会自动开启底部 Tabs 材质",
+        "说明背景冲突、TabContent 限制及组合路线条件"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "应用级配置是 enable。我把 Select 的 systemMaterial 设为 undefined，为什么材质还会出现？如何只关闭下拉菜单？",
+      "expected_output": "undefined 表示恢复组件在当前 MaterialState 下的默认行为，不是明确关闭；在 ENABLE 下 Select 按钮和菜单默认都可能有材质。按钮与下拉菜单是独立入口：按钮使用 systemMaterial，菜单使用 menuSystemMaterial。只关闭菜单时把 menuSystemMaterial 设置为 uiMaterial.Material.empty，同时保留按钮当前决定；不要用一个值同时替代两个入口。",
+      "files": [],
+      "expectations": [
+        "解释 undefined 会恢复当前 MaterialState 默认行为",
+        "使用 uiMaterial.Material.empty 明确关闭",
+        "区分 systemMaterial 与 menuSystemMaterial",
+        "只关闭菜单而不误关按钮",
+        "没有把 undefined 写成所有组件的统一关闭方式"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "Toggle Checkbox 和 Slider 都传了带 THIN、interactive、lightEffect 的 ImmersiveMaterial，为什么显示结果不按这些参数变化？",
+      "expected_output": "按组件专属规则处理，不能套用通用材质工厂。ToggleType.Checkbox 当前未适配沉浸光感，应保留源样式；Toggle Switch 和 Slider 使用组件内部预设视觉参数，传入材质主要作为开启标记，不能据此推断最终 style、interactive 或 lightEffect。Slider 的交互效果还要求 SliderBlockType.DEFAULT 且 SliderStyle 不是 NONE，传入 undefined 会恢复原 Slider 样式。",
+      "files": [],
+      "expectations": [
+        "说明 Toggle Checkbox 当前不支持",
+        "说明 Toggle Switch 和 Slider 使用内部预设视觉参数",
+        "不使用通用材质工厂推断最终参数",
+        "给出 SliderBlockType.DEFAULT 与 SliderStyle 非 NONE 条件",
+        "说明 Slider 的 undefined 专属语义并保留源样式"
+      ]
     }
   ]
 }

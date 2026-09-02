@@ -13,9 +13,9 @@
 - 位于 `references/features/` 下且真实存在的 `entry`。
 - 与入口同属能力目录的机器可读 `profile`。
 
-`profile.json` 至少包含 `schemaVersion`、`featureId`、路线、`minApi` 版本门禁、模型/module 条件、`fallbackPolicy`、约束、文档映射和证据策略。`routes[].minApi` 必须表示特性能力本身的路线门槛，不得借用承载组件的较早 since 版本。若组件早于特性能力出现，可另外记录 `componentFamilyMinApi` 和逐组件 `componentBaselines`，供解释和迁移分析使用；它们不参与降低路线门槛。本机 SDK 路由只将根目录 `sdk-pkg.json` 的 API 与 `routes[].minApi` 比较，不在 profile 中维护声明路径或接口符号。脚本只读取 profile 中明确声明的字段；未知条件保留为未知，不从文字猜测。
+`profile.json` 至少包含 `schemaVersion`、`featureId`、路线、`minApi` 版本门禁、模型/module 条件、`fallbackPolicy`、约束、文档映射和证据策略。`routes[].minApi` 必须表示特性能力本身的本机 SDK/compile 路线门槛，不得借用承载组件的较早 since 版本；特性若同时要求 target API，使用独立的 `routes[].minTargetApi`，不得只藏在应用级配置条件中。若组件早于特性能力出现，可另外记录 `componentFamilyMinApi` 和逐组件 `componentBaselines`，供解释和迁移分析使用；它们不参与降低路线门槛。本机 SDK 路由只将根目录 `sdk-pkg.json` 的 API 与 `routes[].minApi` 比较，不在 profile 中维护声明路径或接口符号。脚本只读取 profile 中明确声明的字段；未知条件保留为未知，不从文字猜测。
 
-能力包含两条以上可同时使用的路线时，声明 `routeComposition.mode: composable`、`selectionField: selectedRoutes` 和允许组合的路线 ID。每条 `routes[]` 必须有独立的 `documents.implementation`、`documents.validation`、`documents.assets`；能力包顶层文档只负责共同选型、回退和渐进加载。组合路线分别实施和验证，不能用单个 `recommendedRoute` 隐藏另一条真实使用的路线。
+能力包含两条以上可同时使用的路线时，声明 `routeComposition.mode: composable`、`selectionField: selectedRoutes` 和允许组合的路线 ID。每条 `routes[]` 必须有独立的 `documents.implementation`、`documents.validation`、`documents.assets`；路线内部组件较多时，可以增加机器可读组件矩阵和分类资料，由 implementation 入口按目标渐进加载。能力包顶层文档只负责共同选型、回退和渐进加载。组合路线分别实施和验证，不能用单个 `recommendedRoute` 隐藏另一条真实使用的路线。
 
 ## 通用回退基线
 

@@ -8,12 +8,12 @@
 | `HdsNavigation` / `HdsNavDestination` 组件 | HarmonyOS 5.1.0、API 18 | 仅为导航组件自身的起始版本；Stage 模型 |
 | `HdsTabs` 组件 | HarmonyOS 6.0.0、API 20 | 仅为页签组件自身的起始版本；Stage 模型 |
 | HDS 沉浸光感材质接口 | HarmonyOS 6.1.0、API 23 | `hdsMaterial`、`systemMaterialEffect`、`barFloatingStyle` 等能力从此版本可用；Stage 模型 |
-| ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26 | 用于支持通用属性的组件、弹窗、菜单和自定义布局；Stage 模型 |
-| API 26 应用级开关 | `targetAPIVersion >= 26.0.0` | 仅 `entry` 类型 module 的 `module.json5` 配置生效 |
-| API 26 跨版本调用 | API 26 接口可用时 | 使用 `deviceInfo.apiAvailable('26.0.0')` 和材质能力判断保护 |
+| ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26，且 `targetAPIVersion >= 26.0.0` | 用于原生 Navigation/Tabs、支持通用属性的组件、弹窗和交互组件；Stage 模型 |
+| API 26 应用级开关 | ArkUI 路线门禁已满足 | 额外要求配置位于 `entry` 类型 module 的 `module.json5` |
+| API 26 跨版本调用 | `compatibleSdkVersion < 26` | 最外层使用低版本可用的 `deviceInfo.sdkApiVersion >= 26` 做整树保护；进入 API 26 分支后再做材质能力判断 |
 | 升级接入（通用） | 工程低于路线门槛时 | 升级 `targetSdkVersion`/`compileSdkVersion` 至 23（HDS）或 26（ArkUI），`compatibleSdkVersion` 保持不变；低版本设备需运行时保护，并保留源程序接入前的布局、交互和普通视觉样式；是否升级与路线由用户决定 |
 
-这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担导航框架，并用 ArkUI `uiMaterial` 扩展普通组件、弹窗和菜单。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
+这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担 HDS 导航，并用 ArkUI `uiMaterial` 改造原生 Navigation/Tabs、普通组件、弹窗和交互组件。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
 
 路线采用可组合模型。`availableRoutes` 表示版本与本机 SDK 允许考虑的路线，`selectedRoutes` 表示根据工程组件信号和当前目标实际加载的路线。API 26 工程若同时改造 HDS 导航/页签与 ArkUI 普通组件，应返回 `selectedRoutes: ["hds", "arkui"]` 并分别加载两套资料；`recommendedRoute` 只是主要建议和旧接口兼容字段，不表示必须二选一。
 
@@ -43,31 +43,37 @@ HDS 材质接口覆盖 Phone、Tablet、PC/2in1。默认优先使用 `ADAPTIVE` 
 
 ## ArkUI 支持范围
 
-API 26 起，所有支持通用属性的组件可以显式使用 `systemMaterial`。弹出类和选择类入口包括：
+API 26 起，达到 target API 26 的工程可为支持的组件显式设置材质。原生导航、弹出类和选择类入口包括：
 
 | 场景 | 接口 |
 |---|---|
+| Navigation/NavDestination 标题栏 | `NavigationTitleOptions.systemMaterial`；推荐同时使用 `BarStyle.STACK` |
+| 原生 Tabs 底部悬浮栏 | `FloatingTabBarStyle.systemMaterial`；要求 `barOverlap(true)`、`vertical(false)`、`BarPosition.End` |
+| AlphabetIndexer | `systemMaterial`；`popupBackground`/`popupBackgroundBlurStyle` 与材质互斥 |
 | Toast | `ShowToastOptions.systemMaterial` |
 | Popup | `PopupOptions.systemMaterial` |
 | Tips | `TipsOptions.systemMaterial` |
 | Sheet | `SheetOptions.systemMaterial` |
-| Menu | `MenuOptions.systemMaterial`，适用于 `bindMenu` 和 `openMenu` |
+| Menu | 对应实际调用入口的 Options，例如 `ContextMenuOptions.systemMaterial`；不得用泛化类型代替 |
 | Dialog | 对应 Options 的 `systemMaterial` |
 | Select | 按钮使用 `systemMaterial`，下拉菜单使用 `menuSystemMaterial` |
+| Toggle、Slider | `systemMaterial`；部分类型只把参数作为开启标记，按组件矩阵处理 |
+| ChipGroup | `backgroundSystemMaterial`、`selectedBackgroundSystemMaterial`、`iconBackgroundSystemMaterial` |
+| SegmentButton/V2 | 对应 Options 的 `backgroundSystemMaterial` |
 
 Toast 未主动指定材质时的默认表现仍会受到应用 `MaterialState` 和背景、模糊、阴影等冲突样式影响，不能只凭默认值断言最终视觉效果。
 
 ## 应用级 MaterialState
 
-API 26 应用级开关只在 `entry` module 且 `targetAPIVersion >= 26.0.0` 时生效。
+ArkUI 路线本身要求 `targetAPIVersion >= 26.0.0`；应用级开关在此基础上只对 `entry` module 生效。
 
 | 配置值 | 枚举 | 行为 |
 |---|---|---|
-| `default` | `MaterialState.DEFAULT` | 部分系统组件在没有冲突样式时采用默认材质 |
+| `default` 或未配置 | `MaterialState.DEFAULT` | target 升级到 26+ 后，受支持组件可能采用系统默认材质；不能视为“无配置即无变化” |
 | `enable` | `MaterialState.ENABLE` | 扩大默认启用材质的组件范围 |
 | `disable` | `MaterialState.DISABLE` | 全局禁止；显式 `systemMaterial` 也不生效 |
 
-用 `uiMaterial.getMaterialInfo()` 读取实际配置。关闭单个组件使用 `uiMaterial.Material.empty`；`undefined` 表示恢复系统默认，不等价于明确关闭。
+用 `uiMaterial.getMaterialInfo()` 读取实际配置。关闭普通组件使用 `uiMaterial.Material.empty`；`undefined` 表示恢复组件在当前 MaterialState 下的默认行为，不等价于统一关闭。Slider 等组件的专属语义按 `routes/arkui/component-profile.json` 处理。
 
 ## 两套 MaterialLevel
 

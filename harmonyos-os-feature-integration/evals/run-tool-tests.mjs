@@ -128,8 +128,14 @@ equal(inspection26.localSdk.apiVersion, 26)
 equal(inspection26.modules[0].applicationMaterialState, "enable")
 equal(inspection26.signals.uiMaterial.detected, true)
 equal(inspection26.signals.systemMaterial.detected, true)
-equal(inspection26.signals.apiAvailable26.detected, true)
+equal(inspection26.signals.apiAvailable26.detected, false)
+equal(inspection26.signals.sdkApiVersion26Guard.detected, true)
 equal(inspection26.signals.materialSupported.detected, true)
+equal(inspection26.signals.nativeTabs.detected, true)
+equal(inspection26.signals.nativeTabsFloatingStyle.detected, true)
+equal(inspection26.signals.nativeTabsFloatingMaterial.detected, true)
+equal(inspection26.signals.verticalFalse.detected, true)
+equal(inspection26.componentSystem.arkuiNativeNavigation, true)
 
 const compatibility26 = evaluateCompatibility(inspection26, profile)
 equal(compatibility26.sdk.routes.hds.status, "supported")
@@ -144,6 +150,16 @@ equal(compatibility26.decisionRequired, true)
 const verification26 = verifyInspection(inspection26, compatibility26, "auto")
 equal(verification26.status, "passed")
 equal(verification26.counts.fail, 0)
+ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass"))
+ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-horizontal" && item.status === "pass"))
+
+const invalidNativeTabs = structuredClone(inspection26)
+invalidNativeTabs.signals.verticalFalse = { detected: false, evidence: [] }
+invalidNativeTabs.signals.barOverlapTrue = { detected: false, evidence: [] }
+const failedNativeTabs = verifyInspection(invalidNativeTabs, compatibility26, "arkui")
+equal(failedNativeTabs.status, "failed")
+ok(failedNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-horizontal" && item.status === "fail"))
+ok(failedNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-overlap" && item.status === "fail"))
 
 const hybridInspection26 = structuredClone(inspection26)
 hybridInspection26.componentSystem.hds = true
@@ -217,6 +233,7 @@ equal(compatibilityUpgraded.decisionRequired, true)
 ok(compatibilityUpgraded.missingConditions.some((item) => item.includes("runtime version guards")))
 equal(compatibilityUpgraded.fallbackPolicy.baseline, "pre-integration-source-state")
 ok(compatibilityUpgraded.fallbackRequirements.includes("preserve-pre-integration-source-state"))
+ok(compatibilityUpgraded.fallbackRequirements.includes("sdkApiVersion-26-tree-guard"))
 
 const lowCompatibleHds = structuredClone(inspection23)
 lowCompatibleHds.api.compatible = 20
@@ -236,13 +253,16 @@ equal(preservedSourceFallback.status, "warnings")
 ok(preservedSourceFallback.checks.some((item) => item.id === "source-experience-preservation" && item.status === "warn"))
 
 const lowTarget = structuredClone(inspection26)
+lowTarget.api.compatible = 25
 lowTarget.api.target = 25
-lowTarget.modules[0].type = "feature"
 const compatibilityLowTarget = evaluateCompatibility(lowTarget, profile)
 equal(compatibilityLowTarget.status, "conditional")
+equal(compatibilityLowTarget.availableRoutes.join(","), "hds")
+equal(compatibilityLowTarget.recommendedRoute, "hds")
+equal(compatibilityLowTarget.selectedRoutes.length, 0)
 equal(compatibilityLowTarget.applicationLevel.eligible, false)
-ok(compatibilityLowTarget.applicationLevel.reasons.some((item) => item.includes("target API 26")))
-ok(compatibilityLowTarget.applicationLevel.reasons.some((item) => item.includes("entry module")))
+ok(compatibilityLowTarget.upgradeOptions.some((item) => item.route === "arkui" && item.upgradeTargetApi === 26))
+ok(compatibilityLowTarget.missingConditions.some((item) => item.includes("target API 26")))
 
 const lowCompile = structuredClone(inspection26)
 lowCompile.api.compile = 23
@@ -252,14 +272,23 @@ equal(compatibilityLowCompile.recommendedRoute, "hds")
 ok(compatibilityLowCompile.upgradeOptions.some((option) => option.route === "arkui" && option.upgradeCompileApi === 26))
 
 const missingProtection = structuredClone(inspection26)
-missingProtection.signals.apiAvailable26 = { detected: false, evidence: [] }
 missingProtection.signals.materialSupported = { detected: false, evidence: [] }
 missingProtection.signals.fallbackStyle = { detected: false, evidence: [] }
 const failedVerification = verifyInspection(missingProtection, compatibility26, "arkui")
 equal(failedVerification.status, "failed")
-ok(failedVerification.checks.some((item) => item.id === "version-guard" && item.status === "fail"))
+ok(failedVerification.checks.some((item) => item.id === "version-guard" && item.status === "not_applicable"))
 ok(failedVerification.checks.some((item) => item.id === "capability-guard" && item.status === "fail"))
 ok(failedVerification.checks.some((item) => item.id === "fallback-style" && item.status === "fail"))
+
+const lowCompatibleArkui = structuredClone(inspection26)
+lowCompatibleArkui.api.compatible = 22
+const lowCompatibleArkuiCompatibility = evaluateCompatibility(lowCompatibleArkui, profile)
+lowCompatibleArkui.signals.sdkApiVersion26Guard = { detected: false, evidence: [] }
+const failedArkuiTreeGuard = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
+ok(failedArkuiTreeGuard.checks.some((item) => item.id === "version-guard" && item.status === "fail"))
+lowCompatibleArkui.signals.sdkApiVersion26Guard = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
+const guardedArkuiTree = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
+ok(guardedArkuiTree.checks.some((item) => item.id === "version-guard" && item.status === "pass"))
 
 const missingSdkInspection = await inspectProject(fixture23, { sdkPath: resolve(evalDir, "fixtures", "missing-sdk") })
 equal(missingSdkInspection.localSdk.status, "invalid")

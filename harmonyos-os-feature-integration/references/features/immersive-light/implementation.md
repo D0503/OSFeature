@@ -5,8 +5,8 @@
 | 路线 | 必读实现 | 适用范围 |
 |---|---|---|
 | `hds` | [HDS 接入实现](routes/hds/implementation.md) | API 23+ 的 HDS 导航、标题栏、悬浮 `HdsTabs`、MiniBar |
-| `arkui` | [ArkUI 接入实现](routes/arkui/implementation.md) | API 26+ 的普通组件、菜单、弹窗和应用级材质 |
-| `hds + arkui` | 同时读取上述两个文件 | HDS 继续承担导航，ArkUI 为其他组件提供材质 |
+| `arkui` | [ArkUI 接入入口](routes/arkui/implementation.md) | API 26+ 的原生 Navigation/Tabs、普通组件、菜单、弹窗和应用级材质；再按目标加载分类资料 |
+| `hds + arkui` | 同时读取上述两个文件 | HDS 处理 HDS 组件，ArkUI 处理原生 ArkUI 组件；共享资料只读取一次 |
 
 所有路线都必须读取[共享回退策略](shared/fallback.md)。验证和资产也按同一路线从[验证路由](performance-validation.md)与[资产路由](assets-catalog.md)加载。
 

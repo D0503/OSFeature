@@ -12,15 +12,15 @@
 
 - 先从显式 `--sdk`、工程 `local.properties` 的 `sdk.dir`/`hwsdk.dir` 或受支持环境变量定位 SDK；自动发现失败时要求提供路径，不扫描整块磁盘猜测安装位置。
 - 只读取 SDK 根目录 `sdk-pkg.json` 取得本机 SDK API 与版本，不扫描 SDK 子包、声明文件或具体接口符号。
-- 路线只有在本机 SDK API 和有效 compile API 均达到能力包 `routes[].minApi` 时才可进入候选集；工程未显式声明 `compileSdkVersion` 时，有效 compile API 来自已验证的活动 SDK，并标记为 `local-sdk-default`。仅有 `targetSdkVersion` 或 `compatibleSdkVersion` 不能证明本机可编译。
+- 路线只有在本机 SDK API 和有效 compile API 均达到能力包 `routes[].minApi` 时才可进入候选集；路线声明 `minTargetApi` 时，target API 也必须单独达到该值。工程未显式声明 `compileSdkVersion` 时，有效 compile API 来自已验证的活动 SDK，并标记为 `local-sdk-default`。仅有 `targetSdkVersion` 或 `compatibleSdkVersion` 不能证明本机可编译。
 - `routes[].minApi` 表示“该特性路线的能力门槛”，不表示承载组件或所属组件家族的最早版本。能力包可用 `componentFamilyMinApi` 和 `componentBaselines` 记录组件事实，但这些字段不得降低特性路线门槛。例如 HDS 导航组件可早于沉浸光感材质存在。
 - 具体接口是否存在不在路线阶段判断，由实施后的源码静态验证和真实工程构建确认。
 
 ## 升级接入（对所有特性通用）
 
-任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 API 门槛的 SDK，再升级 `targetSdkVersion` 与 `compileSdkVersion` 至路线门槛来获得接口，`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。
+任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 `minApi` 的 SDK，再升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`），`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。
 
-- 路线可用性按 `max(compatibleSdkVersion, targetSdkVersion)` 与各路线门槛（profile `routes[].minApi`）判定；
+- 本机 SDK/compile 门槛按 `routes[].minApi` 判定；运行设备范围由 compatible/target 上下文决定，但 `routes[].minTargetApi` 是独立硬门槛，不能被较高的 compatible API 或应用级条件替代；
 - `targetSdkVersion` 已达门槛而 `compatibleSdkVersion` 未达时，路线可用，但低版本设备必须使用能力包指定且在低版本可调用的 API 做运行时保护，并保留接入前的组件树、响应式布局和交互；仅增加材质的组件还应保留普通背景、边框等视觉样式；
 - 升级 `targetSdkVersion` 可能伴随系统行为差异，方案中应说明回归验证范围；
 - 存在升级选项或多条可用路线时，必须把可选接入方式、建议路线和理由列给用户，由用户决定路线；仅一条路线且无需升级时，说明建议路线和理由后继续。

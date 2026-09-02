@@ -98,6 +98,7 @@ try {
         issue(errors, !routeIds.has(route.id), `profile.routes[${index}].id`, "route id 必须唯一")
         routeIds.add(route.id)
         issue(errors, Number.isInteger(route.minApi) && route.minApi > 0, `profile.routes[${index}].minApi`, "minApi 必须是正整数")
+        issue(errors, route.minTargetApi === undefined || (Number.isInteger(route.minTargetApi) && route.minTargetApi > 0), `profile.routes[${index}].minTargetApi`, "minTargetApi 必须是正整数")
         issue(errors, route.requiresStage === true, `profile.routes[${index}].requiresStage`, "当前能力路线必须要求 Stage 模型")
         issue(errors, Array.isArray(route.components) && route.components.length > 0, `profile.routes[${index}].components`, "components 必须是非空数组")
         await validateDocumentMap(errors, packageDir, route.documents, `profile.routes[${index}].documents`, ["implementation", "validation", "assets"])
@@ -115,9 +116,52 @@ try {
         issue(errors, hdsComponentBaselines.get("HdsNavDestination") === 18, "profile.routes.hds.componentBaselines.HdsNavDestination", "HdsNavDestination 组件基线必须为 API 18")
         issue(errors, hdsComponentBaselines.get("HdsTabs") === 20, "profile.routes.hds.componentBaselines.HdsTabs", "HdsTabs 组件基线必须为 API 20")
         issue(errors, arkui?.minApi === 26, "profile.routes.arkui", "ArkUI 路线必须从 API 26 开始")
+        issue(errors, arkui?.minTargetApi === 26, "profile.routes.arkui.minTargetApi", "ArkUI 整条路线必须要求 target API 26")
         issue(errors, arkui?.minApiMeaning === "immersive-material-capability", "profile.routes.arkui.minApiMeaning", "ArkUI minApi 必须明确表示沉浸光感材质能力门槛")
         issue(errors, arkui?.applicationLevel?.minTargetApi === 26, "profile.routes.arkui.applicationLevel", "应用级开关必须要求 target API 26")
         issue(errors, arkui?.applicationLevel?.moduleTypes?.includes("entry"), "profile.routes.arkui.applicationLevel", "应用级开关必须限定 entry module")
+        for (const key of ["activation", "commonMaterial", "componentProfile", "navigation", "overlays", "controls"]) {
+          issue(errors, typeof arkui?.documents?.[key] === "string", `profile.routes.arkui.documents.${key}`, "ArkUI 路线缺少分类资料")
+        }
+
+        let componentProfile = null
+        const componentProfilePath = resolve(packageDir, arkui?.documents?.componentProfile ?? "")
+        try {
+          componentProfile = JSON.parse(await readFile(componentProfilePath, "utf8"))
+        } catch (error) {
+          errors.push({ path: "profile.routes.arkui.documents.componentProfile", message: error instanceof Error ? error.message : String(error) })
+        }
+        if (componentProfile) {
+          issue(errors, componentProfile.schemaVersion === "1.0", "componentProfile.schemaVersion", "组件矩阵 schemaVersion 必须为 1.0")
+          issue(errors, componentProfile.featureId === feature.id, "componentProfile.featureId", "组件矩阵 featureId 不一致")
+          issue(errors, componentProfile.routeId === "arkui", "componentProfile.routeId", "组件矩阵 routeId 必须为 arkui")
+          issue(errors, componentProfile.minTargetApi === 26, "componentProfile.minTargetApi", "组件矩阵必须要求 target API 26")
+          issue(errors, componentProfile.activation?.explicitDisable === "uiMaterial.Material.empty", "componentProfile.activation.explicitDisable", "组件矩阵必须声明明确关闭方式")
+          issue(errors, Array.isArray(componentProfile.groups) && componentProfile.groups.length === 3, "componentProfile.groups", "组件矩阵必须包含三类组件")
+          const componentIds = new Set()
+          for (const [groupIndex, group] of (componentProfile.groups ?? []).entries()) {
+            issue(errors, ["navigation", "overlays", "controls"].includes(group.id), `componentProfile.groups[${groupIndex}].id`, "组件分组 id 非法")
+            issue(errors, typeof group.document === "string" && await exists(resolve(dirname(componentProfilePath), group.document)), `componentProfile.groups[${groupIndex}].document`, "组件分组文档不存在")
+            issue(errors, Array.isArray(group.components) && group.components.length > 0, `componentProfile.groups[${groupIndex}].components`, "组件分组不能为空")
+            for (const [componentIndex, component] of (group.components ?? []).entries()) {
+              issue(errors, typeof component.id === "string" && component.id.length > 0 && !componentIds.has(component.id), `componentProfile.groups[${groupIndex}].components[${componentIndex}].id`, "组件 id 必须是唯一非空字符串")
+              componentIds.add(component.id)
+              issue(errors, Array.isArray(component.names) && component.names.length > 0, `componentProfile.groups[${groupIndex}].components[${componentIndex}].names`, "组件名称不能为空")
+              issue(errors, typeof component.applicationEnableDefault === "boolean", `componentProfile.groups[${groupIndex}].components[${componentIndex}].applicationEnableDefault`, "必须声明 ENABLE 默认行为")
+              issue(errors, Array.isArray(component.entries) && component.entries.length > 0, `componentProfile.groups[${groupIndex}].components[${componentIndex}].entries`, "组件入口不能为空")
+            }
+          }
+          for (const requiredId of ["navigation-title", "tabs-bottom-bar", "alphabet-indexer", "toast", "popup", "tips", "menu", "dialog-sheet", "button", "select", "toggle", "slider", "chip-group", "segment-button"]) {
+            issue(errors, componentIds.has(requiredId), `componentProfile.components.${requiredId}`, "组件矩阵缺少必需组件")
+          }
+        }
+
+        for (const source of [
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation"
+        ]) {
+          issue(errors, profile.evidence?.sources?.includes(source), "profile.evidence.sources", `缺少官方证据: ${source}`)
+        }
       }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")
 

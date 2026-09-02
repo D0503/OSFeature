@@ -1,7 +1,7 @@
 # 可行性门禁工作流
 
 1. 完整读取命中特性的 `profile.json` 与兼容性文档。
-2. 运行 `node scripts/check-compatibility.mjs --project <path> --feature <id> [--sdk <path>]`。先读取输出中的 `sdk`：每条候选路线必须同时满足 SDK 根清单 API、工程有效 compile API 和 `profile.json` 的 `minApi` 门槛。
+2. 运行 `node scripts/check-compatibility.mjs --project <path> --feature <id> [--sdk <path>]`。先读取输出中的 `sdk`：每条候选路线必须同时满足 SDK 根清单 API、工程有效 compile API 和 `profile.json` 的 `minApi` 门槛；声明 `minTargetApi` 的路线还必须单独满足 target API 门槛。
 3. 将结果解释为：
    - `supported`：至少一条路线的必要条件已满足；
    - `conditional`：存在可用路线，但目标能力还缺 module、target API、运行时能力或外部条件；

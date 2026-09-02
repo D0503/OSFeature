@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "immersive-light",
+  "routeId": "arkui",
+  "minTargetApi": 26,
+  "activation": {
+    "globalDisableOverridesComponent": true,
+    "explicitDisable": "uiMaterial.Material.empty",
+    "undefinedMeaning": "restore-component-default-for-current-material-state"
+  },
+  "groups": [
+    {
+      "id": "navigation",
+      "document": "components/navigation.md",
+      "components": [
+        {
+          "id": "navigation-title",
+          "names": ["Navigation", "NavDestination"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "ULTRA_THIN",
+          "entries": ["NavigationTitleOptions.systemMaterial"],
+          "constraints": ["prefer-BarStyle.STACK", "affects-back-button-and-non-custom-menu"]
+        },
+        {
+          "id": "tabs-bottom-bar",
+          "names": ["Tabs"],
+          "applicationEnableDefault": false,
+          "defaultStyle": null,
+          "entries": ["FloatingTabBarStyle.systemMaterial"],
+          "constraints": ["barOverlap-true", "vertical-false", "barPosition-End", "TabContent-unsupported"]
+        },
+        {
+          "id": "alphabet-indexer",
+          "names": ["AlphabetIndexer"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "THICK",
+          "entries": ["systemMaterial"],
+          "constraints": ["popupBackground-conflicts", "popupBackgroundBlurStyle-conflicts", "low-tier-white-background"]
+        }
+      ]
+    },
+    {
+      "id": "overlays",
+      "document": "components/overlays.md",
+      "components": [
+        {
+          "id": "toast",
+          "names": ["Toast"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "THICK",
+          "entries": ["ShowToastOptions.systemMaterial"],
+          "constraints": ["backgroundColor-conflicts", "backgroundBlurStyle-conflicts"]
+        },
+        {
+          "id": "popup",
+          "names": ["Popup"],
+          "applicationEnableDefault": false,
+          "defaultStyle": null,
+          "entries": ["PopupOptions.systemMaterial"],
+          "constraints": []
+        },
+        {
+          "id": "tips",
+          "names": ["Tips"],
+          "applicationEnableDefault": false,
+          "defaultStyle": null,
+          "entries": ["TipsOptions.systemMaterial"],
+          "constraints": []
+        },
+        {
+          "id": "menu",
+          "names": ["Menu"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "THICK",
+          "entries": ["ContextMenuOptions.systemMaterial"],
+          "constraints": ["use-call-specific-options-type"]
+        },
+        {
+          "id": "dialog-sheet",
+          "names": ["AlertDialog", "CustomDialog", "ActionSheet", "Sheet"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "ULTRA_THICK",
+          "entries": [
+            "CustomDialogControllerOptions.systemMaterial",
+            "AlertDialogParam.systemMaterial",
+            "ActionSheetOptions.systemMaterial",
+            "SheetOptions.systemMaterial"
+          ],
+          "constraints": ["background-conflicts", "avoid-large-material-area", "CalendarPicker-popup-unsupported"]
+        }
+      ]
+    },
+    {
+      "id": "controls",
+      "document": "components/controls.md",
+      "components": [
+        {
+          "id": "button",
+          "names": ["Button"],
+          "applicationEnableDefault": false,
+          "defaultStyle": null,
+          "entries": ["systemMaterial"],
+          "constraints": ["lightEffect-replaces-press-hover-feedback", "invertible-system-colors-only"]
+        },
+        {
+          "id": "select",
+          "names": ["Select"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "ULTRA_THIN+THICK",
+          "entries": ["systemMaterial", "menuSystemMaterial"],
+          "constraints": ["button-and-menu-independent"]
+        },
+        {
+          "id": "toggle",
+          "names": ["Toggle"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "component-preset",
+          "entries": ["systemMaterial"],
+          "constraints": ["Checkbox-unsupported", "Switch-options-are-enable-marker", "Button-follows-Button"]
+        },
+        {
+          "id": "slider",
+          "names": ["Slider"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "component-preset",
+          "entries": ["systemMaterial"],
+          "constraints": ["options-are-enable-marker", "undefined-restores-source-style", "blockType-DEFAULT", "style-not-NONE"]
+        },
+        {
+          "id": "chip-group",
+          "names": ["ChipGroup"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "ULTRA_THIN",
+          "entries": ["backgroundSystemMaterial", "selectedBackgroundSystemMaterial", "iconBackgroundSystemMaterial"],
+          "constraints": ["invertible-system-colors-only"]
+        },
+        {
+          "id": "segment-button",
+          "names": ["SegmentButton", "SegmentButtonV2"],
+          "applicationEnableDefault": true,
+          "defaultStyle": "THIN",
+          "entries": ["backgroundSystemMaterial"],
+          "constraints": ["capsule-multiple-unsupported", "V2-selected-item-drag-enabled"]
+        }
+      ]
+    }
+  ]
+}
