@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "immersive-light",
+  "displayName": "沉浸光感",
+  "packageVersion": "1.0.0",
+  "route": "arkui-api26",
+  "excludedRoutes": [
+    "hds-api23"
+  ],
+  "projectRequirements": {
+    "model": "stage",
+    "minCompileApi": 26,
+    "minTargetApi": 26,
+    "compatibleApiMayBeLower": true,
+    "applicationMetadataModuleTypes": [
+      "entry"
+    ],
+    "metadataName": "ohos.arkui.UIMaterial.state",
+    "metadataValues": [
+      "default",
+      "enable",
+      "disable"
+    ]
+  },
+  "sdk": {
+    "preferredApi": 26,
+    "validatedLocalVersion": "26.0.0.105",
+    "requiredDeclarationGlobs": [
+      "openharmony/ets/api/@ohos.arkui.uiMaterial.d.ts",
+      "openharmony/ets/component/common.d.ts"
+    ],
+    "requiredSymbols": [
+      "ImmersiveMaterial",
+      "ImmersiveOptions",
+      "ImmersiveStyle",
+      "Material.empty",
+      "isImmersiveMaterialSupported",
+      "getGlobalMaterialLevel",
+      "systemMaterial"
+    ]
+  },
+  "supportedTargets": {
+    "navigation": [
+      "Navigation",
+      "NavDestination",
+      "Tabs",
+      "AlphabetIndexer"
+    ],
+    "overlays": [
+      "Toast",
+      "Popup",
+      "Tips",
+      "Menu",
+      "Dialog",
+      "Sheet"
+    ],
+    "controls": [
+      "Button",
+      "Select",
+      "Toggle",
+      "Slider",
+      "ChipGroup",
+      "SegmentButton",
+      "SegmentButtonV2"
+    ]
+  },
+  "projectSignals": [
+    {
+      "id": "ui-material-import",
+      "extensions": [".ets", ".ts"],
+      "pattern": "@kit\\.ArkUI|@ohos\\.arkui\\.uiMaterial|\\buiMaterial\\b"
+    },
+    {
+      "id": "material-entry",
+      "extensions": [".ets", ".ts"],
+      "pattern": "\\b(systemMaterial|menuSystemMaterial|backgroundSystemMaterial)\\b"
+    },
+    {
+      "id": "application-state",
+      "extensions": [".json", ".json5"],
+      "pattern": "ohos\\.arkui\\.UIMaterial\\.state"
+    },
+    {
+      "id": "capability-guard",
+      "extensions": [".ets", ".ts"],
+      "pattern": "isImmersiveMaterialSupported\\s*\\("
+    },
+    {
+      "id": "version-guard",
+      "extensions": [".ets", ".ts"],
+      "pattern": "sdkApiVersion\\s*(?:>=|>)\\s*2[56]"
+    }
+  ],
+  "safety": {
+    "modifyMinimumScope": true,
+    "preserveDirtyFiles": true,
+    "keepFailedChanges": true,
+    "automaticRollback": false,
+    "automaticSdkUpgrade": false,
+    "automaticEmulatorDownload": false,
+    "automaticUninstall": false,
+    "maxDirectedRepairRounds": 2
+  },
+  "verification": {
+    "layerStatuses": [
+      "passed",
+      "failed",
+      "blocked",
+      "not_run",
+      "inconclusive"
+    ],
+    "verdicts": [
+      "passed",
+      "passed_with_spec_conflict",
+      "build_passed_runtime_pending",
+      "inconclusive",
+      "failed",
+      "blocked"
+    ],
+    "visualSuccessRequiresObservation": true,
+    "buildCommand": "devecocli build",
+    "runCommand": "devecocli run",
+    "devicePolicy": "run-only-when-requested-and-exactly-one-device-selected"
+  },
+  "reports": {
+    "json": "development-verification-report.json",
+    "markdown": "development-verification-report.md",
+    "evidenceDirectory": "evidence"
+  }
+}

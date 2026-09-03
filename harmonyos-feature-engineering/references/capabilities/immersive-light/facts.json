@@ -1,0 +1,216 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "immersive-light",
+  "facts": [
+    {
+      "id": "IL-F001",
+      "category": "version",
+      "normativeStatus": "clear",
+      "statement": "ArkUI 沉浸光感接口从 API 26 起提供，工程编译和 target API 必须达到 26。",
+      "sources": [{"snapshotId":"overview","locator":"L7","sha256":"4961be12e260addb5df87051611ff6a8bd0f14f8d2fa8a99009ff6375231779a"},{"snapshotId":"enable","locator":"L12","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["sdk", "build"]
+    },
+    {
+      "id": "IL-F002",
+      "category": "configuration",
+      "normativeStatus": "clear",
+      "statement": "应用级开关通过 entry 模块 metadata 名 ohos.arkui.UIMaterial.state 配置，值为 default、enable 或 disable。",
+      "sources": [{"snapshotId":"enable","locator":"L21-L24","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["static", "build", "runtime"]
+    },
+    {
+      "id": "IL-F003",
+      "category": "configuration",
+      "normativeStatus": "clear",
+      "statement": "未配置应用级开关时，升级应用按 default 处理。",
+      "sources": [{"snapshotId":"enable","locator":"L21","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["static", "runtime"]
+    },
+    {
+      "id": "IL-F004",
+      "category": "api",
+      "normativeStatus": "clear",
+      "statement": "组件通过 systemMaterial 或组件专用材质入口接入沉浸材质。",
+      "sources": [{"snapshotId":"enable","locator":"L22","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F005",
+      "category": "state",
+      "normativeStatus": "clear",
+      "statement": "Material.empty 用于关闭组件材质，undefined 用于恢复组件默认材质策略。",
+      "sources": [{"snapshotId":"enable","locator":"L52-L58","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F006",
+      "category": "state",
+      "normativeStatus": "conflicting",
+      "conflictGroup": "disable-scope",
+      "statement": "一处规范称应用级 disable 会使应用级和组件级显式开启都失效。",
+      "sources": [{"snapshotId":"enable","locator":"L45","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F007",
+      "category": "state",
+      "normativeStatus": "conflicting",
+      "conflictGroup": "disable-scope",
+      "statement": "另一处规范称应用级 disable 只关闭应用级开启，组件仍可显式开启。",
+      "sources": [{"snapshotId":"enable","locator":"L54","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"}],
+      "validationKinds": ["build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F008",
+      "category": "capability",
+      "normativeStatus": "clear",
+      "statement": "运行时应查询 isImmersiveMaterialSupported；全局材质档位可由 getGlobalMaterialLevel 获取。",
+      "sources": [{"snapshotId":"overview","locator":"L16","sha256":"4961be12e260addb5df87051611ff6a8bd0f14f8d2fa8a99009ff6375231779a"}],
+      "validationKinds": ["static", "sdk", "runtime"]
+    },
+    {
+      "id": "IL-F009",
+      "category": "navigation",
+      "normativeStatus": "clear",
+      "statement": "Navigation 标题栏可通过 NavigationTitleOptions.systemMaterial 配置；默认材质受应用状态影响。",
+      "sources": [{"snapshotId":"component","locator":"L15-L23","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F010",
+      "category": "navigation",
+      "normativeStatus": "clear",
+      "statement": "Tabs 使用 FloatingTabBarStyle.systemMaterial，且材质会被栏背景色或背景模糊覆盖。",
+      "sources": [{"snapshotId":"component","locator":"L30-L38","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F011",
+      "category": "navigation",
+      "normativeStatus": "clear",
+      "statement": "AlphabetIndexer 弹窗材质与 popupBackground、popupBackgroundBlurStyle 存在互斥覆盖关系。",
+      "sources": [{"snapshotId":"component","locator":"L44-L51","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F012",
+      "category": "overlay",
+      "normativeStatus": "clear",
+      "statement": "Toast、Popup、Tips、Menu、Dialog 和 Sheet 具有各自的 systemMaterial 配置入口或默认材质策略。",
+      "sources": [{"snapshotId":"component","locator":"L57-L105","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F013",
+      "category": "overlay",
+      "normativeStatus": "clear",
+      "statement": "弹窗普通背景色、背景模糊或大面积材质会覆盖效果或引入性能风险。",
+      "sources": [{"snapshotId":"component","locator":"L61-L105","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"},{"snapshotId":"constraints","locator":"L114","sha256":"76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F014",
+      "category": "control",
+      "normativeStatus": "clear",
+      "statement": "Button、Select、Toggle、Slider、ChipGroup 和 SegmentButton 系列提供组件或样式级材质入口。",
+      "sources": [{"snapshotId":"component","locator":"L112-L190","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F015",
+      "category": "control",
+      "normativeStatus": "clear",
+      "statement": "Select 按钮和下拉菜单是两个独立入口，分别使用 systemMaterial 与 menuSystemMaterial。",
+      "sources": [{"snapshotId":"component","locator":"L126-L133","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F016",
+      "category": "control",
+      "normativeStatus": "clear",
+      "statement": "Toggle 的 Checkbox 形态当前不适配沉浸材质，应保留普通样式。",
+      "sources": [{"snapshotId":"component","locator":"L139-L150","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F017",
+      "category": "material-option",
+      "normativeStatus": "clear",
+      "statement": "materialColor 必须保留透明度；不透明颜色会遮挡材质滤镜效果。",
+      "sources": [{"snapshotId":"common","locator":"L87-L91,L127","sha256":"8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F018",
+      "category": "material-option",
+      "normativeStatus": "clear",
+      "statement": "colorInvert 只保证对资源颜色生效，硬编码颜色不能据此判定已反色。",
+      "sources": [{"snapshotId":"faq","locator":"L255","sha256":"001d5f4f6c1ed902d4f881d9c90aaa1d434f24c1201e567d0daf88585403cb39"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F019",
+      "category": "material-option",
+      "normativeStatus": "clear",
+      "statement": "interactive 与 lightEffect 控制交互和流光；Button 开启流光后需同时验证原按压和悬停反馈。",
+      "sources": [{"snapshotId":"common","locator":"L146-L149","sha256":"8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457"},{"snapshotId":"component","locator":"L112-L120","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F020",
+      "category": "material-option",
+      "normativeStatus": "clear",
+      "statement": "applyShadow 与普通 shadow 属性存在顺序和所有权约束，避免重复阴影。",
+      "sources": [{"snapshotId":"common","locator":"L202","sha256":"8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457"},{"snapshotId":"constraints","locator":"L215","sha256":"76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F021",
+      "category": "compatibility",
+      "normativeStatus": "clear",
+      "statement": "compatible API 低于 26 时应使用版本条件保留原普通样式分支，不能在低版本路径引用 API 26 能力。",
+      "sources": [{"snapshotId":"compatibility","locator":"L7,L67-L71","sha256":"c1de0cc670559c0c67b6196d378ab8d87d2594e6af2546aa65776f8e2f5381fe"}],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F022",
+      "category": "fallback",
+      "normativeStatus": "clear",
+      "statement": "设备不支持沉浸材质时必须保留接入前的背景、边框、布局、状态、事件和恢复路径。",
+      "sources": [{"snapshotId":"compatibility","locator":"L17-L71","sha256":"c1de0cc670559c0c67b6196d378ab8d87d2594e6af2546aa65776f8e2f5381fe"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F023",
+      "category": "performance",
+      "normativeStatus": "clear",
+      "statement": "应限制材质面积、嵌套、模糊叠加、动态背景、反色子树范围和重复阴影，并在真机测量性能与功耗。",
+      "sources": [{"snapshotId":"constraints","locator":"L9-L215","sha256":"76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F024",
+      "category": "diagnostic",
+      "normativeStatus": "clear",
+      "statement": "无视觉效果时应排查普通背景覆盖、透明度、属性顺序、渲染区域、设备能力与算力档位。",
+      "sources": [{"snapshotId":"faq","locator":"FAQ troubleshooting","sha256":"001d5f4f6c1ed902d4f881d9c90aaa1d434f24c1201e567d0daf88585403cb39"}],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F025",
+      "category": "code-example",
+      "normativeStatus": "ambiguous",
+      "statement": "官方示例的若干 materialColor 值呈现为不透明颜色，但未解释其与透明度规则的关系，接入时必须单独验证而不能直接照搬。",
+      "sources": [{"snapshotId":"sample","locator":"L134,L237,L291","sha256":"0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1"}],
+      "validationKinds": ["static", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F026",
+      "category": "code-example",
+      "normativeStatus": "ambiguous",
+      "statement": "官网代码为上下文片段，部分 import、变量和类型未在片段内定义，不能把整段复制可编译视为规范保证。",
+      "sources": [{"snapshotId":"sample","locator":"code fragments","sha256":"0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1"}],
+      "validationKinds": ["static", "sdk", "build"]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+interface:
+  display_name: "鸿蒙特性工程"
+  short_description: "审查鸿蒙官方资料、规划开发验证，并用已发布能力包接入和验证代码"
+  default_prompt: "Use $harmonyos-feature-engineering to review HarmonyOS feature documentation or implement and validate a supported feature in a target project."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,25 @@
+{
+  "registryVersion": "1.0",
+  "features": [
+    {
+      "id": "immersive-light",
+      "displayName": "沉浸光感",
+      "aliases": [
+        "沉浸光感",
+        "沉浸光感接入",
+        "沉浸材质",
+        "immersive light",
+        "immersive material",
+        "arkui immersive light"
+      ],
+      "status": "ready",
+      "readinessMeaning": "能力包可以执行代码开发验证；不表示所有规范行为均已通过真机验证。",
+      "packageVersion": "1.0.0",
+      "entry": "references/capabilities/immersive-light/entry.md",
+      "profile": "references/capabilities/immersive-light/profile.json",
+      "facts": "references/capabilities/immersive-light/facts.json",
+      "scenarios": "references/capabilities/immersive-light/scenarios.json",
+      "lock": "references/capabilities/immersive-light/capability-lock.json"
+    }
+  ]
+}

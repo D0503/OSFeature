@@ -1,0 +1,115 @@
+{
+  "evalVersion": "1.0",
+  "skill": "harmonyos-feature-engineering",
+  "modes": ["document-review", "development-validation-planning", "code-development-validation"],
+  "cases": [
+    {
+      "id": "url-to-markdown-snapshot",
+      "input": "developer.huawei.com 特性入口 URL",
+      "expected": ["先生成带内部完整性索引的 Markdown 目录", "只扩展同目录同前缀页面", "保留抓取时间、正文哈希和未快照官方引用"]
+    },
+    {
+      "id": "internal-version-conflict",
+      "input": "两个章节为同一 API 声明不同最低版本",
+      "expected": ["定位两个原文位置", "只确认内部冲突", "不擅自判定哪个版本正确"]
+    },
+    {
+      "id": "cross-page-conflict",
+      "input": "fixtures/cross-doc-a.md + fixtures/cross-doc-b.md",
+      "expected": ["识别 disable 作用域冲突", "confirmed 需要两个内部证据"]
+    },
+    {
+      "id": "context-ambiguity",
+      "input": "fixtures/ambiguous-and-unusable.md",
+      "expected": ["标记指代或范围歧义", "状态为 ambiguous"]
+    },
+    {
+      "id": "logic-break",
+      "input": "步骤要求先运行最后一步再完成前置配置",
+      "expected": ["识别步骤依赖倒置", "给出可执行顺序"]
+    },
+    {
+      "id": "missing-import-variable",
+      "input": "代码使用 uiMaterial、listItems、ListItemData 但未定义",
+      "expected": ["静态检查始终执行", "不得声称编译失败或通过"]
+    },
+    {
+      "id": "not-reproducible",
+      "input": "开发步骤没有成功判据、排障和恢复路径",
+      "expected": ["覆盖开发者易用性七项检查", "给出具体补充项"]
+    },
+    {
+      "id": "insufficient-external-evidence",
+      "input": "目标文档单方面声明 API 行为，没有同版本 API/SDK/构建证据",
+      "expected": ["不得标记 confirmed", "integrationGate 为 insufficient_evidence 或列入待确认"]
+    },
+    {
+      "id": "third-party-masquerade",
+      "input": "第三方页面声称复制自官网，但没有快照身份或官方证据",
+      "expected": ["第三方内容不能单独确认事实", "来源身份与技术正确性分离"]
+    },
+    {
+      "id": "immersive-light-acceptance",
+      "input": "../../沉浸光感/ 文档目录",
+      "expected": [
+        "识别 disable 全局失效与只针对应用级的冲突",
+        "识别 materialColor 透明度规则与不透明示例冲突",
+        "识别缺少 import、listItems 和 ListItemData 上下文",
+        "识别空开发指导页、媒体不可访问和 API 参考未快照",
+        "缺少独立证据的技术真值不得标记 confirmed"
+      ]
+    },
+    {
+      "id": "immersive-development-validation-planning",
+      "input": "../../沉浸光感/ 文档目录 + 已校验 review-report.json",
+      "expected": [
+        "保留 disable 全局失效与只影响应用级两个冲突工程事实",
+        "生成应用级 ENABLE 后切换 DISABLE 的最小工程状态验证项",
+        "生成 Toast、Popup、Tips、Menu、Dialog 弹窗类组件接入矩阵",
+        "生成 Material.empty 关闭与 undefined 恢复默认的验证项",
+        "每个需开发验证事实至少被一个 DEVVAL 项覆盖",
+        "blocked 门禁只放行规范冲突裁决实验，普通接入项保持 blocked",
+        "清单初始状态不得伪造 passed 或 failed"
+      ]
+    },
+    {
+      "id": "immersive-popup-code-development",
+      "input": "featureId=immersive-light + API 26 Stage 工程绝对路径 + 给 Popup 接入沉浸光感",
+      "expected": [
+        "只读取已发布沉浸光感能力包并路由到 IL-S004",
+        "记录触及文件 before SHA-256 后做最小修改",
+        "分别执行静态、SDK 和 devecocli build",
+        "没有设备或视觉证据时为 build_passed_runtime_pending",
+        "不自动创建模拟器、不使用 --uninstall、不回滚失败改动"
+      ]
+    },
+    {
+      "id": "immersive-disable-spec-conflict-runtime",
+      "input": "API 26 Stage 工程 + 应用级开启后关闭沉浸光感",
+      "expected": [
+        "保留 IL-F006 和 IL-F007 两条规范事实",
+        "使用两个可区分运行预期而不提前选边",
+        "只匹配其中一个预期且其余必需层通过时为 passed_with_spec_conflict",
+        "SDK 类型声明或构建通过不能裁决运行冲突"
+      ]
+    },
+    {
+      "id": "immersive-api25-gate",
+      "input": "API 25 或 target API 25 工程 + 沉浸光感接入目标",
+      "expected": [
+        "报告 upgrade_required 和 API 26 要求",
+        "修改 SDK/target 前单独获得用户授权",
+        "未授权时不修改工程且总结果为 blocked"
+      ]
+    },
+    {
+      "id": "capability-package-independence",
+      "input": "仅保留 references/capabilities 后执行沉浸光感代码验证路由",
+      "expected": [
+        "无需原始 Markdown、URL、审查报告或验证清单",
+        "锁文件被篡改时拒绝执行",
+        "不得回退到旧 Skill 或 HDS API 23"
+      ]
+    }
+  ]
+}

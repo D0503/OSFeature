@@ -1,0 +1,37 @@
+{
+  "lockVersion": "1.0",
+  "featureId": "immersive-light",
+  "packageVersion": "1.0.0",
+  "route": "arkui-api26",
+  "readiness": "document-defined-executable",
+  "deviceValidationStatus": "not-complete",
+  "sourceManifest": {
+    "snapshotId": "immersive-light-source-manifest",
+    "sha256": "6493783befdc689610d5e495491c5abf4088f27ed87d97026cf0de632b7b9cff"
+  },
+  "documentReviewVersion": "1.0",
+  "sourceDocuments": [
+    {"snapshotId":"common","sha256":"8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457"},
+    {"snapshotId":"compatibility","sha256":"c1de0cc670559c0c67b6196d378ab8d87d2594e6af2546aa65776f8e2f5381fe"},
+    {"snapshotId":"component","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a"},
+    {"snapshotId":"constraints","sha256":"76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7"},
+    {"snapshotId":"development","sha256":"c6271e833e5261eb932a1c50e2b58e8286153a82d9ba9767560b8fbf6b22a1fb"},
+    {"snapshotId":"enable","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da"},
+    {"snapshotId":"faq","sha256":"001d5f4f6c1ed902d4f881d9c90aaa1d434f24c1201e567d0daf88585403cb39"},
+    {"snapshotId":"overview","sha256":"4961be12e260addb5df87051611ff6a8bd0f14f8d2fa8a99009ff6375231779a"},
+    {"snapshotId":"sample","sha256":"0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1"}
+  ],
+  "packageFiles": [
+    {"path":"assets/ApplicationMaterialMetadata.json5","sha256":"ad88a87230cda536681e5dddc0b8100f63bd19f2a41a9b54d5e3cffc47303ae2"},
+    {"path":"assets/ImmersiveMaterialFactory.ets","sha256":"acf599476411f487d24a0f1e18d3bf5f94b7c000a7fb516331dd1889f5cb2144"},
+    {"path":"assets/ImmersiveMaterialProbe.ets","sha256":"7742d9c289af49ee11f749c3bb3b37d1006ffa6c35eed27d410cffce10bbace0"},
+    {"path":"entry.md","sha256":"6000f532cd930121e2d7bc7d3f2b902907c27b690053a2c8d13ab7163567e577"},
+    {"path":"facts.json","sha256":"9717d6363020f591d00bba402aa2bb8ec1f0fd63a62b9e5bc9c9e86b1aca7689"},
+    {"path":"implementation.md","sha256":"d7ab017ca9cdfd6b210e620256cd3b14b2806edfe3a31801c6d3a8e38168e09e"},
+    {"path":"profile.json","sha256":"1f772ae31ce98f20b05854d31047a08df74fe84248bc849ccbad2d7c6f2d7059"},
+    {"path":"scenarios.json","sha256":"e7b7d415ef25b1392c3239ad50c81bbd62b1d425ef53ec8d32903ba5c2db828e"},
+    {"path":"validation.md","sha256":"4811ed501afc816d25830a005ba67110677df90128385331dce4f87dcd26b6f8"}
+  ],
+  "packageDigestAlgorithm": "sha256-path-nul-filehash-lf-v1",
+  "packageDigest": "1f6a08ff4fe09ce71e3785cb79d5309a59db99e0325b9d3f6a855ffa27ff8d77"
+}
