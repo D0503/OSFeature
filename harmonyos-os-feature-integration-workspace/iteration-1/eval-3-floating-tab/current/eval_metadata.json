@@ -1,5 +1,0 @@
-{
-  "eval_id": "floating-tab-current",
-  "prompt": "底部普通 Tabs 要改成悬浮导航Tab。请判断它属于哪个特性，给出适用路线、关键配置、降级和验收要点；同时明确它与窗口沉浸式的边界。",
-  "skill": "current"
-}

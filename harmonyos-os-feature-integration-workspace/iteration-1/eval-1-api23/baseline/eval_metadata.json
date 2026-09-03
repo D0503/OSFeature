@@ -1,5 +1,0 @@
-{
-  "eval_id": "api23-design-baseline",
-  "prompt": "请检查给定 API 23 Stage/entry 工程，并设计沉浸光感接入方案。要求明确路线、悬浮导航 Tab、降级、性能风险和验证边界，不修改工程。",
-  "skill": "baseline-snapshot"
-}
