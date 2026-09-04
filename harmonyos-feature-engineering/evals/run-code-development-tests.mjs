@@ -10,6 +10,7 @@ import { inspectDevelopmentProject, runStaticScenarioChecks } from "../scripts/l
 import { captureFileBaseline, compareFileBaseline } from "../scripts/snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "../scripts/validate-development-report.mjs"
 import { renderDevelopmentReport } from "../scripts/render-development-report.mjs"
+import { runDevelopmentVerification } from "../scripts/verify-development.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const tempRoot = await mkdtemp(join(tmpdir(), "feature-code-validation-"))
@@ -29,13 +30,16 @@ async function makeSdk(root, api = 26, complete = true) {
   if (complete) {
     await put(join(root, "openharmony", "ets", "api", "@ohos.arkui.uiMaterial.d.ts"), "class Material { static empty: Material } class ImmersiveMaterial extends Material {} interface ImmersiveOptions {} enum ImmersiveStyle {} function isImmersiveMaterialSupported(): boolean; function getGlobalMaterialLevel(): number;")
     await put(join(root, "openharmony", "ets", "component", "common.d.ts"), "interface CommonAttribute { systemMaterial(value: object): CommonAttribute }")
+    await put(join(root, "hms", "ets", "kits", "@kit.UIDesignKit.d.ts"), "export { hdsMaterial, HdsNavigation, HdsTabs, TitleBarStyleOptions, HdsTabsFloatingStyle, SystemMaterialParams };")
+    await put(join(root, "hms", "ets", "api", "@hms.hds.hdsMaterial.d.ets"), "namespace hdsMaterial { enum MaterialType { NONE, ADAPTIVE, IMMERSIVE } enum MaterialLevel { EXQUISITE, GENTLE, SMOOTH, ADAPTIVE } function getSystemMaterialTypes(): Array<MaterialType>; }")
+    await put(join(root, "hms", "ets", "api", "@hms.hds.hdsBaseComponent.d.ets"), "interface SystemMaterialParams {} interface TitleBarStyleOptions { systemMaterialEffect?: SystemMaterialParams } interface HdsTabsFloatingStyle { systemMaterialEffect?: SystemMaterialParams } declare function HdsNavigation(): void; declare function HdsTabs(): void;")
   }
 }
 
-async function makeProject(root, { target = 26, compile = 26, type = "entry", metadata = false, includeTarget = true, sdkPath = null } = {}) {
+async function makeProject(root, { compatible = 25, target = 26, compile = 26, type = "entry", metadata = false, includeTarget = true, sdkPath = null } = {}) {
   const targetRow = includeTarget ? `targetSdkVersion: ${target},` : ""
   const compileRow = compile === null ? "" : `compileSdkVersion: ${compile},`
-  await put(join(root, "build-profile.json5"), `{ app: { products: [{ name: "default", compatibleSdkVersion: 25, ${targetRow} ${compileRow} }], buildModeSet: [{ name: "debug" }, { name: "release" }] }, modules: [{ name: "entry", srcPath: "./entry" }] }`)
+  await put(join(root, "build-profile.json5"), `{ app: { products: [{ name: "default", compatibleSdkVersion: ${compatible}, ${targetRow} ${compileRow} }], buildModeSet: [{ name: "debug" }, { name: "release" }] }, modules: [{ name: "entry", srcPath: "./entry" }] }`)
   const metadataRow = metadata ? `metadata: [{ name: "ohos.arkui.UIMaterial.state", value: "disable" }],` : ""
   await put(join(root, "entry", "src", "main", "module.json5"), `{ module: { name: "entry", type: "${type}", ${metadataRow} deviceTypes: ["phone"] } }`)
   await put(join(root, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { uiMaterial } from '@kit.ArkUI'\n@Entry @Component struct Index { build() { Column() { Text('x') }.bindPopup(true, { builder: () => {}, systemMaterial: new uiMaterial.ImmersiveMaterial() }) } }`)
@@ -59,7 +63,7 @@ function reportTemplate(project, scenario, { conflict = false } = {}) {
     verificationVersion: "1.0",
     mode: "code-development-validation",
     input: { feature: "immersive-light", project, goal: "验证场景", module: "entry", targetFiles: [], product: "default", buildMode: "debug", device: "test-device" },
-    capabilityPackage: { featureId: "immersive-light", version: "1.0.0", digest: "b".repeat(64), scenarioId: scenario.id, requiredChecks, factRefs: scenario.factRefs, conflictingFactRefs: conflict ? ["IL-F006", "IL-F007"] : [] },
+    capabilityPackage: { featureId: "immersive-light", version: "1.1.0", digest: "b".repeat(64), scenarioId: scenario.id, route: scenario.route, requiredChecks, factRefs: scenario.factRefs, conflictingFactRefs: conflict ? ["IL-F006", "IL-F007"] : [] },
     projectBaseline: { inspectionVersion: "1.0" },
     changes: [],
     compatibility: { status: "supported", reasons: [], authorizationRequired: [], canModify: true, canBuild: true },
@@ -79,10 +83,10 @@ function reportTemplate(project, scenario, { conflict = false } = {}) {
 
 try {
   const capability = await loadCapability(skillRoot, "沉浸光感")
-  check(capability.profile.route === "arkui-api26", "首版只选择 ArkUI API 26")
-  check(capability.profile.excludedRoutes.includes("hds-api23"), "显式排除 HDS API 23")
-  check(capability.factsData.facts.length === 26, "能力包登记 26 条规范与示例事实")
-  check(capability.scenariosData.scenarios.length === 8, "能力包覆盖 8 类开发场景")
+  check(capability.profile.defaultRoute === "arkui-api26", "ArkUI API 26 保持默认路线")
+  check(capability.profile.routes.some((item) => item.id === "hds-api23"), "注册 HDS 6.1.0(23) 路线")
+  check(capability.factsData.facts.length === 36, "能力包登记 36 条规范与示例事实")
+  check(capability.scenariosData.scenarios.length === 12, "能力包覆盖 12 类开发场景")
   check(capability.lock.deviceValidationStatus === "not-complete", "ready 不冒充真机已验证")
   check(capability.feature.readinessMeaning.includes("不表示"), "注册表披露 ready 语义")
 
@@ -91,13 +95,21 @@ try {
   const applicationScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S001")
   check(applicationScenario.expectationMode === "alternatives", "disable 场景使用多预期")
   check(new Set(applicationScenario.expectedOutcomes.flatMap((item) => item.factRefs)).size === 2, "两个冲突事实各有独立预期")
-  const targets = Object.values(capability.profile.supportedTargets).flat()
-  for (const target of ["Navigation", "Tabs", "AlphabetIndexer", "Toast", "Popup", "Tips", "Menu", "Dialog", "Sheet", "Button", "Select", "Toggle", "Slider", "ChipGroup", "SegmentButton"]) check(targets.includes(target), `覆盖组件 ${target}`)
+  const targets = capability.profile.routes.flatMap((route) => Object.values(route.supportedTargets).flat())
+  for (const target of ["Navigation", "Tabs", "AlphabetIndexer", "Toast", "Popup", "Tips", "Menu", "Dialog", "Sheet", "Button", "Select", "Toggle", "Slider", "ChipGroup", "SegmentButton", "HdsNavigation", "HdsTabs"]) check(targets.includes(target), `覆盖组件 ${target}`)
 
   check(resolveScenario(capability, "给 Popup 接入沉浸光感").selected?.id === "IL-S004", "Popup 路由到弹窗场景")
   check(resolveScenario(capability, "应用级开启后关闭沉浸光感").selected?.id === "IL-S001", "应用级开关路由到冲突场景")
   check(resolveScenario(capability, "验证 materialColor 和反色").selected?.id === "IL-S006", "材质参数路由")
+  check(resolveScenario(capability, "给 HdsNavigation 标题栏按钮接入沉浸光感").selected?.id === "IL-S009", "HdsNavigation 路由到 HDS 标题栏场景")
+  check(resolveScenario(capability, "给 HdsTabs 底部悬浮页签接入沉浸光感").selected?.id === "IL-S010", "HdsTabs 路由到 HDS 页签场景")
+  check(resolveScenario(capability, "为 HDS 组件接入系统自适应沉浸光感").selected?.id === "IL-S011", "通用 HDS 目标路由到组合场景")
+  check(resolveScenario(capability, "调用 getSystemMaterialTypes 按设备能力选择档位").selected?.id === "IL-S012", "HDS 自定义等级路由")
+  check(resolveScenario(capability, "给 Navigation 接入沉浸光感").selected?.id === "IL-S003", "ArkUI Navigation 不误路由到 HDS")
   check(resolveScenario(capability, "请完成这个能力").status === "unmatched", "无法唯一识别时不猜测")
+
+  const hdsSources = capability.lock.sourceDocuments.filter((item) => item.snapshotId.startsWith("hds-"))
+  check(hdsSources.length === 4 && hdsSources.every((item) => item.officialUrl?.startsWith("https://developer.huawei.com/")), "HDS 事实只绑定华为官网快照")
 
   const sdk = join(tempRoot, "sdk26")
   await makeSdk(sdk)
@@ -111,6 +123,40 @@ try {
   check(good.buildMode.selected === "debug", "默认选择 debug build mode")
   const staticResult = await runStaticScenarioChecks(goodProject, popupScenario, good)
   check(staticResult.status === "passed", "Popup 最小接入通过静态规则")
+
+  const hdsProject = join(tempRoot, "hds-good")
+  await makeProject(hdsProject, { compatible: 23, target: 23, compile: 23, sdkPath: sdk })
+  await put(join(hdsProject, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { hdsMaterial, HdsNavigation } from '@kit.UIDesignKit'
+@Entry @Component struct Index { build() { HdsNavigation() { Text('x') }.titleBar({ content: { title: { mainTitle: 'x' } }, style: { systemMaterialEffect: { materialType: hdsMaterial.MaterialType.ADAPTIVE, materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE } } }) } }`)
+  const hdsNavigationScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S009")
+  const hdsInspection = await inspectDevelopmentProject(hdsProject, capability, { scenario: hdsNavigationScenario })
+  check(hdsInspection.compatibility.status === "supported" && hdsInspection.route.id === "hds-api23", "HDS API 23 工程按独立路线通过门禁")
+  check(hdsInspection.sdk.missingSymbols.length === 0, "HDS SDK 符号核验通过")
+  check((await runStaticScenarioChecks(hdsProject, hdsNavigationScenario, hdsInspection)).status === "passed", "HdsNavigation 最小接入通过静态规则")
+
+  const hdsApi22 = join(tempRoot, "hds-api22")
+  await makeProject(hdsApi22, { compatible: 22, target: 22, compile: 22, sdkPath: sdk })
+  check((await inspectDevelopmentProject(hdsApi22, capability, { scenario: hdsNavigationScenario })).compatibility.status === "upgrade_required", "HDS API 22 工程要求升级且不自动修改")
+
+  const fallbackScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S007")
+  const argumentOnlyProject = join(tempRoot, "argument-only-guard")
+  await makeProject(argumentOnlyProject, { sdkPath: sdk })
+  await put(join(argumentOnlyProject, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { uiMaterial } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
+@Entry @Component struct Index { build() { Column() { Text('x') }.systemMaterial(deviceInfo.sdkApiVersion >= 26 ? new uiMaterial.ImmersiveMaterial() : undefined); uiMaterial.isImmersiveMaterialSupported() } }`)
+  const argumentOnlyInspection = await inspectDevelopmentProject(argumentOnlyProject, capability, { scenario: fallbackScenario })
+  const argumentOnlyResult = await runStaticScenarioChecks(argumentOnlyProject, fallbackScenario, argumentOnlyInspection)
+  check(argumentOnlyResult.rules.find((item) => item.id === "argument-only-api-guard")?.status === "failed", "参数内版本判断不能通过低版本 API 调用保护")
+  check(argumentOnlyResult.status === "failed", "伪版本保护使低版本回退静态层失败")
+
+  const wholeBranchProject = join(tempRoot, "whole-branch-guard")
+  await makeProject(wholeBranchProject, { sdkPath: sdk })
+  await put(join(wholeBranchProject, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { uiMaterial } from '@kit.ArkUI'
+import { deviceInfo } from '@kit.BasicServicesKit'
+@Entry @Component struct Index { build() { if (deviceInfo.sdkApiVersion >= 26 && uiMaterial.isImmersiveMaterialSupported()) { Column() { Text('x') }.systemMaterial(new uiMaterial.ImmersiveMaterial()) } else { Column() { Text('x') }.backgroundColor('#FFFFFF') } } }`)
+  const wholeBranchInspection = await inspectDevelopmentProject(wholeBranchProject, capability, { scenario: fallbackScenario })
+  const wholeBranchResult = await runStaticScenarioChecks(wholeBranchProject, fallbackScenario, wholeBranchInspection)
+  check(wholeBranchResult.rules.find((item) => item.id === "argument-only-api-guard")?.status === "passed", "整段控制流避开高版本调用时不触发伪保护规则")
 
   const api25 = join(tempRoot, "api25")
   await makeProject(api25, { target: 25, compile: 25, sdkPath: sdk })
@@ -195,6 +241,34 @@ try {
   const rendered = await renderDevelopmentReport(noDevice, output)
   check(rendered.jsonPath.endsWith("development-verification-report.json"), "生成固定 JSON 报告名")
   check(rendered.markdownPath.endsWith("development-verification-report.md") && (await readFile(rendered.markdownPath, "utf8")).includes("build_passed_runtime_pending"), "生成固定 Markdown 报告名")
+
+  const defaultOutput = join(tempRoot, "default-report-output")
+  await mkdir(defaultOutput, { recursive: true })
+  const previousCwd = process.cwd()
+  let defaultRendered
+  try {
+    process.chdir(defaultOutput)
+    defaultRendered = await renderDevelopmentReport(noDevice)
+  } finally {
+    process.chdir(previousCwd)
+  }
+  check(defaultRendered.jsonPath === join(defaultOutput, "development-verification-report.json"), "开发报告默认写入当前工作区")
+
+  const verificationOutput = join(tempRoot, "verification-default-output")
+  await mkdir(verificationOutput, { recursive: true })
+  let verification
+  try {
+    process.chdir(verificationOutput)
+    verification = await runDevelopmentVerification(skillRoot, {
+      feature: "immersive-light",
+      project: goodProject,
+      goal: "给 Popup 接入沉浸光感",
+      sdk,
+    })
+  } finally {
+    process.chdir(previousCwd)
+  }
+  check(verification.rendered.jsonPath === join(verificationOutput, "development-verification-report.json"), "开发验证未指定输出时仍生成报告")
 
   const independent = join(tempRoot, "independent-skill")
   await cp(join(skillRoot, "references", "capabilities"), join(independent, "references", "capabilities"), { recursive: true })

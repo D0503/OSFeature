@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict"
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { parseHtml, parseMarkdown } from "../scripts/lib/document-parser.mjs"
 import { validateOfficialFinalUrl, validateOfficialPageUrl } from "../scripts/lib/official-url.mjs"
 import { prepareReview } from "../scripts/prepare-review.mjs"
-import { renderReport } from "../scripts/render-report.mjs"
+import { renderMarkdown, renderReport, sortFindingsBySeverity } from "../scripts/render-report.mjs"
 import { snapshotOfficialUrl } from "../scripts/snapshot-url.mjs"
 import { DIMENSIONS, deriveIntegrationGate, validateReport } from "../scripts/validate-report.mjs"
 
@@ -54,12 +54,42 @@ function reportTemplate() {
       claim: "disable 的作用域在同一资料集中应保持一致。",
       analysis: "两处原文给出了互斥的作用域。",
       evidenceRefs: ["EVID-001", "EVID-002"],
+      internalConflict: {
+        subject: "disable 对组件级开启的影响",
+        left: {
+          evidenceRef: "EVID-001",
+          statement: "第一处原文声明全局失效。",
+          scope: {
+            version: null,
+            mode: "应用级开关为 disable",
+            component: "组件级开启",
+            condition: null,
+            environment: null,
+            lifecycle: null,
+          },
+          outcome: "组件级开启不生效",
+        },
+        right: {
+          evidenceRef: "EVID-002",
+          statement: "第二处原文声明仅影响应用级。",
+          scope: {
+            version: null,
+            mode: "应用级开关为 disable",
+            component: "组件级开启",
+            condition: null,
+            environment: null,
+            lifecycle: null,
+          },
+          outcome: "组件级开启仍可生效",
+        },
+        incompatibility: "同一 disable 配置下，组件级开启不能同时生效和不生效。",
+      },
       impact: "开发者无法判断组件级配置是否仍然生效。",
       recommendation: "依据同版本 API 参考统一作用域并补充优先级说明。",
     },
   ]
   return {
-    reviewVersion: "1.0",
+    reviewVersion: "1.1",
     mode: "document-review",
     input: { kind: "directory", value: "D:\\docs", reviewedSources: 2 },
     sourceIntegrity: { status: "verified", manifestUsed: true, items: [], warnings: [] },
@@ -155,21 +185,37 @@ async function run() {
         warnings: [],
       },
     }
-    const bundle = join(root, "source-snapshot")
-    const snapshot = await snapshotOfficialUrl(rootUrl, {
-      outputDirectory: bundle,
-      maxPages: 3,
-      fetcher: async (url) => fetched[url],
-    })
+    const previousCwd = process.cwd()
+    let snapshot
+    try {
+      process.chdir(root)
+      snapshot = await snapshotOfficialUrl(rootUrl, {
+        maxPages: 3,
+        fetcher: async (url) => fetched[url],
+      })
+    } finally {
+      process.chdir(previousCwd)
+    }
+    const bundle = join(root, "evidence", "source-snapshot")
     check(snapshot.documents.length === 2 && snapshot.temporary === false, "URL 入口和同前缀子页生成 Markdown 快照")
+    check(snapshot.outputDirectory === bundle, "URL 快照默认写入当前工作区 evidence/source-snapshot")
     check((await readFile(join(bundle, "feature.md"), "utf8")).includes("[子页](./feature-child.md)"), "已快照页面链接改写为本地相对链接")
     check(snapshot.manifest.summary.unsnapshottedOfficialReferences === 1, "API 参考保留为未快照证据引用")
     check(snapshot.manifest.summary.unresolvedMediaReferences === 1, "媒体引用写入快照清单")
     check((await readFile(join(bundle, "evidence", "fetch", "feature.json"), "utf8")).includes('"retrievalMethod": "test-fixture"'), "保存结构化抓取证据")
     const preparedSnapshot = await prepareReview(bundle)
     check(preparedSnapshot.sourceIntegrity.errors.length === 0 && preparedSnapshot.documents.length === 2, "生成的 URL 快照可直接进入目录审查")
-    await assert.rejects(() => snapshotOfficialUrl(rootUrl, { outputDirectory: bundle, fetcher: async (url) => fetched[url] }))
-    assertions += 1
+    await writeFile(join(bundle, "user-note.txt"), "keep\n", "utf8")
+    try {
+      process.chdir(root)
+      await snapshotOfficialUrl(rootUrl, { maxPages: 1, fetcher: async (url) => fetched[url] })
+    } finally {
+      process.chdir(previousCwd)
+    }
+    check((await readFile(join(bundle, "user-note.txt"), "utf8")) === "keep\n", "刷新 URL 快照时保留未登记用户文件")
+    let staleSnapshotExists = true
+    try { await access(join(bundle, "feature-child.md")) } catch { staleSnapshotExists = false }
+    check(!staleSnapshotExists, "刷新 URL 快照时移除旧索引登记的过期快照")
   })
 
   await withTempDirectory(async (root) => {
@@ -207,10 +253,14 @@ async function run() {
     "potential-material-color-conflict",
     "missing-import-context",
     "missing-variable-context",
+    "unguarded-versioned-api-invocation",
     "navigation-only",
     "unresolved-media-reference",
     "unsnapshotted-official-references",
   ]) check(immersiveTypes.has(type), `沉浸光感验收识别 ${type}`)
+  const argumentOnlyGuard = immersive.preflightCandidates.find((item) => item.type === "unguarded-versioned-api-invocation")
+  check(argumentOnlyGuard?.locations[0]?.section === "组件级开启的兼容性适配方案" && argumentOnlyGuard?.locations[0]?.quote?.startsWith(".systemMaterial"), "参数内版本判断风险定位到 systemMaterial 调用行")
+  check(argumentOnlyGuard?.details?.guardKind === "argument_only" && argumentOnlyGuard?.details?.introducedApi === 26, "记录未保护调用的 API 版本与保护类型")
 
   const valid = reportTemplate()
   check(validateReport(valid).valid, `有效报告通过校验: ${validateReport(valid).errors.join("; ")}`)
@@ -225,6 +275,7 @@ async function run() {
     claimScope: "external_technical",
     evidenceRefs: ["EVID-001"],
   }
+  delete insufficient.findings[0].internalConflict
   insufficient.pendingVerifications = [{ id: "PEND-001", claim: "API 行为", reason: "缺少版本证据", requiredEvidence: "同版本 API 参考", priority: "high" }]
   insufficient.integrationGate = "insufficient_evidence"
   insufficient.verdict.label = "证据不足"
@@ -232,9 +283,28 @@ async function run() {
 
   const warning = structuredClone(valid)
   warning.findings[0] = { ...warning.findings[0], status: "editorial", severity: "Medium", integrationAffecting: false, coreTechnicalClaim: false, claimScope: "editorial", evidenceRefs: ["EVID-001"] }
+  delete warning.findings[0].internalConflict
   warning.integrationGate = "pass_with_warnings"
   warning.verdict.label = "基本合格但需修改"
   check(validateReport(warning).valid, "非阻断 Medium 映射 pass_with_warnings")
+
+  const mediumFirst = structuredClone(warning.findings[0])
+  mediumFirst.id = "DOC-002"
+  const mediumSecond = structuredClone(warning.findings[0])
+  mediumSecond.id = "DOC-003"
+  const lowFinding = structuredClone(warning.findings[0])
+  lowFinding.id = "DOC-004"
+  lowFinding.severity = "Low"
+  const suggestionFinding = structuredClone(warning.findings[0])
+  suggestionFinding.id = "DOC-005"
+  suggestionFinding.severity = "Suggestion"
+  const unsortedFindings = [lowFinding, mediumFirst, valid.findings[0], suggestionFinding, mediumSecond]
+  const orderedFindings = sortFindingsBySeverity(unsortedFindings)
+  check(orderedFindings.map((item) => item.id).join(",") === "DOC-001,DOC-002,DOC-003,DOC-004,DOC-005", "findings 按严重度降序且同级保持原始顺序")
+  check(orderedFindings.length === unsortedFindings.length, "严重度排序保留全部 findings")
+  const sortedMarkdown = renderMarkdown({ ...valid, findings: unsortedFindings })
+  check(sortedMarkdown.indexOf("DOC-001") < sortedMarkdown.indexOf("DOC-002") && sortedMarkdown.indexOf("DOC-003") < sortedMarkdown.indexOf("DOC-004"), "Markdown 统一列表按严重度排序")
+  check(!sortedMarkdown.includes("关键工程问题（优先处理）") && !sortedMarkdown.includes("次要问题（不单独阻断接入）"), "Markdown 不再执行筛选分组")
 
   const pass = structuredClone(valid)
   pass.findings = []
@@ -250,6 +320,7 @@ async function run() {
   check(!validateReport(wrongGate).valid, "拒绝错误门禁映射")
   const externalWithoutEvidence = structuredClone(valid)
   externalWithoutEvidence.findings[0].claimScope = "external_technical"
+  delete externalWithoutEvidence.findings[0].internalConflict
   check(!validateReport(externalWithoutEvidence).valid, "confirmed 外部事实缺少独立证据时拒绝")
   const fakeCapture = structuredClone(valid)
   fakeCapture.evidence[0].capturedAt = "not-recorded"
@@ -264,6 +335,7 @@ async function run() {
   for (const status of ["confirmed", "likely", "ambiguous", "version_caveat", "editorial", "pending"]) {
     const variant = structuredClone(valid)
     variant.findings[0].status = status
+    if (status !== "confirmed") delete variant.findings[0].internalConflict
     variant.integrationGate = deriveIntegrationGate(variant)
     variant.verdict.label = labelForGate(variant.integrationGate)
     check(validateReport(variant).valid, `接受 finding 状态枚举 ${status}`)
@@ -282,6 +354,7 @@ async function run() {
   }
   const likelyHigh = structuredClone(valid)
   likelyHigh.findings[0].status = "likely"
+  delete likelyHigh.findings[0].internalConflict
   check(validateReport(likelyHigh).valid && deriveIntegrationGate(likelyHigh) === "blocked", "接入相关 likely High 映射 blocked")
   const failedIntegrity = structuredClone(pass)
   failedIntegrity.sourceIntegrity.status = "failed"
@@ -293,14 +366,57 @@ async function run() {
   check(validateReport(hintVerdict).valid, "pass_with_warnings 接受提示型 verdict")
   const confirmedExternal = structuredClone(valid)
   confirmedExternal.findings[0].claimScope = "external_technical"
+  delete confirmedExternal.findings[0].internalConflict
   confirmedExternal.evidence.push({ id: "EVID-003", type: "official_api", source: "https://developer.huawei.com/api", locator: "MaterialState", claim: "同版本 API 行为", version: "API 26", capturedAt: null, sha256: null })
   confirmedExternal.findings[0].evidenceRefs.push("EVID-003")
   check(validateReport(confirmedExternal).valid, "同版本独立证据可支持 confirmed 外部技术结论")
 
+  const missingConflict = structuredClone(valid)
+  delete missingConflict.findings[0].internalConflict
+  const missingConflictResult = validateReport(missingConflict)
+  check(!missingConflictResult.valid && missingConflictResult.errors.some((error) => error.includes("必须提供 internalConflict")), "confirmed 内部冲突必须提供结构化作用域比较")
+
+  const widenedScope = structuredClone(valid)
+  widenedScope.findings[0].internalConflict.right.scope.component = "应用级开启"
+  const widenedScopeResult = validateReport(widenedScope)
+  check(!widenedScopeResult.valid && widenedScopeResult.errors.some((error) => error.includes("scope.component 未对齐")), "不同组件作用域不得扩大为 confirmed 内部冲突")
+
+  const expandedStatement = structuredClone(valid)
+  expandedStatement.findings[0].internalConflict.left.statement = "所有接口在低版本必然崩溃。"
+  const expandedStatementResult = validateReport(expandedStatement)
+  check(!expandedStatementResult.valid && expandedStatementResult.errors.some((error) => error.includes("原子主张一致")), "冲突命题不得脱离证据主张扩大原文")
+
+  const sameOutcome = structuredClone(valid)
+  sameOutcome.findings[0].internalConflict.right.outcome = sameOutcome.findings[0].internalConflict.left.outcome
+  const sameOutcomeResult = validateReport(sameOutcome)
+  check(!sameOutcomeResult.valid && sameOutcomeResult.errors.some((error) => error.includes("结果必须互斥")), "结果不互斥时不得标记 confirmed 内部冲突")
+
   await withTempDirectory(async (root) => {
-    const rendered = await renderReport(valid, root)
-    check((await readFile(rendered.jsonPath, "utf8")).includes('"reviewVersion": "1.0"'), "生成 review-report.json")
+    const previousCwd = process.cwd()
+    let rendered
+    try {
+      process.chdir(root)
+      rendered = await renderReport(valid)
+    } finally {
+      process.chdir(previousCwd)
+    }
+    check(rendered.jsonPath === join(root, "review-report.json") && rendered.markdownPath === join(root, "review-report.md"), "未指定目录时报告写入当前工作区绝对路径")
+    check((await readFile(rendered.jsonPath, "utf8")).includes('"reviewVersion": "1.1"'), "生成 review-report.json")
     check((await readFile(rendered.markdownPath, "utf8")).includes("作用域描述冲突"), "从 JSON 渲染 review-report.md")
+    check((await readFile(rendered.markdownPath, "utf8")).includes("按严重度从高到低排列"), "Markdown 报告说明严重度排序")
+    await writeFile(join(root, "user-note.txt"), "keep\n", "utf8")
+    const updated = structuredClone(valid)
+    updated.verdict.summary = "第二次运行覆盖固定报告。"
+    await renderReport(updated, root)
+    check((await readFile(rendered.jsonPath, "utf8")).includes("第二次运行覆盖固定报告"), "重复运行覆盖固定报告")
+    check((await readFile(join(root, "user-note.txt"), "utf8")) === "keep\n", "重复运行不影响未知用户文件")
+    const explicit = join(root, "explicit-output")
+    const explicitRendered = await renderReport(valid, explicit)
+    check(explicitRendered.jsonPath === join(explicit, "review-report.json"), "显式报告目录优先于当前工作区")
+    const orderedOutput = join(root, "ordered-output")
+    const orderedRendered = await renderReport({ ...valid, findings: unsortedFindings }, orderedOutput)
+    const orderedJson = JSON.parse(await readFile(orderedRendered.jsonPath, "utf8"))
+    check(orderedJson.findings.map((item) => item.id).join(",") === "DOC-001,DOC-002,DOC-003,DOC-004,DOC-005", "JSON 报告同样按严重度排序")
   })
 
   process.stdout.write(`ok - ${assertions} assertions\n`)

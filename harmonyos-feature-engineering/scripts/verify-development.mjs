@@ -11,6 +11,7 @@ import { inspectDevelopmentProject, runStaticScenarioChecks, sdkCheckFromInspect
 import { compareFileBaseline } from "./snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-development-report.mjs"
 import { renderDevelopmentReport } from "./render-development-report.mjs"
+import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 
 const execFileAsync = promisify(execFile)
 
@@ -103,6 +104,7 @@ async function appendObservationEvidence(evidence, item, fallbackSummary) {
 }
 
 export async function runDevelopmentVerification(skillRoot, request, options = {}) {
+  const outputDirectory = resolveReportOutputDirectory(options.outputDirectory)
   const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
   const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
@@ -143,7 +145,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     const args = ["build", "--product", product, "--build-mode", buildMode]
     if (request.module) args.push("--modules", validateCliToken(request.module, "module"))
     buildResult = await runDeveco(args, request.project)
-    const id = await appendCommandEvidence(evidence, options.outputDirectory, "build_log", "build.log", buildResult, buildResult.exitCode === 0 ? "devecocli build 成功" : "devecocli build 失败")
+    const id = await appendCommandEvidence(evidence, outputDirectory, "build_log", "build.log", buildResult, buildResult.exitCode === 0 ? "devecocli build 成功" : "devecocli build 失败")
     checks.build = check(required.has("build"), buildResult.exitCode === 0 ? "passed" : "failed", buildResult.exitCode === 0 ? "真实 debug 构建通过。" : `构建失败，退出码 ${buildResult.exitCode ?? "unknown"}。`, [id], { command: buildResult.command, exitCode: buildResult.exitCode, repairAttempts: options.repairAttempts ?? 0 })
   } else {
     checks.build = check(required.has("build"), "not_run", "尚未执行 devecocli build。")
@@ -157,7 +159,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     if (request.product) args.push("--product", validateCliToken(request.product, "product"))
     if (request.buildMode) args.push("--build-mode", validateCliToken(request.buildMode, "build mode"))
     runResult = await runDeveco(args, request.project)
-    const id = await appendCommandEvidence(evidence, options.outputDirectory, "device_log", "device-run.log", runResult, runResult.exitCode === 0 ? "devecocli run 安装并拉起成功" : "devecocli run 失败")
+    const id = await appendCommandEvidence(evidence, outputDirectory, "device_log", "device-run.log", runResult, runResult.exitCode === 0 ? "devecocli run 安装并拉起成功" : "devecocli run 失败")
     checks.install = check(required.has("install"), runResult.exitCode === 0 ? "passed" : "failed", runResult.exitCode === 0 ? "应用安装并拉起。" : "安装或拉起失败。", [id], { command: runResult.command, exitCode: runResult.exitCode })
     if (runResult.exitCode === 0) checks.runtime = check(required.has("runtime"), "inconclusive", "应用已拉起，但尚无可区分规范预期的运行观察。", [id])
     else checks.runtime = check(required.has("runtime"), "not_run", "安装/拉起失败，未进入运行观察。")
@@ -198,6 +200,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
       version: capability.feature.packageVersion,
       digest: capability.lock.packageDigest,
       scenarioId: scenario.id,
+      route: scenario.route,
       requiredChecks: scenario.requiredChecks,
       factRefs: scenario.factRefs,
       conflictingFactRefs,
@@ -228,7 +231,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   }[report.verdict.status]
   const validation = validateDevelopmentReport(report)
   if (!validation.valid) throw new Error(`生成的报告无效: ${validation.errors.join("; ")}`)
-  const rendered = options.outputDirectory ? await renderDevelopmentReport(report, options.outputDirectory) : null
+  const rendered = await renderDevelopmentReport(report, outputDirectory)
   return { report, resolution, rendered, buildResult, runResult }
 }
 
@@ -252,9 +255,8 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> --execute-build [--execute-run --device <设备>] [--output <绝对目录>]")
+  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--execute-build] [--execute-run --device <设备>] [--output <目录>]")
   if (!isAbsolute(args.project)) throw new Error("project 必须是绝对路径")
-  if (args.output && !isAbsolute(args.output)) throw new Error("output 必须是绝对路径")
   const repairAttempts = Number(args["repair-attempts"] ?? 0)
   if (!Number.isInteger(repairAttempts) || repairAttempts < 0 || repairAttempts > 2) throw new Error("repair-attempts 必须是 0 到 2")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -280,7 +282,7 @@ async function main() {
     observations,
     repairAttempts,
   })
-  process.stdout.write(`${JSON.stringify(result.report ? { verdict: result.report.verdict, rendered: result.rendered, report: args.output ? undefined : result.report } : { resolution: result.resolution }, null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify(result.report ? { verdict: result.report.verdict, rendered: result.rendered } : { resolution: result.resolution }, null, 2)}\n`)
   if (!result.report || ["failed", "blocked", "inconclusive"].includes(result.report.verdict.status)) process.exitCode = 3
 }
 

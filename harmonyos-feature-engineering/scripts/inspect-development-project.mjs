@@ -34,7 +34,7 @@ export async function inspectRequest(skillRoot, request) {
   })
   return {
     mode: "code-development-validation",
-    capabilityPackage: { featureId: capability.feature.id, packageVersion: capability.feature.packageVersion, packageDigest: capability.lock.packageDigest, scenarioId: resolution.selected.id },
+    capabilityPackage: { featureId: capability.feature.id, packageVersion: capability.feature.packageVersion, packageDigest: capability.lock.packageDigest, scenarioId: resolution.selected.id, route: resolution.selected.route },
     resolution,
     inspection,
   }

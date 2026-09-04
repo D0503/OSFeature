@@ -16,7 +16,7 @@
     {
       "id": "cross-page-conflict",
       "input": "fixtures/cross-doc-a.md + fixtures/cross-doc-b.md",
-      "expected": ["识别 disable 作用域冲突", "confirmed 需要两个内部证据"]
+      "expected": ["识别 disable 作用域冲突", "confirmed 需要两个内部证据、同一原子主体、六项作用域完全对齐且结果互斥"]
     },
     {
       "id": "context-ambiguity",
@@ -39,6 +39,16 @@
       "expected": ["覆盖开发者易用性七项检查", "给出具体补充项"]
     },
     {
+      "id": "runtime-guard-inside-versioned-api-argument",
+      "input": ".systemMaterial(deviceInfo.sdkApiVersion >= 26 ? new ImmersiveMaterial(...) : undefined)",
+      "expected": ["识别版本判断只保护参数而未保护 systemMaterial 调用", "分别核对 compatible、target、compile 和设备 API", "列为关键兼容风险并要求 SDK、构建或低版本运行验证"]
+    },
+    {
+      "id": "severity-order",
+      "input": "同时包含 High、Medium、Low 和 Suggestion findings",
+      "expected": ["所有 findings 均保留", "按 Blocker、High、Medium、Low、Suggestion 排序", "同一严重度保持原始顺序", "排序不改变门禁"]
+    },
+    {
       "id": "insufficient-external-evidence",
       "input": "目标文档单方面声明 API 行为，没有同版本 API/SDK/构建证据",
       "expected": ["不得标记 confirmed", "integrationGate 为 insufficient_evidence 或列入待确认"]
@@ -55,6 +65,7 @@
         "识别 disable 全局失效与只针对应用级的冲突",
         "识别 materialColor 透明度规则与不透明示例冲突",
         "识别缺少 import、listItems 和 ListItemData 上下文",
+        "识别参数内版本判断没有保护 systemMaterial 属性调用",
         "识别空开发指导页、媒体不可访问和 API 参考未快照",
         "缺少独立证据的技术真值不得标记 confirmed"
       ]
@@ -68,7 +79,8 @@
         "生成 Toast、Popup、Tips、Menu、Dialog 弹窗类组件接入矩阵",
         "生成 Material.empty 关闭与 undefined 恢复默认的验证项",
         "每个需开发验证事实至少被一个 DEVVAL 项覆盖",
-        "blocked 门禁只放行规范冲突裁决实验，普通接入项保持 blocked",
+        "报告整体 blocked 不扩散到无关事实，只有消费未决事实的普通条目由 fact_gate 阻塞",
+        "每个条目提供不含内部 ID、审查结论或预期答案的自然开发者请求",
         "清单初始状态不得伪造 passed 或 failed"
       ]
     },
@@ -108,7 +120,28 @@
       "expected": [
         "无需原始 Markdown、URL、审查报告或验证清单",
         "锁文件被篡改时拒绝执行",
-        "不得回退到旧 Skill 或 HDS API 23"
+        "不得回退到旧 Skill 或未注册路线"
+      ]
+    },
+    {
+      "id": "immersive-hds-navigation-code-development",
+      "input": "featureId=immersive-light + 6.1.0(23) Stage 工程绝对路径 + 给 HdsNavigation 标题栏接入沉浸光感",
+      "expected": [
+        "路由到 hds-api23 和 IL-S009，不混用 ArkUI uiMaterial",
+        "只在 titleBar.style 合并 systemMaterialEffect",
+        "核对 @kit.UIDesignKit、hdsMaterial、SystemMaterialParams 和 HdsNavigation SDK 声明",
+        "默认显式设置 ADAPTIVE 材质类型与等级",
+        "没有设备视觉证据时不得误报 passed"
+      ]
+    },
+    {
+      "id": "immersive-hds-device-aware-material",
+      "input": "6.1.0(23) Stage 工程 + 根据设备能力为 HDS 底部页签选择沉浸光感档位",
+      "expected": [
+        "调用 getSystemMaterialTypes 并保留异常路径",
+        "支持 IMMERSIVE 时使用 EXQUISITE 或 GENTLE，不支持时使用 SMOOTH",
+        "PC/2in1 缺少查询证据时不得确认视觉结果",
+        "HdsTabs 在 TV 上不得判定材质视觉通过"
       ]
     }
   ]

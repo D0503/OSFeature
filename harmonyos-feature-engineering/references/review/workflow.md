@@ -2,7 +2,7 @@
 
 ## 1. 确认边界
 
-记录输入类型、绝对路径或规范 URL、审查范围、预期系统/API 版本、用户指定的输出目录。未指定输出目录时不得写报告文件。
+记录输入类型、绝对路径或规范 URL、审查范围、预期系统/API 版本，以及本次执行开始时的当前工作目录。当前工作目录是默认报告输出根目录；用户指定输出目录时使用指定目录。
 
 输入是目录时：
 
@@ -18,7 +18,7 @@
 node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--max-evidence-pages 12]
 ```
 
-输入为 URL 时先按 [URL 快照](url-snapshot.md) 生成 Markdown 资料目录，再对该目录运行预检。用户已明确指定最终输出目录时，快照位于 `<输出目录>/evidence/source-snapshot/`；未指定时使用脚本返回的临时目录并在审查完成后安全清理。
+输入为 URL 时先按 [URL 快照](url-snapshot.md) 生成 Markdown 资料目录，再对该目录运行预检。快照位于 `<报告输出根目录>/evidence/source-snapshot/`。
 
 检查标题、章节、代码围栏、链接、媒体、版本声明、来源字段和跨文档索引。预检候选项必须经过语义复核，不能直接成为 finding。
 
@@ -28,6 +28,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 
 - 开启、关闭、默认值、优先级和作用域。
 - API 名称、参数、返回值、权限、生命周期和版本要求。
+- `compatibleSdkVersion`、`targetSdkVersion`、实际编译 SDK 与设备 `sdkApiVersion` 的职责和大小关系。
 - 视觉效果与输入属性之间的约束。
 - 操作步骤的先后依赖、成功判据和失败恢复。
 - 示例是否具备 import、变量、类型、资源与容器上下文。
@@ -44,7 +45,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 - 示例完整性、步骤可执行性和开发者易用性。
 - 相对链接、资源、空导航页和来源完整性。
 
-内部直接矛盾需要至少两个可定位的原文证据。它只能确认“存在冲突”，不能确认技术真值。
+内部直接矛盾需要至少两个可定位的原文证据。先将两侧拆成原子命题，分别登记版本、模式、组件、条件、环境和生命周期。六个作用域轴必须逐项相同，且两侧结果不能同时成立；一侧未说明而另一侧明确说明时不得推定相同。它只能确认“存在冲突”，不能确认技术真值。
 
 ### 技术事实层
 
@@ -56,15 +57,26 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 2. 存在明确 SDK 或隔离工程时才执行构建。
 3. 将 `static`、`build`、`simulator`、`device` 分别记录，绝不互相替代。
 4. 无构建条件时记录未验证原因，不得写成“编译通过”。
+5. 对版本保护检查控制流边界：若新 API 调用位于版本判断外层，仅参数使用三元表达式，不得视为已保护；分别记录编译期符号可用性与低版本运行期调用风险。
 
 ## 6. 评分与 findings
 
 先逐条形成 finding，再按 [质量模型](quality-model.md) 评分。严重度表示影响，置信度表示判断可靠程度；两者不可混用。
 
-## 7. 输出与反向校验
+## 7. 严重度校准与排序
+
+1. 为每个 finding 写出“原文做法 → 开发者操作 → 失败阶段 → 可观察后果”的路径。
+2. 根据具体影响校准严重度，不得仅凭措辞不同升级为 High。
+3. 保留全部 findings，按 `Blocker > High > Medium > Low > Suggestion` 排序；同一严重度保持原始顺序。
+4. 不创建“关键/次要/提示”筛选分组，排序不改变门禁或评分。
+
+## 8. 输出与反向校验
 
 1. 先构造规范 JSON。
 2. 运行 `validate-report.mjs`，修复所有契约错误。
 3. 从通过校验的 JSON 渲染 Markdown，不手工维护两份事实。
 4. 从每个 `confirmed` 结论反查证据，确保来源、版本和定位都真实存在。
-5. 从 `integrationGate` 反查阻断项和证据充分性，确保映射唯一。
+5. 对每个 `confirmed/internal_consistency` 反查 `internalConflict`：两侧陈述必须等于所引内部证据的原子主张，作用域逐项一致，结果互斥，finding 不得添加原文没有的范围。
+6. 从 `integrationGate` 反查阻断项和证据充分性，确保映射唯一。
+7. 反查严重度和排序：高严重度必须有完整工程失败路径，所有 finding 均保留且按严重度降序排列。
+8. 在报告输出根目录写入固定名称的 JSON 和 Markdown；重复运行只覆盖固定报告和内部索引登记的证据文件。

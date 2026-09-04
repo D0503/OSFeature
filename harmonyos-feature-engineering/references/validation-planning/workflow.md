@@ -47,8 +47,10 @@
 
 每项必须包含：
 
+- 一条可单独发送给被测 Skill 的自然开发者请求 `developerPrompt`；
 - `purpose` 与 `category`；
 - 被覆盖的 `factRefs`；
+- 若实验用于裁决未决事实，明确填写 `resolutionFactRefs`；
 - `minimal_project` 或 `target_project` 环境；
 - 可发现的前置条件和顺序明确的实现步骤；
 - 负向用例；
@@ -56,6 +58,10 @@
 - 前置项依赖、是否阻断接入、当前就绪状态。
 
 需要“隔离语义 + 真实接入”时拆为两个条目：最小工程项先执行，目标工程项通过 `dependencies` 依赖前者。
+
+`developerPrompt` 用于黑盒验证能力包，不是清单操作说明。模拟开发者不知道 `DEVVAL-*`、`FACT-*`、`DOC-*`、能力包场景 ID、文档 finding 和预期答案。提示词应像真实请求一样只给出目标、工程上下文、组件、版本限制或已观察症状；不得写成“根据某条目验证某结论”，也不得把内部实施步骤和判据全部泄露给被测 Skill。
+
+示例：弹窗接入项可写“帮我创建一个 HarmonyOS Demo，给 Popup、Dialog 和 Toast 接入沉浸光感，每个组件都能单独触发”；低版本项可写“这个工程需要支持 API 25 及以上，请接入沉浸光感，并保证低版本保持原来的界面和交互”。内部事实和预期结果仍留在清单其他字段中。
 
 ## 4. 选择验证层级
 
@@ -67,14 +73,19 @@
 
 组件接入、状态转换、视觉、回退、恢复和回归项至少包含一种运行层验证。性能项必须包含真机层。视觉效果不得仅凭 SDK 符号存在或构建通过确认。
 
-## 5. 应用审查门禁
+## 5. 应用事实级门禁
 
-- `blocked`：只允许把 `normative_resolution` 最小工程实验标记为待执行；其他项必须含 `review_gate` 阻塞原因。
-- `insufficient_evidence`：可规划补充 SDK、构建和运行证据；不得把预计结果写成实际结论。
-- `pass_with_warnings`：清单必须携带相关 warning/finding，不得遗漏风险项。
-- `pass`：仍需保留目标工程条件、版本、设备与回归检查。
+`reviewGate` 继续原样记录，用来说明整个审查结果的风险水平，但不再把 `blocked` 自动扩散到全部验证项。按以下顺序逐项判断：
 
-若目标工程项没有明确目标路径，加入 `target_project` 阻塞原因。多个阻塞原因可同时存在。
+1. 为每个事实计算 `gate.status`。文档内部为 `conflicting`、`ambiguous`、`pending_review`，关联已确认 Blocker、影响接入的 confirmed/likely High，或外部核心技术主张缺少同版本独立证据时，标记为 `requires_resolution`；否则为 `usable`。
+2. `gate.findingRefs` 只收录实际导致该事实未决的审查 finding，包括形成冲突、歧义或待审状态的 finding。其他 Medium/Low 或仅编辑性问题继续保留在 `reviewFindingRefs`，但不自动变成门禁。
+3. 对每个验证项，从 `factRefs` 的未决事实中减去本项要通过实验裁决的 `resolutionFactRefs`。仍有未决事实时，标记 `blocked/fact_gate`；没有时不得添加 `fact_gate`。
+4. `normative_resolution`、`sdk_conformance`、`compatibility_validation` 可以裁决事实；普通接入和非功能验证只能消费事实，不能用 `resolutionFactRefs` 绕过门禁。
+5. 文档冲突裁决必须在最小工程中并列保留所有冲突预期。实验结果记录规范—实现关系，不提前改写官网事实。
+
+示例：`disable` 两条互斥描述对应 FACT-001/FACT-002，Popup 支持范围对应独立的 FACT-003。报告即使整体为 `blocked`，Popup 基础构建项只引用 FACT-003 时仍可 `ready`；普通接入项若引用 FACT-001 则为 `blocked/fact_gate`；专门裁决冲突并将 FACT-001/FACT-002 放入 `resolutionFactRefs` 的最小工程实验可 `ready`。
+
+环境门禁独立计算。目标工程项没有明确路径时加入 `target_project`；SDK 或设备前提不满足时分别加入 `sdk`、`device`。多个阻塞原因可以并存。
 
 ## 6. 输出与复核
 
@@ -82,7 +93,9 @@
 
 ```text
 node scripts/validate-validation-checklist.mjs <development-validation-checklist.json>
-node scripts/render-validation-checklist.mjs <development-validation-checklist.json> <explicit-output-directory>
+node scripts/render-validation-checklist.mjs <development-validation-checklist.json> [output-directory]
 ```
 
-最后复核：事实覆盖是否闭合、冲突是否保留、依赖是否有环、验证层级是否足够、所有初始状态是否仅为 `not_run` / `blocked`，以及目标工程为空时是否误标为可执行。
+未提供输出目录时写入本次执行开始时的当前工作目录；显式目录优先。
+
+最后复核：事实覆盖是否闭合、冲突是否保留、每项是否只受其引用事实影响、裁决事实是否明确、依赖是否有环、验证层级是否足够、所有初始状态是否仅为 `not_run` / `blocked`，以及目标工程为空时是否误标为可执行。

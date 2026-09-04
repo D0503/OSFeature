@@ -74,17 +74,40 @@ function validateRegistry(registry, errors) {
 }
 
 function validateProfile(profile, feature, errors) {
-  if (profile?.schemaVersion !== "1.0") errors.push("profile.schemaVersion 必须为 1.0")
+  if (profile?.schemaVersion !== "1.1") errors.push("profile.schemaVersion 必须为 1.1")
   if (profile?.featureId !== feature.id) errors.push("profile.featureId 与注册表不一致")
   if (profile?.packageVersion !== feature.packageVersion) errors.push("profile.packageVersion 与注册表不一致")
-  if (profile?.route !== "arkui-api26") errors.push("首版 route 必须为 arkui-api26")
-  if (!profile?.excludedRoutes?.includes("hds-api23")) errors.push("profile 必须显式排除 hds-api23")
-  const requirements = profile?.projectRequirements
-  if (requirements?.model !== "stage" || requirements?.minCompileApi !== 26 || requirements?.minTargetApi !== 26) {
-    errors.push("profile 必须要求 Stage、compile API 26、target API 26")
+  if (!Array.isArray(profile?.routes) || profile.routes.length === 0) errors.push("profile.routes 必须是非空数组")
+  const routeIds = new Set()
+  for (const [index, route] of (profile?.routes ?? []).entries()) {
+    const path = `profile.routes[${index}]`
+    if (!nonEmptyString(route?.id)) errors.push(`${path}.id 必须是非空字符串`)
+    else if (routeIds.has(route.id)) errors.push(`${path}.id 重复`)
+    else routeIds.add(route.id)
+    if (route?.status !== "ready") errors.push(`${path}.status 必须为 ready`)
+    if (!nonEmptyString(route?.displayName)) errors.push(`${path}.displayName 必须是非空字符串`)
+    const requirements = route?.projectRequirements
+    if (requirements?.model !== "stage") errors.push(`${path} 必须要求 Stage 模型`)
+    if (!Number.isInteger(requirements?.minCompileApi) || requirements.minCompileApi < 1) errors.push(`${path}.projectRequirements.minCompileApi 无效`)
+    if (!Number.isInteger(requirements?.minTargetApi) || requirements.minTargetApi < 1) errors.push(`${path}.projectRequirements.minTargetApi 无效`)
+    if (requirements?.minCompatibleApi !== null && requirements?.minCompatibleApi !== undefined && (!Number.isInteger(requirements.minCompatibleApi) || requirements.minCompatibleApi < 1)) {
+      errors.push(`${path}.projectRequirements.minCompatibleApi 无效`)
+    }
+    if (!Array.isArray(route?.sdk?.requiredDeclarationGlobs) || route.sdk.requiredDeclarationGlobs.length === 0) errors.push(`${path}.sdk.requiredDeclarationGlobs 必须是非空数组`)
+    if (!Array.isArray(route?.sdk?.requiredSymbols) || route.sdk.requiredSymbols.length === 0) errors.push(`${path}.sdk.requiredSymbols 必须是非空数组`)
+    if (!route?.supportedTargets || typeof route.supportedTargets !== "object") errors.push(`${path}.supportedTargets 必须是对象`)
   }
-  if (!requirements?.applicationMetadataModuleTypes?.includes("entry")) errors.push("应用级配置必须限制为 entry module")
-  if (!Array.isArray(profile?.sdk?.requiredSymbols) || profile.sdk.requiredSymbols.length === 0) errors.push("profile.sdk.requiredSymbols 必须是非空数组")
+  if (!routeIds.has("arkui-api26")) errors.push("profile 必须包含 arkui-api26 路线")
+  if (!routeIds.has("hds-api23")) errors.push("profile 必须包含 hds-api23 路线")
+  if (!routeIds.has(profile?.defaultRoute)) errors.push("profile.defaultRoute 必须引用已注册路线")
+  const arkui = (profile?.routes ?? []).find((item) => item.id === "arkui-api26")
+  if (arkui?.projectRequirements?.minCompileApi !== 26 || arkui?.projectRequirements?.minTargetApi !== 26 || !arkui?.projectRequirements?.applicationMetadataModuleTypes?.includes("entry")) {
+    errors.push("arkui-api26 必须要求 compile/target API 26，应用级配置限制为 entry module")
+  }
+  const hds = (profile?.routes ?? []).find((item) => item.id === "hds-api23")
+  if (hds?.projectRequirements?.minCompileApi !== 23 || hds?.projectRequirements?.minTargetApi !== 23 || hds?.projectRequirements?.minCompatibleApi !== 23) {
+    errors.push("hds-api23 首个发布版本必须限制 compile/target/compatible API 23 或以上")
+  }
   if (profile?.safety?.maxDirectedRepairRounds !== 2) errors.push("定向修复轮数必须为 2")
   if (profile?.safety?.automaticRollback !== false || profile?.safety?.automaticUninstall !== false || profile?.safety?.automaticEmulatorDownload !== false) {
     errors.push("安全策略不得开启自动回滚、卸载或模拟器下载")
@@ -93,19 +116,24 @@ function validateProfile(profile, feature, errors) {
   for (const value of LAYER_STATUSES) if (!statuses.has(value)) errors.push(`profile 缺少层状态 ${value}`)
   const verdicts = new Set(profile?.verification?.verdicts ?? [])
   for (const value of VERDICTS) if (!verdicts.has(value)) errors.push(`profile 缺少总结果 ${value}`)
+  return { routeIds }
 }
 
-function validateFacts(factsData, feature, errors) {
+function validateFacts(factsData, feature, routeState, defaultRoute, errors) {
   if (factsData?.schemaVersion !== "1.0" || factsData?.featureId !== feature.id) errors.push("facts 根契约无效")
   const facts = Array.isArray(factsData?.facts) ? factsData.facts : []
   if (!facts.length) errors.push("facts 必须是非空数组")
   const ids = new Set()
+  const routeByFact = new Map()
   const conflictGroups = new Map()
   for (const [index, fact] of facts.entries()) {
     const path = `facts[${index}]`
     if (!/^IL-F\d{3,}$/.test(fact?.id ?? "")) errors.push(`${path}.id 格式无效`)
     else if (ids.has(fact.id)) errors.push(`${path}.id 重复`)
     else ids.add(fact.id)
+    const factRoute = fact?.route ?? defaultRoute
+    if (!routeState.routeIds.has(factRoute)) errors.push(`${path}.route 未注册`)
+    else if (nonEmptyString(fact?.id)) routeByFact.set(fact.id, factRoute)
     if (!nonEmptyString(fact?.statement)) errors.push(`${path}.statement 必须是非空字符串`)
     if (!["clear", "conflicting", "ambiguous"].includes(fact?.normativeStatus)) errors.push(`${path}.normativeStatus 无效`)
     if (!Array.isArray(fact?.sources) || fact.sources.length === 0) errors.push(`${path}.sources 必须是非空数组`)
@@ -122,10 +150,10 @@ function validateFacts(factsData, feature, errors) {
   }
   for (const [group, members] of conflictGroups) if (members.length < 2) errors.push(`冲突组 ${group} 至少需要两个事实`)
   if (!conflictGroups.has("disable-scope") || conflictGroups.get("disable-scope").length !== 2) errors.push("必须原样保留 disable-scope 的两条冲突事实")
-  return { ids, conflictGroups }
+  return { ids, routeByFact, conflictGroups }
 }
 
-function validateScenarios(scenariosData, feature, factState, errors) {
+function validateScenarios(scenariosData, feature, factState, routeState, errors) {
   if (scenariosData?.schemaVersion !== "1.0" || scenariosData?.featureId !== feature.id) errors.push("scenarios 根契约无效")
   const scenarios = Array.isArray(scenariosData?.scenarios) ? scenariosData.scenarios : []
   if (!scenarios.length) errors.push("scenarios 必须是非空数组")
@@ -137,10 +165,12 @@ function validateScenarios(scenariosData, feature, factState, errors) {
     else if (ids.has(scenario.id)) errors.push(`${path}.id 重复`)
     else ids.add(scenario.id)
     if (!nonEmptyString(scenario?.displayName)) errors.push(`${path}.displayName 必须是非空字符串`)
+    if (!routeState.routeIds.has(scenario?.route)) errors.push(`${path}.route 未注册`)
     if (!Array.isArray(scenario?.intentPatterns) || !scenario.intentPatterns.length) errors.push(`${path}.intentPatterns 必须是非空数组`)
     if (!Array.isArray(scenario?.factRefs) || !scenario.factRefs.length) errors.push(`${path}.factRefs 必须是非空数组`)
     else for (const id of scenario.factRefs) {
       if (!factState.ids.has(id)) errors.push(`${path}.factRefs 引用了不存在的 ${id}`)
+      else if (factState.routeByFact.get(id) !== scenario.route) errors.push(`${path}.factRefs 引用了其他路线的 ${id}`)
       coveredFacts.add(id)
     }
     if (!Array.isArray(scenario?.requiredChecks) || !scenario.requiredChecks.includes("static") || !scenario.requiredChecks.includes("build")) errors.push(`${path} 必须包含 static 与 build`)
@@ -157,6 +187,36 @@ function validateScenarios(scenariosData, feature, factState, errors) {
   }
   for (const id of factState.ids) if (!coveredFacts.has(id)) errors.push(`事实 ${id} 未被任何场景覆盖`)
   return { ids }
+}
+
+function validateSourceTraceability(factsData, lock, errors) {
+  const lockedSources = new Map()
+  for (const [index, source] of (lock?.sourceDocuments ?? []).entries()) {
+    const path = `sourceDocuments[${index}]`
+    if (!nonEmptyString(source?.snapshotId) || !/^[a-f0-9]{64}$/i.test(source?.sha256 ?? "")) {
+      errors.push(`${path} 无效`)
+      continue
+    }
+    if (lockedSources.has(source.snapshotId)) errors.push(`${path}.snapshotId 重复`)
+    lockedSources.set(source.snapshotId, source)
+    if (source.officialUrl !== undefined) {
+      try {
+        const url = new URL(source.officialUrl)
+        if (url.protocol !== "https:" || url.hostname !== "developer.huawei.com") errors.push(`${path}.officialUrl 必须是华为开发者官网 HTTPS 页面`)
+      } catch {
+        errors.push(`${path}.officialUrl 无效`)
+      }
+    }
+  }
+  for (const fact of factsData?.facts ?? []) for (const source of fact.sources ?? []) {
+    const locked = lockedSources.get(source.snapshotId)
+    if (!locked) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 未登记到锁文件`)
+    else {
+      if (locked.sha256.toLowerCase() !== source.sha256.toLowerCase()) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 哈希与锁文件不一致`)
+      if (source.officialUrl !== undefined && source.officialUrl !== locked.officialUrl) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 官网 URL 与锁文件不一致`)
+      if (fact.route === "hds-api23" && !locked.officialUrl) errors.push(`HDS 事实 ${fact.id} 的来源 ${source.snapshotId} 缺少华为官网 URL`)
+    }
+  }
 }
 
 export async function verifyCapabilityLock(packageRoot, lock) {
@@ -209,10 +269,13 @@ export async function loadCapability(skillRoot, featureQuery = "immersive-light"
     readJson(paths.scenarios, "scenarios"), readJson(paths.lock, "capability-lock"),
   ])
   const errors = []
-  validateProfile(profile, feature, errors)
-  const factState = validateFacts(factsData, feature, errors)
-  validateScenarios(scenariosData, feature, factState, errors)
+  const routeState = validateProfile(profile, feature, errors)
+  const factState = validateFacts(factsData, feature, routeState, profile.defaultRoute, errors)
+  validateScenarios(scenariosData, feature, factState, routeState, errors)
   if (lock.featureId !== feature.id || lock.packageVersion !== feature.packageVersion) errors.push("锁文件与注册表的能力或版本不一致")
+  const lockedRoutes = new Set(lock?.routes ?? [])
+  if (lockedRoutes.size !== routeState.routeIds.size || [...routeState.routeIds].some((id) => !lockedRoutes.has(id))) errors.push("锁文件与 profile 的技术路线不一致")
+  validateSourceTraceability(factsData, lock, errors)
   const lockResult = options.verifyLock === false ? { valid: true, errors: [] } : await verifyCapabilityLock(packageRoot, lock)
   errors.push(...lockResult.errors)
   if (errors.length) throw new Error(errors.join("; "))
@@ -238,7 +301,7 @@ export function resolveScenario(capability, goal, target = "") {
       }
     }
     if (text.includes(scenario.displayName.toLocaleLowerCase())) score += 8
-    return { id: scenario.id, displayName: scenario.displayName, score, matches: [...new Set(matches)], scenario }
+    return { id: scenario.id, displayName: scenario.displayName, route: scenario.route, score, matches: [...new Set(matches)], scenario }
   }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
 
   if (!ranked.length) {
@@ -255,4 +318,11 @@ export function resolveScenario(capability, goal, target = "") {
   }
   const { scenario, ...selectedSummary } = top[0]
   return { status: "resolved", selected: scenario, selectedSummary, candidates: ranked.slice(1, 4).map(({ scenario: ignored, ...item }) => item), reason: "唯一最高分场景" }
+}
+
+export function capabilityRoute(capability, routeId) {
+  const id = routeId ?? capability.profile.defaultRoute
+  const route = capability.profile.routes.find((item) => item.id === id)
+  if (!route) throw new Error(`能力包未注册技术路线: ${id}`)
+  return route
 }

@@ -274,6 +274,16 @@ async function buildPreflight(documents, root, manifest) {
       if (missingSymbols.length) {
         addCandidate(candidates, "missing-variable-context", `代码块使用但未实际声明上下文符号：${missingSymbols.join("、")}。`, [locationFor(document, block.startLine)], { symbols: missingSymbols })
       }
+      for (const match of block.content.matchAll(/\.(systemMaterial|menuSystemMaterial)\s*\(\s*(?:deviceInfo\.)?sdkApiVersion\s*(?:>=|>)\s*26(?:\.0(?:\.0)?)?\s*\?/g)) {
+        const api = match[1]
+        addCandidate(
+          candidates,
+          "unguarded-versioned-api-invocation",
+          `版本判断位于 ${api} 的参数表达式内，只选择参数值，没有避开 API 26 属性调用本身；低版本路径仍可能访问不可用接口。`,
+          [locationFor(document, block.startLine + lineOf(block.content, match.index), match[0].trim())],
+          { api, introducedApi: 26, guardKind: "argument_only", risk: "unavailable-member-invocation" },
+        )
+      }
       for (const match of block.content.matchAll(/materialColor\s*:\s*['"](#[0-9a-fA-F]{6})['"]/g)) {
         opaqueExamples.push(locationFor(document, block.startLine + lineOf(block.content, match.index) - 1, match[0]))
       }

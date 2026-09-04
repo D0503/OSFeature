@@ -2,12 +2,12 @@
 
 import { createHash } from "node:crypto"
 import { execFile } from "node:child_process"
-import { mkdir, mkdtemp, readdir, stat, writeFile } from "node:fs/promises"
-import { join, dirname, resolve } from "node:path"
-import { tmpdir } from "node:os"
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises"
+import { join, dirname, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { promisify } from "node:util"
 import { validateOfficialFinalUrl, validateOfficialPageUrl } from "./lib/official-url.mjs"
+import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 
 const execFileAsync = promisify(execFile)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
@@ -114,12 +114,39 @@ async function defaultFetcher(url) {
 }
 
 async function prepareOutputDirectory(requested) {
-  if (!requested) return { path: await mkdtemp(join(tmpdir(), "harmonyos-source-snapshot-")), temporary: true }
-  const path = requested
+  const path = resolve(requested)
   try {
     const info = await stat(path)
     if (!info.isDirectory()) throw new Error(`输出位置不是目录: ${path}`)
-    if ((await readdir(path)).length) throw new Error(`输出目录必须为空，拒绝覆盖已有内容: ${path}`)
+    if ((await readdir(path)).length) {
+      let previous
+      try {
+        previous = JSON.parse(await readFile(join(path, "source-manifest.json"), "utf8"))
+      } catch {
+        throw new Error(`输出目录包含未知内容且没有可验证的内部快照索引，拒绝刷新: ${path}`)
+      }
+      if (previous?.sourceType !== "official-url-snapshot" || previous?.generatedBy !== "harmonyos-feature-engineering/scripts/snapshot-url.mjs") {
+        throw new Error(`输出目录不是本工具生成的 URL 快照，拒绝刷新: ${path}`)
+      }
+      const previousSnapshots = Array.isArray(previous.snapshots) ? previous.snapshots : []
+      const registered = new Set([
+        previous.collectionIndex?.localPath,
+        ...previousSnapshots.flatMap((item) => [item.localPath, item.fetchEvidencePath]),
+        "source-manifest.json",
+      ].filter((item) => typeof item === "string" && item))
+      const rootPrefix = `${path}${sep}`
+      for (const item of registered) {
+        const target = resolve(path, item)
+        const comparableTarget = process.platform === "win32" ? target.toLowerCase() : target
+        const comparablePrefix = process.platform === "win32" ? rootPrefix.toLowerCase() : rootPrefix
+        if (!comparableTarget.startsWith(comparablePrefix)) throw new Error(`内部快照索引包含越界路径，拒绝刷新: ${item}`)
+        try {
+          await unlink(target)
+        } catch (error) {
+          if (error?.code !== "ENOENT") throw error
+        }
+      }
+    }
   } catch (error) {
     if (error?.code !== "ENOENT") throw error
     await mkdir(path, { recursive: true })
@@ -149,7 +176,8 @@ export async function snapshotOfficialUrl(rawUrl, options = {}) {
   const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES
   const includeLinkedPages = options.includeLinkedPages ?? true
   if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 50) throw new Error("maxPages 必须是 1–50 的整数")
-  const output = await prepareOutputDirectory(options.outputDirectory ?? null)
+  const defaultOutputDirectory = join(resolveReportOutputDirectory(), "evidence", "source-snapshot")
+  const requestedOutputDirectory = options.outputDirectory ?? defaultOutputDirectory
   const fetcher = options.fetcher ?? defaultFetcher
   const rootRoute = documentRoute(initialUrl)
   const queue = [initialUrl]
@@ -190,6 +218,7 @@ export async function snapshotOfficialUrl(rawUrl, options = {}) {
     filenames.set(records[index].canonicalUrl, records[index].filename)
   }
 
+  const output = await prepareOutputDirectory(requestedOutputDirectory)
   const evidenceDirectory = join(output.path, "evidence", "fetch")
   await mkdir(evidenceDirectory, { recursive: true })
   const snapshotItems = []

@@ -38,12 +38,12 @@ node <skill>/scripts/prepare-review.mjs "<file|directory>" [--output "<temporary
 - 正文 SHA-256。
 - 抓取方式和内容类型。
 
-仅当用户明确指定输出目录时，才把 URL 快照写入该目录的 `evidence/source-snapshot/`；否则使用系统临时目录并在审查结束后安全清理。
+URL 快照写入报告输出根目录的 `evidence/source-snapshot/`。默认报告输出根目录是本次执行开始时的当前工作目录；用户明确指定目录时使用指定目录。
 
 ## 结构化预检
 
 `prepare-review.mjs` 输出 `reviewPreparationVersion`、`input`、`sourceIntegrity`、`documents`、`preflightCandidates` 和 `evidenceBudget`。
 
-候选项用于提醒模型复核，常见类型包括空导航页、无语言代码围栏、相对链接失效、媒体缺失、import/上下文缺失线索、快照哈希异常、未快照官方引用、范围冲突和属性约束/示例冲突。
+候选项用于提醒模型复核，常见类型包括空导航页、无语言代码围栏、相对链接失效、媒体缺失、import/上下文缺失线索、快照哈希异常、未快照官方引用、范围冲突、属性约束/示例冲突，以及“版本判断只位于新 API 参数内、没有保护调用本身”的兼容风险。
 
 预检候选项不是 finding：必须回到原文位置判断语义、影响、证据和置信度。

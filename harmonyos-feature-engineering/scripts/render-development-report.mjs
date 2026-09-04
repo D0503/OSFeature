@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { isAbsolute, join } from "node:path"
+import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { validateDevelopmentReport } from "./validate-development-report.mjs"
+import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 
 function text(value) {
   return value === null || value === undefined || value === "" ? "—" : String(value)
@@ -15,6 +16,7 @@ export function developmentReportMarkdown(report) {
     "",
     `- 总结果：\`${report.verdict.status}\``,
     `- 能力：${report.capabilityPackage.featureId} ${report.capabilityPackage.version}`,
+    `- 技术路线：${report.capabilityPackage.route}`,
     `- 场景：${report.capabilityPackage.scenarioId}`,
     `- 工程：${report.input.project}`,
     `- 目标：${report.input.goal}`,
@@ -54,10 +56,10 @@ export function developmentReportMarkdown(report) {
 export async function renderDevelopmentReport(report, outputDirectory) {
   const validation = validateDevelopmentReport(report)
   if (!validation.valid) throw new Error(validation.errors.join("; "))
-  if (!isAbsolute(outputDirectory)) throw new Error("输出目录必须是绝对路径")
-  await mkdir(outputDirectory, { recursive: true })
-  const jsonPath = join(outputDirectory, "development-verification-report.json")
-  const markdownPath = join(outputDirectory, "development-verification-report.md")
+  const output = resolveReportOutputDirectory(outputDirectory)
+  await mkdir(output, { recursive: true })
+  const jsonPath = join(output, "development-verification-report.json")
+  const markdownPath = join(output, "development-verification-report.md")
   await writeFile(jsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8")
   await writeFile(markdownPath, developmentReportMarkdown(report), "utf8")
   return { jsonPath, markdownPath }
@@ -65,7 +67,7 @@ export async function renderDevelopmentReport(report, outputDirectory) {
 
 async function main() {
   const [input, output] = process.argv.slice(2)
-  if (!input || !output) throw new Error("用法: node render-development-report.mjs <report.json> <绝对输出目录>")
+  if (!input) throw new Error("用法: node render-development-report.mjs <report.json> [output-directory]")
   const result = await renderDevelopmentReport(JSON.parse(await readFile(input, "utf8")), output)
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
 }

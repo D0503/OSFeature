@@ -28,10 +28,16 @@ const INTEGRITY = new Set(["verified", "partial", "failed"])
 const GATES = new Set(["blocked", "insufficient_evidence", "pass_with_warnings", "pass"])
 const ENVIRONMENTS = new Set(["minimal_project", "target_project"])
 const READINESS = new Set(["ready", "blocked"])
-const BLOCKED_BY = new Set(["review_gate", "target_project", "sdk", "device", "source_conflict"])
+const FACT_GATE_STATUS = new Set(["usable", "requires_resolution"])
+const RESOLUTION_PURPOSES = new Set(["normative_resolution", "sdk_conformance", "compatibility_validation"])
+const BLOCKED_BY = new Set(["fact_gate", "target_project", "sdk", "device"])
 const EXECUTION_STATUS = new Set(["not_run", "blocked"])
 const SDK_REQUIRED = new Set(["api_availability", "configuration", "compatibility"])
 const RUNTIME_REQUIRED = new Set(["component_integration", "state_transition", "visual_behavior", "fallback", "recovery", "regression"])
+const EXTERNAL_EVIDENCE = new Set(["official_api", "official_guide", "sdk", "build", "simulator", "device"])
+const INTERNAL_PROMPT_ID = /\b(?:DEVVAL|FACT|DOC)-\d{3,}\b|\bIL-[FSO]\d{3,}\b/i
+const INTERNAL_PROMPT_TERMS = /审查报告|验证清单|工程事实编号|审查问题编号|能力包场景(?:编号|ID)|reviewFindingRefs|resolutionFactRefs|expectedOutcomes|factRefs/i
+const CONTEXT_DEPENDENT_PROMPT = /(?:根据|按照|执行|参考)(?:上述|上面的|前述|本清单|该清单|本条目|该条目|本验证项|该验证项)/
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -39,6 +45,17 @@ function object(value) {
 
 function requiredString(value, path, errors) {
   if (typeof value !== "string" || !value.trim()) errors.push(`${path} 必须是非空字符串`)
+}
+
+function validateDeveloperPrompt(value, path, errors) {
+  requiredString(value, path, errors)
+  if (typeof value !== "string") return
+  const prompt = value.trim()
+  if (prompt.length < 12) errors.push(`${path} 必须是可独立理解的自然开发请求，不能过短`)
+  if (prompt.length > 500) errors.push(`${path} 不得超过 500 个字符`)
+  if (INTERNAL_PROMPT_ID.test(prompt)) errors.push(`${path} 不得包含 DEVVAL/FACT/DOC 或能力包内部场景 ID`)
+  if (INTERNAL_PROMPT_TERMS.test(prompt)) errors.push(`${path} 不得包含评测内部字段或产物名称`)
+  if (CONTEXT_DEPENDENT_PROMPT.test(prompt)) errors.push(`${path} 不得依赖未随提示词发送的清单或条目上下文`)
 }
 
 function stringArray(value, path, errors, { nonEmpty = false } = {}) {
@@ -107,10 +124,40 @@ function hasCycle(itemsById) {
   return [...itemsById.keys()].some(visit)
 }
 
+function uniqueInOrder(values) {
+  return [...new Set(values)]
+}
+
+function linkedFindingIds(fact) {
+  return Array.isArray(fact?.reviewFindingRefs) ? fact.reviewFindingRefs : []
+}
+
+function findingBlocksFact(finding, evidenceById) {
+  if (!object(finding)) return false
+  if (finding.status === "confirmed" && finding.severity === "Blocker") return true
+  if (finding.integrationAffecting === true && finding.severity === "High" && ["confirmed", "likely"].includes(finding.status)) return true
+  if (finding.coreTechnicalClaim !== true || finding.claimScope !== "external_technical" || finding.status === "confirmed") return false
+  const versionedExternalEvidence = (finding.evidenceRefs ?? [])
+    .map((id) => evidenceById.get(id))
+    .some((evidence) => evidence && EXTERNAL_EVIDENCE.has(evidence.type) && evidence.version !== null)
+  return !versionedExternalEvidence
+}
+
+function deriveFactGate(fact, report, findingsById, evidenceById) {
+  const technical = (report.dimensions ?? []).find((item) => item.id === "technical_correctness")
+  const globalEvidenceFailure = report.sourceIntegrity?.status === "failed" || technical?.score === null
+  const unresolvedConsistency = ["conflicting", "ambiguous", "pending_review"].includes(fact.consistencyStatus)
+  const blockingFindingRefs = uniqueInOrder(linkedFindingIds(fact).filter((id) => unresolvedConsistency || findingBlocksFact(findingsById.get(id), evidenceById)))
+  return {
+    status: globalEvidenceFailure || unresolvedConsistency || blockingFindingRefs.length ? "requires_resolution" : "usable",
+    findingRefs: blockingFindingRefs,
+  }
+}
+
 export function validateValidationChecklist(checklist) {
   const errors = []
   if (!object(checklist)) return { valid: false, errors: ["清单根节点必须是对象"] }
-  if (checklist.checklistVersion !== "1.0") errors.push("checklistVersion 必须为 1.0")
+  if (checklist.checklistVersion !== "1.2") errors.push("checklistVersion 必须为 1.2")
   if (checklist.mode !== "development-validation-planning") errors.push("mode 必须为 development-validation-planning")
 
   if (!object(checklist.input)) errors.push("input 必须是对象")
@@ -159,6 +206,21 @@ export function validateValidationChecklist(checklist) {
     stringArray(fact.reviewFindingRefs, `${path}.reviewFindingRefs`, errors)
     if (Array.isArray(fact.reviewFindingRefs)) for (const id of fact.reviewFindingRefs) if (!/^DOC-\d{3,}$/.test(id)) errors.push(`${path}.reviewFindingRefs 中 ${id} 格式无效`)
     if (fact.consistencyStatus === "conflicting" && !fact.reviewFindingRefs?.length) errors.push(`${path} 的 conflicting 事实必须关联审查 finding`)
+    if (!object(fact.gate)) errors.push(`${path}.gate 必须是对象`)
+    else {
+      if (!FACT_GATE_STATUS.has(fact.gate.status)) errors.push(`${path}.gate.status 枚举无效`)
+      stringArray(fact.gate.findingRefs, `${path}.gate.findingRefs`, errors)
+      if (Array.isArray(fact.gate.findingRefs)) {
+        if (new Set(fact.gate.findingRefs).size !== fact.gate.findingRefs.length) errors.push(`${path}.gate.findingRefs 不得重复`)
+        for (const id of fact.gate.findingRefs) {
+          if (!/^DOC-\d{3,}$/.test(id)) errors.push(`${path}.gate.findingRefs 中 ${id} 格式无效`)
+          if (!fact.reviewFindingRefs?.includes(id)) errors.push(`${path}.gate.findingRefs 中 ${id} 未包含在该事实的 reviewFindingRefs 中`)
+        }
+      }
+      requiredString(fact.gate.reason, `${path}.gate.reason`, errors)
+      if (["conflicting", "ambiguous", "pending_review"].includes(fact.consistencyStatus) && fact.gate.status !== "requires_resolution") errors.push(`${path} 的未决一致性状态必须使用 requires_resolution 事实门禁`)
+      if (fact.gate.status === "usable" && fact.gate.findingRefs?.length) errors.push(`${path} usable 时 gate.findingRefs 必须为空`)
+    }
     if (!Array.isArray(fact.sourceRefs) || !fact.sourceRefs.length) errors.push(`${path}.sourceRefs 必须是非空数组`)
     else fact.sourceRefs.forEach((item, sourceIndex) => validateSourceRef(item, `${path}.sourceRefs[${sourceIndex}]`, errors))
     if (typeof fact.developmentValidationRequired !== "boolean") errors.push(`${path}.developmentValidationRequired 必须是布尔值`)
@@ -178,6 +240,7 @@ export function validateValidationChecklist(checklist) {
     else if (itemsById.has(item.id)) errors.push(`${path}.id 重复`)
     else itemsById.set(item.id, item)
     requiredString(item.title, `${path}.title`, errors)
+    validateDeveloperPrompt(item.developerPrompt, `${path}.developerPrompt`, errors)
     if (!PURPOSES.has(item.purpose)) errors.push(`${path}.purpose 枚举无效`)
     if (!CATEGORIES.has(item.category)) errors.push(`${path}.category 枚举无效`)
     if (!Array.isArray(item.factRefs) || !item.factRefs.length) errors.push(`${path}.factRefs 必须是非空数组`)
@@ -187,6 +250,16 @@ export function validateValidationChecklist(checklist) {
         if (!factsById.has(id)) errors.push(`${path}.factRefs 引用了不存在的 ${id}`)
         else if (factsById.get(id).developmentValidationRequired) coveredFacts.add(id)
       }
+    }
+    stringArray(item.resolutionFactRefs, `${path}.resolutionFactRefs`, errors)
+    if (Array.isArray(item.resolutionFactRefs)) {
+      if (new Set(item.resolutionFactRefs).size !== item.resolutionFactRefs.length) errors.push(`${path}.resolutionFactRefs 不得重复`)
+      for (const id of item.resolutionFactRefs) {
+        if (!item.factRefs?.includes(id)) errors.push(`${path}.resolutionFactRefs 中 ${id} 必须同时出现在 factRefs 中`)
+        else if (factsById.get(id)?.gate?.status !== "requires_resolution") errors.push(`${path}.resolutionFactRefs 中 ${id} 不是待裁决事实`)
+      }
+      if (item.resolutionFactRefs.length && !RESOLUTION_PURPOSES.has(item.purpose)) errors.push(`${path}.purpose 不允许通过 resolutionFactRefs 绕过事实门禁`)
+      if (item.purpose === "normative_resolution" && !item.resolutionFactRefs.length) errors.push(`${path} 的 normative_resolution 必须声明 resolutionFactRefs`)
     }
     stringArray(item.reviewFindingRefs, `${path}.reviewFindingRefs`, errors)
     if (Array.isArray(item.reviewFindingRefs)) for (const id of item.reviewFindingRefs) if (!/^DOC-\d{3,}$/.test(id)) errors.push(`${path}.reviewFindingRefs 中 ${id} 格式无效`)
@@ -207,8 +280,10 @@ export function validateValidationChecklist(checklist) {
     if (!EXECUTION_STATUS.has(item.executionStatus)) errors.push(`${path}.executionStatus 只能为 not_run 或 blocked`)
     if (item.readiness === "ready" && (item.blockedBy?.length !== 0 || item.executionStatus !== "not_run")) errors.push(`${path} ready 时 blockedBy 必须为空且 executionStatus 必须为 not_run`)
     if (item.readiness === "blocked" && (!item.blockedBy?.length || item.executionStatus !== "blocked")) errors.push(`${path} blocked 时必须提供 blockedBy 且 executionStatus 为 blocked`)
-    if (checklist.reviewGate === "blocked" && item.purpose !== "normative_resolution" && !item.blockedBy?.includes("review_gate")) errors.push(`${path} 在 blocked 审查门禁下必须由 review_gate 阻塞`)
-    if (checklist.reviewGate === "blocked" && item.readiness === "ready" && (item.purpose !== "normative_resolution" || item.environment !== "minimal_project")) errors.push(`${path} 在 blocked 审查门禁下只有最小工程规范裁决项可保持 ready`)
+    const resolutionFacts = new Set(item.resolutionFactRefs ?? [])
+    const unresolvedConsumedFacts = (item.factRefs ?? []).filter((id) => factsById.get(id)?.gate?.status === "requires_resolution" && !resolutionFacts.has(id))
+    if (unresolvedConsumedFacts.length && !item.blockedBy?.includes("fact_gate")) errors.push(`${path} 消费了未裁决事实 ${unresolvedConsumedFacts.join(", ")}，必须由 fact_gate 阻塞`)
+    if (!unresolvedConsumedFacts.length && item.blockedBy?.includes("fact_gate")) errors.push(`${path} 未消费未裁决事实，不得由 fact_gate 扩大阻塞范围`)
     if (item.environment === "target_project" && checklist.scope?.targetProject === null && !item.blockedBy?.includes("target_project")) errors.push(`${path} 缺少目标工程路径时必须由 target_project 阻塞`)
 
     const levels = new Set()
@@ -230,9 +305,12 @@ export function validateValidationChecklist(checklist) {
     if (item.category === "state_transition" && (!Array.isArray(item.negativeCases) || !item.negativeCases.length)) errors.push(`${path} 的 state_transition 必须包含负向用例`)
     if (item.category === "document_conflict") {
       if (item.purpose !== "normative_resolution") errors.push(`${path} 的 document_conflict 必须用于 normative_resolution`)
+      if (item.environment !== "minimal_project") errors.push(`${path} 的 document_conflict 必须使用 minimal_project`)
       if (!item.reviewFindingRefs?.length) errors.push(`${path} 的 document_conflict 必须关联审查 finding`)
       const linkedFacts = (item.factRefs ?? []).map((id) => factsById.get(id)).filter(Boolean)
       if (linkedFacts.filter((fact) => fact.consistencyStatus === "conflicting").length < 2) errors.push(`${path} 的 document_conflict 必须引用至少两个 conflicting 事实`)
+      const conflictingFactIds = linkedFacts.filter((fact) => fact.consistencyStatus === "conflicting").map((fact) => fact.id)
+      if (conflictingFactIds.some((id) => !item.resolutionFactRefs?.includes(id))) errors.push(`${path} 的 document_conflict 必须在 resolutionFactRefs 中包含全部 conflicting 事实`)
       const locations = new Set(linkedFacts.flatMap((fact) => fact.sourceRefs ?? []).map((ref) => `${ref.source}#${ref.section}#${ref.line ?? ""}`))
       if (locations.size < 2) errors.push(`${path} 的 document_conflict 必须包含两个独立原文位置`)
     }
@@ -315,9 +393,21 @@ export async function validateChecklistWithReview(checklist) {
     const report = JSON.parse(raw)
     const reportValidation = validateReport(report)
     if (!reportValidation.valid) errors.push(...reportValidation.errors.map((item) => `关联审查报告: ${item}`))
-    const reportFindingIds = new Set((report.findings ?? []).map((item) => item.id))
+    const findingsById = new Map((report.findings ?? []).map((item) => [item.id, item]))
+    const reportFindingIds = new Set(findingsById.keys())
+    const evidenceById = new Map((report.evidence ?? []).map((item) => [item.id, item]))
     for (const fact of checklist.engineeringFacts ?? []) for (const id of fact.reviewFindingRefs ?? []) if (!reportFindingIds.has(id)) errors.push(`${fact.id}.reviewFindingRefs 引用了关联审查报告中不存在的 ${id}`)
     for (const item of checklist.items ?? []) for (const id of item.reviewFindingRefs ?? []) if (!reportFindingIds.has(id)) errors.push(`${item.id}.reviewFindingRefs 引用了关联审查报告中不存在的 ${id}`)
+    const checklistFactsById = new Map((checklist.engineeringFacts ?? []).map((fact) => [fact.id, fact]))
+    for (const fact of checklist.engineeringFacts ?? []) {
+      const expectedGate = deriveFactGate(fact, report, findingsById, evidenceById)
+      if (fact.gate?.status !== expectedGate.status) errors.push(`${fact.id}.gate.status 应为 ${expectedGate.status}`)
+      if (!isDeepStrictEqual(fact.gate?.findingRefs, expectedGate.findingRefs)) errors.push(`${fact.id}.gate.findingRefs 与关联审查报告的阻断 finding 不一致`)
+    }
+    for (const item of checklist.items ?? []) {
+      const expectedFindingRefs = uniqueInOrder((item.factRefs ?? []).flatMap((id) => linkedFindingIds(checklistFactsById.get(id))))
+      if (!isDeepStrictEqual(item.reviewFindingRefs, expectedFindingRefs)) errors.push(`${item.id}.reviewFindingRefs 必须等于其 factRefs 关联 finding 的并集`)
+    }
     if (report.integrationGate !== checklist.reviewGate) errors.push("reviewGate 与关联审查报告的 integrationGate 不一致")
     if (report.input?.kind !== checklist.input.kind || report.input?.value !== checklist.input.value) errors.push("input.kind/value 与关联审查报告不一致")
     if (!isDeepStrictEqual(report.sourceIntegrity, checklist.sourceIntegrity)) errors.push("sourceIntegrity 必须原样复制关联审查报告")

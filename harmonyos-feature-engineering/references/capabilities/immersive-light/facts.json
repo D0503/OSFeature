@@ -211,6 +211,117 @@
       "statement": "官网代码为上下文片段，部分 import、变量和类型未在片段内定义，不能把整段复制可编译视为规范保证。",
       "sources": [{"snapshotId":"sample","locator":"code fragments","sha256":"0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1"}],
       "validationKinds": ["static", "sdk", "build"]
+    },
+    {
+      "id": "IL-F027",
+      "route": "hds-api23",
+      "category": "hds-version",
+      "normativeStatus": "clear",
+      "statement": "HDS 组件沉浸光感材质从 6.1.0(23) 起提供，仅支持 Stage 模型，系统能力为 SystemCapability.UIDesign.HDSComponent.Core。",
+      "sources": [
+        {"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","locator":"L3-L11","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"},
+        {"snapshotId":"hds-material-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial","locator":"L1-L26","sha256":"c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"}
+      ],
+      "validationKinds": ["sdk", "build"]
+    },
+    {
+      "id": "IL-F028",
+      "route": "hds-api23",
+      "category": "hds-navigation",
+      "normativeStatus": "clear",
+      "statement": "HdsNavigation 通过 TitleBarStyleOptions.systemMaterialEffect 为标题栏按钮设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+      "sources": [
+        {"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","locator":"L5-L9","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"},
+        {"snapshotId":"hds-navigation-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation","locator":"TitleBarStyleOptions L1437-L1484","sha256":"d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20"}
+      ],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F029",
+      "route": "hds-api23",
+      "category": "hds-tabs",
+      "normativeStatus": "clear",
+      "statement": "HdsTabs 通过 HdsTabsFloatingStyle.systemMaterialEffect 为底部悬浮页签设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+      "sources": [
+        {"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","locator":"L5-L9","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"},
+        {"snapshotId":"hds-tabs-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs","locator":"HdsTabsFloatingStyle L635-L720","sha256":"f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357"}
+      ],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F030",
+      "route": "hds-api23",
+      "category": "hds-material-params",
+      "normativeStatus": "clear",
+      "statement": "HDS SystemMaterialParams 包含可选的 materialType 和 materialLevel；默认 materialType 为 NONE，默认 materialLevel 为 ADAPTIVE，因此省略 materialType 不能视为已经启用材质。",
+      "sources": [
+        {"snapshotId":"hds-navigation-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation","locator":"SystemMaterialParams L2043-L2080","sha256":"d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20"},
+        {"snapshotId":"hds-tabs-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs","locator":"SystemMaterialParams L825-L862","sha256":"f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357"}
+      ],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F031",
+      "route": "hds-api23",
+      "category": "hds-material-type",
+      "normativeStatus": "clear",
+      "statement": "HDS MaterialType 取值为 NONE=0、ADAPTIVE=100、IMMERSIVE=101；ADAPTIVE 表示自适应系统材质且默认采用沉浸式材质。",
+      "sources": [{"snapshotId":"hds-material-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial","locator":"MaterialType L48-L67","sha256":"c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"}],
+      "validationKinds": ["static", "sdk", "runtime"]
+    },
+    {
+      "id": "IL-F032",
+      "route": "hds-api23",
+      "category": "hds-material-level",
+      "normativeStatus": "clear",
+      "statement": "HDS MaterialLevel 取值为 EXQUISITE=0、GENTLE=1、SMOOTH=2、ADAPTIVE=10；精美等级耗费更多性能，流畅等级耗费更少性能。",
+      "sources": [{"snapshotId":"hds-material-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial","locator":"MaterialLevel L68-L98","sha256":"c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"}],
+      "validationKinds": ["static", "sdk", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F033",
+      "route": "hds-api23",
+      "category": "hds-adaptive-policy",
+      "normativeStatus": "clear",
+      "statement": "官网推荐 HDS 使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，让系统根据设备算力动态平衡材质效果和性能。",
+      "sources": [
+        {"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","locator":"使用系统自适应的沉浸光感 L10-L163","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"},
+        {"snapshotId":"hds-material-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial","locator":"MaterialLevel L68-L98","sha256":"c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"}
+      ],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F034",
+      "route": "hds-api23",
+      "category": "hds-custom-policy",
+      "normativeStatus": "clear",
+      "statement": "HDS 自定义材质等级前应调用 getSystemMaterialTypes；支持 IMMERSIVE 时可选 EXQUISITE 或 GENTLE，不支持时建议使用 SMOOTH 以降低卡顿和发热风险。",
+      "sources": [
+        {"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","locator":"使用自定义沉浸光感效果 L165-L329","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"},
+        {"snapshotId":"hds-material-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial","locator":"getSystemMaterialTypes L13-L47; MaterialLevel L68-L98","sha256":"c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"}
+      ],
+      "validationKinds": ["static", "sdk", "build", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F035",
+      "route": "hds-api23",
+      "category": "hds-device",
+      "normativeStatus": "clear",
+      "statement": "HDS 材质在 Phone、Tablet 可调用；PC/2in1 使用前需查询设备材质能力；HdsTabs 的该接口在 TV 无效果。",
+      "sources": [
+        {"snapshotId":"hds-navigation-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation","locator":"SystemMaterialParams L2043-L2080","sha256":"d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20"},
+        {"snapshotId":"hds-tabs-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs","locator":"HdsTabsFloatingStyle L635-L720; SystemMaterialParams L825-L862","sha256":"f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357"}
+      ],
+      "validationKinds": ["static", "runtime", "visual"]
+    },
+    {
+      "id": "IL-F036",
+      "route": "hds-api23",
+      "category": "hds-code-example",
+      "normativeStatus": "ambiguous",
+      "statement": "HDS 官网示例是需补齐工程上下文的片段：自定义示例使用 BusinessError 但同节导入片段未导入该类型，且 scenery01 明确要求替换为本地资源。",
+      "sources": [{"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","locator":"自定义示例 L178-L329","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"}],
+      "validationKinds": ["static", "sdk", "build"]
     }
   ]
 }

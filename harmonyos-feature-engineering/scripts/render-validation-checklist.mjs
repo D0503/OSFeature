@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
+import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { validateChecklistWithReview } from "./validate-validation-checklist.mjs"
+import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 
 function escapeCell(value) {
   return String(value ?? "—").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>")
@@ -23,11 +24,13 @@ export function renderValidationMarkdown(checklist) {
     "# HarmonyOS 代码开发验证清单",
     "",
     "> 本文件是验证计划，不是验证结果；所有条目的初始状态只能是 `not_run` 或 `blocked`。",
+    "> 每项的“模拟开发者请求”可单独发送给被测 Skill；不要附带条目 ID、事实引用、审查问题或预期结果。",
     "",
     `- 特性：${checklist.input.feature}`,
     `- 文档输入：${mdSource(checklist.input.value)}`,
     `- 审查报告：${mdSource(checklist.input.reviewReport)}`,
-    `- 审查门禁：\`${checklist.reviewGate}\``,
+    `- 审查门禁（整体风险摘要）：\`${checklist.reviewGate}\``,
+    "- 条目就绪性：按引用的工程事实逐项判定，整体审查门禁不自动扩散。",
     `- 目标工程：${checklist.scope.targetProject ? mdSource(checklist.scope.targetProject) : "未指定"}`,
     `- 范围：${checklist.scope.description}`,
     "",
@@ -39,12 +42,13 @@ export function renderValidationMarkdown(checklist) {
     "",
     "## 工程事实台账",
     "",
-    "| ID | 角色 | 一致性 | 需开发验证 | 工程事实 | 来源 |",
-    "|---|---|---|---|---|---|",
+    "| ID | 角色 | 一致性 | 事实门禁 | 阻断 finding | 需开发验证 | 工程事实 | 来源 |",
+    "|---|---|---|---|---|---|---|---|",
   ]
   for (const fact of checklist.engineeringFacts) {
     const sources = fact.sourceRefs.map((ref) => `${mdSource(ref.source)} · ${escapeCell(ref.section)}${ref.line ? `:${ref.line}` : ""}`).join("<br>")
-    lines.push(`| ${fact.id} | ${fact.role} | ${fact.consistencyStatus} | ${fact.developmentValidationRequired ? "是" : "否"} | ${escapeCell(fact.statement)} | ${sources} |`)
+    const gateFindings = fact.gate.findingRefs.length ? fact.gate.findingRefs.map((ref) => `\`${ref}\``).join("、") : "无"
+    lines.push(`| ${fact.id} | ${fact.role} | ${fact.consistencyStatus} | ${fact.gate.status} | ${gateFindings} | ${fact.developmentValidationRequired ? "是" : "否"} | ${escapeCell(fact.statement)} | ${sources} |`)
   }
 
   lines.push("", "## 执行顺序", "")
@@ -60,9 +64,14 @@ export function renderValidationMarkdown(checklist) {
     lines.push(
       `### ${item.id} · ${item.title}`,
       "",
+      "模拟开发者请求：",
+      "",
+      ...item.developerPrompt.split(/\r?\n/).map((line) => `> ${line}`),
+      "",
       `- 目的 / 类别：\`${item.purpose}\` / \`${item.category}\``,
       `- 环境：\`${item.environment}\``,
       `- 事实：${item.factRefs.map((ref) => `\`${ref}\``).join("、")}`,
+      `- 本项裁决事实：${item.resolutionFactRefs.length ? item.resolutionFactRefs.map((ref) => `\`${ref}\``).join("、") : "无（本项直接消费上述事实）"}`,
       `- 审查问题：${item.reviewFindingRefs.length ? item.reviewFindingRefs.map((ref) => `\`${ref}\``).join("、") : "无"}`,
       `- 依赖：${item.dependencies.length ? item.dependencies.map((ref) => `\`${ref}\``).join("、") : "无"}`,
       `- 就绪 / 状态：\`${item.readiness}\` / \`${item.executionStatus}\``,
@@ -109,8 +118,7 @@ export function renderValidationMarkdown(checklist) {
 export async function renderValidationChecklist(checklist, outputDirectory) {
   const validation = await validateChecklistWithReview(checklist)
   if (!validation.valid) throw new Error(`验证清单校验失败:\n- ${validation.errors.join("\n- ")}`)
-  if (!outputDirectory || typeof outputDirectory !== "string") throw new Error("必须显式指定输出目录")
-  const output = resolve(outputDirectory)
+  const output = resolveReportOutputDirectory(outputDirectory)
   await mkdir(output, { recursive: true })
   const jsonPath = join(output, "development-validation-checklist.json")
   const markdownPath = join(output, "development-validation-checklist.md")
@@ -121,7 +129,7 @@ export async function renderValidationChecklist(checklist, outputDirectory) {
 
 async function main() {
   const [input, output] = process.argv.slice(2)
-  if (!input || !output) throw new Error("用法: node render-validation-checklist.mjs <development-validation-checklist.json> <explicit-output-directory>")
+  if (!input) throw new Error("用法: node render-validation-checklist.mjs <development-validation-checklist.json> [output-directory]")
   const checklist = JSON.parse(await readFile(input, "utf8"))
   const result = await renderValidationChecklist(checklist, output)
   process.stdout.write(`${JSON.stringify({ status: "rendered", ...result })}\n`)

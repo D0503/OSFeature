@@ -3,7 +3,7 @@ import { execFile } from "node:child_process"
 import { access, readFile, readdir, stat } from "node:fs/promises"
 import { extname, isAbsolute, relative, resolve } from "node:path"
 import { promisify } from "node:util"
-import { sha256File } from "./capability-tools.mjs"
+import { capabilityRoute, sha256File } from "./capability-tools.mjs"
 
 const execFileAsync = promisify(execFile)
 const SKIP = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
@@ -122,7 +122,7 @@ function lineEvidence(content, match, path, root, id) {
   return { signal: id, path: slash(relative(root, path)), line, excerpt: row }
 }
 
-async function sdkInfo(projectRoot, explicitPath, profile) {
+async function sdkInfo(projectRoot, explicitPath, sdkProfile) {
   const candidates = []
   if (explicitPath) candidates.push({ source: "option", path: resolve(explicitPath) })
   const propertiesPath = resolve(projectRoot, "local.properties")
@@ -148,7 +148,7 @@ async function sdkInfo(projectRoot, explicitPath, profile) {
         const data = manifest.data ?? manifest
         const declarationEvidence = []
         const combined = []
-        for (const declaration of profile.sdk.requiredDeclarationGlobs) {
+        for (const declaration of sdkProfile.requiredDeclarationGlobs) {
           const path = resolve(root, ...declaration.split("/"))
           if (await exists(path)) {
             const content = await readFile(path, "utf8")
@@ -157,7 +157,7 @@ async function sdkInfo(projectRoot, explicitPath, profile) {
           }
         }
         const all = combined.join("\n")
-        const missingSymbols = profile.sdk.requiredSymbols.filter((symbol) => {
+        const missingSymbols = sdkProfile.requiredSymbols.filter((symbol) => {
           if (symbol === "Material.empty") return !/\bempty\b/.test(all) || !/\bMaterial\b/.test(all)
           return !all.includes(symbol)
         })
@@ -174,11 +174,11 @@ async function sdkInfo(projectRoot, explicitPath, profile) {
           missingSymbols,
         }
       } catch (error) {
-        return { status: "invalid", source: candidate.source, path: slash(root), apiVersion: null, missingSymbols: profile.sdk.requiredSymbols, error: error instanceof Error ? error.message : String(error) }
+        return { status: "invalid", source: candidate.source, path: slash(root), apiVersion: null, missingSymbols: sdkProfile.requiredSymbols, error: error instanceof Error ? error.message : String(error) }
       }
     }
   }
-  return { status: "missing", source: null, path: null, apiVersion: null, missingSymbols: profile.sdk.requiredSymbols }
+  return { status: "missing", source: null, path: null, apiVersion: null, missingSymbols: sdkProfile.requiredSymbols }
 }
 
 async function gitState(root) {
@@ -242,7 +242,10 @@ export async function inspectDevelopmentProject(projectPath, capability, options
     const content = await readFile(path, "utf8")
     fileData.push({ path, relativePath: slash(relative(projectRoot, path)), content })
   }
-  const signals = capability.profile.projectSignals.map((signal) => {
+  const route = capabilityRoute(capability, options.scenario?.route)
+  const routeRequirements = route.projectRequirements
+  const applicableSignals = capability.profile.projectSignals.filter((signal) => !signal.route || signal.route === route.id)
+  const signals = applicableSignals.map((signal) => {
     const regex = new RegExp(signal.pattern, "gmi")
     const evidence = []
     for (const file of fileData) {
@@ -257,7 +260,7 @@ export async function inspectDevelopmentProject(projectPath, capability, options
     return { id: signal.id, detected: evidence.length > 0, evidence }
   })
 
-  const targetComponents = [...new Set(Object.values(capability.profile.supportedTargets).flat())]
+  const targetComponents = [...new Set(Object.values(route.supportedTargets).flat())]
   const componentEvidence = []
   for (const component of targetComponents) {
     const regex = new RegExp(`\\b${component.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\(`, "g")
@@ -276,7 +279,7 @@ export async function inspectDevelopmentProject(projectPath, capability, options
     explicitTargetFiles.push({ path: slash(rel), exists: present, sha256: present ? await sha256File(absolute) : null })
   }
 
-  const sdk = await sdkInfo(projectRoot, options.sdkPath, capability.profile)
+  const sdk = await sdkInfo(projectRoot, options.sdkPath, route.sdk)
   const git = await gitState(projectRoot)
   const model = modules.length && modules.every((item) => item.descriptor && item.type) ? "stage" : "unknown"
   const reasons = []
@@ -291,26 +294,38 @@ export async function inspectDevelopmentProject(projectPath, capability, options
     if (selectedProduct.targetApi === null) {
       compatibilityStatus = "insufficient_context"
       reasons.push("targetSdkVersion 未知")
-    } else if ((selectedProduct.compileApi !== null && selectedProduct.compileApi < 26) || selectedProduct.targetApi < 26) {
+    } else if ((selectedProduct.compileApi !== null && selectedProduct.compileApi < routeRequirements.minCompileApi) || selectedProduct.targetApi < routeRequirements.minTargetApi) {
       compatibilityStatus = "upgrade_required"
-      reasons.push(`ArkUI 沉浸光感要求本机 SDK/显式 compile API 与 target API 达到 26；当前 ${selectedProduct.compileApi ?? "由本机 SDK 决定"}/${selectedProduct.targetApi}`)
+      reasons.push(`${route.displayName}要求本机 SDK/显式 compile API 达到 ${routeRequirements.minCompileApi}、target API 达到 ${routeRequirements.minTargetApi}；当前 ${selectedProduct.compileApi ?? "由本机 SDK 决定"}/${selectedProduct.targetApi}`)
+    } else if (routeRequirements.minCompatibleApi && (selectedProduct.compatibleApi === null || selectedProduct.compatibleApi < routeRequirements.minCompatibleApi)) {
+      compatibilityStatus = "upgrade_required"
+      reasons.push(`${route.displayName}当前能力包只验证 compatible API ${routeRequirements.minCompatibleApi} 或以上；当前 ${selectedProduct.compatibleApi ?? "未知"}`)
     }
   }
   if (sdk.status === "missing" || sdk.status === "invalid") { compatibilityStatus = "blocked"; reasons.push("未定位到可用 HarmonyOS SDK") }
   else if (sdk.apiVersion === null) { compatibilityStatus = "blocked"; reasons.push("SDK API 无法解析") }
-  else if (sdk.apiVersion < 26) { compatibilityStatus = "upgrade_required"; reasons.push(`本机 SDK API ${sdk.apiVersion} 低于 26`) }
+  else if (sdk.apiVersion < routeRequirements.minCompileApi) { compatibilityStatus = "upgrade_required"; reasons.push(`本机 SDK API ${sdk.apiVersion} 低于 ${routeRequirements.minCompileApi}`) }
   else if (sdk.missingSymbols.length) { compatibilityStatus = "blocked"; reasons.push(`SDK 缺少符号: ${sdk.missingSymbols.join(", ")}`) }
   if (options.scenario?.id === "IL-S001" && !modules.some((item) => item.type === "entry")) {
     compatibilityStatus = "blocked"
     reasons.push("应用级配置需要 entry module")
   }
-  const misplacedMetadata = modules.filter((item) => item.metadataDetected && item.type !== "entry")
-  if (misplacedMetadata.length) { compatibilityStatus = "blocked"; reasons.push(`非 entry 模块包含应用级 metadata: ${misplacedMetadata.map((item) => item.name).join(", ")}`) }
+  if (route.id === "arkui-api26") {
+    const misplacedMetadata = modules.filter((item) => item.metadataDetected && item.type !== "entry")
+    if (misplacedMetadata.length) { compatibilityStatus = "blocked"; reasons.push(`非 entry 模块包含应用级 metadata: ${misplacedMetadata.map((item) => item.name).join(", ")}`) }
+  }
 
   return {
     inspectionVersion: "1.0",
     projectRoot: slash(projectRoot),
     inspectedAt: new Date().toISOString(),
+    route: {
+      id: route.id,
+      displayName: route.displayName,
+      minCompileApi: routeRequirements.minCompileApi,
+      minTargetApi: routeRequirements.minTargetApi,
+      minCompatibleApi: routeRequirements.minCompatibleApi ?? null,
+    },
     buildProfile: hasBuildProfile ? { path: slash(buildProfilePath), sha256: await sha256File(buildProfilePath) } : null,
     product: { requested: requestedProduct, available: products, selected: selectedProduct },
     buildMode: { requested: requestedBuildMode, available: buildModes, selected: selectedBuildMode },
@@ -395,8 +410,8 @@ export async function runStaticScenarioChecks(projectPath, scenario, inspection)
 export function sdkCheckFromInspection(inspection) {
   const sdk = inspection.sdk
   if (["missing", "invalid"].includes(sdk.status)) return { status: "blocked", message: "SDK 不可用", evidence: [] }
-  if (sdk.apiVersion < 26 || sdk.missingSymbols.length) return { status: "failed", message: `SDK API/符号不满足: ${sdk.missingSymbols.join(", ")}`, evidence: sdk.declarations ?? [] }
-  return { status: "passed", message: `SDK API ${sdk.apiVersion}，必需符号已找到`, evidence: sdk.declarations ?? [] }
+  if (sdk.apiVersion < inspection.route.minCompileApi || sdk.missingSymbols.length) return { status: "failed", message: `SDK API/符号不满足: ${sdk.missingSymbols.join(", ")}`, evidence: sdk.declarations ?? [] }
+  return { status: "passed", message: `${inspection.route.displayName}：SDK API ${sdk.apiVersion}，必需符号已找到`, evidence: sdk.declarations ?? [] }
 }
 
 export function sha256Text(value) {

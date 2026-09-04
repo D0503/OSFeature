@@ -15,6 +15,8 @@ export const DIMENSIONS = [
   ["security_compliance", "安全合规", 3],
 ]
 
+export const REVIEW_VERSION = "1.1"
+
 const STATUS = new Set(["confirmed", "likely", "ambiguous", "version_caveat", "editorial", "pending"])
 const SEVERITY = new Set(["Blocker", "High", "Medium", "Low", "Suggestion"])
 const CONFIDENCE = new Set(["certain", "high", "medium", "low"])
@@ -29,6 +31,7 @@ const GATE_VERDICTS = {
   pass_with_warnings: new Set(["基本合格但需修改", "合格但有提示"]),
   pass: new Set(["合格"]),
 }
+const INTERNAL_SCOPE_AXES = ["version", "mode", "component", "condition", "environment", "lifecycle"]
 
 function object(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -48,6 +51,66 @@ function nullableHash(value, path, errors) {
 
 function referencedEvidence(finding, evidenceById) {
   return Array.isArray(finding.evidenceRefs) ? finding.evidenceRefs.map((id) => evidenceById.get(id)).filter(Boolean) : []
+}
+
+function normalizedText(value) {
+  return typeof value === "string" ? value.replace(/\s+/g, " ").trim() : ""
+}
+
+function validateInternalConflict(finding, path, evidenceById, errors) {
+  const conflict = finding.internalConflict
+  if (!object(conflict)) {
+    errors.push(`${path} 的 confirmed 内部冲突必须提供 internalConflict`)
+    return
+  }
+  requiredString(conflict.subject, `${path}.internalConflict.subject`, errors)
+  requiredString(conflict.incompatibility, `${path}.internalConflict.incompatibility`, errors)
+
+  const sides = {}
+  for (const sideName of ["left", "right"]) {
+    const sidePath = `${path}.internalConflict.${sideName}`
+    const side = conflict[sideName]
+    sides[sideName] = side
+    if (!object(side)) {
+      errors.push(`${sidePath} 必须是对象`)
+      continue
+    }
+    requiredString(side.evidenceRef, `${sidePath}.evidenceRef`, errors)
+    requiredString(side.statement, `${sidePath}.statement`, errors)
+    requiredString(side.outcome, `${sidePath}.outcome`, errors)
+    if (typeof side.evidenceRef === "string") {
+      if (!finding.evidenceRefs.includes(side.evidenceRef)) errors.push(`${sidePath}.evidenceRef 必须包含在 finding.evidenceRefs 中`)
+      const evidence = evidenceById.get(side.evidenceRef)
+      if (!evidence || !["target", "internal"].includes(evidence.type)) errors.push(`${sidePath}.evidenceRef 必须引用 target/internal 证据`)
+      else if (normalizedText(side.statement) !== normalizedText(evidence.claim)) errors.push(`${sidePath}.statement 必须与所引内部证据的原子主张一致`)
+    }
+    if (!object(side.scope)) {
+      errors.push(`${sidePath}.scope 必须是对象`)
+      continue
+    }
+    for (const axis of INTERNAL_SCOPE_AXES) {
+      if (!(axis in side.scope)) errors.push(`${sidePath}.scope.${axis} 必须显式提供字符串或 null`)
+      else if (side.scope[axis] !== null) requiredString(side.scope[axis], `${sidePath}.scope.${axis}`, errors)
+    }
+  }
+
+  const left = sides.left
+  const right = sides.right
+  if (!object(left) || !object(right)) return
+  if (left.evidenceRef === right.evidenceRef) errors.push(`${path}.internalConflict 两侧必须引用不同证据`)
+  if (object(left.scope) && object(right.scope)) {
+    for (const axis of INTERNAL_SCOPE_AXES) {
+      if (!(axis in left.scope) || !(axis in right.scope)) continue
+      const leftValue = left.scope[axis] === null ? null : normalizedText(left.scope[axis])
+      const rightValue = right.scope[axis] === null ? null : normalizedText(right.scope[axis])
+      if (leftValue !== rightValue) errors.push(`${path}.internalConflict.scope.${axis} 未对齐，不能标记 confirmed/internal_consistency`)
+    }
+  }
+  if (normalizedText(left.outcome) === normalizedText(right.outcome)) errors.push(`${path}.internalConflict 两侧结果必须互斥`)
+  const locationQuote = normalizedText(finding.location?.quote)
+  if (locationQuote && ![left.statement, right.statement].some((statement) => normalizedText(statement).includes(locationQuote))) {
+    errors.push(`${path}.location.quote 必须锚定 internalConflict 的一侧原子主张`)
+  }
 }
 
 export function deriveIntegrationGate(report) {
@@ -75,7 +138,7 @@ export function deriveIntegrationGate(report) {
 export function validateReport(report) {
   const errors = []
   if (!object(report)) return { valid: false, errors: ["报告根节点必须是对象"] }
-  if (report.reviewVersion !== "1.0") errors.push("reviewVersion 必须为 1.0")
+  if (report.reviewVersion !== REVIEW_VERSION) errors.push(`reviewVersion 必须为 ${REVIEW_VERSION}`)
   if (report.mode !== "document-review") errors.push("mode 必须为 document-review")
 
   if (!object(report.input)) errors.push("input 必须是对象")
@@ -194,7 +257,11 @@ export function validateReport(report) {
         const internal = linked.filter((evidence) => ["target", "internal"].includes(evidence.type))
         const uniqueLocations = new Set(internal.map((evidence) => `${evidence.source}#${evidence.locator}`))
         if (uniqueLocations.size < 2) errors.push(`${path} 的 confirmed 内部冲突需要两个独立原文位置`)
+        validateInternalConflict(item, path, evidenceById, errors)
       }
+    }
+    if (item.internalConflict !== undefined && !(item.status === "confirmed" && item.claimScope === "internal_consistency")) {
+      errors.push(`${path}.internalConflict 仅用于 confirmed/internal_consistency`)
     }
   })
 

@@ -4,19 +4,17 @@ URL 输入必须先转换为标准资料目录，再进入 `document-review`。�
 
 ## 命令
 
-用户明确指定报告输出目录时：
-
-```text
-node <skill>/scripts/snapshot-url.mjs "<developer.huawei.com URL>" --output-dir "<报告输出目录>/evidence/source-snapshot" --max-pages 12
-```
-
-未指定输出目录时：
+默认使用当前打开工作区：
 
 ```text
 node <skill>/scripts/snapshot-url.mjs "<developer.huawei.com URL>" --max-pages 12
 ```
 
-第二种形式在系统临时目录创建快照，并在 stdout 返回 `temporary: true` 和确切目录。完成审查后，只能在确认该标志且目标仍位于系统临时目录时清理该目录。
+快照写入 `<当前工作目录>/evidence/source-snapshot/`。用户明确指定报告输出目录时：
+
+```text
+node <skill>/scripts/snapshot-url.mjs "<developer.huawei.com URL>" --output-dir "<报告输出目录>/evidence/source-snapshot" --max-pages 12
+```
 
 如果用户明确只审查入口页面，增加 `--single-page`。
 
@@ -46,7 +44,7 @@ source-snapshot/
 - Markdown 中已成功快照的同特性链接改写为本地相对链接。
 - 内部快照索引记录请求 URL、规范 URL、抓取时间、官网更新时间、抓取方式、Markdown 哈希、抓取证据哈希、未快照官方引用和未解析媒体；用户只需提供 URL 或生成后的目录。
 - `evidence/fetch/` 保存抓取脚本的结构化结果，供审查结论反向追溯。
-- 输出目录必须不存在或为空；脚本拒绝覆盖已有资料。
+- 输出目录不存在时自动创建。重复运行时仅刷新上一份内部索引登记的快照和抓取证据；目录中未登记的用户文件保持不变。目录没有有效内部索引时拒绝刷新，避免覆盖未知资料。
 
 ## 进入审查
 

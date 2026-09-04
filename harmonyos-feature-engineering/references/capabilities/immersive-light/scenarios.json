@@ -5,6 +5,7 @@
     {
       "id": "IL-S001",
       "displayName": "应用级 default、enable、disable 状态验证",
+      "route": "arkui-api26",
       "intentPatterns": ["应用级", "全局", "default", "enable", "disable", "开启后关闭", "应用开关", "metadata"],
       "targets": ["entry/module.json5"],
       "factRefs": ["IL-F002", "IL-F003", "IL-F006", "IL-F007", "IL-F008"],
@@ -33,6 +34,7 @@
     {
       "id": "IL-S002",
       "displayName": "组件级开启、关闭与恢复",
+      "route": "arkui-api26",
       "intentPatterns": ["组件级", "组件开启", "组件关闭", "恢复默认", "Material.empty", "undefined", "关闭沉浸光感"],
       "targets": ["common component"],
       "factRefs": ["IL-F004", "IL-F005", "IL-F008", "IL-F022", "IL-F026"],
@@ -57,6 +59,7 @@
     {
       "id": "IL-S003",
       "displayName": "Navigation、Tabs 与 AlphabetIndexer 接入",
+      "route": "arkui-api26",
       "intentPatterns": ["Navigation", "NavDestination", "Tabs", "TabContent", "AlphabetIndexer", "导航", "页签", "索引器"],
       "targets": ["Navigation", "NavDestination", "Tabs", "AlphabetIndexer"],
       "factRefs": ["IL-F009", "IL-F010", "IL-F011", "IL-F022"],
@@ -82,6 +85,7 @@
     {
       "id": "IL-S004",
       "displayName": "Toast、Popup、Tips、Menu、Dialog、Sheet 接入",
+      "route": "arkui-api26",
       "intentPatterns": ["Toast", "Popup", "Tips", "Menu", "Dialog", "Sheet", "弹窗", "提示", "菜单", "对话框", "半模态"],
       "targets": ["Toast", "Popup", "Tips", "Menu", "Dialog", "Sheet"],
       "factRefs": ["IL-F012", "IL-F013", "IL-F017", "IL-F022", "IL-F023"],
@@ -106,6 +110,7 @@
     {
       "id": "IL-S005",
       "displayName": "Button、Select、Toggle、Slider、ChipGroup、SegmentButton 接入",
+      "route": "arkui-api26",
       "intentPatterns": ["Button", "Select", "Toggle", "Slider", "ChipGroup", "SegmentButton", "按钮", "选择器", "开关", "滑块", "胶囊"],
       "targets": ["Button", "Select", "Toggle", "Slider", "ChipGroup", "SegmentButton", "SegmentButtonV2"],
       "factRefs": ["IL-F014", "IL-F015", "IL-F016", "IL-F019", "IL-F022"],
@@ -131,6 +136,7 @@
     {
       "id": "IL-S006",
       "displayName": "materialColor、反色、交互、光效和阴影参数",
+      "route": "arkui-api26",
       "intentPatterns": ["materialColor", "colorInvert", "反色", "interactive", "lightEffect", "光效", "流光", "applyShadow", "阴影", "透明度"],
       "targets": ["ImmersiveOptions", "ImmersiveMaterial"],
       "factRefs": ["IL-F017", "IL-F018", "IL-F019", "IL-F020", "IL-F025"],
@@ -156,6 +162,7 @@
     {
       "id": "IL-S007",
       "displayName": "API 26 以下与设备不支持时回退",
+      "route": "arkui-api26",
       "intentPatterns": ["API 26 以下", "低版本", "兼容", "回退", "降级", "设备不支持", "compatibleSdkVersion", "sdkApiVersion"],
       "targets": ["version branch", "fallback style"],
       "factRefs": ["IL-F001", "IL-F008", "IL-F021", "IL-F022"],
@@ -169,6 +176,7 @@
       },
       "staticRules": [
         {"id":"api-guard","kind":"require_any","patterns":["sdkApiVersion\\s*>=\\s*26", "apiVersion\\s*>=\\s*26"],"onMissing":"failed","message":"compatible API 低于 26 时缺少整树版本分支。"},
+        {"id":"argument-only-api-guard","kind":"forbid","pattern":"\\.(?:systemMaterial|menuSystemMaterial)\\s*\\(\\s*(?:deviceInfo\\.)?sdkApiVersion\\s*(?:>=|>)\\s*26(?:\\.0(?:\\.0)?)?\\s*\\?","onViolation":"failed","message":"版本判断只位于高版本 API 的参数内，低版本分支仍会执行属性调用；必须让控制流避开 API 调用本身。"},
         {"id":"support-guard","kind":"require_any","patterns":["isImmersiveMaterialSupported\\s*\\("],"onMissing":"failed","message":"缺少设备能力查询。"},
         {"id":"fallback-style","kind":"manual","result":"inconclusive","message":"静态扫描不能证明低版本分支完整保留接入前布局、状态、事件和普通样式，需 diff 与运行证据。"}
       ],
@@ -180,6 +188,7 @@
     {
       "id": "IL-S008",
       "displayName": "性能约束与无效果故障诊断",
+      "route": "arkui-api26",
       "intentPatterns": ["性能", "功耗", "卡顿", "无效果", "不生效", "白屏", "故障", "诊断", "面积", "嵌套", "模糊叠加", "动态背景"],
       "targets": ["material regions", "runtime diagnostics"],
       "factRefs": ["IL-F008", "IL-F017", "IL-F020", "IL-F023", "IL-F024"],
@@ -201,6 +210,111 @@
       "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"],
       "expectationMode": "all",
       "expectedOutcomes": [{"id":"IL-O008","factRefs":["IL-F023","IL-F024"],"assertion":"故障原因可由证据定位；性能和功耗相对基线无不可接受退化。"}]
+    },
+    {
+      "id": "IL-S009",
+      "displayName": "HdsNavigation 标题栏接入沉浸光感",
+      "route": "hds-api23",
+      "intentPatterns": ["HdsNavigation", "HDS导航", "HDS标题栏", "标题栏按钮", "TitleBarStyleOptions"],
+      "targets": ["HdsNavigation"],
+      "factRefs": ["IL-F027", "IL-F028", "IL-F030", "IL-F031", "IL-F033", "IL-F035", "IL-F036"],
+      "implementation": {
+        "assets": ["assets/HdsMaterialFactory.ets"],
+        "steps": [
+          "确认工程使用 Stage 模型和 6.1.0(23) 及以上的 HDS SDK 声明。",
+          "保留原 HdsNavigation 内容、滚动绑定、标题和菜单，只在 titleBar.style 中合并 systemMaterialEffect。",
+          "默认使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE；自定义档位需求转入设备能力选择场景。"
+        ]
+      },
+      "staticRules": [
+        {"id":"hds-nav-kit-import","kind":"require_any","patterns":["from\\s+['\"]@kit\\.UIDesignKit['\"]"],"onMissing":"failed","message":"缺少 @kit.UIDesignKit 导入。"},
+        {"id":"hds-nav-target","kind":"require_any","patterns":["\\bHdsNavigation\\s*\\("],"onMissing":"failed","message":"未发现 HdsNavigation。"},
+        {"id":"hds-nav-title-material","kind":"require_any","patterns":["titleBar\\s*\\([\\s\\S]{0,1600}style\\s*:[\\s\\S]{0,800}systemMaterialEffect\\s*:"],"onMissing":"failed","message":"HdsNavigation 的 titleBar.style 中缺少 systemMaterialEffect。"},
+        {"id":"hds-nav-adaptive-pair","kind":"require_any","patterns":["materialType\\s*:\\s*hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}materialLevel\\s*:\\s*hdsMaterial\\.MaterialLevel\\.ADAPTIVE"],"onMissing":"inconclusive","message":"未发现官网推荐的 ADAPTIVE 类型与 ADAPTIVE 等级组合。"}
+      ],
+      "negativeCases": ["省略 materialType 导致默认 NONE", "标题栏滚动与菜单交互回归", "PC/2in1 未查询材质能力", "视觉证据缺失"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"],
+      "expectationMode": "all",
+      "expectedOutcomes": [{"id":"IL-O009","factRefs":["IL-F028","IL-F030","IL-F033","IL-F035"],"assertion":"HdsNavigation 标题栏按钮保持原交互并显示系统自适应沉浸光感；PC/2in1 的材质能力已查询。"}]
+    },
+    {
+      "id": "IL-S010",
+      "displayName": "HdsTabs 底部悬浮页签接入沉浸光感",
+      "route": "hds-api23",
+      "intentPatterns": ["HdsTabs", "HDS底部页签", "HDS页签", "底部悬浮页签", "HdsTabsFloatingStyle"],
+      "targets": ["HdsTabs"],
+      "factRefs": ["IL-F027", "IL-F029", "IL-F030", "IL-F031", "IL-F033", "IL-F035", "IL-F036"],
+      "implementation": {
+        "assets": ["assets/HdsMaterialFactory.ets"],
+        "steps": [
+          "确认工程使用 Stage 模型和 6.1.0(23) 及以上的 HDS SDK 声明。",
+          "保留原 HdsTabs、TabContent、controller 和页签样式，只在 barFloatingStyle 中合并 systemMaterialEffect。",
+          "默认使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，并在 Phone/Tablet/PC 目标设备记录视觉证据。"
+        ]
+      },
+      "staticRules": [
+        {"id":"hds-tabs-kit-import","kind":"require_any","patterns":["from\\s+['\"]@kit\\.UIDesignKit['\"]"],"onMissing":"failed","message":"缺少 @kit.UIDesignKit 导入。"},
+        {"id":"hds-tabs-target","kind":"require_any","patterns":["\\bHdsTabs\\s*\\("],"onMissing":"failed","message":"未发现 HdsTabs。"},
+        {"id":"hds-tabs-floating-material","kind":"require_any","patterns":["barFloatingStyle\\s*\\([\\s\\S]{0,1200}systemMaterialEffect\\s*:"],"onMissing":"failed","message":"HdsTabs 的 barFloatingStyle 中缺少 systemMaterialEffect。"},
+        {"id":"hds-tabs-adaptive-pair","kind":"require_any","patterns":["materialType\\s*:\\s*hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}materialLevel\\s*:\\s*hdsMaterial\\.MaterialLevel\\.ADAPTIVE"],"onMissing":"inconclusive","message":"未发现官网推荐的 ADAPTIVE 类型与 ADAPTIVE 等级组合。"}
+      ],
+      "negativeCases": ["省略 materialType 导致默认 NONE", "页签切换与悬浮布局回归", "TV 上误判材质有效", "PC/2in1 未查询材质能力"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"],
+      "expectationMode": "all",
+      "expectedOutcomes": [{"id":"IL-O010","factRefs":["IL-F029","IL-F030","IL-F033","IL-F035"],"assertion":"HdsTabs 底部悬浮页签保持切换与布局行为，并在受支持设备显示系统自适应沉浸光感。"}]
+    },
+    {
+      "id": "IL-S011",
+      "displayName": "HDS 导航与底部页签组合接入",
+      "route": "hds-api23",
+      "intentPatterns": ["HDS组件", "HDS沉浸光感", "UIDesignKit沉浸光感", "HDS导航和底部页签", "HDS组合接入", "系统自适应沉浸光感"],
+      "targets": ["HdsNavigation", "HdsTabs"],
+      "factRefs": ["IL-F027", "IL-F028", "IL-F029", "IL-F030", "IL-F031", "IL-F032", "IL-F033", "IL-F035", "IL-F036"],
+      "implementation": {
+        "assets": ["assets/HdsMaterialFactory.ets"],
+        "steps": [
+          "在现有 HdsNavigation 与 HdsTabs 组件树中分别定位 titleBar.style 和 barFloatingStyle。",
+          "复用同一系统自适应材质参数，分别合并到两个官方字段，不复制官网完整演示页和示例资源。",
+          "分别验证标题栏按钮与底部页签的视觉、滚动、点击和切换行为。"
+        ]
+      },
+      "staticRules": [
+        {"id":"hds-combined-targets","kind":"conditional_require","when":"\\bHdsNavigation\\s*\\(|\\bHdsTabs\\s*\\(","patterns":["\\bHdsNavigation\\s*\\(","\\bHdsTabs\\s*\\("],"onMissing":"failed","message":"组合场景必须同时包含 HdsNavigation 和 HdsTabs。"},
+        {"id":"hds-combined-title","kind":"require_any","patterns":["titleBar\\s*\\([\\s\\S]{0,1600}systemMaterialEffect\\s*:"],"onMissing":"failed","message":"标题栏缺少 systemMaterialEffect。"},
+        {"id":"hds-combined-tabs","kind":"require_any","patterns":["barFloatingStyle\\s*\\([\\s\\S]{0,1200}systemMaterialEffect\\s*:"],"onMissing":"failed","message":"底部悬浮页签缺少 systemMaterialEffect。"},
+        {"id":"hds-combined-adaptive","kind":"require_any","patterns":["hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}hdsMaterial\\.MaterialLevel\\.ADAPTIVE"],"onMissing":"inconclusive","message":"未发现完整的系统自适应材质组合。"}
+      ],
+      "negativeCases": ["只接入标题栏", "只接入底部页签", "复制未替换的 scenery01 资源", "原滚动或页签交互回归", "设备能力差异"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"],
+      "expectationMode": "all",
+      "expectedOutcomes": [{"id":"IL-O011","factRefs":["IL-F028","IL-F029","IL-F033","IL-F035"],"assertion":"标题栏按钮和底部悬浮页签均按官方入口显示自适应材质，且两处原有交互与布局不回归。"}]
+    },
+    {
+      "id": "IL-S012",
+      "displayName": "HDS 自定义材质等级与设备能力选择",
+      "route": "hds-api23",
+      "intentPatterns": ["HDS自定义", "getSystemMaterialTypes", "HDS设备能力", "IMMERSIVE", "EXQUISITE", "GENTLE", "SMOOTH", "HDS性能"],
+      "targets": ["hdsMaterial", "HdsNavigation", "HdsTabs"],
+      "factRefs": ["IL-F027", "IL-F030", "IL-F031", "IL-F032", "IL-F033", "IL-F034", "IL-F035", "IL-F036"],
+      "implementation": {
+        "assets": ["assets/HdsMaterialFactory.ets"],
+        "steps": [
+          "在组件构建前调用 hdsMaterial.getSystemMaterialTypes，并保留异常处理。",
+          "设备支持 IMMERSIVE 时使用 EXQUISITE 或 GENTLE；不支持时使用 SMOOTH。",
+          "把选出的等级与 ADAPTIVE 材质类型组合后传入目标组件的 systemMaterialEffect。"
+        ]
+      },
+      "staticRules": [
+        {"id":"hds-custom-import","kind":"require_any","patterns":["hdsMaterial[\\s\\S]{0,300}from\\s+['\"]@kit\\.UIDesignKit['\"]"],"onMissing":"failed","message":"缺少 hdsMaterial 官方 Kit 导入。"},
+        {"id":"hds-custom-probe","kind":"require_any","patterns":["hdsMaterial\\.getSystemMaterialTypes\\s*\\("],"onMissing":"failed","message":"自定义材质等级前必须查询设备支持的材质类型。"},
+        {"id":"hds-custom-supported-level","kind":"require_any","patterns":["MaterialType\\.IMMERSIVE[\\s\\S]{0,800}MaterialLevel\\.(?:EXQUISITE|GENTLE)"],"onMissing":"failed","message":"缺少设备支持 IMMERSIVE 时的 EXQUISITE/GENTLE 分支。"},
+        {"id":"hds-custom-fallback-level","kind":"require_any","patterns":["MaterialLevel\\.SMOOTH"],"onMissing":"failed","message":"缺少设备不支持 IMMERSIVE 时的 SMOOTH 回退。"},
+        {"id":"hds-custom-error-path","kind":"require_any","patterns":["try\\s*\\{[\\s\\S]{0,1200}catch"],"onMissing":"inconclusive","message":"getSystemMaterialTypes 的异常恢复路径未明确。"}
+      ],
+      "negativeCases": ["不查询能力直接使用 EXQUISITE", "不支持 IMMERSIVE 时仍使用高档材质", "查询异常无恢复路径", "PC/2in1 未查询", "用构建通过代替性能与视觉结论"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"],
+      "expectationMode": "all",
+      "expectedOutcomes": [{"id":"IL-O012","factRefs":["IL-F031","IL-F032","IL-F034","IL-F035"],"assertion":"运行时查询结果决定材质等级；支持 IMMERSIVE 时使用 EXQUISITE/GENTLE，不支持时使用 SMOOTH，异常路径可恢复且视觉与性能有设备证据。"}]
     }
   ]
 }
