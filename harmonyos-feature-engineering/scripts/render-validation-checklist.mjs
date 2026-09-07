@@ -19,6 +19,21 @@ function numbered(items) {
   return items.length ? items.map((item, index) => `${index + 1}. ${item}`) : ["无。"]
 }
 
+function developmentOptionsMarkdown(options) {
+  if (options === undefined) return []
+  const lines = ["## 可以开发什么", "", "以下是本次文档描述的可尝试开发目标，能否成功接入需通过后续开发验证判断。", ""]
+  if (!options.length) lines.push("本次文档未提供可形成开发目标的内容。", "")
+  for (const [index, option] of options.entries()) {
+    lines.push(
+      `### ${index + 1}. ${option.title}`, "",
+      `效果说明：${option.description}`, "",
+      "适用条件：", "", ...option.prerequisites.map((item) => `- ${item}`), "",
+      "开发者请求：", "", ...option.developerPrompt.split(/\r?\n/).map((line) => `> ${line}`), "",
+    )
+  }
+  return lines
+}
+
 export function renderValidationMarkdown(checklist) {
   const lines = [
     "# HarmonyOS 代码开发验证清单",
@@ -34,6 +49,7 @@ export function renderValidationMarkdown(checklist) {
     `- 目标工程：${checklist.scope.targetProject ? mdSource(checklist.scope.targetProject) : "未指定"}`,
     `- 范围：${checklist.scope.description}`,
     "",
+    ...developmentOptionsMarkdown(checklist.developmentOptions),
     "## 汇总",
     "",
     "| 工程事实 | 需开发验证 | 验证项 | 就绪 | 阻塞 |",

@@ -16,9 +16,11 @@ const SKILL_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const sourceDirectory = resolve(SKILL_DIR, "..", "沉浸光感")
 const enablePath = join(sourceDirectory, "arkts-immersive-light-sense-enable.md")
 const componentPath = join(sourceDirectory, "arkts-immersive-light-sense-component-adaptation.md")
+const compatibilityPath = join(sourceDirectory, "arkts-immersive-light-sense-compatibility.md")
 const prepared = await prepareReview(sourceDirectory)
 const enableRaw = await readFile(enablePath, "utf8")
 const componentRaw = await readFile(componentPath, "utf8")
+const compatibilityRaw = await readFile(compatibilityPath, "utf8")
 const enableLines = enableRaw.split(/\r?\n/)
 const componentLines = componentRaw.split(/\r?\n/)
 const enableHash = createHash("sha256").update(enableRaw).digest("hex")
@@ -31,10 +33,12 @@ const applicationConfig = sourceRef(enablePath, enableLines, 24, "应用级开�
 const emptyVsUndefined = sourceRef(enablePath, enableLines, 58, "组件级关闭", enableHash)
 const overlayScope = sourceRef(componentPath, componentLines, 57, "弹窗类组件", componentHash)
 const toastOverride = sourceRef(componentPath, componentLines, 67, "即时反馈（Toast）", componentHash)
+const compatibilityScope = sourceRef(compatibilityPath, compatibilityRaw.split(/\r?\n/), 7, "沉浸光感兼容性适配", createHash("sha256").update(compatibilityRaw).digest("hex"))
 
 assert.match(globalDisable.quote, /全局禁用/)
 assert.match(appOnlyDisable.quote, /只针对应用级/)
 assert.match(overlayScope.quote, /Toast、Popup、Tips、Menu和Dialog/)
+assert.match(compatibilityScope.quote, /26\.0\.0.*兼容低版本/)
 
 const report = {
   reviewVersion: "1.1",
@@ -93,6 +97,7 @@ try {
     { id: "FACT-004", statement: "Material.empty 关闭组件效果，undefined 恢复组件默认效果。", role: "expected_behavior", consistencyStatus: "consistent", reviewFindingRefs: [], gate: { status: "usable", findingRefs: [], reason: "未关联阻断性审查问题。" }, sourceRefs: [emptyVsUndefined], developmentValidationRequired: true, validationRationale: "需要运行时状态转换验证。" },
     { id: "FACT-005", statement: "Toast、Popup、Tips、Menu 和 Dialog 属于可接入沉浸光感的弹窗类组件。", role: "requirement", consistencyStatus: "consistent", reviewFindingRefs: [], gate: { status: "usable", findingRefs: [], reason: "未关联阻断性审查问题。" }, sourceRefs: [overlayScope], developmentValidationRequired: true, validationRationale: "需要逐类确认接口、构建和视觉行为。" },
     { id: "FACT-006", statement: "Toast 主动设置 backgroundBlurStyle 或 backgroundColor 时不呈现沉浸光感。", role: "constraint", consistencyStatus: "consistent", reviewFindingRefs: [], gate: { status: "usable", findingRefs: [], reason: "未关联阻断性审查问题。" }, sourceRefs: [toastOverride], developmentValidationRequired: true, validationRationale: "需要正反例视觉对照。" },
+    { id: "FACT-007", statement: "沉浸光感从 API 26.0.0 开始支持，兼容低版本时需要保持组件原有样式。", role: "requirement", consistencyStatus: "consistent", reviewFindingRefs: [], gate: { status: "usable", findingRefs: [], reason: "该项记录兼容目标，不判定文档示例已能实现目标。" }, sourceRefs: [compatibilityScope], developmentValidationRequired: true, validationRationale: "需要分别构建并观察高低版本表现。" },
   ]
   const items = [
     {
@@ -116,20 +121,40 @@ try {
       verifications: [verify("static", "三态代码路径唯一且可追踪。"), verify("sdk", "记录 Material.empty 与 systemMaterial 类型。"), verify("build", "三态变体均可构建。"), verify("device", "比较默认、empty、undefined 的实际画面与状态日志。")], dependencies: ["DEVVAL-002"], blocking: true, readiness: "blocked", blockedBy: ["fact_gate"], executionStatus: "blocked",
     },
   ]
+  items.push({
+    id: "DEVVAL-005", title: "验证低版本兼容开发目标", developerPrompt: "请创建一个支持 API 25 及以上的 HarmonyOS Demo，接入沉浸光感，并在低版本保持原来的界面和交互。", purpose: "compatibility_validation", category: "compatibility", factRefs: ["FACT-007"], resolutionFactRefs: [], reviewFindingRefs: [], environment: "minimal_project",
+    preconditions: ["准备支持文档接口的编译 SDK，以及 API 25 和 API 26 运行环境。"], implementationSteps: ["按文档建立包含版本适配的组件示例。", "在两个系统版本分别执行并记录行为。"], negativeCases: ["在 API 25 上触发同一组件交互。"],
+    verifications: [verify("static", "分别记录编译版本、安装下限和版本判断位置。"), verify("sdk", "定位所用接口的引入版本。"), verify("build", "记录示例在指定 SDK 下的构建结果。"), verify("device", "高版本按文档呈现材质，低版本保持原有样式；记录与目标的差异。")], dependencies: [], blocking: true, readiness: "ready", blockedBy: [], executionStatus: "not_run",
+  })
+  const developmentOptions = [
+    { title: "为弹窗组件接入沉浸光感", description: "让 Toast、Popup、Tips、Menu 和 Dialog 呈现沉浸光感，并能分别触发。", prerequisites: ["ArkUI 沉浸光感从 API 26.0.0 开始支持。"], developerPrompt: items[2].developerPrompt, factRefs: ["FACT-005", "FACT-006", "FACT-007"] },
+    { title: "配置应用级沉浸光感开启与关闭", description: "通过应用配置调整沉浸光感，并观察组件效果。", prerequisites: ["使用 entry module 的 metadata 配置应用级状态。"], developerPrompt: "帮我创建一个 HarmonyOS Demo，分别配置应用级沉浸光感开启和关闭，并提供可观察的组件页面。", factRefs: ["FACT-001", "FACT-002", "FACT-003"] },
+    { title: "接入沉浸光感并兼容低版本", description: "在支持的系统上呈现材质，在低版本保持原来的界面和交互。", prerequisites: ["沉浸光感从 API 26.0.0 开始支持；需兼顾低版本设备。"], developerPrompt: items[4].developerPrompt, factRefs: ["FACT-007"] },
+    { title: "关闭组件材质并恢复默认效果", description: "在应用全局配置下调整单个组件的材质效果。", prerequisites: ["选择支持组件级材质的组件。"], developerPrompt: items[3].developerPrompt, factRefs: ["FACT-001", "FACT-002", "FACT-004"] },
+  ]
   const checklist = {
-    checklistVersion: "1.2", mode: "development-validation-planning",
+    checklistVersion: "1.3", mode: "development-validation-planning",
     input: { kind: report.input.kind, value: report.input.value, feature: "沉浸光感", reviewReport: reportPaths.jsonPath, reviewReportSha256: reportHash },
     sourceIntegrity: report.sourceIntegrity, reviewGate: report.integrationGate,
-    scope: { description: "验收 disable 冲突、应用级状态切换、弹窗类组件接入及组件级关闭/恢复。", targetProject: null, environments: ["minimal_project"], requestedFocus: ["弹窗类组件接入", "应用级开启后关闭"] },
-    summary: { totalFacts: facts.length, developmentFacts: facts.length, checklistItems: items.length, readyItems: 3, blockedItems: 1 },
+    scope: { description: "验收 disable 冲突、应用级状态切换、弹窗类组件接入、低版本兼容及组件级关闭/恢复。", targetProject: null, environments: ["minimal_project"], requestedFocus: ["弹窗类组件接入", "应用级开启后关闭", "低版本兼容"] },
+    summary: { totalFacts: facts.length, developmentFacts: facts.length, checklistItems: items.length, readyItems: 4, blockedItems: 1 },
     coverage: { sourceUnits: facts.length, representedSourceUnits: facts.length, factsRequiringValidation: facts.length, factsCoveredByChecklist: facts.length, uncoveredFactRefs: [], exclusions: [] },
-    engineeringFacts: facts, items, executionOrder: items.map((item) => item.id),
+    engineeringFacts: facts, developmentOptions, items, executionOrder: items.map((item) => item.id),
   }
   const validation = validateValidationChecklist(checklist)
   assert.ok(validation.valid, validation.errors.join("\n"))
   const checklistOutput = join(temp, "checklist")
   const paths = await renderValidationChecklist(checklist, checklistOutput)
   const markdown = await readFile(paths.markdownPath, "utf8")
+  const developerSection = markdown.split("## 可以开发什么")[1].split("## 汇总")[0]
+  assert.ok(markdown.indexOf("## 可以开发什么") < markdown.indexOf("## 工程事实台账"))
+  for (const option of developmentOptions) {
+    assert.ok(developerSection.includes(option.title) && developerSection.includes(option.description) && developerSection.includes(option.developerPrompt))
+    assert.ok(option.prerequisites.every((condition) => developerSection.includes(condition)))
+  }
+  assert.doesNotMatch(developerSection, /FACT-|DEVVAL-|DOC-|fact_gate/)
+  assert.match(developerSection, /后续开发验证判断/)
+  assert.deepEqual(JSON.parse(await readFile(paths.jsonPath, "utf8")).developmentOptions, developmentOptions)
   assert.match(markdown, /弹窗类组件沉浸光感接入矩阵/)
   assert.match(markdown, /给 Toast、Popup、Tips、Menu 和 Dialog 接入沉浸光感/)
   assert.match(markdown, /ENABLE 后切换 DISABLE/)

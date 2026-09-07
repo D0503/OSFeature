@@ -1,12 +1,12 @@
 # 代码开发验证清单契约
 
-`development-validation-checklist.json` 是唯一规范数据源；Markdown 必须由它渲染。契约版本为 `1.2`，模式固定为 `development-validation-planning`。
+`development-validation-checklist.json` 是唯一规范数据源；Markdown 必须由它渲染。新生成清单使用契约版本 `1.3`，模式固定为 `development-validation-planning`。校验器与渲染器兼容读取 `1.2`；旧清单没有 `developmentOptions` 时不补写开发目标、不改变版本。
 
 ## 顶层结构
 
 ```json
 {
-  "checklistVersion": "1.2",
+  "checklistVersion": "1.3",
   "mode": "development-validation-planning",
   "input": {},
   "sourceIntegrity": {},
@@ -15,6 +15,7 @@
   "summary": {},
   "coverage": {},
   "engineeringFacts": [],
+  "developmentOptions": [],
   "items": [],
   "executionOrder": []
 }
@@ -30,6 +31,26 @@
 - `targetProject`：绝对路径或 `null`；
 - `environments`：`minimal_project`、`target_project` 的非空组合；
 - `requestedFocus`：用户特别关注的验证场景数组。
+
+## 可以开发什么
+
+`developmentOptions` 是面向开发者的目标数组，1.3 必填，1.2 可选；一旦提供，均按以下结构校验：
+
+```json
+{
+  "title": "为弹窗组件接入沉浸光感",
+  "description": "让弹窗呈现沉浸光感材质，并保留独立触发与关闭交互。",
+  "prerequisites": ["文档未说明"],
+  "developerPrompt": "帮我创建一个 HarmonyOS Demo，给 Popup、Dialog 和 Toast 接入沉浸光感，每个组件都能单独触发。",
+  "factRefs": ["FACT-003"]
+}
+```
+
+`title`、`description` 必须为非空字符串。`prerequisites` 是非空字符串数组，记录文档明确声明的版本、技术路线、组件或工程条件；缺失条件用“文档未说明”标注。`developerPrompt` 遵守下文验证项的同名字段规则，并通过语义复核排除审查结论、预设技术答案和对成功接入的无证据承诺。
+
+`factRefs` 是非空且不重复的有效工程事实 ID 数组，仅供内部追溯，Markdown 开头的开发者清单不展示这些引用。允许引用未决事实；目标展示不受门禁或验证项就绪性筛选，不改变现有事实覆盖计数和验证项状态。
+
+按开发目标聚合多个检查项，技术路线或适用条件明显不同的目标分开列出。只列本次文档描述的开发目标，不列纯格式检查或引用完整性审查。没有可形成开发目标的内容时数组为空，Markdown 明确说明。渲染顺序保持数组顺序，新章节置于汇总和事实台账之前。
 
 ## 工程事实
 

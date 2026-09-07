@@ -12,6 +12,7 @@ import { compareFileBaseline } from "./snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-development-report.mjs"
 import { renderDevelopmentReport } from "./render-development-report.mjs"
 import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
+import { buildImplementationTrace } from "./lib/implementation-trace.mjs"
 
 const execFileAsync = promisify(execFile)
 
@@ -109,6 +110,8 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
   const scenario = resolution.selected
+  if (options.baseline && resolve(options.baseline.projectRoot) !== resolve(request.project)) throw new Error("实施基线不属于目标工程")
+  buildImplementationTrace(capability, options.implementation, [], false, scenario.route)
   const inspection = await inspectDevelopmentProject(request.project, capability, {
     scenario,
     module: request.module,
@@ -178,11 +181,11 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   }
   if (!observations.visual) checks.visual = check(required.has("visual"), "not_run", "没有截图、录屏或用户明确观察，不能判定视觉成功。")
 
-  let changes = []
-  if (options.baseline) changes = (await compareFileBaseline(options.baseline)).changes
+  const changes = options.baseline ? (await compareFileBaseline(options.baseline)).changes : []
+  const trace = buildImplementationTrace(capability, options.implementation, changes, Boolean(options.baseline), scenario.route)
   const conflictingFactRefs = scenario.factRefs.filter((id) => capability.factsData.facts.find((fact) => fact.id === id)?.normativeStatus === "conflicting")
   const report = {
-    verificationVersion: "1.0",
+    verificationVersion: "1.1",
     mode: "code-development-validation",
     input: {
       feature: capability.feature.id,
@@ -207,6 +210,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     },
     projectBaseline: inspection,
     changes,
+    ...trace,
     compatibility: inspection.compatibility,
     checks,
     evidence,
@@ -237,7 +241,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
 
 function parseArgs(argv) {
   const flags = new Set(["execute-build", "execute-run"])
-  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "observations", "output", "repair-attempts", "skill-root"])
+  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "implementation", "observations", "output", "repair-attempts", "skill-root"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -261,6 +265,7 @@ async function main() {
   if (!Number.isInteger(repairAttempts) || repairAttempts < 0 || repairAttempts > 2) throw new Error("repair-attempts 必须是 0 到 2")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const baseline = args.baseline ? JSON.parse(await readFile(args.baseline, "utf8")) : null
+  const implementation = args.implementation ? JSON.parse(await readFile(args.implementation, "utf8")) : null
   const observations = args.observations ? JSON.parse(await readFile(args.observations, "utf8")) : null
   const result = await runDevelopmentVerification(args["skill-root"] ?? scriptRoot, {
     feature: args.feature,
@@ -279,6 +284,7 @@ async function main() {
     executeRun: Boolean(args["execute-run"]),
     outputDirectory: args.output,
     baseline,
+    implementation,
     observations,
     repairAttempts,
   })

@@ -157,7 +157,7 @@ function deriveFactGate(fact, report, findingsById, evidenceById) {
 export function validateValidationChecklist(checklist) {
   const errors = []
   if (!object(checklist)) return { valid: false, errors: ["清单根节点必须是对象"] }
-  if (checklist.checklistVersion !== "1.2") errors.push("checklistVersion 必须为 1.2")
+  if (!["1.2", "1.3"].includes(checklist.checklistVersion)) errors.push("checklistVersion 必须为 1.2 或 1.3")
   if (checklist.mode !== "development-validation-planning") errors.push("mode 必须为 development-validation-planning")
 
   if (!object(checklist.input)) errors.push("input 必须是对象")
@@ -226,6 +226,26 @@ export function validateValidationChecklist(checklist) {
     if (typeof fact.developmentValidationRequired !== "boolean") errors.push(`${path}.developmentValidationRequired 必须是布尔值`)
     requiredString(fact.validationRationale, `${path}.validationRationale`, errors)
   })
+
+  if (checklist.checklistVersion === "1.3" || Object.hasOwn(checklist, "developmentOptions")) {
+    if (!Array.isArray(checklist.developmentOptions)) errors.push("developmentOptions 必须是数组")
+    else checklist.developmentOptions.forEach((option, index) => {
+      const path = `developmentOptions[${index}]`
+      if (!object(option)) {
+        errors.push(`${path} 必须是对象`)
+        return
+      }
+      requiredString(option.title, `${path}.title`, errors)
+      requiredString(option.description, `${path}.description`, errors)
+      stringArray(option.prerequisites, `${path}.prerequisites`, errors, { nonEmpty: true })
+      validateDeveloperPrompt(option.developerPrompt, `${path}.developerPrompt`, errors)
+      stringArray(option.factRefs, `${path}.factRefs`, errors, { nonEmpty: true })
+      if (Array.isArray(option.factRefs)) {
+        if (new Set(option.factRefs).size !== option.factRefs.length) errors.push(`${path}.factRefs 不得重复`)
+        for (const id of option.factRefs) if (!factsById.has(id)) errors.push(`${path}.factRefs 引用了不存在的 ${id}`)
+      }
+    })
+  }
 
   const itemsById = new Map()
   const coveredFacts = new Set()

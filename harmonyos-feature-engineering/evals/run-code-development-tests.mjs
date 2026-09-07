@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict"
+import { spawnSync } from "node:child_process"
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
@@ -9,7 +10,8 @@ import { loadCapability, resolveScenario } from "../scripts/lib/capability-tools
 import { inspectDevelopmentProject, runStaticScenarioChecks } from "../scripts/lib/development-project.mjs"
 import { captureFileBaseline, compareFileBaseline } from "../scripts/snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "../scripts/validate-development-report.mjs"
-import { renderDevelopmentReport } from "../scripts/render-development-report.mjs"
+import { renderDevelopmentReport, developmentReportMarkdown } from "../scripts/render-development-report.mjs"
+import { buildImplementationTrace } from "../scripts/lib/implementation-trace.mjs"
 import { runDevelopmentVerification } from "../scripts/verify-development.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -269,11 +271,100 @@ import { deviceInfo } from '@kit.BasicServicesKit'
     process.chdir(previousCwd)
   }
   check(verification.rendered.jsonPath === join(verificationOutput, "development-verification-report.json"), "开发验证未指定输出时仍生成报告")
+  check(verification.report.verificationVersion === "1.1" && verification.report.implementation.recordStatus === "missing", "无实施记录且基线未知时新报告如实披露缺失")
+
+  const traceProject = join(tempRoot, "trace-project")
+  await makeProject(traceProject, { sdkPath: sdk })
+  await put(join(traceProject, "Legacy.ets"), "export const obsolete = true\n")
+  const traceBaseline = await captureFileBaseline(traceProject, ["entry/src/main/module.json5", "Support.ets", "Legacy.ets"])
+  await put(join(traceProject, "entry/src/main/module.json5"), '{ module: { name: "entry", type: "entry", metadata: [{ name: "ohos.arkui.UIMaterial.state", value: "enable" }] } }\n')
+  await put(join(traceProject, "Support.ets"), "export const label = 'demo'\n")
+  await rm(join(traceProject, "Legacy.ets"))
+  const traceChanges = (await compareFileBaseline(traceBaseline)).changes
+  const record = { steps: [
+    { id: "STEP-001", description: "配置应用级沉浸光感开启。", status: "applied", locations: [{ path: "entry/src/main/module.json5", version: "after", lineStart: 1, lineEnd: 1 }], basis: [
+      { type: "capability_fact", factRefs: ["IL-F002"], reason: "采用能力包的应用级 metadata 配置。" },
+      { type: "engineering_choice", reason: "保留原模块名称和类型。" },
+    ] },
+    { id: "STEP-002", description: "移除未使用的测试常量。", status: "applied", locations: [{ path: "Legacy.ets", version: "before", lineStart: 1, lineEnd: 1 }], basis: [{ type: "engineering_choice", reason: "删除冗余演示变量。" }] },
+  ] }
+  const trace = buildImplementationTrace(capability, record, traceChanges, true, "arkui-api26")
+  const traceReport = { ...structuredClone(noDevice), verificationVersion: "1.1", input: { ...noDevice.input, project: traceProject }, capabilityPackage: { ...noDevice.capabilityPackage, version: capability.feature.packageVersion, digest: capability.lock.packageDigest }, changes: traceChanges, ...trace }
+  check(validateDevelopmentReport(traceReport).valid, `实施依据报告有效：${validateDevelopmentReport(traceReport).errors.join("; ")}`)
+  check(trace.implementation.uncoveredChanges.join() === "Support.ets", "未覆盖改动如实列出，删除步骤使用修改前位置")
+  check(trace.normativeBasis.length === 1 && trace.normativeBasis[0].id === "IL-F002" && trace.normativeBasis[0].sources[0].officialUrl.endsWith("arkts-immersive-light-sense-enable"), "ArkUI 应用级事实展开官网来源且只展示引用事实")
+  check(trace.normativeBasis[0].sources[0].retrievedAt === null && trace.normativeBasis[0].sources[0].title, "未知抓取时间为 null，来源标题来自已有清单")
+  const tracePaths = await renderDevelopmentReport(traceReport, join(tempRoot, "trace-report"))
+  const traceMarkdown = await readFile(tracePaths.markdownPath, "utf8")
+  check(traceMarkdown.includes("工程配套选择") && traceMarkdown.includes("修改前") && traceMarkdown.includes("arkts-immersive-light-sense-enable") && traceMarkdown.includes("Support.ets"), "Markdown 展示步骤、删除位置、官网链接及未覆盖文件")
+  check(!developmentReportMarkdown(noDevice).includes("代码实现步骤与依据"), "旧版报告不自动补写实施步骤")
+
+  const missingTrace = buildImplementationTrace(capability, null, traceChanges, true)
+  check(missingTrace.implementation.recordStatus === "missing" && missingTrace.implementation.uncoveredChanges.length === 3 && missingTrace.normativeBasis.length === 0, "有改动无实施记录时保留缺失状态及全部未覆盖文件")
+  const noChange = buildImplementationTrace(capability, { steps: [] }, [], true)
+  check(noChange.implementation.recordStatus === "not_started", "无改动有基线时准确记录未实施")
+  const fakeApplied = structuredClone(record)
+  fakeApplied.steps[0].locations[0].lineStart = 999
+  fakeApplied.steps[0].locations[0].lineEnd = 999
+  const uncorrelated = buildImplementationTrace(capability, fakeApplied, traceChanges, true)
+  check(uncorrelated.implementation.steps[0].status === "partial" && uncorrelated.implementation.steps[0].issues.length > 0, "不存在的改动行不能标为已实施")
+  const forgedApplied = { ...traceReport, ...uncorrelated }
+  forgedApplied.implementation.steps[0].status = "applied"
+  check(!validateDevelopmentReport(forgedApplied).valid, "校验器拒绝没有 diff 关联的 applied")
+  const noBaselineTrace = buildImplementationTrace(capability, record, [], false)
+  check(noBaselineTrace.implementation.steps.every((step) => step.status === "partial"), "基线缺失不能确认步骤已实施")
+  const notApplied = structuredClone(record)
+  notApplied.steps[0].status = "not_applied"
+  check(buildImplementationTrace(capability, notApplied, traceChanges, true).implementation.uncoveredChanges.includes("entry/src/main/module.json5"), "未实施步骤不计入变更覆盖")
+
+  const badFact = structuredClone(record)
+  badFact.steps[0].basis[0].factRefs = ["IL-F999"]
+  assert.throws(() => buildImplementationTrace(capability, badFact, traceChanges, true), /不存在/)
+  assertions += 1
+  const conflictRecord = structuredClone(record)
+  conflictRecord.steps[0].basis[0] = { type: "capability_fact", factRefs: ["IL-F006"], reason: "配置全局关闭，实际作用域待设备观察。" }
+  const conflictTrace = buildImplementationTrace(capability, conflictRecord, traceChanges, true)
+  check(conflictTrace.normativeBasis.some((fact) => fact.id === "IL-F007" && fact.usage === "conflict_context"), "引用冲突事实时自动保留另一条规范预期")
+  const lostConflict = { ...traceReport, ...structuredClone(conflictTrace) }
+  lostConflict.normativeBasis = lostConflict.normativeBasis.filter((fact) => fact.usage === "direct")
+  check(!validateDevelopmentReport(lostConflict).valid, "报告缺少关联冲突预期时校验失败")
+  const missingUrlCapability = structuredClone(capability)
+  delete missingUrlCapability.lock.sourceDocuments.find((source) => source.snapshotId === "enable").officialUrl
+  const missingUrlTrace = buildImplementationTrace(missingUrlCapability, record, traceChanges, true)
+  check(missingUrlTrace.normativeBasis[0].sources[0].officialUrl === null && developmentReportMarkdown({ ...traceReport, ...missingUrlTrace }).includes("官网链接缺失"), "官网链接缺失如实展示，不推测 URL")
+  const unresolved = structuredClone(record)
+  unresolved.steps[0].basis = [{ type: "unresolved", reason: "尚未找到该参数的能力包规范依据。" }]
+  const unresolvedReport = { ...traceReport, ...buildImplementationTrace(capability, unresolved, traceChanges, true) }
+  check(unresolvedReport.normativeBasis.length === 0 && developmentReportMarkdown(unresolvedReport).includes("依据待确认"), "未知规范依据不会由模型陈述补成官网事实")
+
+  const failedTraceReport = structuredClone(traceReport)
+  failedTraceReport.checks.build = { required: true, status: "failed", summary: "fixture build failure", evidenceRefs: ["EVID-003"], repairAttempts: 1 }
+  failedTraceReport.evidence.find((item) => item.id === "EVID-003").exitCode = 1
+  failedTraceReport.verdict = { status: "failed", summary: "fixture build failed", matchedFactRefs: [] }
+  const failedPaths = await renderDevelopmentReport(failedTraceReport, join(tempRoot, "failed-trace"))
+  check((await readFile(failedPaths.markdownPath, "utf8")).includes("代码实现步骤与依据") && failedTraceReport.changes.every((change) => change.diff), "失败报告仍保留步骤、依据和完整差异")
+
+  const hdsPath = "entry/src/main/ets/pages/Index.ets"
+  const hdsBaseline = await captureFileBaseline(hdsProject, [hdsPath])
+  await put(join(hdsProject, hdsPath), (await readFile(join(hdsProject, hdsPath), "utf8")).replace("MaterialType.ADAPTIVE", "MaterialType.IMMERSIVE"))
+  const hdsRecord = { steps: [{ id: "STEP-001", description: "为 HdsNavigation 标题栏选择沉浸式材质。", status: "applied", locations: [{ path: hdsPath, version: "after", lineStart: 2, lineEnd: 2 }], basis: [{ type: "capability_fact", factRefs: ["IL-F028", "IL-F031"], reason: "使用标题栏材质字段并选择 IMMERSIVE 类型。" }] }] }
+  const hdsVerification = await runDevelopmentVerification(skillRoot, { project: hdsProject, goal: "给 HdsNavigation 标题栏按钮接入沉浸光感", sdk }, { baseline: hdsBaseline, implementation: hdsRecord, outputDirectory: join(tempRoot, "hds-trace") })
+  check(hdsVerification.report.implementation.steps[0].status === "applied" && hdsVerification.report.normativeBasis.some((fact) => fact.sources.some((source) => source.officialUrl.endsWith("ui-design-hdsnavigation"))), "HDS 实际验证报告可追溯位置、能力事实和官网 API")
+  assert.throws(() => buildImplementationTrace(capability, hdsRecord, [], false, "arkui-api26"), /不属于/)
+  assertions += 1
 
   const independent = join(tempRoot, "independent-skill")
   await cp(join(skillRoot, "references", "capabilities"), join(independent, "references", "capabilities"), { recursive: true })
   const independentCapability = await loadCapability(independent, "immersive-light")
   check(resolveScenario(independentCapability, "给 Dialog 接入沉浸光感").selected?.id === "IL-S004", "移除原始资料后仍仅凭能力包路由")
+  const independentReport = await runDevelopmentVerification(independent, { project: traceProject, goal: "应用级开启后关闭沉浸光感", sdk }, { baseline: traceBaseline, implementation: record, outputDirectory: join(tempRoot, "independent-report") })
+  check(independentReport.report.normativeBasis[0].sources[0].officialUrl.endsWith("arkts-immersive-light-sense-enable") && independentReport.report.implementation.steps[0].status === "applied", "仅复制能力包、没有原始文档时仍生成完整实施依据报告")
+  await put(join(tempRoot, "implementation.json"), JSON.stringify(record))
+  await put(join(tempRoot, "baseline.json"), JSON.stringify(traceBaseline))
+  const cli = spawnSync(process.execPath, [join(skillRoot, "scripts", "verify-development.mjs"), "--project", traceProject, "--goal", "应用级开启后关闭沉浸光感", "--sdk", sdk, "--skill-root", independent, "--baseline", join(tempRoot, "baseline.json"), "--implementation", join(tempRoot, "implementation.json"), "--output", join(tempRoot, "cli-trace")], { encoding: "utf8", windowsHide: true })
+  check(cli.status === 3 && JSON.parse(cli.stdout).rendered.jsonPath, `CLI 接受实施记录并生成未执行构建的报告：${cli.stderr}`)
+  const cliReport = JSON.parse(await readFile(join(tempRoot, "cli-trace", "development-verification-report.json"), "utf8"))
+  check(cliReport.implementation.steps[0].status === "applied" && cliReport.normativeBasis[0].id === "IL-F002", "CLI 报告的实施记录和规范来源对应")
   await writeFile(join(independent, "references", "capabilities", "immersive-light", "facts.json"), "{}\n", "utf8")
   let tamperRejected = false
   try { await loadCapability(independent, "immersive-light") } catch { tamperRejected = true }

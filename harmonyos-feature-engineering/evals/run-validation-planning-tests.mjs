@@ -5,7 +5,7 @@ import { createHash } from "node:crypto"
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { renderValidationChecklist } from "../scripts/render-validation-checklist.mjs"
+import { renderValidationChecklist, renderValidationMarkdown } from "../scripts/render-validation-checklist.mjs"
 import { validateChecklistWithReview, validateValidationChecklist } from "../scripts/validate-validation-checklist.mjs"
 import { DIMENSIONS } from "../scripts/validate-report.mjs"
 
@@ -108,7 +108,7 @@ function verification(level) {
 function checklistTemplate(root, reportPath, reportHash, report) {
   const source = join(root, "docs", "a.md")
   return {
-    checklistVersion: "1.2",
+    checklistVersion: "1.3",
     mode: "development-validation-planning",
     input: {
       kind: report.input.kind,
@@ -151,6 +151,10 @@ function checklistTemplate(root, reportPath, reportHash, report) {
         sourceRefs: [{ source, section: "弹窗", line: 30, quote: "弹窗支持组件级开启", sha256: "a".repeat(64) }], developmentValidationRequired: true, validationRationale: "需要确认 SDK 与运行视效。",
       },
     ],
+    developmentOptions: [
+      { title: "配置应用级沉浸光感开关", description: "调整应用材质的开启与关闭配置。", prerequisites: ["文档未说明"], developerPrompt: "请创建一个 HarmonyOS Demo，分别配置应用级沉浸光感开启和关闭。", factRefs: ["FACT-001", "FACT-002"] },
+      { title: "给 Popup 接入沉浸光感", description: "让 Popup 呈现材质效果并保留打开和关闭交互。", prerequisites: ["文档未说明"], developerPrompt: "帮我创建一个 HarmonyOS Demo，为 Popup 接入沉浸光感并提供独立触发入口。", factRefs: ["FACT-003"] },
+    ],
     items: [
       {
         id: "DEVVAL-001", title: "裁决 disable 作用域", developerPrompt: "帮我创建一个 HarmonyOS Demo，先全局开启沉浸光感，再切换为关闭，并比较应用默认材质和组件显式材质的表现。", purpose: "normative_resolution", category: "document_conflict", factRefs: ["FACT-001", "FACT-002"], resolutionFactRefs: ["FACT-001", "FACT-002"], reviewFindingRefs: ["DOC-001"], environment: "minimal_project",
@@ -185,6 +189,23 @@ try {
   check(validateValidationChecklist(valid).valid, `有效清单通过结构校验: ${validateValidationChecklist(valid).errors.join("; ")}`)
   check((await validateChecklistWithReview(valid)).valid, "有效清单与审查报告一致")
 
+  const legacy = structuredClone(valid)
+  legacy.checklistVersion = "1.2"
+  delete legacy.developmentOptions
+  const legacyPaths = await renderValidationChecklist(legacy, join(root, "legacy"))
+  check((await validateChecklistWithReview(legacy)).valid && !renderValidationMarkdown(legacy).includes("## 可以开发什么"), "旧版缺少开发目标时仍可校验与渲染，不自动推测内容")
+  check(!Object.hasOwn(JSON.parse(await readFile(legacyPaths.jsonPath, "utf8")), "developmentOptions"), "旧版落盘不补写开发目标")
+  const missingOptions = structuredClone(valid)
+  delete missingOptions.developmentOptions
+  check(!validateValidationChecklist(missingOptions).valid, "新版必须声明开发目标数组")
+  const emptyOptions = { ...valid, developmentOptions: [] }
+  check(validateValidationChecklist(emptyOptions).valid && renderValidationMarkdown(emptyOptions).includes("本次文档未提供可形成开发目标的内容"), "没有开发目标时支持空数组并明确展示")
+  for (const [field, value] of [["title", ""], ["description", ""], ["prerequisites", []], ["factRefs", ["FACT-999"]], ["developerPrompt", "请根据 FACT-003 和上述验证清单完成 Popup 接入。"]]) {
+    const malformed = structuredClone(valid)
+    malformed.developmentOptions[0][field] = value
+    check(!validateValidationChecklist(malformed).valid, `开发目标校验 ${field} 的完整性、引用或上下文约束`)
+  }
+
   const uncovered = structuredClone(valid)
   uncovered.items[1].factRefs = ["FACT-001"]
   check(!validateValidationChecklist(uncovered).valid, "拒绝未覆盖的开发验证事实")
@@ -216,6 +237,9 @@ try {
   dependent.summary.readyItems = 1
   dependent.summary.blockedItems = 1
   check((await validateChecklistWithReview(dependent)).valid, "只阻塞实际消费未决事实的普通接入项")
+  const developerSection = renderValidationMarkdown(dependent).split("## 可以开发什么")[1].split("## 汇总")[0]
+  check(dependent.developmentOptions.every((option) => developerSection.includes(option.developerPrompt)), "被阻塞的普通接入项不隐藏对应开发目标和请求")
+  check(!/FACT-|DOC-|DEVVAL-|fact_gate/.test(developerSection), "开发者章节不展示内部编号和门禁字段")
 
   const bypassFactGate = structuredClone(dependent)
   bypassFactGate.items[1].readiness = "ready"
@@ -257,7 +281,8 @@ try {
 
   const output = join(root, "output")
   const rendered = await renderValidationChecklist(valid, output)
-  check((await readFile(rendered.jsonPath, "utf8")).includes('"checklistVersion": "1.2"'), "生成固定名称 JSON 清单")
+  const saved = JSON.parse(await readFile(rendered.jsonPath, "utf8"))
+  check(saved.checklistVersion === "1.3" && JSON.stringify(saved.developmentOptions) === JSON.stringify(valid.developmentOptions), "新版固定清单落盘保留开发目标数据")
   check((await readFile(rendered.markdownPath, "utf8")).includes("裁决 disable 作用域"), "从 JSON 渲染 Markdown 清单")
   check((await readFile(rendered.markdownPath, "utf8")).includes("模拟开发者请求"), "Markdown 展示黑盒评测请求")
   const defaultOutput = join(root, "default-output")

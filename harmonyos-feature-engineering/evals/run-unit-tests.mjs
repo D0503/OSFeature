@@ -134,15 +134,18 @@ async function run() {
 
   await withTempDirectory(async (root) => {
     const doc = join(root, "doc.md")
-    await writeFile(doc, "# 页面\n\n> 原文：https://developer.huawei.com/consumer/cn/doc/example\n\n要求 API 26.0.0。\n\n```\nnew uiMaterial.ImmersiveMaterial({})\n```\n\n![](https://media:123)\n[坏链接](./none.md)\n", "utf8")
+    await writeFile(doc, "# 页面\n\n> 原文：https://developer.huawei.com/consumer/cn/doc/example\n\n要求 API 26.0.0。\n\n```\nnew uiMaterial.ImmersiveMaterial({})\nconst labels = ['one', 'two']\nconst literal = ':  字符串内保留空格' // :  注释内保留空格\nconst color = enabled ? undefined :  Color.White\n```\n\n![](https://media:123)\n[坏链接](./none.md)\n", "utf8")
     const prepared = await prepareReview(doc)
     const types = new Set(prepared.preflightCandidates.map((item) => item.type))
     check(prepared.input.kind === "file" && prepared.documents.length === 1, "单文件输入")
     check(prepared.documents[0].versionStatements[0].versions.includes("26.0.0"), "抽取版本声明")
     check(prepared.documents[0].sourceMetadata.declaredSourceUrl?.includes("developer.huawei.com"), "抽取来源元数据")
-    for (const type of ["unlabeled-code-fence", "missing-import-context", "unresolved-media-reference", "broken-relative-link"]) {
+    for (const type of ["unlabeled-code-fence", "code-formatting-anomaly", "missing-import-context", "unresolved-media-reference", "broken-relative-link"]) {
       check(types.has(type), `预检识别 ${type}`)
     }
+    const formatting = prepared.preflightCandidates.find((item) => item.type === "code-formatting-anomaly")
+    check(formatting?.locations[0]?.quote?.includes(":  Color.White") && formatting?.details?.whitespaceLength === 2, "格式预检定位运算符后的多余空格")
+    check(prepared.preflightCandidates.filter((item) => item.type === "code-formatting-anomaly").length === 1, "格式预检不把字符串、注释和正常字符串列表识别为异常空格")
   })
 
   await withTempDirectory(async (root) => {
@@ -253,11 +256,14 @@ async function run() {
     "potential-material-color-conflict",
     "missing-import-context",
     "missing-variable-context",
+    "code-formatting-anomaly",
     "unguarded-versioned-api-invocation",
     "navigation-only",
     "unresolved-media-reference",
     "unsnapshotted-official-references",
   ]) check(immersiveTypes.has(type), `沉浸光感验收识别 ${type}`)
+  const formattingAnomaly = immersive.preflightCandidates.find((item) => item.type === "code-formatting-anomaly" && item.locations[0]?.quote?.includes(":  Color.White"))
+  check(formattingAnomaly?.locations[0]?.line === 43, "沉浸光感验收定位 Color.White 前的多余空格")
   const argumentOnlyGuard = immersive.preflightCandidates.find((item) => item.type === "unguarded-versioned-api-invocation")
   check(argumentOnlyGuard?.locations[0]?.section === "组件级开启的兼容性适配方案" && argumentOnlyGuard?.locations[0]?.quote?.startsWith(".systemMaterial"), "参数内版本判断风险定位到 systemMaterial 调用行")
   check(argumentOnlyGuard?.details?.guardKind === "argument_only" && argumentOnlyGuard?.details?.introducedApi === 26, "记录未保护调用的 API 版本与保护类型")

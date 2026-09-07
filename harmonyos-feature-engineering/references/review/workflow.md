@@ -20,7 +20,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 
 输入为 URL 时先按 [URL 快照](url-snapshot.md) 生成 Markdown 资料目录，再对该目录运行预检。快照位于 `<报告输出根目录>/evidence/source-snapshot/`。
 
-检查标题、章节、代码围栏、链接、媒体、版本声明、来源字段和跨文档索引。预检候选项必须经过语义复核，不能直接成为 finding。
+检查标题、章节、代码围栏、代码格式、链接、媒体、版本声明、来源字段和跨文档索引。代码格式预检关注抓取或编辑引入的异常空格等可复制性问题，但必须排除字符串、注释和有意对齐。预检候选项必须经过语义复核，不能直接成为 finding。
 
 ## 3. 建立主张清单
 
@@ -42,7 +42,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 - 单页和跨页矛盾。
 - 指代、范围、条件、否定和版本歧义。
 - 前后逻辑、章节职责和信息架构。
-- 示例完整性、步骤可执行性和开发者易用性。
+- 示例完整性、代码与文本格式、步骤可执行性和开发者易用性。
 - 相对链接、资源、空导航页和来源完整性。
 
 内部直接矛盾需要至少两个可定位的原文证据。先将两侧拆成原子命题，分别登记版本、模式、组件、条件、环境和生命周期。六个作用域轴必须逐项相同，且两侧结果不能同时成立；一侧未说明而另一侧明确说明时不得推定相同。它只能确认“存在冲突”，不能确认技术真值。
@@ -53,7 +53,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 
 ## 5. 示例验证
 
-1. 静态检查始终执行：语法线索、import、未定义变量、资源、类型、API 拼写和上下文依赖。
+1. 静态检查始终执行：语法线索、import、未定义变量、资源、类型、API 拼写、上下文依赖，以及影响阅读、复制或构建的格式异常。
 2. 存在明确 SDK 或隔离工程时才执行构建。
 3. 将 `static`、`build`、`simulator`、`device` 分别记录，绝不互相替代。
 4. 无构建条件时记录未验证原因，不得写成“编译通过”。
@@ -69,6 +69,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 2. 根据具体影响校准严重度，不得仅凭措辞不同升级为 High。
 3. 保留全部 findings，按 `Blocker > High > Medium > Low > Suggestion` 排序；同一严重度保持原始顺序。
 4. 不创建“关键/次要/提示”筛选分组，排序不改变门禁或评分。
+5. 纯格式瑕疵默认标记为 `editorial` / `Suggestion`；只有存在可复现的语法、语义或构建影响时，才按实际失败路径提高严重度。
 
 ## 8. 输出与反向校验
 

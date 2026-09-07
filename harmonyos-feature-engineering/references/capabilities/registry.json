@@ -17,7 +17,7 @@
       ],
       "status": "ready",
       "readinessMeaning": "能力包可以执行代码开发验证；不表示所有规范行为均已通过真机验证。",
-      "packageVersion": "1.1.0",
+      "packageVersion": "1.1.1",
       "entry": "references/capabilities/immersive-light/entry.md",
       "profile": "references/capabilities/immersive-light/profile.json",
       "facts": "references/capabilities/immersive-light/facts.json",

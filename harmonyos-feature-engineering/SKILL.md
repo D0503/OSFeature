@@ -27,7 +27,7 @@ metadata:
 3. 按 [输入抽取](references/review/extraction.md) 使用 `scripts/prepare-review.mjs` 审查转换后的目录或原有本地输入。普通目录直接读取第一层受支持文档；URL 快照目录的内部索引由脚本自动识别，用户无需提供或理解该文件。
 4. 根据 [文档类型](references/review/document-types.md) 判断页面职责。预检候选项只是线索，不得直接复制为最终 finding。
 5. 执行双层审查：
-   - 内部质量检查始终执行，包括矛盾、歧义、逻辑、结构、示例完整性和开发者易用性。
+   - 内部质量检查始终执行，包括矛盾、歧义、逻辑、结构、文本与代码格式、示例完整性和开发者易用性。
    - 对外部技术事实定向取证，默认最多抓取 12 个官方证据页面；不要递归抓取全部链接。
 6. findings 完成后统一按严重度 `Blocker > High > Medium > Low > Suggestion` 排序；不得筛除、隐藏或另行分组，同一严重度保持原始顺序。
 7. 按 [报告契约](references/review/report-contract.md) 先形成规范 JSON，再由 `scripts/render-report.mjs` 渲染 Markdown，并用 `scripts/validate-report.mjs` 校验。
@@ -44,7 +44,7 @@ metadata:
    - 目标工程：真实架构接入、现有样式/状态交互、回归、性能和恢复路径。
    - 同时需要时拆成两个有依赖关系的验证项，先最小工程、后目标工程。
 6. `reviewGate` 只作为整体风险摘要；逐条计算工程事实的 `usable/requires_resolution` 门禁。普通条目仅在消费其所引用的未决事实时由 `fact_gate` 阻塞；不相关事实不得受报告整体状态牵连。用于裁决未决事实的实验须在 `resolutionFactRefs` 中明确声明，规范冲突裁决使用最小工程并可保持 ready。
-7. 按 [验证清单契约](references/validation-planning/checklist-contract.md) 先形成规范 JSON，用 `scripts/validate-validation-checklist.mjs` 校验，再由 `scripts/render-validation-checklist.mjs` 渲染 Markdown。
+7. 从本次文档整理面向开发者的 `developmentOptions`，在清单开头展示“可以开发什么”：开发目标、效果说明、适用条件和自然开发者请求。按目标合并检查项，保留待验证目标，不按门禁筛除，也不宣称已验证成功。按 [验证清单契约](references/validation-planning/checklist-contract.md) 形成 1.3 版 JSON，用 `scripts/validate-validation-checklist.mjs` 校验，再由 `scripts/render-validation-checklist.mjs` 渲染 Markdown。
 8. 始终在默认报告输出目录生成 `development-validation-checklist.json` 和 `development-validation-checklist.md`；用户明确指定输出目录时改用指定目录。此模式不创建工程、不执行验证。
 
 ## code-development-validation 工作流
@@ -59,7 +59,7 @@ metadata:
 8. 依次运行场景静态规则、SDK 符号核验和 `devecocli build`。构建失败仅对与本次改动有明确位置和证据的问题定向修复，最多两轮；仍失败时停止，保留改动和 diff。
 9. 用户要求运行验证时，先用 `devecocli device list` 查询设备。唯一设备可运行；多个设备要求选择；无设备时不创建/下载模拟器。使用 `devecocli run` 安装运行，禁止自动添加 `--uninstall`。
 10. 视觉结论必须来自截图、录屏、可复查日志或用户明确观察。没有观察证据时不得标记视觉通过；构建通过不等于视觉成功。
-11. 用 `scripts/snapshot-project-files.mjs compare` 生成 before/after 哈希与精确 diff。按 [报告契约](references/development/report-contract.md) 形成 JSON，使用 `scripts/validate-development-report.mjs` 校验，再由 `scripts/render-development-report.mjs` 渲染。
+11. 实施及定向修复时按顺序记录实际代码步骤、文件位置、能力包事实引用及工程配套选择理由。用 `scripts/snapshot-project-files.mjs compare` 生成 before/after 哈希与精确 diff；通过 `verify-development.mjs --implementation <记录文件>` 传入实施记录。按 [报告契约](references/development/report-contract.md) 形成 1.1 版 JSON，自动从能力包展开官网来源，用 `scripts/validate-development-report.mjs` 校验，再由 `scripts/render-development-report.mjs` 展示步骤、位置与依据。记录缺失或与 diff 不符时如实披露，不将场景计划当作已实施步骤。
 12. 始终在默认报告输出目录生成 `development-verification-report.json`、`development-verification-report.md` 和 `evidence/`；用户明确指定输出目录时改用指定目录。答复同时返回结果、分层证据、待验证项和精确改动。
 
 ## 硬性边界

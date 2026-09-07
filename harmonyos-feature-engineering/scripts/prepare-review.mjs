@@ -250,6 +250,49 @@ function addCandidate(candidates, type, message, locations = [], details = {}) {
   candidates.push({ id: `PRE-${String(candidates.length + 1).padStart(3, "0")}`, type, message, locations, details })
 }
 
+function maskCodeStringsAndComments(line) {
+  let output = ""
+  let quote = null
+  let escaped = false
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index]
+    const next = line[index + 1]
+    if (quote) {
+      output += "x"
+      if (escaped) escaped = false
+      else if (character === "\\") escaped = true
+      else if (character === quote) quote = null
+      continue
+    }
+    if (character === "/" && next === "/") return output.padEnd(line.length, "x")
+    if (["'", '"', "`"].includes(character)) {
+      quote = character
+      output += "x"
+      continue
+    }
+    output += character
+  }
+  return output
+}
+
+function collectCodeFormattingAnomalies(content) {
+  const anomalies = []
+  const lines = String(content).split("\n")
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = lines[lineIndex]
+    const searchable = maskCodeStringsAndComments(line)
+    for (const match of searchable.matchAll(/(?:=>|===|!==|==|!=|>=|<=|&&|\|\||[?:,;=+\-*/%<>])([ \t]{2,})(?=\S)/g)) {
+      anomalies.push({
+        lineIndex,
+        line: line.trim(),
+        column: match.index + match[0].length - match[1].length + 1,
+        whitespaceLength: match[1].length,
+      })
+    }
+  }
+  return anomalies
+}
+
 async function buildPreflight(documents, root, manifest) {
   const candidates = []
   const scopeGlobal = []
@@ -265,6 +308,15 @@ async function buildPreflight(documents, root, manifest) {
     }
     for (const block of document.codeBlocks) {
       if (!block.language) addCandidate(candidates, "unlabeled-code-fence", "代码围栏未声明语言。", [locationFor(document, block.startLine)])
+      for (const anomaly of collectCodeFormattingAnomalies(block.content)) {
+        addCandidate(
+          candidates,
+          "code-formatting-anomaly",
+          "代码中的分隔符或运算符后出现连续空白，可能是抓取或编辑造成的格式瑕疵。",
+          [locationFor(document, block.startLine + anomaly.lineIndex + 1, anomaly.line)],
+          { category: "extra-whitespace", column: anomaly.column, whitespaceLength: anomaly.whitespaceLength },
+        )
+      }
       if (/\buiMaterial\s*\./.test(block.content) && !/import\s*\{[^}]*\buiMaterial\b[^}]*\}\s*from\s*['"]@kit\.ArkUI['"]/.test(block.content)) {
         addCandidate(candidates, "missing-import-context", "代码块使用 uiMaterial，但同一可复制代码块中没有对应 import。", [locationFor(document, block.startLine)])
       }

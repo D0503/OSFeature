@@ -4,6 +4,7 @@ import { isAbsolute } from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { CHECK_LEVELS, LAYER_STATUSES, VERDICTS } from "./lib/capability-tools.mjs"
+import { validateImplementationTrace } from "./lib/implementation-trace.mjs"
 
 const CHECK_KEYS = ["static", "sdk", "build", "install", "runtime", "visual"]
 const COMPATIBILITY = new Set(["supported", "upgrade_required", "blocked", "insufficient_context"])
@@ -52,7 +53,7 @@ export function deriveDevelopmentVerdict(report) {
 export function validateDevelopmentReport(report) {
   const errors = []
   if (!object(report)) return { valid: false, errors: ["报告根节点必须是对象"] }
-  if (report.verificationVersion !== "1.0") errors.push("verificationVersion 必须为 1.0")
+  if (!["1.0", "1.1"].includes(report.verificationVersion)) errors.push("verificationVersion 必须为 1.0 或 1.1")
   if (report.mode !== "code-development-validation") errors.push("mode 必须为 code-development-validation")
   if (!object(report.input)) errors.push("input 必须是对象")
   else {
@@ -141,6 +142,7 @@ export function validateDevelopmentReport(report) {
     const expected = deriveDevelopmentVerdict(report)
     if (report.verdict.status !== expected) errors.push(`verdict.status 应为 ${expected}`)
   }
+  if (report.verificationVersion === "1.1" || report.implementation !== undefined || report.normativeBasis !== undefined) errors.push(...validateImplementationTrace(report))
   return { valid: errors.length === 0, errors }
 }
 

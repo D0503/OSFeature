@@ -2,7 +2,7 @@
   "schemaVersion": "1.1",
   "featureId": "immersive-light",
   "displayName": "沉浸光感",
-  "packageVersion": "1.1.0",
+  "packageVersion": "1.1.1",
   "defaultRoute": "arkui-api26",
   "routes": [
     {

@@ -10,6 +10,43 @@ function text(value) {
   return value === null || value === undefined || value === "" ? "—" : String(value)
 }
 
+function implementationMarkdown(report) {
+  if (!report.implementation) return []
+  const { implementation, normativeBasis } = report
+  const status = { applied: "已实施", partial: "部分实施", not_applied: "未实施" }
+  const lines = ["## 代码实现步骤与依据", "",
+    `- 实施记录：${{ recorded: "已记录", missing: "实施记录缺失", not_started: "未实施代码变更" }[implementation.recordStatus]}`,
+    `- 基线对照：${implementation.baselineAvailable ? "已提供" : "基线缺失，无法确认本次代码变化"}`, ""]
+  for (const step of implementation.steps) {
+    lines.push(`### ${step.id} · ${status[step.status]}`, "", step.description, "")
+    for (const location of step.locations) lines.push(`- 位置：\`${location.path}:${location.lineStart}-${location.lineEnd}\`（${location.version === "before" ? "修改前" : "修改后"}；${location.correlation === "matched" ? "已对应 diff" : "未确认变更"}）`)
+    for (const basis of step.basis) {
+      if (basis.type === "capability_fact") {
+        lines.push(`- 能力包依据（${report.capabilityPackage.version}）：${basis.reason}`)
+        for (const id of basis.factRefs) {
+          const fact = normativeBasis.find((item) => item.id === id)
+          lines.push(`  - ${id}：${fact.statement}（${fact.normativeStatus}）`)
+          for (const source of fact.sources) lines.push(`    - ${source.officialUrl ? `[${source.title ?? source.snapshotId}](${source.officialUrl})` : `${source.snapshotId}（官网链接缺失）`} · ${source.locator} · SHA-256：\`${source.sha256}\``)
+        }
+      } else lines.push(`- ${basis.type === "engineering_choice" ? "工程配套选择" : "依据待确认"}：${basis.reason}`)
+    }
+    for (const issue of step.issues) lines.push(`- 待确认：${issue}`)
+    lines.push("")
+  }
+  if (normativeBasis.length) lines.push("以上规范依据来自能力包收录的官网快照；SDK、构建和设备结果见分层验证证据。", "")
+  const conflicts = normativeBasis.filter((fact) => fact.normativeStatus === "conflicting")
+  if (conflicts.length) {
+    lines.push("冲突规范与待验证预期：", "")
+    for (const fact of conflicts) {
+      lines.push(`- ${fact.id}（${fact.usage === "direct" ? "步骤引用" : "关联冲突"}）：${fact.statement}`)
+      for (const source of fact.sources) lines.push(`  - ${source.officialUrl ? `[${source.title ?? source.snapshotId}](${source.officialUrl})` : `${source.snapshotId}（官网链接缺失）`} · ${source.locator} · SHA-256：\`${source.sha256}\``)
+    }
+    lines.push("", "上述预期仍需逐项对照实际行为；步骤中的实施选择不裁决规范真值。", "")
+  }
+  if (implementation.uncoveredChanges.length) lines.push("未被实施步骤覆盖的变更文件：", "", ...implementation.uncoveredChanges.map((path) => `- \`${path}\``), "")
+  return lines
+}
+
 export function developmentReportMarkdown(report) {
   const lines = [
     "# 代码开发验证报告",
@@ -24,6 +61,7 @@ export function developmentReportMarkdown(report) {
     "",
     report.verdict.summary,
     "",
+    ...implementationMarkdown(report),
     "## 兼容性",
     "",
     `状态：\`${report.compatibility.status}\`。${report.compatibility.reasons.join("；") || "无阻塞原因。"}`,

@@ -4,11 +4,41 @@
 
 重复运行覆盖固定报告和同名内部证据文件，不得删除或覆盖 `evidence/` 中未登记的用户文件。
 
-JSON 根字段为：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
+新报告版本 `verificationVersion=1.1`，兼容读取 1.0；旧报告没有实施信息时不自动补写。JSON 根字段为：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`implementation`、`normativeBasis`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
 
 `input` 只描述能力名、工程绝对路径、开发目标和可选 module/文件/product/build mode/device，不得包含文档、URL、审查报告或验证清单输入。
 
 `capabilityPackage` 记录能力 ID、版本、锁摘要、场景 ID、技术路线、必需层、事实引用和冲突事实引用。`changes` 对每个触及文件记录状态、before/after SHA-256 和 unified diff；失败也不得删除这些信息。
+
+## 代码实现步骤与依据
+
+实施记录通过 CLI 的 `--implementation <JSON文件>` 或 `runDevelopmentVerification` 的 `options.implementation` 提供，结构如下。记录为执行描述，不能覆盖能力包规范；顺序即实施顺序。
+
+```json
+{
+  "steps": [{
+    "id": "STEP-001",
+    "description": "在 entry 模块 metadata 中配置应用级沉浸光感开启。",
+    "status": "applied",
+    "locations": [{"path": "entry/src/main/module.json5", "version": "after", "lineStart": 10, "lineEnd": 13}],
+    "basis": [
+      {"type": "capability_fact", "factRefs": ["IL-F002"], "reason": "使用能力包规定的应用级配置键和值。"},
+      {"type": "engineering_choice", "reason": "将配置放入现有 metadata 数组以保留工程其他配置。"}
+    ]
+  }]
+}
+```
+
+- 步骤 `id` 唯一，`description` 非空；状态为 `applied`（已实施）、`partial`（部分实施）、`not_applied`（未实施）。不得将场景计划复制为已实施记录。
+- `locations` 为非空数组，路径使用目标工程内 `/` 分隔的相对路径，行号为从 1 开始的闭区间；`version` 为 `before` 或 `after`，删除内容用 `before`。生成报告时补充位置的 before/after 哈希及 `correlation=matched/unverified`。关联要求区间覆盖实际 diff 的增加或删除行，纯上下文行不计入。
+- `basis` 为非空数组，可混合 `capability_fact`、`engineering_choice`、`unresolved`。每项必须有具体 `reason`；仅能力包依据使用非空、不重复的 `factRefs`，引用所选路线内真实存在的事实。引用冲突事实的理由须说明采用的代码方案及待验证行为。
+- 不能对应实际改动的 `applied` 步骤降为 `partial`，并在 `issues` 中标注原因；这表示记录未完全得到变更证据支持，不是自动判断代码功能完成。缺少基线时不能确认已实施。
+- 报告的 `implementation.recordStatus` 为 `recorded`（有步骤）、`missing`（有改动或基线未知但无步骤）、`not_started`（基线对照没有变化且无步骤），并记录 `baselineAvailable`、`steps` 和 `uncoveredChanges`。变化文件只有被非 `not_applied` 步骤的匹配位置引用才算覆盖；遗漏文件必须列出，不能删除 diff。`recorded` 不表示覆盖完整或验证成功。
+- `normativeBasis` 是从已校验能力包自动展开的事实数组，每项记录 `id`、`statement`、`normativeStatus`、`conflictGroup`、`usage` 和 `sources`。仅展开步骤直接引用的事实（`direct`）及其同组冲突事实（`conflict_context`）。每个来源含 `snapshotId`、`locator`、`sha256`、`officialUrl`、`title`、`retrievedAt`、`updatedAt`，未知元数据保持 `null`。
+
+Markdown 在分层检查前展示步骤、位置、选择理由和能力包收录的官网快照依据，代码统一查看已有 diff。来源 URL 缺失时显示“官网链接缺失”；存在冲突时并列披露预期。SDK、构建、设备结果继续在验证证据中展示，不作为规范来源。报告结构校验不替代代码语义及来源引用的人工复核，实施记录完整性不参与总结果门禁。
+
+## 验证结果
 
 六个检查层固定为 `static`、`sdk`、`build`、`install`、`runtime`、`visual`，状态固定为 `passed`、`failed`、`blocked`、`not_run`、`inconclusive`。通过的必需层必须有关联证据；视觉通过必须关联截图、录屏或用户明确观察。
 

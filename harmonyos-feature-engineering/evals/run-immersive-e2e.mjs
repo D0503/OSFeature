@@ -18,6 +18,7 @@ const required = [
   "potential-material-color-conflict",
   "missing-import-context",
   "missing-variable-context",
+  "code-formatting-anomaly",
   "unguarded-versioned-api-invocation",
   "navigation-only",
   "unresolved-media-reference",
@@ -239,6 +240,22 @@ const findings = [
     impact: "开发者可能在低版本设备上继续调用不存在的属性，造成构建、加载或运行失败，直接破坏兼容目标。",
     recommendation: "让版本控制流包围高版本 API 调用本身，并分别验证 compile/target/compatible 版本关系及低版本运行路径。",
   }),
+  findingFromCandidate({
+    id: "DOC-009",
+    type: "code-formatting-anomaly",
+    title: "示例代码包含多余空格",
+    dimension: "developer_usability",
+    status: "editorial",
+    severity: "Suggestion",
+    confidence: "certain",
+    integrationAffecting: false,
+    coreTechnicalClaim: false,
+    claimScope: "editorial",
+    claim: "兼容性示例的代码格式一致且没有抓取或编辑瑕疵。",
+    analysis: "三元表达式的冒号与 Color.White 之间存在两个空格；该问题不改变当前代码语义，但属于可明确定位的格式瑕疵。",
+    impact: "降低示例的格式一致性和复制阅读体验。",
+    recommendation: "删除多余空格，统一写为 `: Color.White`。",
+  }),
 ]
 
 const report = {
@@ -276,7 +293,9 @@ try {
   const paths = await renderReport(report, output)
   const markdown = await readFile(paths.markdownPath, "utf8")
   assert.match(markdown, /disable 作用域存在直接冲突/)
+  assert.match(markdown, /示例代码包含多余空格/)
   assert.ok(markdown.indexOf("DOC-008") < markdown.indexOf("DOC-002"), "High 低版本 API 调用风险应排在 Medium 机制问题之前")
+  assert.ok(markdown.indexOf("DOC-002") < markdown.indexOf("DOC-009"), "Suggestion 格式问题应排在 Medium 问题之后")
   assert.doesNotMatch(markdown, /关键工程问题（优先处理）|次要问题（不单独阻断接入）/)
   assert.match(await readFile(paths.jsonPath, "utf8"), /"integrationGate": "blocked"/)
 } finally {
