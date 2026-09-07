@@ -51,16 +51,17 @@ metadata:
 
 1. 完整阅读 [能力包契约](references/capabilities/package-contract.md) 和 [代码开发验证流程](references/development/workflow.md)。使用 `scripts/validate-capability-package.mjs` 核验锁文件，再用 `scripts/resolve-capability.mjs` 根据特性名和自然语言目标解析唯一场景。
 2. 无法唯一匹配时列出候选场景并要求用户选择；在场景唯一前不得修改工程。运行时只读取 `references/capabilities/` 中已发布包，禁止读取 Markdown/URL 输入、审查报告、验证清单或旧 `harmonyos-os-feature-integration`。
-3. 对沉浸光感完整阅读能力包 [入口](references/capabilities/immersive-light/entry.md)、[实施规则](references/capabilities/immersive-light/implementation.md)、[验证规则](references/capabilities/immersive-light/validation.md)，以及所选场景引用的最小资产。
+3. 对沉浸光感完整阅读能力包 [入口](references/capabilities/immersive-light/entry.md)、[实施规则](references/capabilities/immersive-light/implementation.md)、[验证规则](references/capabilities/immersive-light/validation.md)，以及所选场景引用的最小资产。制作资料快照目录可获得时，实施前必须用 `scripts/verify-capability-sources.mjs crosscheck --snapshots <快照目录>` 把所选事实与锁定快照原文对勘（文件存在、哈希一致、按 locator 抽取原文行）；快照缺失或哈希不符时停止实施并报告能力包缺陷，不得按未对勘事实开发。快照目录不可获得时在报告 `pendingVerifications` 中披露“事实未与原文对勘”，对勘不改变能力包事实本身。
 4. 使用 `scripts/inspect-development-project.mjs` 扫描绝对工程路径、Stage 模型、module 类型、product、target/compatible API、本机 SDK、目标组件、能力信号和现有未提交修改。ArkUI 路线要求 API 26，且应用级 metadata 只能位于 entry module；HDS 路线要求 6.1.0(23)，使用 `@kit.UIDesignKit`，当前只验证 compatible/target/compile API 23 或以上。
 5. 所选路线的 API、SDK、target 或 compatible 门槛不满足时停止实施并输出升级要求。修改 SDK、compatible、target 或 compile 配置前必须单独获得用户授权；未知值不得猜测为兼容。
 6. 确定最小触及文件，用 `scripts/snapshot-project-files.mjs capture` 记录 before SHA-256、组件树、状态、事件和普通样式基线。已有脏文件必须局部合并，不得覆盖用户修改。
 7. 按场景规则使用 `apply_patch` 做最小改动。目标工程只保留用户要求的最终状态；default/enable/disable 对照、冲突裁决和配置矩阵只能在系统临时目录的最小工程或副本中进行。
 8. 依次运行场景静态规则、SDK 符号核验和 `devecocli build`。构建失败仅对与本次改动有明确位置和证据的问题定向修复，最多两轮；仍失败时停止，保留改动和 diff。
 9. 用户要求运行验证时，先用 `devecocli device list` 查询设备。唯一设备可运行；多个设备要求选择；无设备时不创建/下载模拟器。使用 `devecocli run` 安装运行，禁止自动添加 `--uninstall`。
-10. 视觉结论必须来自截图、录屏、可复查日志或用户明确观察。没有观察证据时不得标记视觉通过；构建通过不等于视觉成功。
-11. 实施及定向修复时按顺序记录实际代码步骤、文件位置、能力包事实引用及工程配套选择理由。用 `scripts/snapshot-project-files.mjs compare` 生成 before/after 哈希与精确 diff；通过 `verify-development.mjs --implementation <记录文件>` 传入实施记录。按 [报告契约](references/development/report-contract.md) 形成 1.1 版 JSON，自动从能力包展开官网来源，用 `scripts/validate-development-report.mjs` 校验，再由 `scripts/render-development-report.mjs` 展示步骤、位置与依据。记录缺失或与 diff 不符时如实披露，不将场景计划当作已实施步骤。
-12. 始终在默认报告输出目录生成 `development-verification-report.json`、`development-verification-report.md` 和 `evidence/`；用户明确指定输出目录时改用指定目录。答复同时返回结果、分层证据、待验证项和精确改动。
+10. 设备运行成功后可执行自动判图：目标页面不是启动页时，先生成冻结的导航步骤文件 `route-steps.json` 并用 `--navigate` 执行——动作仅限 `launch/tap/swipe/input/wait`，locator 仅限 `text/id/type`（text/type 经组件树解析中心坐标，id 直接点击）；带 `expectPage` 的步骤执行后用组件树核验当前页面，失败即停止在该步骤并记录 `stepId + expected + actual`（组件树存为 `component_tree` 证据）；导航失败后跳过截图采集，视觉层保持 `not_run`；路由切换不点返回键，重新推包从首页执行。之后用 `scripts/verify-development.mjs --capture-screenshot` 采集设备截图并登记 `screenshot` 证据；模型先自检能否读取图片，不能读取时视觉层保持 `not_run` 并把原因写入 `pendingVerifications`，降级为外部观察机制。可读图时逐条对照场景 `expectedOutcomes` 判定（冲突场景须声明匹配的冲突事实）；图片无法判定时用 `--capture-layout` 采集完整组件树（`component_tree` 证据）做结构判断。判定写入 `visual-judgment.json`（schemaVersion、scenarioId、可选 runtime、visual.status/basis/evidence、matchedFactRefs），经 `--judgment` 注入并登记为 `visual_judgment` 证据；判图不确定只能是 `inconclusive`，不得标记通过，也不得用判图结果反向改写能力包事实。
+11. 视觉结论必须来自截图、录屏、可复查日志、用户明确观察或通过校验的模型判定记录。没有观察或判定证据时不得标记视觉通过；构建通过不等于视觉成功。
+12. 实施及定向修复时按顺序记录实际代码步骤、文件位置、能力包事实引用及工程配套选择理由。用 `scripts/snapshot-project-files.mjs compare` 生成 before/after 哈希与精确 diff；通过 `verify-development.mjs --implementation <记录文件>` 传入实施记录。按 [报告契约](references/development/report-contract.md) 形成 1.1 版 JSON，自动从能力包展开官网来源，用 `scripts/validate-development-report.mjs` 校验，再由 `scripts/render-development-report.mjs` 展示步骤、位置与依据。记录缺失或与 diff 不符时如实披露，不将场景计划当作已实施步骤。
+13. 始终在默认报告输出目录生成 `development-verification-report.json`、`development-verification-report.md` 和 `evidence/`；用户明确指定输出目录时改用指定目录。答复同时返回结果、分层证据、待验证项和精确改动。
 
 ## 硬性边界
 
@@ -71,7 +72,9 @@ metadata:
 - 模型记忆和第三方内容不能单独支撑 `confirmed`。
 - 抓取时间未知必须保持 `null` / `not-recorded`；本地修改时间不能冒充官网抓取时间。
 - 静态检查始终执行。仅有明确 SDK 或隔离工程时才构建；编译、模拟器和真机结果必须分别记录。
-- 版本兼容示例必须分别核对 `compatibleSdkVersion`、`targetSdkVersion`、实际编译 SDK 和 `deviceInfo.sdkApiVersion`。运行时三元表达式放在新 API 的参数内，只能保护参数求值，不能自动证明新 API 调用本身已被低版本分支避开。
+- 自登记工程验证规则（四元版本核对、参数内三元只保护参数求值等，见 [工程验证规则](references/engineering-verification-rules.md)）只能用于 `document-review` 与 `development-validation-planning`；能力包与 `code-development-validation` 只以官网资料为事实依据，不得把这些规则作为门禁、静态规则或判据。
+- 实施前的事实—快照对勘只校验能力包来源可信（文件存在、哈希一致、原文可定位），不得把快照内容当作新的开发判据；对勘失败时停止实施并报告能力包缺陷。
+- 自动判图是观察证据的一种形式：判定记录、依据与所引用的截图/组件树证据必须一并落盘；判图不确定只能记为 `inconclusive`，不得写成视觉通过；判图只能匹配或排除能力包预期，不得反向改写官网事实。链接有效性检测（`verify-capability-sources.mjs links`）属于能力包发布/更新周期门禁，不混入开发路径，检测结果只报告漂移、不自动改锁。
 - 清单中的预期结果只能来自工程事实；SDK、构建、模拟器和真机是验证手段，不得静默覆盖官网规范。实际结果与规范不一致时应记录为规范—实现偏差。
 - 验证规划使用事实级门禁：报告整体 `reviewGate` 不得直接阻塞所有条目；只有条目引用且未在 `resolutionFactRefs` 中声明为本项裁决目标的 `requires_resolution` 事实，才可触发 `fact_gate`。
 - 清单生成时只能使用 `not_run` 或 `blocked`，不得把计划项写成已经通过或失败。
@@ -95,11 +98,13 @@ metadata:
 - `scripts/render-validation-checklist.mjs`：从通过校验的 JSON 生成固定名称的验证清单。
 - `references/capabilities/registry.json`：已发布特性、别名、版本和能力包入口。
 - `references/capabilities/immersive-light/`：自包含 ArkUI API 26 与 HDS 6.1.0(23) 两条沉浸光感路线的规范事实、场景、资产和锁文件。
+- `references/engineering-verification-rules.md`：自登记工程验证规则（非官网事实），仅限 document-review 与 development-validation-planning 使用，禁止写入能力包。
 - `scripts/validate-capability-package.mjs`：校验能力包结构、事实覆盖、冲突多预期、文件哈希和路径安全。
+- `scripts/verify-capability-sources.mjs`：`crosscheck` 把能力包事实与锁定快照原文对勘（文件、哈希、locator 原文行）；`links` 重新抓取锁中官网 URL 检测内容漂移，只报告不改锁。
 - `scripts/resolve-capability.mjs`：把特性名和自然语言目标路由到唯一开发场景。
 - `scripts/inspect-development-project.mjs`：扫描工程、SDK、模块、API、目标组件和脏文件并形成兼容门禁。
 - `scripts/snapshot-project-files.mjs`：捕获触及文件基线并产生 before/after 哈希和 unified diff。
-- `scripts/verify-development.mjs`：编排静态、SDK、构建和可选设备运行层；不会自动修改代码、升级 SDK、创建模拟器或卸载应用。
+- `scripts/verify-development.mjs`：编排静态、SDK、构建、可选设备运行、冻结导航步骤、截图/组件树采集与模型判图注入层；不会自动修改代码、升级 SDK、创建模拟器或卸载应用。
 - `scripts/validate-development-report.mjs`：校验六层状态、证据、总结果和两轮修复上限。
 - `scripts/render-development-report.mjs`：生成固定名称的代码开发验证报告。
 - `scripts/lib/report-output.mjs`：统一解析“显式输出目录优先，否则使用当前打开工作区”的报告路径。

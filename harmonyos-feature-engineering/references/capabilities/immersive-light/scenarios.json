@@ -175,8 +175,7 @@
         ]
       },
       "staticRules": [
-        {"id":"api-guard","kind":"require_any","patterns":["sdkApiVersion\\s*>=\\s*26", "apiVersion\\s*>=\\s*26"],"onMissing":"failed","message":"compatible API 低于 26 时缺少整树版本分支。"},
-        {"id":"argument-only-api-guard","kind":"forbid","pattern":"\\.(?:systemMaterial|menuSystemMaterial)\\s*\\(\\s*(?:deviceInfo\\.)?sdkApiVersion\\s*(?:>=|>)\\s*26(?:\\.0(?:\\.0)?)?\\s*\\?","onViolation":"failed","message":"版本判断只位于高版本 API 的参数内，低版本分支仍会执行属性调用；必须让控制流避开 API 调用本身。"},
+        {"id":"api-guard","kind":"require_any","patterns":["sdkApiVersion\\s*>=\\s*26", "apiVersion\\s*>=\\s*26"],"onMissing":"failed","message":"compatible API 低于 26 时缺少官网要求的版本条件分支（IL-F021）。"},
         {"id":"support-guard","kind":"require_any","patterns":["isImmersiveMaterialSupported\\s*\\("],"onMissing":"failed","message":"缺少设备能力查询。"},
         {"id":"fallback-style","kind":"manual","result":"inconclusive","message":"静态扫描不能证明低版本分支完整保留接入前布局、状态、事件和普通样式，需 diff 与运行证据。"}
       ],

@@ -1,7 +1,7 @@
 {
   "lockVersion": "1.0",
   "featureId": "immersive-light",
-  "packageVersion": "1.1.1",
+  "packageVersion": "1.4.0",
   "routes": [
     "arkui-api26",
     "hds-api23"
@@ -14,30 +14,153 @@
   },
   "documentReviewVersion": "1.0",
   "sourceDocuments": [
-    {"snapshotId":"common","sha256":"8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability","title":"沉浸式系统材质视效","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"compatibility","sha256":"c1de0cc670559c0c67b6196d378ab8d87d2594e6af2546aa65776f8e2f5381fe","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-compatibility","title":"沉浸光感兼容性适配","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"component","sha256":"5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation","title":"组件适配沉浸光感","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"constraints","sha256":"76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints","title":"沉浸光感功耗优化","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"development","sha256":"c6271e833e5261eb932a1c50e2b58e8286153a82d9ba9767560b8fbf6b22a1fb","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-development","title":"沉浸光感开发指导","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"enable","sha256":"c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable","title":"开启沉浸光感","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"faq","sha256":"001d5f4f6c1ed902d4f881d9c90aaa1d434f24c1201e567d0daf88585403cb39","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq","title":"沉浸光感常见问题","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"overview","sha256":"4961be12e260addb5df87051611ff6a8bd0f14f8d2fa8a99009ff6375231779a","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview","title":"沉浸光感简介","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"sample","sha256":"0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-sample","title":"沉浸光感典型场景","retrievedAt":null,"updatedAt":null},
-    {"snapshotId":"hds-component-material-guide","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material","retrievedAt":"2026-09-04T04:13:50.967Z","updatedAt":"2026-08-31 17:55:12","retrievalMethod":"huawei_getDocumentById","sha256":"5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"},
-    {"snapshotId":"hds-navigation-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation","retrievedAt":"2026-09-04T04:14:56.723Z","updatedAt":"2026-08-31 18:03:01","retrievalMethod":"huawei_getDocumentById","sha256":"d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20"},
-    {"snapshotId":"hds-tabs-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs","retrievedAt":"2026-09-04T04:14:57.241Z","updatedAt":"2026-08-31 18:03:30","retrievalMethod":"huawei_getDocumentById","sha256":"f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357"},
-    {"snapshotId":"hds-material-api","officialUrl":"https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial","retrievedAt":"2026-09-04T04:14:57.707Z","updatedAt":"2026-08-31 18:03:13","retrievalMethod":"huawei_getDocumentById","sha256":"c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"}
-  ],  "packageFiles": [
-    {"path":"assets/ApplicationMaterialMetadata.json5","sha256":"ad88a87230cda536681e5dddc0b8100f63bd19f2a41a9b54d5e3cffc47303ae2"},
-    {"path":"assets/HdsMaterialFactory.ets","sha256":"e8d61dac5ed8cc77d8bbcebf4138936801207ad19267585095c4862c4f12c4da"},
-    {"path":"assets/ImmersiveMaterialFactory.ets","sha256":"acf599476411f487d24a0f1e18d3bf5f94b7c000a7fb516331dd1889f5cb2144"},
-    {"path":"assets/ImmersiveMaterialProbe.ets","sha256":"7742d9c289af49ee11f749c3bb3b37d1006ffa6c35eed27d410cffce10bbace0"},
-    {"path":"entry.md","sha256":"9d0be446277f2d4582e5b15d0dd2296b0e334f8e1766a985f3ecaf47266bb1a4"},
-    {"path":"facts.json","sha256":"9cd675b27e0ad846259fee13d34b4d4381369f408931769a24f0600f750e15b0"},
-    {"path":"implementation.md","sha256":"2ba6657b13b4755f2533ed081ffe293c2652e8476274df760f49191dba9a1476"},
-    {"path":"profile.json","sha256":"e8a98d676712e4b61fd2c6968353e04d178a8600b8da8fbe757c91ed65ac2471"},
-    {"path":"scenarios.json","sha256":"8b58d4dcc4832de7ed2573cf3237999fec711fdae7c45c55d133f034e833ef6d"},
-    {"path":"validation.md","sha256":"c850f1c9f1bca4a560e886db3c498cbd950b1b8eb5d4b93bf82dae9bbd43b41c"}
-  ],  "packageDigestAlgorithm": "sha256-path-nul-filehash-lf-v1",
-  "packageDigest": "07db7312e100bccc267db5276c2b05a479dce608953039ceb339169437d2d892"
+    {
+      "snapshotId": "common",
+      "sha256": "8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
+      "title": "沉浸式系统材质视效",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "compatibility",
+      "sha256": "c1de0cc670559c0c67b6196d378ab8d87d2594e6af2546aa65776f8e2f5381fe",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-compatibility",
+      "title": "沉浸光感兼容性适配",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "component",
+      "sha256": "5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
+      "title": "组件适配沉浸光感",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "constraints",
+      "sha256": "76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
+      "title": "沉浸光感功耗优化",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "development",
+      "sha256": "c6271e833e5261eb932a1c50e2b58e8286153a82d9ba9767560b8fbf6b22a1fb",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-development",
+      "title": "沉浸光感开发指导",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "enable",
+      "sha256": "c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
+      "title": "开启沉浸光感",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "faq",
+      "sha256": "001d5f4f6c1ed902d4f881d9c90aaa1d434f24c1201e567d0daf88585403cb39",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
+      "title": "沉浸光感常见问题",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "overview",
+      "sha256": "4961be12e260addb5df87051611ff6a8bd0f14f8d2fa8a99009ff6375231779a",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
+      "title": "沉浸光感简介",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "sample",
+      "sha256": "0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-sample",
+      "title": "沉浸光感典型场景",
+      "retrievedAt": null,
+      "updatedAt": null
+    },
+    {
+      "snapshotId": "hds-component-material-guide",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
+      "retrievedAt": "2026-09-04T04:13:50.967Z",
+      "updatedAt": "2026-08-31 17:55:12",
+      "retrievalMethod": "huawei_getDocumentById",
+      "sha256": "5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"
+    },
+    {
+      "snapshotId": "hds-navigation-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation",
+      "retrievedAt": "2026-09-04T04:14:56.723Z",
+      "updatedAt": "2026-08-31 18:03:01",
+      "retrievalMethod": "huawei_getDocumentById",
+      "sha256": "d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20"
+    },
+    {
+      "snapshotId": "hds-tabs-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs",
+      "retrievedAt": "2026-09-04T04:14:57.241Z",
+      "updatedAt": "2026-08-31 18:03:30",
+      "retrievalMethod": "huawei_getDocumentById",
+      "sha256": "f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357"
+    },
+    {
+      "snapshotId": "hds-material-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial",
+      "retrievedAt": "2026-09-04T04:14:57.707Z",
+      "updatedAt": "2026-08-31 18:03:13",
+      "retrievalMethod": "huawei_getDocumentById",
+      "sha256": "c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"
+    }
+  ],
+  "packageFiles": [
+    {
+      "path": "assets/ApplicationMaterialMetadata.json5",
+      "sha256": "ad88a87230cda536681e5dddc0b8100f63bd19f2a41a9b54d5e3cffc47303ae2"
+    },
+    {
+      "path": "assets/HdsMaterialFactory.ets",
+      "sha256": "e8d61dac5ed8cc77d8bbcebf4138936801207ad19267585095c4862c4f12c4da"
+    },
+    {
+      "path": "assets/ImmersiveMaterialFactory.ets",
+      "sha256": "acf599476411f487d24a0f1e18d3bf5f94b7c000a7fb516331dd1889f5cb2144"
+    },
+    {
+      "path": "assets/ImmersiveMaterialProbe.ets",
+      "sha256": "7742d9c289af49ee11f749c3bb3b37d1006ffa6c35eed27d410cffce10bbace0"
+    },
+    {
+      "path": "entry.md",
+      "sha256": "9d0be446277f2d4582e5b15d0dd2296b0e334f8e1766a985f3ecaf47266bb1a4"
+    },
+    {
+      "path": "facts.json",
+      "sha256": "9cd675b27e0ad846259fee13d34b4d4381369f408931769a24f0600f750e15b0"
+    },
+    {
+      "path": "implementation.md",
+      "sha256": "851140a45b89ef2576d41c42ef608929f52dba1ca08e4cb3a9479fddb50dcbad"
+    },
+    {
+      "path": "profile.json",
+      "sha256": "e3c3e8683420a09986e6878861c44e73f549960b275a9e37620d3d436c4e63b0"
+    },
+    {
+      "path": "scenarios.json",
+      "sha256": "c9c5374d2842ebda4e86f0a2efbd5e8823ddb364ea3af18ce0d7ce68d64dedfc"
+    },
+    {
+      "path": "validation.md",
+      "sha256": "8b91e9e57c79531e3167bda4bb85527dbbc2a551d909ac753546edded5f0dae0"
+    }
+  ],
+  "packageDigestAlgorithm": "sha256-path-nul-filehash-lf-v1",
+  "packageDigest": "ca746f3cf73b4b921d9a0b5d30244dc606fdaa9461827c76c3fe872e3039faa3"
 }

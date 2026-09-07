@@ -57,7 +57,7 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 2. 存在明确 SDK 或隔离工程时才执行构建。
 3. 将 `static`、`build`、`simulator`、`device` 分别记录，绝不互相替代。
 4. 无构建条件时记录未验证原因，不得写成“编译通过”。
-5. 对版本保护检查控制流边界：若新 API 调用位于版本判断外层，仅参数使用三元表达式，不得视为已保护；分别记录编译期符号可用性与低版本运行期调用风险。
+5. 对版本保护检查控制流边界：若新 API 调用位于版本判断外层，仅参数使用三元表达式，不得视为已保护；分别记录编译期符号可用性与低版本运行期调用风险（自登记工程规则 EVR-2，见 [工程验证规则](../engineering-verification-rules.md)；该规则不属于官网事实，不得进入能力包）。
 
 ## 6. 评分与 findings
 

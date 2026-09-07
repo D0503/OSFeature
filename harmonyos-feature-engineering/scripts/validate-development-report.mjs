@@ -8,7 +8,7 @@ import { validateImplementationTrace } from "./lib/implementation-trace.mjs"
 
 const CHECK_KEYS = ["static", "sdk", "build", "install", "runtime", "visual"]
 const COMPATIBILITY = new Set(["supported", "upgrade_required", "blocked", "insufficient_context"])
-const EVIDENCE_TYPES = new Set(["baseline", "diff", "static", "sdk_declaration", "build_log", "device_log", "screenshot", "recording", "user_observation"])
+const EVIDENCE_TYPES = new Set(["baseline", "diff", "static", "sdk_declaration", "build_log", "device_log", "screenshot", "recording", "user_observation", "component_tree", "visual_judgment"])
 const VISUAL_EVIDENCE = new Set(["screenshot", "recording", "user_observation"])
 
 function object(value) {
@@ -122,7 +122,9 @@ export function validateDevelopmentReport(report) {
     }
     if (report.checks.visual?.status === "passed") {
       const visualTypes = (report.checks.visual.evidenceRefs ?? []).map((id) => evidenceById.get(id)?.type)
-      if (!visualTypes.some((type) => VISUAL_EVIDENCE.has(type))) errors.push("visual passed 必须有截图、录屏或用户观察证据")
+      const directObservation = visualTypes.some((type) => VISUAL_EVIDENCE.has(type))
+      const modelJudged = visualTypes.includes("visual_judgment") && visualTypes.some((type) => type === "screenshot" || type === "component_tree")
+      if (!directObservation && !modelJudged) errors.push("visual passed 必须有截图、录屏或用户观察证据，或“截图/组件树 + 模型判定记录”组合")
     }
     if (report.checks.build?.status === "passed") {
       const buildEvidence = (report.checks.build.evidenceRefs ?? []).map((id) => evidenceById.get(id)).filter(Boolean)

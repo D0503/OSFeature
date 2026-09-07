@@ -13,6 +13,7 @@ import { deriveDevelopmentVerdict, validateDevelopmentReport } from "../scripts/
 import { renderDevelopmentReport, developmentReportMarkdown } from "../scripts/render-development-report.mjs"
 import { buildImplementationTrace } from "../scripts/lib/implementation-trace.mjs"
 import { runDevelopmentVerification } from "../scripts/verify-development.mjs"
+import { crosscheckCapabilitySources } from "../scripts/verify-capability-sources.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const tempRoot = await mkdtemp(join(tmpdir(), "feature-code-validation-"))
@@ -65,7 +66,7 @@ function reportTemplate(project, scenario, { conflict = false } = {}) {
     verificationVersion: "1.0",
     mode: "code-development-validation",
     input: { feature: "immersive-light", project, goal: "验证场景", module: "entry", targetFiles: [], product: "default", buildMode: "debug", device: "test-device" },
-    capabilityPackage: { featureId: "immersive-light", version: "1.1.0", digest: "b".repeat(64), scenarioId: scenario.id, route: scenario.route, requiredChecks, factRefs: scenario.factRefs, conflictingFactRefs: conflict ? ["IL-F006", "IL-F007"] : [] },
+    capabilityPackage: { featureId: "immersive-light", version: "1.4.0", digest: "b".repeat(64), scenarioId: scenario.id, route: scenario.route, requiredChecks, factRefs: scenario.factRefs, conflictingFactRefs: conflict ? ["IL-F006", "IL-F007"] : [] },
     projectBaseline: { inspectionVersion: "1.0" },
     changes: [],
     compatibility: { status: "supported", reasons: [], authorizationRequired: [], canModify: true, canBuild: true },
@@ -141,6 +142,9 @@ try {
   check((await inspectDevelopmentProject(hdsApi22, capability, { scenario: hdsNavigationScenario })).compatibility.status === "upgrade_required", "HDS API 22 工程要求升级且不自动修改")
 
   const fallbackScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S007")
+  for (const scenario of capability.scenariosData.scenarios) {
+    check(scenario.staticRules.every((item) => item.id !== "argument-only-api-guard"), `场景 ${scenario.id} 不含自登记伪保护规则`)
+  }
   const argumentOnlyProject = join(tempRoot, "argument-only-guard")
   await makeProject(argumentOnlyProject, { sdkPath: sdk })
   await put(join(argumentOnlyProject, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { uiMaterial } from '@kit.ArkUI'
@@ -148,8 +152,8 @@ import { deviceInfo } from '@kit.BasicServicesKit'
 @Entry @Component struct Index { build() { Column() { Text('x') }.systemMaterial(deviceInfo.sdkApiVersion >= 26 ? new uiMaterial.ImmersiveMaterial() : undefined); uiMaterial.isImmersiveMaterialSupported() } }`)
   const argumentOnlyInspection = await inspectDevelopmentProject(argumentOnlyProject, capability, { scenario: fallbackScenario })
   const argumentOnlyResult = await runStaticScenarioChecks(argumentOnlyProject, fallbackScenario, argumentOnlyInspection)
-  check(argumentOnlyResult.rules.find((item) => item.id === "argument-only-api-guard")?.status === "failed", "参数内版本判断不能通过低版本 API 调用保护")
-  check(argumentOnlyResult.status === "failed", "伪版本保护使低版本回退静态层失败")
+  check(argumentOnlyResult.status !== "failed", "官网未裁决的参数内三元写法不再被能力包静态规则判失败")
+  check(argumentOnlyResult.rules.find((item) => item.id === "api-guard")?.status === "passed", "官网版本条件分支要求（IL-F021）仍生效")
 
   const wholeBranchProject = join(tempRoot, "whole-branch-guard")
   await makeProject(wholeBranchProject, { sdkPath: sdk })
@@ -158,7 +162,7 @@ import { deviceInfo } from '@kit.BasicServicesKit'
 @Entry @Component struct Index { build() { if (deviceInfo.sdkApiVersion >= 26 && uiMaterial.isImmersiveMaterialSupported()) { Column() { Text('x') }.systemMaterial(new uiMaterial.ImmersiveMaterial()) } else { Column() { Text('x') }.backgroundColor('#FFFFFF') } } }`)
   const wholeBranchInspection = await inspectDevelopmentProject(wholeBranchProject, capability, { scenario: fallbackScenario })
   const wholeBranchResult = await runStaticScenarioChecks(wholeBranchProject, fallbackScenario, wholeBranchInspection)
-  check(wholeBranchResult.rules.find((item) => item.id === "argument-only-api-guard")?.status === "passed", "整段控制流避开高版本调用时不触发伪保护规则")
+  check(wholeBranchResult.rules.find((item) => item.id === "api-guard")?.status === "passed", "整段版本分支满足官网事实要求")
 
   const api25 = join(tempRoot, "api25")
   await makeProject(api25, { target: 25, compile: 25, sdkPath: sdk })
@@ -229,6 +233,70 @@ import { deviceInfo } from '@kit.BasicServicesKit'
   const fakeVisual = structuredClone(passing)
   fakeVisual.checks.visual.evidenceRefs = ["EVID-001"]
   check(!validateDevelopmentReport(fakeVisual).valid, "视觉成功不能由静态证据冒充")
+
+  const judgmentVisual = structuredClone(passing)
+  judgmentVisual.evidence.push(
+    { id: "EVID-006", type: "visual_judgment", path: null, sha256: "c".repeat(64), capturedAt: "2026-09-03T00:00:00.000Z", summary: "弹窗区域材质可见" },
+    { id: "EVID-007", type: "screenshot", path: join(tempRoot, "shot.png"), sha256: "d".repeat(64), capturedAt: "2026-09-03T00:00:00.000Z", summary: "设备截图" },
+  )
+  judgmentVisual.checks.visual.evidenceRefs = ["EVID-006", "EVID-007"]
+  check(validateDevelopmentReport(judgmentVisual).valid, "截图+模型判定记录可作为视觉通过证据")
+  const judgmentOnly = structuredClone(judgmentVisual)
+  judgmentOnly.checks.visual.evidenceRefs = ["EVID-006"]
+  check(!validateDevelopmentReport(judgmentOnly).valid, "仅有判定记录没有截图或组件树不能视觉通过")
+
+  const judgmentShot = join(tempRoot, "judgment-shot.png")
+  await writeFile(judgmentShot, "png-bytes", "utf8")
+  const judgmentPayload = {
+    schemaVersion: "1.0",
+    scenarioId: popupScenario.id,
+    runtime: { status: "passed", summary: "应用已拉起并停留在目标页面，无崩溃。" },
+    visual: { status: "passed", basis: "弹窗区域呈半透明材质，背景内容透过可见。", evidence: [{ path: judgmentShot, type: "screenshot", interpretation: "Popup 弹窗呈现材质效果" }] },
+    matchedFactRefs: ["IL-F012"],
+  }
+  const judgmentRun = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { judgment: judgmentPayload, outputDirectory: join(tempRoot, "judgment-output") })
+  check(judgmentRun.report.checks.visual.status === "passed", "judgment 注入后视觉层通过")
+  check(judgmentRun.report.checks.runtime.status === "passed", "judgment 可选 runtime 块写入运行层")
+  check(judgmentRun.report.evidence.some((item) => item.type === "visual_judgment"), "判定记录登记为 visual_judgment 证据")
+  check(judgmentRun.report.verdict.matchedFactRefs.includes("IL-F012"), "matchedFactRefs 写回报告")
+
+  let badJudgmentRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { judgment: { schemaVersion: "1.0", scenarioId: popupScenario.id, visual: { status: "passed", basis: "无效引用", evidence: [{ path: join(tempRoot, "missing.png"), type: "screenshot" }] }, matchedFactRefs: [] }, outputDirectory: join(tempRoot, "judgment-output") })
+  } catch { badJudgmentRejected = true }
+  check(badJudgmentRejected, "judgment 引用不存在的截图路径被拒绝")
+
+  let foreignFactRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { judgment: { schemaVersion: "1.0", scenarioId: popupScenario.id, visual: { status: "passed", basis: "引用场景外事实", evidence: [{ path: judgmentShot, type: "screenshot" }] }, matchedFactRefs: ["IL-F006"] }, outputDirectory: join(tempRoot, "judgment-output") })
+  } catch { foreignFactRejected = true }
+  check(foreignFactRejected, "judgment 引用场景外事实被拒绝")
+
+  let badNavigationRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { navigate: { schemaVersion: "1.0", steps: [{ stepId: "S01", action: "teleport", target: "x" }] }, outputDirectory: join(tempRoot, "nav-output") })
+  } catch { badNavigationRejected = true }
+  check(badNavigationRejected, "非法导航动作被拒绝")
+  let missingLocatorRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { navigate: { schemaVersion: "1.0", steps: [{ stepId: "S01", action: "tap" }] }, outputDirectory: join(tempRoot, "nav-output") })
+  } catch { missingLocatorRejected = true }
+  check(missingLocatorRejected, "tap 缺少 locator 被拒绝")
+
+  const navigationSkipped = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk, navigationPath: join(tempRoot, "route-steps.json") }, { navigate: { schemaVersion: "1.0", targetDescription: "进入详情页", steps: [{ stepId: "S01", action: "launch", target: "entry/EntryAbility", expectPage: "Index" }, { stepId: "S02", action: "tap", locator: { by: "text", value: "详情" }, expectPage: "NewsDetail" }, { stepId: "S03", action: "swipe", direction: "up" }, { stepId: "S04", action: "wait", timeoutMs: 500 }] }, outputDirectory: join(tempRoot, "nav-output") })
+  check(navigationSkipped.report.input.navigation === join(tempRoot, "route-steps.json"), "导航步骤文件记录进报告 input")
+  check(navigationSkipped.report.checks.visual.status === "not_run", "无设备时导航跳过且视觉层保持 not_run")
+
+  const crosscheckDir = join(tempRoot, "crosscheck-snapshots")
+  await mkdir(crosscheckDir, { recursive: true })
+  const crosscheckMissing = await crosscheckCapabilitySources(capability, crosscheckDir)
+  check(crosscheckMissing.status === "failed" && crosscheckMissing.counters.file_missing > 0, "快照缺失时对勘失败")
+  const enableUrl = capability.lock.sourceDocuments.find((item) => item.snapshotId === "enable").officialUrl
+  const enableFile = join(crosscheckDir, `${new URL(enableUrl).pathname.split("/").pop()}.md`)
+  await writeFile(enableFile, "tampered-content\n", "utf8")
+  const crosscheckTampered = await crosscheckCapabilitySources(capability, crosscheckDir)
+  check(crosscheckTampered.entries.some((item) => item.snapshotId === "enable" && item.status === "hash_mismatch"), "快照哈希与锁不一致时对勘报告 hash_mismatch")
+
   const badBuild = structuredClone(passing)
   badBuild.evidence.find((item) => item.id === "EVID-003").exitCode = 1
   check(!validateDevelopmentReport(badBuild).valid, "构建通过必须有 exitCode=0 证据")

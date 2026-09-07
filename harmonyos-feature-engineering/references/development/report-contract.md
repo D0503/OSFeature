@@ -40,7 +40,11 @@ Markdown 在分层检查前展示步骤、位置、选择理由和能力包收�
 
 ## 验证结果
 
-六个检查层固定为 `static`、`sdk`、`build`、`install`、`runtime`、`visual`，状态固定为 `passed`、`failed`、`blocked`、`not_run`、`inconclusive`。通过的必需层必须有关联证据；视觉通过必须关联截图、录屏或用户明确观察。
+六个检查层固定为 `static`、`sdk`、`build`、`install`、`runtime`、`visual`，状态固定为 `passed`、`failed`、`blocked`、`not_run`、`inconclusive`。通过的必需层必须有关联证据；视觉通过必须关联截图、录屏或用户明确观察，或同时关联 `visual_judgment` 判定记录与其依据的 `screenshot`/`component_tree`。
+
+自动判图证据：`component_tree` 保存 `devecocli ui layout --mode full` 的完整组件树，`visual_judgment` 保存模型判定记录（含 status、basis、evidence 引用与 matchedFactRefs）。`visual-judgment.json` 的 `visual.evidence` 必须引用存在的截图或组件树绝对路径；冲突场景由 `verdict.matchedFactRefs` 与冲突事实的交集驱动状态机（0 条 `failed`、多于 1 条 `inconclusive`、恰好 1 条 `passed_with_spec_conflict`）；判图不确定只能 `inconclusive`，且不得用判图结果改写能力包事实。
+
+导航编排：`--navigate <route-steps.json>` 使用冻结步骤序列（schemaVersion、targetDescription、steps[].stepId/action/locator/expectPage）；动作仅限 `launch/tap/swipe/input/wait`，locator 仅限 `text/id/type`。导航在安装之后、截图采集之前执行；带 `expectPage` 的步骤以组件树核验当前页面，失败即停止在该步骤并记录 `stepId + expected + actual`（组件树存为 `component_tree` 证据，各命令存为 `device_log` 证据）；导航失败后跳过截图采集，视觉层保持 `not_run` 并说明失败步骤。路由切换不点返回键，重新推包从首页执行。
 
 总结果：
 
