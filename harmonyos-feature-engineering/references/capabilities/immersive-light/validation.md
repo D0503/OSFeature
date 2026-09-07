@@ -2,7 +2,7 @@
 
 验证层固定为 `static`、`sdk`、`build`、`install`、`runtime`、`visual`，状态固定为 `passed`、`failed`、`blocked`、`not_run`、`inconclusive`。
 
-- static：运行场景静态规则并人工核对组件树、普通样式、状态与事件基线。低版本场景按官网事实 IL-F021 核对版本条件分支与低版本路径不引用 API 26 能力；官网未裁决的写法形态只记录观察，不在能力包内定性。
+- static：运行场景静态规则并人工核对组件树、普通样式、状态与事件基线。低版本回退场景已随官网指引下线移除；官网未裁决的写法形态只记录观察，不在能力包内定性。
 - sdk：按路线核对本机声明。ArkUI 核对 API 26 的 `uiMaterial` 与组件属性；HDS 核对 6.1.0(23) 的 `@kit.UIDesignKit`、`hdsMaterial`、`SystemMaterialParams`、HdsNavigation 和 HdsTabs 字段。SDK 只能证明可用性，不能证明视觉行为。
 - build：使用 `devecocli build` 真实构建。日志保留命令、退出码、时间与 SHA-256。
 - install/runtime：仅当用户请求运行验证且恰好选择一个设备时使用 `devecocli run`；无设备不创建或下载模拟器，不使用 `--uninstall`。

@@ -189,8 +189,9 @@ function validateScenarios(scenariosData, feature, factState, routeState, errors
   return { ids }
 }
 
-function validateSourceTraceability(factsData, lock, errors) {
+function validateSourceTraceability(factsData, scenariosData, lock, errors) {
   const lockedSources = new Map()
+  const packageFilePaths = new Set((lock?.packageFiles ?? []).map((item) => item.path.replaceAll("\\", "/")))
   for (const [index, source] of (lock?.sourceDocuments ?? []).entries()) {
     const path = `sourceDocuments[${index}]`
     if (!nonEmptyString(source?.snapshotId) || !/^[a-f0-9]{64}$/i.test(source?.sha256 ?? "")) {
@@ -199,7 +200,8 @@ function validateSourceTraceability(factsData, lock, errors) {
     }
     if (lockedSources.has(source.snapshotId)) errors.push(`${path}.snapshotId 重复`)
     lockedSources.set(source.snapshotId, source)
-    if (source.officialUrl !== undefined) {
+    if (!nonEmptyString(source?.officialUrl)) errors.push(`${path}.officialUrl 必填`)
+    else {
       try {
         const url = new URL(source.officialUrl)
         if (url.protocol !== "https:" || url.hostname !== "developer.huawei.com") errors.push(`${path}.officialUrl 必须是华为开发者官网 HTTPS 页面`)
@@ -207,14 +209,31 @@ function validateSourceTraceability(factsData, lock, errors) {
         errors.push(`${path}.officialUrl 无效`)
       }
     }
+    if (!nonEmptyString(source?.title)) errors.push(`${path}.title 必填`)
+    if (!/^[a-f0-9]{64}$/i.test(source?.officialBodySha256 ?? "")) errors.push(`${path}.officialBodySha256 必须是 SHA-256`)
+    if (source?.retrievedAt !== null && source?.retrievedAt !== undefined && Number.isNaN(Date.parse(source.retrievedAt))) errors.push(`${path}.retrievedAt 必须是 ISO 日期或 null`)
+    if (source?.contentFormat !== undefined && source.contentFormat !== "official-body") errors.push(`${path}.contentFormat 只支持 official-body`)
   }
   for (const fact of factsData?.facts ?? []) for (const source of fact.sources ?? []) {
     const locked = lockedSources.get(source.snapshotId)
     if (!locked) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 未登记到锁文件`)
     else {
       if (locked.sha256.toLowerCase() !== source.sha256.toLowerCase()) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 哈希与锁文件不一致`)
-      if (source.officialUrl !== undefined && source.officialUrl !== locked.officialUrl) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 官网 URL 与锁文件不一致`)
-      if (fact.route === "hds-api23" && !locked.officialUrl) errors.push(`HDS 事实 ${fact.id} 的来源 ${source.snapshotId} 缺少华为官网 URL`)
+      if (!nonEmptyString(source.anchor)) errors.push(`事实 ${fact.id} 的来源 ${source.snapshotId} 缺少现网正文锚点 anchor`)
+    }
+  }
+  const assetOrigins = new Set(["official-exact", "mechanical-adaptation", "derived-implementation", "test-harness", "corrected-variant"])
+  for (const scenario of scenariosData?.scenarios ?? []) {
+    for (const [index, asset] of (scenario.implementation?.assets ?? []).entries()) {
+      const label = `场景 ${scenario.id} implementation.assets[${index}]`
+      if (typeof asset === "string") { errors.push(`${label} 必须是对象（path + origin 来源分类）`); continue }
+      if (!nonEmptyString(asset?.path) || !packageFilePaths.has((asset?.path ?? "").replaceAll("\\", "/"))) errors.push(`${label}.path 必须是能力包内已登记文件`)
+      if (!assetOrigins.has(asset?.origin)) errors.push(`${label}.origin 必须是 ${[...assetOrigins].join("/")}`)
+      if (asset?.origin === "official-exact" || asset?.origin === "mechanical-adaptation") {
+        if (!nonEmptyString(asset?.sourceSnapshotId) || !lockedSources.has(asset.sourceSnapshotId)) errors.push(`${label} 来源分类 ${asset.origin} 必须提供锁内 sourceSnapshotId`)
+        if (!nonEmptyString(asset?.anchor)) errors.push(`${label} 来源分类 ${asset.origin} 必须提供官网代码锚点 anchor`)
+      }
+      if (asset?.origin === "corrected-variant" && !nonEmptyString(asset?.adaptationNotes)) errors.push(`${label} 来源分类 corrected-variant 必须提供偏离官网的 adaptationNotes`)
     }
   }
 }
@@ -275,7 +294,7 @@ export async function loadCapability(skillRoot, featureQuery = "immersive-light"
   if (lock.featureId !== feature.id || lock.packageVersion !== feature.packageVersion) errors.push("锁文件与注册表的能力或版本不一致")
   const lockedRoutes = new Set(lock?.routes ?? [])
   if (lockedRoutes.size !== routeState.routeIds.size || [...routeState.routeIds].some((id) => !lockedRoutes.has(id))) errors.push("锁文件与 profile 的技术路线不一致")
-  validateSourceTraceability(factsData, lock, errors)
+  validateSourceTraceability(factsData, scenariosData, lock, errors)
   const lockResult = options.verifyLock === false ? { valid: true, errors: [] } : await verifyCapabilityLock(packageRoot, lock)
   errors.push(...lockResult.errors)
   if (errors.length) throw new Error(errors.join("; "))

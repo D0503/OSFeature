@@ -1,13 +1,14 @@
 #!/usr/bin/env node
-// 能力包来源对勘与链接检测：
-// - crosscheck：把每条事实与其锁定快照原文逐条对勘（文件存在、哈希一致、按 locator 抽取原文行）。
-// - links：重新抓取锁中登记的官网 URL，比对正文哈希，报告漂移；只报告，不改锁。
+// Web-first 能力包来源对勘与链接检测：
+// - crosscheck：对所选场景的事实实时抓取官网现网页，先做漂移门禁（officialBodySha256 比对），
+//   再做锚点定位，产出“statement vs 现网原文”对勘材料包，供忠实性判定使用。
+// - links：抓取锁中全部官网 URL 比对哈希，输出漂移报告与受影响事实/场景清单；只报告，不改锁。
 
 import { spawn } from "node:child_process"
 import { createHash } from "node:crypto"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { dirname, isAbsolute, join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { loadCapability } from "./lib/capability-tools.mjs"
 import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
@@ -16,135 +17,141 @@ function digest(value) {
   return createHash("sha256").update(value, "utf8").digest("hex")
 }
 
-function snapshotFileName(officialUrl) {
-  const segments = new URL(officialUrl).pathname.split("/").filter(Boolean)
-  return `${segments[segments.length - 1]}.md`
-}
-
-// 从自由文本 locator 中抽取全部行号区间，如 "L9,L67-L71"、"TitleBarStyleOptions L1437-L1484"。
-function parseLocatorRanges(locator) {
-  const ranges = []
-  const pattern = /L(\d+)(?:\s*-\s*L?(\d+))?/g
-  let match
-  while ((match = pattern.exec(String(locator ?? ""))) !== null) {
-    const start = Number(match[1])
-    const end = match[2] ? Number(match[2]) : start
-    if (Number.isInteger(start) && Number.isInteger(end) && end >= start) ranges.push([start, end])
-  }
-  return ranges
-}
-
-function excerptLines(lines, ranges, maxLines = 12) {
-  const picked = []
-  for (const [start, end] of ranges) {
-    for (let index = start; index <= end && picked.length < maxLines; index += 1) {
-      if (lines[index - 1] !== undefined) picked.push({ line: index, text: lines[index - 1] })
-    }
-  }
-  return picked
-}
-
-export async function crosscheckCapabilitySources(capability, snapshotDirectory) {
-  if (!isAbsolute(snapshotDirectory)) throw new Error("snapshots 必须是绝对目录")
-  const lockedSources = new Map(capability.lock.sourceDocuments.map((source) => [source.snapshotId, source]))
-  const entries = []
-  const counters = { crosschecked: 0, hash_mismatch: 0, file_missing: 0, manual_review: 0, url_missing: 0 }
-  for (const fact of capability.factsData.facts) {
-    for (const source of fact.sources) {
-      const locked = lockedSources.get(source.snapshotId)
-      if (!locked) {
-        counters.url_missing += 1
-        entries.push({ factId: fact.id, snapshotId: source.snapshotId, status: "url_missing", detail: "快照未登记到锁文件。" })
-        continue
-      }
-      if (!locked.officialUrl) {
-        counters.url_missing += 1
-        entries.push({ factId: fact.id, snapshotId: source.snapshotId, status: "url_missing", detail: "锁条目缺少官网 URL。" })
-        continue
-      }
-      const fileName = snapshotFileName(locked.officialUrl)
-      const filePath = join(snapshotDirectory, fileName)
-      let content
-      try {
-        content = await readFile(filePath, "utf8")
-      } catch {
-        counters.file_missing += 1
-        entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, file: fileName, status: "file_missing", detail: "快照目录中未找到原文文件。" })
-        continue
-      }
-      const contentHashes = new Set([digest(content), digest(`${content.replace(/\r\n/g, "\n")}`), digest(`${content.replace(/\r\n/g, "\n")}\n`)])
-      if (!contentHashes.has(locked.sha256.toLowerCase())) {
-        counters.hash_mismatch += 1
-        entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, file: fileName, status: "hash_mismatch", locator: source.locator, statement: fact.statement, detail: "快照文件哈希与锁不一致，能力包来源不可信。" })
-        continue
-      }
-      const ranges = parseLocatorRanges(source.locator)
-      if (!ranges.length) {
-        counters.manual_review += 1
-        entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, file: fileName, status: "manual_review", locator: source.locator, statement: fact.statement, detail: "locator 无行号，需人工对勘原文。" })
-        continue
-      }
-      const lines = content.split(/\r?\n/)
-      const excerpt = excerptLines(lines, ranges)
-      counters.crosschecked += 1
-      entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, file: fileName, status: "crosschecked", locator: source.locator, statement: fact.statement, excerpt })
-    }
-  }
-  return { status: counters.hash_mismatch || counters.file_missing || counters.url_missing ? "failed" : "passed", counters, entries }
-}
-
-async function fetchOnce(url, workDirectory) {
-  const outputFile = join(workDirectory, `fetch-${digest(url).slice(0, 12)}.json`)
-  const script = resolve(dirname(fileURLToPath(import.meta.url)), "fetch-doc.mjs")
-  const result = await new Promise((resolveResult) => {
-    const child = spawn(process.execPath, [script, url, "--output", outputFile], { shell: false, windowsHide: true, timeout: 60_000 })
-    child.on("error", (error) => resolveResult({ ok: false, error: error.message }))
-    child.on("close", (code) => resolveResult({ ok: code === 0, code }))
-  })
-  if (!result.ok) return { reachable: false, detail: `抓取失败（${result.error ?? `退出码 ${result.code}`}）。` }
-  try {
-    const payload = JSON.parse(await readFile(outputFile, "utf8"))
-    return { reachable: true, payload, detail: null }
-  } catch (error) {
-    return { reachable: false, detail: `结果不可解析: ${error instanceof Error ? error.message : String(error)}` }
-  }
-}
-
-export async function checkCapabilityLinks(capability) {
-  const workDirectory = join(tmpdir(), `cap-links-${Date.now()}`)
+async function defaultFetcher(url) {
+  const workDirectory = join(tmpdir(), `cap-fetch-${digest(url).slice(0, 12)}`)
   await mkdir(workDirectory, { recursive: true })
-  const results = []
+  const outputFile = join(workDirectory, "fetch.json")
+  const script = resolve(dirname(fileURLToPath(import.meta.url)), "fetch-doc.mjs")
   try {
-    for (const source of capability.lock.sourceDocuments) {
-      if (!source.officialUrl) { results.push({ snapshotId: source.snapshotId, officialUrl: null, status: "url_missing" }); continue }
-      const fetched = await fetchOnce(source.officialUrl, workDirectory)
-      if (!fetched.reachable) { results.push({ snapshotId: source.snapshotId, officialUrl: source.officialUrl, status: "unreachable", detail: fetched.detail }); continue }
-      const live = fetched.payload.contentSha256 ?? null
-      const matched = live !== null && [live, digest(`${fetched.payload.contentMarkdown ?? ""}\n`)].includes(source.sha256.toLowerCase())
-      results.push({
-        snapshotId: source.snapshotId,
-        officialUrl: source.officialUrl,
-        status: matched ? "ok" : "drifted",
-        lockedSha256: source.sha256,
-        liveContentSha256: live,
-        title: fetched.payload.title ?? null,
-        documentStatus: fetched.payload.documentStatus ?? null,
-        updatedDate: fetched.payload.updatedDate ?? null,
-        warnings: fetched.payload.warnings ?? [],
-        detail: matched ? "当前线上正文与锁定快照一致。" : "当前线上正文与锁定快照不一致；官网可能已更新，需重新审查后再更新能力包，不得直接改锁。",
-      })
-    }
+    const outcome = await new Promise((resolveResult) => {
+      const child = spawn(process.execPath, [script, url, "--output", outputFile], { shell: false, windowsHide: true, timeout: 90_000 })
+      child.on("error", (error) => resolveResult({ ok: false, detail: error.message }))
+      child.on("close", (code) => resolveResult({ ok: code === 0, code }))
+    })
+    let payload = null
+    try { payload = JSON.parse(await readFile(outputFile, "utf8")) } catch { payload = null }
+    if (!outcome.ok && !payload) return { ok: false, detail: `抓取失败（${outcome.detail ?? `退出码 ${outcome.code}`}）` }
+    if (!payload) return { ok: false, detail: "抓取结果不可解析。" }
+    // fetch-doc 对内容过短等场景以非零退出码输出 review_required；页面可达且正文完整时仍视为可用。
+    return { ok: true, contentSha256: payload.contentSha256 ?? null, contentMarkdown: payload.contentMarkdown ?? "", payload }
   } finally {
     await rm(workDirectory, { recursive: true, force: true })
   }
+}
+
+function excerptAround(content, anchor, contextLines = 3) {
+  const index = content.indexOf(anchor)
+  if (index < 0) return []
+  const lines = content.split(/\r?\n/)
+  let consumed = 0
+  for (let line = 0; line < lines.length; line += 1) {
+    if (consumed + lines[line].length >= index) {
+      const start = Math.max(0, line - contextLines)
+      const end = Math.min(lines.length - 1, line + contextLines)
+      return lines.slice(start, end + 1).map((text, offset) => ({ line: start + offset + 1, text }))
+    }
+    consumed += lines[line].length + 1
+  }
+  return []
+}
+
+export async function crosscheckCapabilitySources(capability, options = {}) {
+  const fetcher = options.fetcher ?? defaultFetcher
+  const scenarios = capability.scenariosData.scenarios
+  let targetFacts = capability.factsData.facts
+  if (options.scenarioId) {
+    const scenario = scenarios.find((item) => item.id === options.scenarioId)
+    if (!scenario) throw new Error(`场景不存在: ${options.scenarioId}`)
+    const refs = new Set(scenario.factRefs)
+    targetFacts = targetFacts.filter((fact) => refs.has(fact.id))
+  } else if (options.factIds) {
+    const refs = new Set(options.factIds)
+    targetFacts = targetFacts.filter((fact) => refs.has(fact.id))
+    for (const id of refs) if (!targetFacts.some((fact) => fact.id === id)) throw new Error(`事实不存在: ${id}`)
+  }
+  const lockedSources = new Map(capability.lock.sourceDocuments.map((source) => [source.snapshotId, source]))
+  const cache = new Map()
+  const entries = []
+  const counters = { crosschecked: 0, drifted: 0, unreachable: 0, anchor_not_found: 0, url_missing: 0 }
+  for (const fact of targetFacts) {
+    for (const source of fact.sources) {
+      const locked = lockedSources.get(source.snapshotId)
+      if (!locked?.officialUrl || !locked.officialBodySha256) {
+        counters.url_missing += 1
+        entries.push({ factId: fact.id, snapshotId: source.snapshotId, status: "url_missing", detail: "锁条目缺少官网 URL 或现网正文哈希。" })
+        continue
+      }
+      if (!cache.has(locked.officialUrl)) cache.set(locked.officialUrl, await fetcher(locked.officialUrl))
+      const fetched = cache.get(locked.officialUrl)
+      if (!fetched.ok) {
+        counters.unreachable += 1
+        entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, status: "unreachable", detail: fetched.detail ?? "官网不可达；按网页唯一真值策略阻塞。" })
+        continue
+      }
+      if (fetched.contentSha256?.toLowerCase() !== locked.officialBodySha256.toLowerCase()) {
+        counters.drifted += 1
+        entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, status: "drifted", detail: "现网正文哈希与锁不一致：官网已更新，能力包需重新审查。" })
+        continue
+      }
+      if (!source.anchor || !fetched.contentMarkdown.includes(source.anchor)) {
+        counters.anchor_not_found += 1
+        entries.push({ factId: fact.id, snapshotId: source.snapshotId, officialUrl: locked.officialUrl, status: "anchor_not_found", anchor: source.anchor ?? null, statement: fact.statement, detail: "锚点未在现网正文命中。" })
+        continue
+      }
+      counters.crosschecked += 1
+      entries.push({
+        factId: fact.id,
+        snapshotId: source.snapshotId,
+        officialUrl: locked.officialUrl,
+        status: "ready_for_judgment",
+        statement: fact.statement,
+        normativeStatus: fact.normativeStatus,
+        anchor: source.anchor,
+        excerpt: excerptAround(fetched.contentMarkdown, source.anchor),
+      })
+    }
+  }
+  const failed = counters.drifted || counters.unreachable || counters.anchor_not_found || counters.url_missing
+  return { status: failed ? "failed" : "passed", scenarioId: options.scenarioId ?? null, counters, entries }
+}
+
+export async function checkCapabilityLinks(capability, options = {}) {
+  const fetcher = options.fetcher ?? defaultFetcher
+  const factsBySnapshot = new Map()
+  for (const fact of capability.factsData.facts) {
+    for (const source of fact.sources) {
+      if (!factsBySnapshot.has(source.snapshotId)) factsBySnapshot.set(source.snapshotId, new Set())
+      factsBySnapshot.get(source.snapshotId).add(fact.id)
+    }
+  }
+  const results = []
+  const changedPendingReview = []
+  for (const source of capability.lock.sourceDocuments) {
+    if (!source.officialUrl || !source.officialBodySha256) { results.push({ snapshotId: source.snapshotId, status: "url_missing" }); continue }
+    const fetched = await fetcher(source.officialUrl)
+    if (!fetched.ok) { results.push({ snapshotId: source.snapshotId, officialUrl: source.officialUrl, status: "unreachable", detail: fetched.detail ?? "官网不可达。" }); continue }
+    const matched = fetched.contentSha256?.toLowerCase() === source.officialBodySha256.toLowerCase()
+    const affectedFactRefs = [...(factsBySnapshot.get(source.snapshotId) ?? [])]
+    const affectedScenarios = capability.scenariosData.scenarios.filter((scenario) => scenario.factRefs.some((id) => affectedFactRefs.includes(id))).map((scenario) => scenario.id)
+    const item = {
+      snapshotId: source.snapshotId,
+      officialUrl: source.officialUrl,
+      status: matched ? "ok" : "drifted",
+      affectedFactRefs,
+      affectedScenarios,
+      detail: matched ? "现网正文与锁定内容一致。" : "现网正文与锁定内容不一致：官网可能已更新，需重新审查后再更新能力包，不得直接改锁。",
+    }
+    results.push(item)
+    if (!matched) changedPendingReview.push({ snapshotId: source.snapshotId, officialUrl: source.officialUrl, affectedFactRefs, affectedScenarios })
+  }
   const counters = results.reduce((accumulator, item) => { accumulator[item.status] = (accumulator[item.status] ?? 0) + 1; return accumulator }, {})
-  return { status: (counters.drifted ?? 0) || (counters.unreachable ?? 0) || (counters.url_missing ?? 0) ? "attention" : "ok", counters, results }
+  return { status: (counters.drifted ?? 0) || (counters.unreachable ?? 0) || (counters.url_missing ?? 0) ? "attention" : "ok", counters, changedPendingReview, results }
 }
 
 function parseArgs(argv) {
-  const valued = new Set(["snapshots", "skill-root", "output"])
+  const valued = new Set(["scenario", "facts", "skill-root", "output"])
   const [mode, ...rest] = argv
-  if (mode !== "crosscheck" && mode !== "links") throw new Error("用法: node verify-capability-sources.mjs <crosscheck|links> [--snapshots <快照目录>] [--output <目录>] [--skill-root <根>]")
+  if (mode !== "crosscheck" && mode !== "links") throw new Error("用法: node verify-capability-sources.mjs <crosscheck|links> [--scenario IL-SXXX | --facts IL-F001,IL-F002] [--output <目录>] [--skill-root <根>]")
   const result = { mode }
   for (let index = 0; index < rest.length; index += 1) {
     const token = rest[index]
@@ -165,15 +172,17 @@ async function main() {
   const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
   let result
   if (args.mode === "crosscheck") {
-    if (!args.snapshots || !isAbsolute(args.snapshots)) throw new Error("crosscheck 需要 --snapshots <绝对快照目录>")
-    result = await crosscheckCapabilitySources(capability, args.snapshots)
+    result = await crosscheckCapabilitySources(capability, {
+      scenarioId: args.scenario,
+      factIds: args.facts ? args.facts.split(",").map((item) => item.trim()).filter(Boolean) : undefined,
+    })
   } else {
     result = await checkCapabilityLinks(capability)
   }
   if (args.output) {
     const output = resolveReportOutputDirectory(args.output)
     await mkdir(output, { recursive: true })
-    const fileName = args.mode === "crosscheck" ? "capability-source-crosscheck.json" : "capability-link-check.json"
+    const fileName = args.mode === "crosscheck" ? "faithfulness-material.json" : "capability-link-check.json"
     await writeFile(join(output, fileName), `${JSON.stringify(result, null, 2)}\n`, "utf8")
   }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)

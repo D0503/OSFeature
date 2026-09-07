@@ -6,11 +6,13 @@
 
 新报告版本 `verificationVersion=1.1`，兼容读取 1.0；旧报告没有实施信息时不自动补写。JSON 根字段为：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`implementation`、`normativeBasis`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
 
-`input` 只描述能力名、工程绝对路径、开发目标和可选 module/文件/product/build mode/device，不得包含文档、URL、审查报告或验证清单输入。
+`input` 只描述能力名、工程绝对路径、开发目标和可选 module/文件/product/build mode/device/navigation/faithfulness，不得包含文档、URL、审查报告或验证清单输入。
 
 `capabilityPackage` 记录能力 ID、版本、锁摘要、场景 ID、技术路线、必需层、事实引用和冲突事实引用。`changes` 对每个触及文件记录状态、before/after SHA-256 和 unified diff；失败也不得删除这些信息。
 
 ## 代码实现步骤与依据
+
+忠实性对勘前置门禁：构建或运行验证必须先注入 `faithfulness-judgment.json`（`--faithfulness`）：`schemaVersion`、`scenarioId`、`verdicts[]`（每项 `factId/verdict/basis`），verdict 仅 `faithful/unfaithful/cannot_determine`，必须恰好覆盖所选场景全部 `factRefs`；任一非 `faithful` 或缺失时脚本直接拒绝执行，不生成报告。判定材料来自 `verify-capability-sources.mjs crosscheck`（实时抓取官网 → officialBodySha256 漂移门禁 → anchor 锚点定位 → statement 与现网原文摘录并列）。
 
 实施记录通过 CLI 的 `--implementation <JSON文件>` 或 `runDevelopmentVerification` 的 `options.implementation` 提供，结构如下。记录为执行描述，不能覆盖能力包规范；顺序即实施顺序。
 

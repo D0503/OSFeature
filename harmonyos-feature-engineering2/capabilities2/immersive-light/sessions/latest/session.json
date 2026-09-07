@@ -1,0 +1,407 @@
+{
+  "archivedAt": "2026-09-07T10:54:16.338Z",
+  "frozenAt": "2026-09-07T10:46:58.565Z",
+  "snapshots": [
+    {
+      "snapshotId": "common",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
+      "contentSha256": "cb214d728b234428ffbe58ac10792d0d3cd9b1b4ea8664fa7da9fc5e45b5cd57",
+      "title": "沉浸式系统材质视效",
+      "updatedDate": "2026-09-03 14:09:56"
+    },
+    {
+      "snapshotId": "component",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
+      "contentSha256": "f04667da8de437b3ba849d490c5fea9bdb3c98785b8fe8a19603b28817b8992f",
+      "title": "组件适配沉浸光感",
+      "updatedDate": "2026-09-06 04:10:15"
+    },
+    {
+      "snapshotId": "constraints",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
+      "contentSha256": "13b8e311366df98466bbd59a54a9609c96d3a45a4c5af5f93a2bd17eea811f2c",
+      "title": "沉浸光感功耗优化",
+      "updatedDate": "2026-09-03 14:08:21"
+    },
+    {
+      "snapshotId": "development",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-development",
+      "contentSha256": "c0f0afde44e69625f96a51f48401dae47ab59e6f84115e4c9e9274fd96859ccd",
+      "title": "沉浸光感开发指导",
+      "updatedDate": "2026-09-03 14:07:53"
+    },
+    {
+      "snapshotId": "faq",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
+      "contentSha256": "3af55540713f19d611f7aaacf09f342b0fc17b4ab8385a28ae3e9ac9d25058d1",
+      "title": "沉浸光感常见问题",
+      "updatedDate": "2026-09-03 14:08:45"
+    },
+    {
+      "snapshotId": "hds-component-material-guide",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
+      "contentSha256": "5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607",
+      "title": "沉浸光感",
+      "updatedDate": "2026-09-03 14:06:50"
+    },
+    {
+      "snapshotId": "hds-navigation-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation",
+      "contentSha256": "d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20",
+      "title": "HdsNavigation (导航根视图容器)",
+      "updatedDate": "2026-09-03 14:16:08"
+    },
+    {
+      "snapshotId": "hds-tabs-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs",
+      "contentSha256": "f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357",
+      "title": "HdsTabs (底部页签)",
+      "updatedDate": "2026-09-03 14:16:47"
+    },
+    {
+      "snapshotId": "hds-material-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial",
+      "contentSha256": "c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1",
+      "title": "hdsMaterial (hds沉浸光感材质)",
+      "updatedDate": "2026-09-03 14:16:21"
+    },
+    {
+      "snapshotId": "overview",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
+      "contentSha256": "17101cc0c8c72295cf7fdc84405ab291c1cb9c2a62889c25d302ac68ce723e15",
+      "title": "沉浸光感简介",
+      "updatedDate": "2026-09-03 14:07:34"
+    },
+    {
+      "snapshotId": "enable",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
+      "contentSha256": "25a40e503b20d2cb3b864fad322d7abaa666a55206418de40a1bd33b6d81dbe7",
+      "title": "开启沉浸光感",
+      "updatedDate": "2026-09-06 04:10:15"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "IL-F004",
+      "type": "api",
+      "topic": "API 契约（IL-F004）",
+      "statement": "组件通过 systemMaterial 或组件专用材质入口接入沉浸材质。",
+      "snapshotId": "enable",
+      "anchor": "options参数中的systemMaterial字段设置",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F005",
+      "type": "state",
+      "topic": "状态语义（IL-F005）",
+      "statement": "Material.empty 用于关闭组件材质，undefined 用于恢复组件默认材质策略。",
+      "snapshotId": "enable",
+      "anchor": "undefined表示恢复为组件默认的沉浸光感效果",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F009",
+      "type": "navigation",
+      "topic": "导航组件（IL-F009）",
+      "statement": "Navigation 标题栏可通过 NavigationTitleOptions.systemMaterial 配置；默认材质受应用状态影响。",
+      "snapshotId": "component",
+      "anchor": "Navigation标题栏支持通过应用级开启",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F010",
+      "type": "navigation",
+      "topic": "导航组件（IL-F010）",
+      "statement": "Tabs 使用 FloatingTabBarStyle.systemMaterial，且材质会被栏背景色或背景模糊覆盖。",
+      "snapshotId": "component",
+      "anchor": "三个条件需同时满足",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F011",
+      "type": "navigation",
+      "topic": "导航组件（IL-F011）",
+      "statement": "AlphabetIndexer 弹窗材质与 popupBackground、popupBackgroundBlurStyle 存在互斥覆盖关系。",
+      "snapshotId": "component",
+      "anchor": "属性和沉浸光感能力互斥",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F012",
+      "type": "overlay",
+      "topic": "弹窗组件（IL-F012）",
+      "statement": "Toast、Popup、Tips、Menu、Dialog 和 Sheet 具有各自的 systemMaterial 配置入口或默认材质策略。",
+      "snapshotId": "component",
+      "anchor": "弹窗类组件包括Toast、Popup、Tips、Menu和Dialog",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F013",
+      "type": "overlay",
+      "topic": "弹窗组件（IL-F013）",
+      "statement": "弹窗普通背景色、背景模糊或大面积材质会覆盖效果或引入性能风险。",
+      "snapshotId": "component",
+      "anchor": "则不呈现沉浸光感效果",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F014",
+      "type": "control",
+      "topic": "控件组件（IL-F014）",
+      "statement": "Button、Select、Toggle、Slider、ChipGroup 和 SegmentButton 系列提供组件或样式级材质入口。",
+      "snapshotId": "component",
+      "anchor": "按钮支持通过应用级开启",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F015",
+      "type": "control",
+      "topic": "控件组件（IL-F015）",
+      "statement": "Select 按钮和下拉菜单是两个独立入口，分别使用 systemMaterial 与 menuSystemMaterial。",
+      "snapshotId": "component",
+      "anchor": "下拉按钮与下拉菜单的沉浸光感相互独立",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F016",
+      "type": "control",
+      "topic": "控件组件（IL-F016）",
+      "statement": "Toggle 的 Checkbox 形态当前不适配沉浸材质，应保留普通样式。",
+      "snapshotId": "component",
+      "anchor": "当前未适配沉浸光感效果",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F017",
+      "type": "material-option",
+      "topic": "材质参数（IL-F017）",
+      "statement": "materialColor 必须保留透明度；不透明颜色会遮挡材质滤镜效果。",
+      "snapshotId": "common",
+      "anchor": "会遮挡材质滤镜效果",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F018",
+      "type": "material-option",
+      "topic": "材质参数（IL-F018）",
+      "statement": "colorInvert 只保证对资源颜色生效，硬编码颜色不能据此判定已反色。",
+      "snapshotId": "faq",
+      "anchor": "使用代码中硬编码的颜色值",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F019",
+      "type": "material-option",
+      "topic": "材质参数（IL-F019）",
+      "statement": "interactive 与 lightEffect 控制交互和流光；Button 开启流光后需同时验证原按压和悬停反馈。",
+      "snapshotId": "common",
+      "anchor": "按压时产生弹性形变",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F020",
+      "type": "material-option",
+      "topic": "材质参数（IL-F020）",
+      "statement": "applyShadow 与普通 shadow 属性存在顺序和所有权约束，避免重复阴影。",
+      "snapshotId": "common",
+      "anchor": "自定义的shadow设置不会生效",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F023",
+      "type": "performance",
+      "topic": "性能约束（IL-F023）",
+      "statement": "应限制材质面积、嵌套、模糊叠加、动态背景、反色子树范围和重复阴影，并在真机测量性能与功耗。",
+      "snapshotId": "constraints",
+      "anchor": "沉浸光感效果作为一种",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F024",
+      "type": "diagnostic",
+      "topic": "诊断排障（IL-F024）",
+      "statement": "无视觉效果时应排查普通背景覆盖、透明度、属性顺序、渲染区域、设备能力与算力档位。",
+      "snapshotId": "faq",
+      "anchor": "仍然呈现纯色背景或无任何材质表现",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F027",
+      "type": "hds-version",
+      "topic": "HDS 版本门槛（IL-F027）",
+      "statement": "HDS 组件沉浸光感材质从 6.1.0(23) 起提供，仅支持 Stage 模型，系统能力为 SystemCapability.UIDesign.HDSComponent.Core。",
+      "snapshotId": "hds-component-material-guide",
+      "anchor": "新增支持HDS组件的沉浸光感材质能力",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F028",
+      "type": "hds-navigation",
+      "topic": "HdsNavigation（IL-F028）",
+      "statement": "HdsNavigation 通过 TitleBarStyleOptions.systemMaterialEffect 为标题栏按钮设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+      "snapshotId": "hds-component-material-guide",
+      "anchor": "可为标题栏按钮设置沉浸光感视效",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F029",
+      "type": "hds-tabs",
+      "topic": "HdsTabs（IL-F029）",
+      "statement": "HdsTabs 通过 HdsTabsFloatingStyle.systemMaterialEffect 为底部悬浮页签设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+      "snapshotId": "hds-component-material-guide",
+      "anchor": "可为底部页签设置沉浸光感视效",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F030",
+      "type": "hds-material-params",
+      "topic": "HDS 材质参数（IL-F030）",
+      "statement": "HDS SystemMaterialParams 包含可选的 materialType 和 materialLevel；默认 materialType 为 NONE，默认 materialLevel 为 ADAPTIVE，因此省略 materialType 不能视为已经启用材质。",
+      "snapshotId": "hds-navigation-api",
+      "anchor": "默认值：hdsMaterial.MaterialType.NONE",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F031",
+      "type": "hds-material-type",
+      "topic": "HDS MaterialType（IL-F031）",
+      "statement": "HDS MaterialType 取值为 NONE=0、ADAPTIVE=100、IMMERSIVE=101；ADAPTIVE 表示自适应系统材质且默认采用沉浸式材质。",
+      "snapshotId": "hds-material-api",
+      "anchor": "自适应系统材质。默认为沉浸式材质",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F032",
+      "type": "hds-material-level",
+      "topic": "HDS MaterialLevel（IL-F032）",
+      "statement": "HDS MaterialLevel 取值为 EXQUISITE=0、GENTLE=1、SMOOTH=2、ADAPTIVE=10；ADAPTIVE 档由系统按设备算力自适应；设备不支持 IMMERSIVE 时官网建议使用 SMOOTH 以降低卡顿和发热风险。",
+      "snapshotId": "hds-material-api",
+      "anchor": "材质生效策略由系统策略决定",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F033",
+      "type": "hds-adaptive-policy",
+      "topic": "HDS 自适应策略（IL-F033）",
+      "statement": "官网推荐 HDS 使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，让系统根据设备算力动态平衡材质效果和性能。",
+      "snapshotId": "hds-component-material-guide",
+      "anchor": "推荐使用系统自适应",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F034",
+      "type": "hds-custom-policy",
+      "topic": "HDS 自定义等级（IL-F034）",
+      "statement": "HDS 自定义材质等级前应调用 getSystemMaterialTypes；支持 IMMERSIVE 时可选 EXQUISITE 或 GENTLE，不支持时建议使用 SMOOTH 以降低卡顿和发热风险。",
+      "snapshotId": "hds-component-material-guide",
+      "anchor": "再根据查询结果选用相应的材质效果枚举",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F035",
+      "type": "hds-device",
+      "topic": "HDS 设备差异（IL-F035）",
+      "statement": "HDS 材质在 Phone、Tablet 可调用；PC/2in1 使用前需查询设备材质能力；HdsTabs 的该接口在 TV 无效果。",
+      "snapshotId": "hds-navigation-api",
+      "anchor": "在PC/2in1设备调用时需先调用",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F036",
+      "type": "hds-code-example",
+      "topic": "HDS 示例审计（IL-F036）",
+      "statement": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
+      "snapshotId": "hds-component-material-guide",
+      "anchor": "scenery为自定义资源，开发者需替换本地资源",
+      "status": "fresh"
+    },
+    {
+      "id": "IL-F001",
+      "type": "version",
+      "topic": "版本门槛（IL-F001）",
+      "statement": "ArkUI 沉浸光感接口从 API 26 起提供；官网要求开启沉浸光感时应用 targetSDKVersion 不低于 26.0.0。",
+      "snapshotId": "overview",
+      "anchor": "从API版本26.0.0开始",
+      "status": "reused",
+      "lines": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": "IL-F002",
+      "type": "configuration",
+      "topic": "配置契约（IL-F002）",
+      "statement": "应用级开关通过 entry 模块 metadata 名 ohos.arkui.UIMaterial.state 配置，值为 default、enable 或 disable。",
+      "snapshotId": "enable",
+      "anchor": "ohos.arkui.UIMaterial.state",
+      "status": "reused",
+      "lines": [
+        54,
+        54
+      ]
+    },
+    {
+      "id": "IL-F003",
+      "type": "configuration",
+      "topic": "配置契约（IL-F003）",
+      "statement": "未配置应用级开关时，升级应用按 default 处理。",
+      "snapshotId": "enable",
+      "anchor": "即为default模式",
+      "status": "reused",
+      "lines": [
+        35,
+        35
+      ]
+    },
+    {
+      "id": "IL-F006",
+      "type": "state",
+      "topic": "状态语义（IL-F006）",
+      "statement": "一处规范称应用级 disable 会使应用级和组件级显式开启都失效。",
+      "snapshotId": "enable",
+      "anchor": "会全局禁用沉浸光感",
+      "status": "reused",
+      "conflictGroup": "disable-scope",
+      "lines": [
+        75,
+        75
+      ]
+    },
+    {
+      "id": "IL-F007",
+      "type": "state",
+      "topic": "状态语义（IL-F007）",
+      "statement": "另一处规范称应用级 disable 只关闭应用级开启，组件仍可显式开启。",
+      "snapshotId": "enable",
+      "anchor": "只针对应用级开启的组件",
+      "status": "reused",
+      "conflictGroup": "disable-scope",
+      "lines": [
+        87,
+        87
+      ]
+    },
+    {
+      "id": "IL-F008",
+      "type": "capability",
+      "topic": "能力查询（IL-F008）",
+      "statement": "运行时应查询 isImmersiveMaterialSupported；全局材质档位可由 getGlobalMaterialLevel 获取。",
+      "snapshotId": "overview",
+      "anchor": "算力档位由设备定义且固定",
+      "status": "reused",
+      "lines": [
+        9,
+        9
+      ]
+    }
+  ],
+  "conflictResolutions": [
+    {
+      "probeId": "disable-scope",
+      "verdict": "persists",
+      "basis": "v1.5 审查：enable 页同时存在『全局禁用，应用级或组件级开启均不生效』与『只针对应用级开启的组件』两种表述，尚未真机裁决。"
+    }
+  ],
+  "confirmations": []
+}

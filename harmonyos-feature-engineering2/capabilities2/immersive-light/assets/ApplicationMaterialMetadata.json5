@@ -1,0 +1,6 @@
+// Merge this object into the metadata array of an entry module's module.json5.
+// Keep only the user-requested final value in the target project.
+{
+  name: "ohos.arkui.UIMaterial.state",
+  value: "enable" // allowed: default | enable | disable
+}

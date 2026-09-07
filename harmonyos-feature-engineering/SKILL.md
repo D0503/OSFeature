@@ -51,7 +51,7 @@ metadata:
 
 1. 完整阅读 [能力包契约](references/capabilities/package-contract.md) 和 [代码开发验证流程](references/development/workflow.md)。使用 `scripts/validate-capability-package.mjs` 核验锁文件，再用 `scripts/resolve-capability.mjs` 根据特性名和自然语言目标解析唯一场景。
 2. 无法唯一匹配时列出候选场景并要求用户选择；在场景唯一前不得修改工程。运行时只读取 `references/capabilities/` 中已发布包，禁止读取 Markdown/URL 输入、审查报告、验证清单或旧 `harmonyos-os-feature-integration`。
-3. 对沉浸光感完整阅读能力包 [入口](references/capabilities/immersive-light/entry.md)、[实施规则](references/capabilities/immersive-light/implementation.md)、[验证规则](references/capabilities/immersive-light/validation.md)，以及所选场景引用的最小资产。制作资料快照目录可获得时，实施前必须用 `scripts/verify-capability-sources.mjs crosscheck --snapshots <快照目录>` 把所选事实与锁定快照原文对勘（文件存在、哈希一致、按 locator 抽取原文行）；快照缺失或哈希不符时停止实施并报告能力包缺陷，不得按未对勘事实开发。快照目录不可获得时在报告 `pendingVerifications` 中披露“事实未与原文对勘”，对勘不改变能力包事实本身。
+3. 对沉浸光感完整阅读能力包 [入口](references/capabilities/immersive-light/entry.md)、[实施规则](references/capabilities/immersive-light/implementation.md)、[验证规则](references/capabilities/immersive-light/validation.md)，以及所选场景引用的最小资产。构建或运行验证前必须完成 Web-first 事实对勘，由程序强制：先运行 `scripts/verify-capability-sources.mjs crosscheck --scenario <场景ID>` 实时抓取官网现网页——哈希与锁不符（drifted，官网已更新需重审换锁）、官网不可达（unreachable，网页唯一真值即阻塞）或锚点未命中任一情况都会失败；通过后逐条判定材料包（statement vs 现网原文，`faithful/unfaithful/cannot_determine`），写入 `faithfulness-judgment.json` 并经 `scripts/verify-development.mjs --faithfulness <文件>` 注入——任一事实 `unfaithful` 或 `cannot_determine` 都会拒绝构建，必须先修正能力包事实并重新审查。官网来源页下线时对应事实与场景删除（见迁移报告），不得保留无官网证据的事实。
 4. 使用 `scripts/inspect-development-project.mjs` 扫描绝对工程路径、Stage 模型、module 类型、product、target/compatible API、本机 SDK、目标组件、能力信号和现有未提交修改。ArkUI 路线要求 API 26，且应用级 metadata 只能位于 entry module；HDS 路线要求 6.1.0(23)，使用 `@kit.UIDesignKit`，当前只验证 compatible/target/compile API 23 或以上。
 5. 所选路线的 API、SDK、target 或 compatible 门槛不满足时停止实施并输出升级要求。修改 SDK、compatible、target 或 compile 配置前必须单独获得用户授权；未知值不得猜测为兼容。
 6. 确定最小触及文件，用 `scripts/snapshot-project-files.mjs capture` 记录 before SHA-256、组件树、状态、事件和普通样式基线。已有脏文件必须局部合并，不得覆盖用户修改。
@@ -73,7 +73,7 @@ metadata:
 - 抓取时间未知必须保持 `null` / `not-recorded`；本地修改时间不能冒充官网抓取时间。
 - 静态检查始终执行。仅有明确 SDK 或隔离工程时才构建；编译、模拟器和真机结果必须分别记录。
 - 自登记工程验证规则（四元版本核对、参数内三元只保护参数求值等，见 [工程验证规则](references/engineering-verification-rules.md)）只能用于 `document-review` 与 `development-validation-planning`；能力包与 `code-development-validation` 只以官网资料为事实依据，不得把这些规则作为门禁、静态规则或判据。
-- 实施前的事实—快照对勘只校验能力包来源可信（文件存在、哈希一致、原文可定位），不得把快照内容当作新的开发判据；对勘失败时停止实施并报告能力包缺陷。
+- 实施前的 Web-first 对勘以官网现网页为唯一真值：实时抓取 → 哈希门禁 → 锚点定位 → 逐条忠实性判定，全部 `faithful` 才允许构建，由程序强制；断网即阻塞，不回退本地快照。对勘发现的提炼错误当场修正 facts 并留痕（迁移报告 + git diff 可审计）。
 - 自动判图是观察证据的一种形式：判定记录、依据与所引用的截图/组件树证据必须一并落盘；判图不确定只能记为 `inconclusive`，不得写成视觉通过；判图只能匹配或排除能力包预期，不得反向改写官网事实。链接有效性检测（`verify-capability-sources.mjs links`）属于能力包发布/更新周期门禁，不混入开发路径，检测结果只报告漂移、不自动改锁。
 - 清单中的预期结果只能来自工程事实；SDK、构建、模拟器和真机是验证手段，不得静默覆盖官网规范。实际结果与规范不一致时应记录为规范—实现偏差。
 - 验证规划使用事实级门禁：报告整体 `reviewGate` 不得直接阻塞所有条目；只有条目引用且未在 `resolutionFactRefs` 中声明为本项裁决目标的 `requires_resolution` 事实，才可触发 `fact_gate`。
@@ -100,7 +100,7 @@ metadata:
 - `references/capabilities/immersive-light/`：自包含 ArkUI API 26 与 HDS 6.1.0(23) 两条沉浸光感路线的规范事实、场景、资产和锁文件。
 - `references/engineering-verification-rules.md`：自登记工程验证规则（非官网事实），仅限 document-review 与 development-validation-planning 使用，禁止写入能力包。
 - `scripts/validate-capability-package.mjs`：校验能力包结构、事实覆盖、冲突多预期、文件哈希和路径安全。
-- `scripts/verify-capability-sources.mjs`：`crosscheck` 把能力包事实与锁定快照原文对勘（文件、哈希、locator 原文行）；`links` 重新抓取锁中官网 URL 检测内容漂移，只报告不改锁。
+- `scripts/verify-capability-sources.mjs`：Web-first 对勘——`crosscheck` 实时抓取官网做漂移门禁（officialBodySha256）与锚点定位并产出忠实性材料包；`links` 全量检测链接漂移并输出受影响事实/场景清单；只报告，不改锁。
 - `scripts/resolve-capability.mjs`：把特性名和自然语言目标路由到唯一开发场景。
 - `scripts/inspect-development-project.mjs`：扫描工程、SDK、模块、API、目标组件和脏文件并形成兼容门禁。
 - `scripts/snapshot-project-files.mjs`：捕获触及文件基线并产生 before/after 哈希和 unified diff。

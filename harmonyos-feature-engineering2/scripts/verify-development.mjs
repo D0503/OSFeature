@@ -6,7 +6,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { promisify } from "node:util"
-import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
+import { loadCapability2, resolveScenario2 } from "./lib/capability2-tools.mjs"
 import { inspectDevelopmentProject, runStaticScenarioChecks, sdkCheckFromInspection } from "./lib/development-project.mjs"
 import { compareFileBaseline } from "./snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-development-report.mjs"
@@ -117,26 +117,28 @@ function findNodeInLayout(root, by, value) {
   return found
 }
 
-const FAITHFULNESS_VERDICTS = new Set(["faithful", "unfaithful", "cannot_determine"])
+const CRITERIA_STATUS = new Set(["fresh", "reused"])
 
-function validateFaithfulness(faithfulness, scenario) {
+function validateCriteriaDocument(criteriaDocument, scenario) {
   const invalid = []
-  if (faithfulness?.schemaVersion !== "1.0") invalid.push("schemaVersion 必须为 1.0")
-  if (faithfulness?.scenarioId !== scenario.id) invalid.push(`scenarioId 必须为 ${scenario.id}`)
-  if (!Array.isArray(faithfulness?.verdicts)) invalid.push("verdicts 必须是数组")
+  if (criteriaDocument?.schemaVersion !== "1.0") invalid.push("schemaVersion 必须为 1.0")
+  if (criteriaDocument?.scenarioId !== scenario.id) invalid.push(`scenarioId 必须为 ${scenario.id}`)
+  if (!["fresh", "reuse"].includes(criteriaDocument?.strategy)) invalid.push("strategy 必须是 fresh 或 reuse")
+  if (!Array.isArray(criteriaDocument?.criteria) || !criteriaDocument.criteria.length) invalid.push("criteria 必须是非空数组")
   else {
-    const expected = new Set(scenario.factRefs)
-    const provided = new Set()
-    for (const [index, item] of faithfulness.verdicts.entries()) {
-      const label = `verdicts[${index}]`
-      if (!expected.has(item?.factId)) invalid.push(`${label}.factId 不属于场景 ${scenario.id}`)
-      else if (provided.has(item.factId)) invalid.push(`${label}.factId 重复`)
-      else provided.add(item.factId)
-      if (!FAITHFULNESS_VERDICTS.has(item?.verdict)) invalid.push(`${label}.verdict 必须是 faithful/unfaithful/cannot_determine`)
-      if (typeof item?.basis !== "string" || !item.basis.trim()) invalid.push(`${label}.basis 必须是非空字符串`)
+    const ids = new Set()
+    for (const [index, criterion] of criteriaDocument.criteria.entries()) {
+      const label = `criteria[${index}]`
+      if (typeof criterion?.id !== "string" || !criterion.id.trim()) invalid.push(`${label}.id 必填`)
+      else if (ids.has(criterion.id)) invalid.push(`${label}.id 重复`)
+      else ids.add(criterion.id)
+      if (typeof criterion?.statement !== "string" || !criterion.statement.trim()) invalid.push(`${label}.statement 必填`)
+      if (!CRITERIA_STATUS.has(criterion?.status)) invalid.push(`${label}.status 必须是 fresh 或 reused`)
+      if (typeof criterion?.anchor !== "string" || !criterion.anchor.trim()) invalid.push(`${label}.anchor 必填`)
     }
-    for (const id of expected) if (!provided.has(id)) invalid.push(`缺少事实 ${id} 的判定`)
   }
+  const resolutions = new Set((criteriaDocument?.conflictResolutions ?? []).filter((item) => typeof item?.probeId === "string").map((item) => item.probeId))
+  for (const probe of scenario.criteriaSpec?.conflictProbes ?? []) if (!resolutions.has(probe.id)) invalid.push(`冲突监测点 ${probe.id} 缺少结论`)
   return invalid
 }
 
@@ -203,23 +205,19 @@ async function appendObservationEvidence(evidence, item, fallbackSummary) {
 
 export async function runDevelopmentVerification(skillRoot, request, options = {}) {
   const outputDirectory = resolveReportOutputDirectory(options.outputDirectory)
-  const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
-  const resolution = resolveScenario(capability, request.goal, request.target)
+  const capability = await loadCapability2(skillRoot, request.feature ?? "immersive-light")
+  const resolution = resolveScenario2(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
   const scenario = resolution.selected
   if (options.baseline && resolve(options.baseline.projectRoot) !== resolve(request.project)) throw new Error("实施基线不属于目标工程")
   if (options.executeBuild || options.executeRun) {
-    if (!options.faithfulness) {
-      throw new Error(`场景 ${scenario.id} 未经事实忠实性对勘：先运行 scripts/verify-capability-sources.mjs crosscheck --scenario ${scenario.id} 获取材料包，逐条判定（faithful/unfaithful/cannot_determine）后经 --faithfulness 注入；未经对勘不得构建或运行。`)
+    if (!options.criteria) {
+      throw new Error(`场景 ${scenario.id} 缺少本次判据集：先 freeze-snapshot → diff-snapshots → derive-criteria（materials/validate）产出 criteria.json，经 --criteria 注入；判据权威来源是本次冻结快照，未经现提不得构建或运行。`)
     }
-    const invalid = validateFaithfulness(options.faithfulness, scenario)
-    if (invalid.length) throw new Error(`faithfulness 无效: ${invalid.join("; ")}`)
-    const notFaithful = options.faithfulness.verdicts.filter((item) => item.verdict !== "faithful")
-    if (notFaithful.length) {
-      throw new Error(`事实忠实性门禁未过：${notFaithful.map((item) => `${item.factId}=${item.verdict}（${item.basis}）`).join("；")}。unfaithful 表示能力包事实与现网原文不符，须修正事实并重新审查后重试；cannot_determine 须补充对勘材料。`)
-    }
+    const invalid = validateCriteriaDocument(options.criteria, scenario)
+    if (invalid.length) throw new Error(`criteria 无效: ${invalid.join("; ")}`)
   }
-  buildImplementationTrace(capability, options.implementation, [], false, scenario.route)
+  buildImplementationTrace(options.criteria ?? { criteria: [], snapshots: [] }, options.implementation, [], false)
   const inspection = await inspectDevelopmentProject(request.project, capability, {
     scenario,
     module: request.module,
@@ -426,9 +424,9 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
       if (!["screenshot", "component_tree"].includes(item?.type)) invalid.push(`visual.evidence[${index}].type 必须是 screenshot 或 component_tree`)
       else if (typeof item?.path !== "string" || !isAbsolute(item.path) || !(await exists(item.path))) invalid.push(`visual.evidence[${index}].path 必须是存在的绝对路径`)
     }
-    const scenarioFactRefs = new Set(scenario.factRefs)
-    if (!Array.isArray(judgment.matchedFactRefs)) invalid.push("matchedFactRefs 必须是数组")
-    else for (const id of judgment.matchedFactRefs) if (!scenarioFactRefs.has(id)) invalid.push(`matchedFactRefs 引用了场景外事实 ${id}`)
+    const scenarioCriteriaIds = new Set((options.criteria?.criteria ?? []).map((criterion) => criterion.id))
+    if (!Array.isArray(judgment.matchedCriteriaRefs)) invalid.push("matchedCriteriaRefs 必须是数组")
+    else for (const id of judgment.matchedCriteriaRefs) if (!scenarioCriteriaIds.has(id)) invalid.push(`matchedCriteriaRefs 引用了场景判据集之外的 ${id}`)
     if (judgment.runtime !== undefined && judgment.runtime !== null) {
       if (!["passed", "failed", "inconclusive"].includes(judgment.runtime?.status)) invalid.push("runtime.status 必须是 passed、failed 或 inconclusive")
       if (typeof judgment.runtime?.summary !== "string" || !judgment.runtime.summary.trim()) invalid.push("runtime.summary 必须是非空字符串")
@@ -459,10 +457,13 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   }
 
   const changes = options.baseline ? (await compareFileBaseline(options.baseline)).changes : []
-  const trace = buildImplementationTrace(capability, options.implementation, changes, Boolean(options.baseline), scenario.route)
-  const conflictingFactRefs = scenario.factRefs.filter((id) => capability.factsData.facts.find((fact) => fact.id === id)?.normativeStatus === "conflicting")
+  const criteriaDocument = options.criteria ?? { criteria: [], snapshots: [], strategy: "reuse", frozenAt: null }
+  const trace = buildImplementationTrace(criteriaDocument, options.implementation, changes, Boolean(options.baseline))
+  const criteriaIds = criteriaDocument.criteria.map((criterion) => criterion.id)
+  const conflictGroups = new Set(criteriaDocument.criteria.filter((criterion) => criterion.conflictGroup).map((criterion) => criterion.conflictGroup))
+  const conflictingCriteriaRefs = criteriaDocument.criteria.filter((criterion) => criterion.conflictGroup && conflictGroups.has(criterion.conflictGroup)).map((criterion) => criterion.id)
   const report = {
-    verificationVersion: "1.1",
+    verificationVersion: "2.0",
     mode: "code-development-validation",
     input: {
       feature: capability.feature.id,
@@ -475,17 +476,18 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
       buildMode: request.buildMode ?? "debug",
       device: request.device ?? null,
       navigation: request.navigationPath ?? null,
-      faithfulness: request.faithfulnessPath ?? null,
+      criteria: request.criteriaPath ?? null,
     },
     capabilityPackage: {
       featureId: capability.feature.id,
-      version: capability.feature.packageVersion,
-      digest: capability.lock.packageDigest,
+      packageVersion: capability.feature.packageVersion ?? null,
       scenarioId: scenario.id,
       route: scenario.route,
+      criteriaStrategy: criteriaDocument.strategy,
+      frozenAt: criteriaDocument.frozenAt ?? null,
       requiredChecks: scenario.requiredChecks,
-      factRefs: scenario.factRefs,
-      conflictingFactRefs,
+      criteriaRefs: criteriaIds,
+      conflictingCriteriaRefs,
     },
     projectBaseline: inspection,
     changes,
@@ -497,7 +499,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     verdict: {
       status: "blocked",
       summary: "待计算。",
-      matchedFactRefs: options.judgment?.matchedFactRefs ?? observations.matchedFactRefs ?? [],
+      matchedCriteriaRefs: options.judgment?.matchedCriteriaRefs ?? [],
     },
   }
   for (const level of scenario.requiredChecks) {
@@ -520,7 +522,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
 
 function parseArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "implementation", "observations", "judgment", "navigate", "faithfulness", "output", "repair-attempts", "skill-root"])
+  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "implementation", "observations", "judgment", "navigate", "criteria", "output", "repair-attempts", "skill-root"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -538,7 +540,7 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--faithfulness <faithfulness-judgment.json>] [--execute-build] [--execute-run --device <设备>] [--navigate <route-steps.json>] [--capture-screenshot] [--capture-layout] [--implementation <实施记录>] [--judgment <visual-judgment.json>] [--output <目录>]")
+  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--criteria <criteria.json>] [--execute-build] [--execute-run --device <设备>] [--navigate <route-steps.json>] [--capture-screenshot] [--capture-layout] [--implementation <实施记录>] [--judgment <visual-judgment.json>] [--output <目录>]")
   if (!isAbsolute(args.project)) throw new Error("project 必须是绝对路径")
   const repairAttempts = Number(args["repair-attempts"] ?? 0)
   if (!Number.isInteger(repairAttempts) || repairAttempts < 0 || repairAttempts > 2) throw new Error("repair-attempts 必须是 0 到 2")
@@ -548,7 +550,7 @@ async function main() {
   const observations = args.observations ? JSON.parse(await readFile(args.observations, "utf8")) : null
   const judgment = args.judgment ? JSON.parse(await readFile(args.judgment, "utf8")) : null
   const navigate = args.navigate ? JSON.parse(await readFile(args.navigate, "utf8")) : null
-  const faithfulness = args.faithfulness ? JSON.parse(await readFile(args.faithfulness, "utf8")) : null
+  const criteria = args.criteria ? JSON.parse(await readFile(args.criteria, "utf8")) : null
   const result = await runDevelopmentVerification(args["skill-root"] ?? scriptRoot, {
     feature: args.feature,
     project: args.project,
@@ -562,13 +564,13 @@ async function main() {
     device: args.device,
     sdk: args.sdk,
     navigationPath: args.navigate ?? null,
-    faithfulnessPath: args.faithfulness ?? null,
+    criteriaPath: args.criteria ?? null,
   }, {
     executeBuild: Boolean(args["execute-build"]),
     executeRun: Boolean(args["execute-run"]),
     navigate,
     judgment,
-    faithfulness,
+    criteria,
     captureScreenshot: Boolean(args["capture-screenshot"]),
     captureLayout: Boolean(args["capture-layout"]),
     outputDirectory: args.output,

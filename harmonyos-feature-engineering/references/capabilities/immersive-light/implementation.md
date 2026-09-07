@@ -17,6 +17,6 @@
 - Phone、Tablet 可按场景运行；PC/2in1 必须先查询材质能力；HdsTabs 在 TV 上无效果，不得把 TV 结果判为视觉通过。
 - 官网完整示例不是可直接复制资产。接入时补齐实际工程 import、资源、菜单、滚动器和控制器，仅合并目标字段。
 
-低版本回退只依据官网兼容性事实（IL-F021、IL-F022）：compatible API 低于 26 时用版本条件保留原普通样式分支，低版本路径不引用 API 26 能力；设备不支持时保留接入前的背景、布局、状态、事件与恢复路径。官网未陈述的写法形态不在能力包内定性，只能记录为观察项；此类自登记工程规则仅由 document-review 与 development-validation-planning 使用。
+官网已于 2026-09-06 下线沉浸光感低版本兼容适配指引（原 arkts-immersive-light-sense-compatibility 页，见迁移报告）；能力包不再提供低版本回退场景，compatibleSdkVersion 低于 26 的工程由开发者自行承担适配并单独评估。设备不支持沉浸材质时的能力查询（IL-F008）仍以官网为准；官网未陈述的写法形态不在能力包内定性，只能记录为观察项，此类自登记工程规则仅由 document-review 与 development-validation-planning 使用。
 
 构建使用 `devecocli build`。只对有明确编译错误位置且与本次修改相关的问题做定向修复，最多两轮；第三次仍失败时停止。

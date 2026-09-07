@@ -2,7 +2,7 @@
   "schemaVersion": "1.1",
   "featureId": "immersive-light",
   "displayName": "沉浸光感",
-  "packageVersion": "1.4.0",
+  "packageVersion": "1.5.0",
   "defaultRoute": "arkui-api26",
   "routes": [
     {
@@ -14,10 +14,17 @@
         "minCompileApi": 26,
         "minTargetApi": 26,
         "minCompatibleApi": null,
-        "compatibleApiMayBeLower": true,
-        "applicationMetadataModuleTypes": ["entry"],
+        "compatibleApiMayBeLower": false,
+        "applicationMetadataModuleTypes": [
+          "entry"
+        ],
         "metadataName": "ohos.arkui.UIMaterial.state",
-        "metadataValues": ["default", "enable", "disable"]
+        "metadataValues": [
+          "default",
+          "enable",
+          "disable"
+        ],
+        "compatibilityPolicy": "官网已于 2026-09-06 下线沉浸光感低版本兼容适配指引（原 arkts-immersive-light-sense-compatibility 页）；能力包不再提供低版本回退场景，compatibleSdkVersion 低于 26 的工程需自行承担适配并单独评估。"
       },
       "sdk": {
         "preferredApi": 26,
@@ -26,12 +33,40 @@
           "openharmony/ets/api/@ohos.arkui.uiMaterial.d.ts",
           "openharmony/ets/component/common.d.ts"
         ],
-        "requiredSymbols": ["ImmersiveMaterial", "ImmersiveOptions", "ImmersiveStyle", "Material.empty", "isImmersiveMaterialSupported", "getGlobalMaterialLevel", "systemMaterial"]
+        "requiredSymbols": [
+          "ImmersiveMaterial",
+          "ImmersiveOptions",
+          "ImmersiveStyle",
+          "Material.empty",
+          "isImmersiveMaterialSupported",
+          "getGlobalMaterialLevel",
+          "systemMaterial"
+        ]
       },
       "supportedTargets": {
-        "navigation": ["Navigation", "NavDestination", "Tabs", "AlphabetIndexer"],
-        "overlays": ["Toast", "Popup", "Tips", "Menu", "Dialog", "Sheet"],
-        "controls": ["Button", "Select", "Toggle", "Slider", "ChipGroup", "SegmentButton", "SegmentButtonV2"]
+        "navigation": [
+          "Navigation",
+          "NavDestination",
+          "Tabs",
+          "AlphabetIndexer"
+        ],
+        "overlays": [
+          "Toast",
+          "Popup",
+          "Tips",
+          "Menu",
+          "Dialog",
+          "Sheet"
+        ],
+        "controls": [
+          "Button",
+          "Select",
+          "Toggle",
+          "Slider",
+          "ChipGroup",
+          "SegmentButton",
+          "SegmentButtonV2"
+        ]
       }
     },
     {
@@ -54,11 +89,26 @@
           "hms/ets/api/@hms.hds.hdsMaterial.d.ets",
           "hms/ets/api/@hms.hds.hdsBaseComponent.d.ets"
         ],
-        "requiredSymbols": ["hdsMaterial", "HdsNavigation", "HdsTabs", "TitleBarStyleOptions", "HdsTabsFloatingStyle", "SystemMaterialParams", "getSystemMaterialTypes", "MaterialType", "MaterialLevel", "systemMaterialEffect"]
+        "requiredSymbols": [
+          "hdsMaterial",
+          "HdsNavigation",
+          "HdsTabs",
+          "TitleBarStyleOptions",
+          "HdsTabsFloatingStyle",
+          "SystemMaterialParams",
+          "getSystemMaterialTypes",
+          "MaterialType",
+          "MaterialLevel",
+          "systemMaterialEffect"
+        ]
       },
       "supportedTargets": {
-        "navigation": ["HdsNavigation"],
-        "tabs": ["HdsTabs"]
+        "navigation": [
+          "HdsNavigation"
+        ],
+        "tabs": [
+          "HdsTabs"
+        ]
       },
       "deviceSupport": {
         "phone": "supported",
@@ -69,14 +119,78 @@
     }
   ],
   "projectSignals": [
-    {"id":"ui-material-import","route":"arkui-api26","extensions":[".ets",".ts"],"pattern":"@kit\\.ArkUI|@ohos\\.arkui\\.uiMaterial|\\buiMaterial\\b"},
-    {"id":"material-entry","route":"arkui-api26","extensions":[".ets",".ts"],"pattern":"\\b(systemMaterial|menuSystemMaterial|backgroundSystemMaterial)\\b"},
-    {"id":"application-state","route":"arkui-api26","extensions":[".json",".json5"],"pattern":"ohos\\.arkui\\.UIMaterial\\.state"},
-    {"id":"capability-guard","route":"arkui-api26","extensions":[".ets",".ts"],"pattern":"isImmersiveMaterialSupported\\s*\\("},
-    {"id":"version-guard","route":"arkui-api26","extensions":[".ets",".ts"],"pattern":"sdkApiVersion\\s*(?:>=|>)\\s*2[56]"},
-    {"id":"hds-kit-import","route":"hds-api23","extensions":[".ets",".ts"],"pattern":"@kit\\.UIDesignKit"},
-    {"id":"hds-material-entry","route":"hds-api23","extensions":[".ets",".ts"],"pattern":"\\bsystemMaterialEffect\\b"},
-    {"id":"hds-material-probe","route":"hds-api23","extensions":[".ets",".ts"],"pattern":"hdsMaterial\\.getSystemMaterialTypes\\s*\\("}
+    {
+      "id": "ui-material-import",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "@kit\\.ArkUI|@ohos\\.arkui\\.uiMaterial|\\buiMaterial\\b"
+    },
+    {
+      "id": "material-entry",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "\\b(systemMaterial|menuSystemMaterial|backgroundSystemMaterial)\\b"
+    },
+    {
+      "id": "application-state",
+      "route": "arkui-api26",
+      "extensions": [
+        ".json",
+        ".json5"
+      ],
+      "pattern": "ohos\\.arkui\\.UIMaterial\\.state"
+    },
+    {
+      "id": "capability-guard",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "isImmersiveMaterialSupported\\s*\\("
+    },
+    {
+      "id": "version-guard",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "sdkApiVersion\\s*(?:>=|>)\\s*2[56]"
+    },
+    {
+      "id": "hds-kit-import",
+      "route": "hds-api23",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "@kit\\.UIDesignKit"
+    },
+    {
+      "id": "hds-material-entry",
+      "route": "hds-api23",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "\\bsystemMaterialEffect\\b"
+    },
+    {
+      "id": "hds-material-probe",
+      "route": "hds-api23",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "hdsMaterial\\.getSystemMaterialTypes\\s*\\("
+    }
   ],
   "safety": {
     "modifyMinimumScope": true,
@@ -89,8 +203,21 @@
     "maxDirectedRepairRounds": 2
   },
   "verification": {
-    "layerStatuses": ["passed", "failed", "blocked", "not_run", "inconclusive"],
-    "verdicts": ["passed", "passed_with_spec_conflict", "build_passed_runtime_pending", "inconclusive", "failed", "blocked"],
+    "layerStatuses": [
+      "passed",
+      "failed",
+      "blocked",
+      "not_run",
+      "inconclusive"
+    ],
+    "verdicts": [
+      "passed",
+      "passed_with_spec_conflict",
+      "build_passed_runtime_pending",
+      "inconclusive",
+      "failed",
+      "blocked"
+    ],
     "visualSuccessRequiresObservation": true,
     "buildCommand": "devecocli build",
     "runCommand": "devecocli run",

@@ -1,0 +1,23 @@
+{
+  "registryVersion": "2.0",
+  "features": [
+    {
+      "id": "immersive-light",
+      "displayName": "沉浸光感",
+      "aliases": [
+        "沉浸光感",
+        "沉浸光感接入",
+        "沉浸材质",
+        "immersive light",
+        "immersive material",
+        "arkui immersive light",
+        "HDS沉浸光感",
+        "HDS组件沉浸光感",
+        "hds immersive light"
+      ],
+      "status": "ready",
+      "readinessMeaning": "v2 能力包：只登记场景、官网入口与判据骨架；判据每次开发时从冻结的现网快照现提，包内 sessions/latest 仅是上次审查的对照缓存。",
+      "scenarios": "capabilities2/immersive-light/scenarios.json"
+    }
+  ]
+}

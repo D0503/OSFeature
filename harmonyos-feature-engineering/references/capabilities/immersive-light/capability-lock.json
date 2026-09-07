@@ -1,7 +1,7 @@
 {
   "lockVersion": "1.0",
   "featureId": "immersive-light",
-  "packageVersion": "1.4.0",
+  "packageVersion": "1.5.0",
   "routes": [
     "arkui-api26",
     "hds-api23"
@@ -19,104 +19,125 @@
       "sha256": "8750a14c14240054ee597e7f389da6d78f1530a27e7f1cc8ef142ffc41d23457",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
       "title": "沉浸式系统材质视效",
-      "retrievedAt": null,
-      "updatedAt": null
-    },
-    {
-      "snapshotId": "compatibility",
-      "sha256": "c1de0cc670559c0c67b6196d378ab8d87d2594e6af2546aa65776f8e2f5381fe",
-      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-compatibility",
-      "title": "沉浸光感兼容性适配",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:41:56.255Z",
+      "updatedAt": null,
+      "officialBodySha256": "cb214d728b234428ffbe58ac10792d0d3cd9b1b4ea8664fa7da9fc5e45b5cd57",
+      "updatedDate": "2026-09-03 14:09:56",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "component",
       "sha256": "5b610a4e5158c841b53662fa45e7325c5ef9db3239c4cef0b2ce61b125c46d8a",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
       "title": "组件适配沉浸光感",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:41:57.907Z",
+      "updatedAt": null,
+      "officialBodySha256": "f04667da8de437b3ba849d490c5fea9bdb3c98785b8fe8a19603b28817b8992f",
+      "updatedDate": "2026-09-06 04:10:15",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "constraints",
       "sha256": "76d6de2d678f4b582a2f29b9811e1342ee895dc99fcc1c84dd20f1d881872fa7",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
       "title": "沉浸光感功耗优化",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:41:58.708Z",
+      "updatedAt": null,
+      "officialBodySha256": "13b8e311366df98466bbd59a54a9609c96d3a45a4c5af5f93a2bd17eea811f2c",
+      "updatedDate": "2026-09-03 14:08:21",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "development",
       "sha256": "c6271e833e5261eb932a1c50e2b58e8286153a82d9ba9767560b8fbf6b22a1fb",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-development",
       "title": "沉浸光感开发指导",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:41:59.434Z",
+      "updatedAt": null,
+      "officialBodySha256": "c0f0afde44e69625f96a51f48401dae47ab59e6f84115e4c9e9274fd96859ccd",
+      "updatedDate": "2026-09-03 14:07:53",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "enable",
       "sha256": "c12173d2d814388527c29d40ea191653c6ea402641b81eba9514473d6f88d5da",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
       "title": "开启沉浸光感",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:42:00.305Z",
+      "updatedAt": null,
+      "officialBodySha256": "25a40e503b20d2cb3b864fad322d7abaa666a55206418de40a1bd33b6d81dbe7",
+      "updatedDate": "2026-09-06 04:10:15",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "faq",
       "sha256": "001d5f4f6c1ed902d4f881d9c90aaa1d434f24c1201e567d0daf88585403cb39",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
       "title": "沉浸光感常见问题",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:42:00.927Z",
+      "updatedAt": null,
+      "officialBodySha256": "3af55540713f19d611f7aaacf09f342b0fc17b4ab8385a28ae3e9ac9d25058d1",
+      "updatedDate": "2026-09-03 14:08:45",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "overview",
       "sha256": "4961be12e260addb5df87051611ff6a8bd0f14f8d2fa8a99009ff6375231779a",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
       "title": "沉浸光感简介",
-      "retrievedAt": null,
-      "updatedAt": null
-    },
-    {
-      "snapshotId": "sample",
-      "sha256": "0787c5ab0e0c09ba1da1add74f1712475c5b9a293203f7588a45adbc9548f0b1",
-      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-sample",
-      "title": "沉浸光感典型场景",
-      "retrievedAt": null,
-      "updatedAt": null
+      "retrievedAt": "2026-09-07T08:42:01.748Z",
+      "updatedAt": null,
+      "officialBodySha256": "17101cc0c8c72295cf7fdc84405ab291c1cb9c2a62889c25d302ac68ce723e15",
+      "updatedDate": "2026-09-03 14:07:34",
+      "contentFormat": "official-body"
     },
     {
       "snapshotId": "hds-component-material-guide",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
-      "retrievedAt": "2026-09-04T04:13:50.967Z",
+      "retrievedAt": "2026-09-07T08:42:03.144Z",
       "updatedAt": "2026-08-31 17:55:12",
       "retrievalMethod": "huawei_getDocumentById",
-      "sha256": "5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607"
+      "sha256": "5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607",
+      "officialBodySha256": "5f92898926eabc25ebe72bf04602dc151d65730ca7ec96f7c92f2b449898f607",
+      "updatedDate": "2026-09-03 14:06:50",
+      "contentFormat": "official-body",
+      "title": "沉浸光感"
     },
     {
       "snapshotId": "hds-navigation-api",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation",
-      "retrievedAt": "2026-09-04T04:14:56.723Z",
+      "retrievedAt": "2026-09-07T08:42:03.924Z",
       "updatedAt": "2026-08-31 18:03:01",
       "retrievalMethod": "huawei_getDocumentById",
-      "sha256": "d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20"
+      "sha256": "d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20",
+      "officialBodySha256": "d232828351a8fd5f31fbce578a291bc18d9958b53dda6dd957e4fdbda08ece20",
+      "updatedDate": "2026-09-03 14:16:08",
+      "contentFormat": "official-body",
+      "title": "HdsNavigation (导航根视图容器)"
     },
     {
       "snapshotId": "hds-tabs-api",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs",
-      "retrievedAt": "2026-09-04T04:14:57.241Z",
+      "retrievedAt": "2026-09-07T08:42:04.689Z",
       "updatedAt": "2026-08-31 18:03:30",
       "retrievalMethod": "huawei_getDocumentById",
-      "sha256": "f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357"
+      "sha256": "f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357",
+      "officialBodySha256": "f3722df205530854cd84bd7c11bafdd2d689f3422aa4abb06769cd02c648b357",
+      "updatedDate": "2026-09-03 14:16:47",
+      "contentFormat": "official-body",
+      "title": "HdsTabs (底部页签)"
     },
     {
       "snapshotId": "hds-material-api",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial",
-      "retrievedAt": "2026-09-04T04:14:57.707Z",
+      "retrievedAt": "2026-09-07T08:42:05.753Z",
       "updatedAt": "2026-08-31 18:03:13",
       "retrievalMethod": "huawei_getDocumentById",
-      "sha256": "c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1"
+      "sha256": "c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1",
+      "officialBodySha256": "c4f7d3a9855b195d066d72a40d25aab8aef463ab7eae43d83322fe347b3977e1",
+      "updatedDate": "2026-09-03 14:16:21",
+      "contentFormat": "official-body",
+      "title": "hdsMaterial (hds沉浸光感材质)"
     }
   ],
   "packageFiles": [
@@ -142,25 +163,25 @@
     },
     {
       "path": "facts.json",
-      "sha256": "9cd675b27e0ad846259fee13d34b4d4381369f408931769a24f0600f750e15b0"
+      "sha256": "5980a92ed0e5bc58396d19428d259c54d5b671ca193da6ca7ba4609260a675a8"
     },
     {
       "path": "implementation.md",
-      "sha256": "851140a45b89ef2576d41c42ef608929f52dba1ca08e4cb3a9479fddb50dcbad"
+      "sha256": "55ff4f41a9eb4a5fd4612df1a30adb23af5c1541a6a48b87bda2d71f52e15ecf"
     },
     {
       "path": "profile.json",
-      "sha256": "e3c3e8683420a09986e6878861c44e73f549960b275a9e37620d3d436c4e63b0"
+      "sha256": "efd9dd9dbe4fdcf5bb5af82b2c9778262bd6c493f76716e08ad93e20e087004d"
     },
     {
       "path": "scenarios.json",
-      "sha256": "c9c5374d2842ebda4e86f0a2efbd5e8823ddb364ea3af18ce0d7ce68d64dedfc"
+      "sha256": "fdbca79a06c67e133d76355d80b4db8e6cac40db245e4159efed94e928dc3587"
     },
     {
       "path": "validation.md",
-      "sha256": "8b91e9e57c79531e3167bda4bb85527dbbc2a551d909ac753546edded5f0dae0"
+      "sha256": "853de7af80c554e529b3b4d3fa14603f15054e1b0b894f9f441e6e9496c273a0"
     }
   ],
   "packageDigestAlgorithm": "sha256-path-nul-filehash-lf-v1",
-  "packageDigest": "ca746f3cf73b4b921d9a0b5d30244dc606fdaa9461827c76c3fe872e3039faa3"
+  "packageDigest": "8821c9eac473c0d89182d21e7b041dd105abf7641ebf893af0530c564f81a3c6"
 }

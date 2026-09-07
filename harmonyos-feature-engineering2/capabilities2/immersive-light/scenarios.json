@@ -1,0 +1,1771 @@
+{
+  "schemaVersion": "2.0",
+  "featureId": "immersive-light",
+  "displayName": "沉浸光感",
+  "defaultRoute": "arkui-api26",
+  "routes": [
+    {
+      "id": "arkui-api26",
+      "displayName": "ArkUI 沉浸光感 API 26",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 26,
+        "minTargetApi": 26,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": false,
+        "applicationMetadataModuleTypes": [
+          "entry"
+        ],
+        "metadataName": "ohos.arkui.UIMaterial.state",
+        "metadataValues": [
+          "default",
+          "enable",
+          "disable"
+        ],
+        "compatibilityPolicy": "官网已于 2026-09-06 下线沉浸光感低版本兼容适配指引（原 arkts-immersive-light-sense-compatibility 页）；能力包不再提供低版本回退场景，compatibleSdkVersion 低于 26 的工程需自行承担适配并单独评估。"
+      },
+      "sdk": {
+        "preferredApi": 26,
+        "validatedLocalVersion": "26.0.0.105",
+        "requiredDeclarationGlobs": [
+          "openharmony/ets/api/@ohos.arkui.uiMaterial.d.ts",
+          "openharmony/ets/component/common.d.ts"
+        ],
+        "requiredSymbols": [
+          "ImmersiveMaterial",
+          "ImmersiveOptions",
+          "ImmersiveStyle",
+          "Material.empty",
+          "isImmersiveMaterialSupported",
+          "getGlobalMaterialLevel",
+          "systemMaterial"
+        ]
+      },
+      "supportedTargets": {
+        "navigation": [
+          "Navigation",
+          "NavDestination",
+          "Tabs",
+          "AlphabetIndexer"
+        ],
+        "overlays": [
+          "Toast",
+          "Popup",
+          "Tips",
+          "Menu",
+          "Dialog",
+          "Sheet"
+        ],
+        "controls": [
+          "Button",
+          "Select",
+          "Toggle",
+          "Slider",
+          "ChipGroup",
+          "SegmentButton",
+          "SegmentButtonV2"
+        ]
+      }
+    },
+    {
+      "id": "hds-api23",
+      "displayName": "HDS 沉浸光感 6.1.0(23)",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 23,
+        "minTargetApi": 23,
+        "minCompatibleApi": 23,
+        "compatibleApiMayBeLower": false,
+        "compatibilityPolicy": "首个 HDS 路线仅验证 6.1.0(23) 及以上工程；官方沉浸光感指南未提供低于 23 的 HDS 回退实现。"
+      },
+      "sdk": {
+        "preferredApi": 23,
+        "validatedLocalVersion": "26.0.0.105",
+        "requiredDeclarationGlobs": [
+          "hms/ets/kits/@kit.UIDesignKit.d.ts",
+          "hms/ets/api/@hms.hds.hdsMaterial.d.ets",
+          "hms/ets/api/@hms.hds.hdsBaseComponent.d.ets"
+        ],
+        "requiredSymbols": [
+          "hdsMaterial",
+          "HdsNavigation",
+          "HdsTabs",
+          "TitleBarStyleOptions",
+          "HdsTabsFloatingStyle",
+          "SystemMaterialParams",
+          "getSystemMaterialTypes",
+          "MaterialType",
+          "MaterialLevel",
+          "systemMaterialEffect"
+        ]
+      },
+      "supportedTargets": {
+        "navigation": [
+          "HdsNavigation"
+        ],
+        "tabs": [
+          "HdsTabs"
+        ]
+      },
+      "deviceSupport": {
+        "phone": "supported",
+        "tablet": "supported",
+        "pc2in1": "query-material-types-first",
+        "tv": "HdsTabs-material-no-effect"
+      }
+    }
+  ],
+  "projectSignals": [
+    {
+      "id": "ui-material-import",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "@kit\\.ArkUI|@ohos\\.arkui\\.uiMaterial|\\buiMaterial\\b"
+    },
+    {
+      "id": "material-entry",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "\\b(systemMaterial|menuSystemMaterial|backgroundSystemMaterial)\\b"
+    },
+    {
+      "id": "application-state",
+      "route": "arkui-api26",
+      "extensions": [
+        ".json",
+        ".json5"
+      ],
+      "pattern": "ohos\\.arkui\\.UIMaterial\\.state"
+    },
+    {
+      "id": "capability-guard",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "isImmersiveMaterialSupported\\s*\\("
+    },
+    {
+      "id": "version-guard",
+      "route": "arkui-api26",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "sdkApiVersion\\s*(?:>=|>)\\s*2[56]"
+    },
+    {
+      "id": "hds-kit-import",
+      "route": "hds-api23",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "@kit\\.UIDesignKit"
+    },
+    {
+      "id": "hds-material-entry",
+      "route": "hds-api23",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "\\bsystemMaterialEffect\\b"
+    },
+    {
+      "id": "hds-material-probe",
+      "route": "hds-api23",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "hdsMaterial\\.getSystemMaterialTypes\\s*\\("
+    }
+  ],
+  "safety": {
+    "modifyMinimumScope": true,
+    "preserveDirtyFiles": true,
+    "keepFailedChanges": true,
+    "automaticRollback": false,
+    "automaticSdkUpgrade": false,
+    "automaticEmulatorDownload": false,
+    "automaticUninstall": false,
+    "maxDirectedRepairRounds": 2
+  },
+  "verification": {
+    "layerStatuses": [
+      "passed",
+      "failed",
+      "blocked",
+      "not_run",
+      "inconclusive"
+    ],
+    "verdicts": [
+      "passed",
+      "passed_with_spec_conflict",
+      "build_passed_runtime_pending",
+      "inconclusive",
+      "failed",
+      "blocked"
+    ],
+    "visualSuccessRequiresObservation": true,
+    "buildCommand": "devecocli build",
+    "runCommand": "devecocli run",
+    "devicePolicy": "run-only-when-requested-and-exactly-one-device-selected"
+  },
+  "entryPoints": [
+    {
+      "snapshotId": "common",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
+      "title": "沉浸式系统材质视效"
+    },
+    {
+      "snapshotId": "component",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
+      "title": "组件适配沉浸光感"
+    },
+    {
+      "snapshotId": "constraints",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
+      "title": "沉浸光感功耗优化"
+    },
+    {
+      "snapshotId": "development",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-development",
+      "title": "沉浸光感开发指导"
+    },
+    {
+      "snapshotId": "enable",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
+      "title": "开启沉浸光感"
+    },
+    {
+      "snapshotId": "faq",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
+      "title": "沉浸光感常见问题"
+    },
+    {
+      "snapshotId": "overview",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
+      "title": "沉浸光感简介"
+    },
+    {
+      "snapshotId": "hds-component-material-guide",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
+      "title": "沉浸光感"
+    },
+    {
+      "snapshotId": "hds-navigation-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsnavigation",
+      "title": "HdsNavigation (导航根视图容器)"
+    },
+    {
+      "snapshotId": "hds-tabs-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdstabs",
+      "title": "HdsTabs (底部页签)"
+    },
+    {
+      "snapshotId": "hds-material-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial",
+      "title": "hdsMaterial (hds沉浸光感材质)"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "IL-S001",
+      "displayName": "应用级 default、enable、disable 状态验证",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "应用级",
+        "全局",
+        "default",
+        "enable",
+        "disable",
+        "开启后关闭",
+        "应用开关",
+        "metadata"
+      ],
+      "targets": [
+        "entry/module.json5"
+      ],
+      "sources": [
+        "overview",
+        "enable"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "版本门槛（IL-F001）",
+            "hint": "ArkUI 沉浸光感接口从 API 26 起提供；官网要求开启沉浸光感时应用 targetSDKVersion 不低于 26.0.0。",
+            "mustResolve": true
+          },
+          {
+            "topic": "配置契约（IL-F002）",
+            "hint": "应用级开关通过 entry 模块 metadata 名 ohos.arkui.UIMaterial.state 配置，值为 default、enable 或 disable。",
+            "mustResolve": true
+          },
+          {
+            "topic": "配置契约（IL-F003）",
+            "hint": "未配置应用级开关时，升级应用按 default 处理。",
+            "mustResolve": true
+          },
+          {
+            "topic": "状态语义（IL-F006）",
+            "hint": "一处规范称应用级 disable 会使应用级和组件级显式开启都失效。",
+            "mustResolve": true
+          },
+          {
+            "topic": "状态语义（IL-F007）",
+            "hint": "另一处规范称应用级 disable 只关闭应用级开启，组件仍可显式开启。",
+            "mustResolve": true
+          },
+          {
+            "topic": "能力查询（IL-F008）",
+            "hint": "运行时应查询 isImmersiveMaterialSupported；全局材质档位可由 getGlobalMaterialLevel 获取。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": [
+          {
+            "id": "disable-scope",
+            "topic": "应用级 disable 的作用范围（全局禁用 vs 只针对应用级开启）",
+            "positions": [
+              "overview",
+              "enable"
+            ]
+          }
+        ]
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "应用级 disable 后，应用级默认和组件级显式材质均不显示。",
+          "criteriaTopics": [
+            "状态语义（IL-F006）"
+          ],
+          "conflictAlternativeOf": "disable-scope"
+        },
+        {
+          "assertion": "应用级 disable 后，应用级默认材质不显示，但组件级显式材质仍显示。",
+          "criteriaTopics": [
+            "状态语义（IL-F007）"
+          ],
+          "conflictAlternativeOf": "disable-scope"
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ApplicationMaterialMetadata.json5",
+            "origin": "mechanical-adaptation",
+            "sourceSnapshotId": "enable",
+            "anchor": "ohos.arkui.UIMaterial.state"
+          },
+          {
+            "path": "assets/ImmersiveMaterialProbe.ets",
+            "origin": "test-harness",
+            "adaptationNotes": "设备能力与档位诊断探针，仅用于验证辅助，无官网对应。"
+          }
+        ],
+        "steps": [
+          "在用户确认的 entry 模块 module.json5 中只修改 module.metadata。",
+          "目标工程只保留用户要求的最终 default、enable 或 disable 状态。",
+          "default/enable/disable 对照变体放入临时最小工程或临时副本，不连续覆盖目标工程。",
+          "用同一组件的显式 ImmersiveMaterial 作为 disable 作用域探针。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "metadata-name",
+          "kind": "require_any",
+          "patterns": [
+            "ohos\\.arkui\\.UIMaterial\\.state"
+          ],
+          "onMissing": "failed",
+          "message": "entry 模块必须包含正确的 metadata 名称。"
+        },
+        {
+          "id": "metadata-value",
+          "kind": "require_any",
+          "patterns": [
+            "value\\s*:\\s*['\"](?:default|enable|disable)['\"]"
+          ],
+          "onMissing": "failed",
+          "message": "metadata 值必须是 default、enable 或 disable。"
+        },
+        {
+          "id": "entry-only",
+          "kind": "module_metadata_entry_only",
+          "onViolation": "failed",
+          "message": "应用级材质 metadata 只能配置在 entry 模块。"
+        }
+      ],
+      "negativeCases": [
+        "不配置 metadata",
+        "在非 entry 模块配置",
+        "disable 下组件显式 ImmersiveMaterial",
+        "Material.empty 与 undefined 切换"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S002",
+      "displayName": "组件级开启、关闭与恢复",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "组件级",
+        "组件开启",
+        "组件关闭",
+        "恢复默认",
+        "Material.empty",
+        "undefined",
+        "关闭沉浸光感"
+      ],
+      "targets": [
+        "common component"
+      ],
+      "sources": [
+        "enable",
+        "overview"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "API 契约（IL-F004）",
+            "hint": "组件通过 systemMaterial 或组件专用材质入口接入沉浸材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "状态语义（IL-F005）",
+            "hint": "Material.empty 用于关闭组件材质，undefined 用于恢复组件默认材质策略。",
+            "mustResolve": true
+          },
+          {
+            "topic": "能力查询（IL-F008）",
+            "hint": "运行时应查询 isImmersiveMaterialSupported；全局材质档位可由 getGlobalMaterialLevel 获取。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "补齐目标工程上下文后，开启、关闭、恢复和不支持分支均保持原交互，视觉状态与各自规范相符。",
+          "criteriaTopics": [
+            "API 契约（IL-F004）",
+            "状态语义（IL-F005）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ImmersiveMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
+          }
+        ],
+        "steps": [
+          "保持组件树、状态、事件和普通样式基线不变，只增加 systemMaterial 值来源。",
+          "开启使用 ImmersiveMaterial，关闭使用 Material.empty，恢复使用 undefined。",
+          "设备不支持时回到接入前普通样式。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "component-entry",
+          "kind": "require_any",
+          "patterns": [
+            "\\bsystemMaterial\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "未发现组件级 systemMaterial 入口。"
+        },
+        {
+          "id": "empty-state",
+          "kind": "require_any",
+          "patterns": [
+            "Material\\.empty"
+          ],
+          "onMissing": "inconclusive",
+          "message": "关闭场景未发现 Material.empty。"
+        },
+        {
+          "id": "support-guard",
+          "kind": "require_any",
+          "patterns": [
+            "isImmersiveMaterialSupported\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "缺少设备能力查询。"
+        }
+      ],
+      "negativeCases": [
+        "设备不支持",
+        "API 26 以下",
+        "从 Material.empty 恢复为 undefined",
+        "保留普通背景与事件"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S003",
+      "displayName": "Navigation、Tabs 与 AlphabetIndexer 接入",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "Navigation",
+        "NavDestination",
+        "Tabs",
+        "TabContent",
+        "AlphabetIndexer",
+        "导航",
+        "页签",
+        "索引器"
+      ],
+      "targets": [
+        "Navigation",
+        "NavDestination",
+        "Tabs",
+        "AlphabetIndexer"
+      ],
+      "sources": [
+        "component"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "导航组件（IL-F009）",
+            "hint": "Navigation 标题栏可通过 NavigationTitleOptions.systemMaterial 配置；默认材质受应用状态影响。",
+            "mustResolve": true
+          },
+          {
+            "topic": "导航组件（IL-F010）",
+            "hint": "Tabs 使用 FloatingTabBarStyle.systemMaterial，且材质会被栏背景色或背景模糊覆盖。",
+            "mustResolve": true
+          },
+          {
+            "topic": "导航组件（IL-F011）",
+            "hint": "AlphabetIndexer 弹窗材质与 popupBackground、popupBackgroundBlurStyle 存在互斥覆盖关系。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "目标导航区域显示预期材质，普通背景不覆盖，布局、滚动和切换行为不回归。",
+          "criteriaTopics": [
+            "导航组件（IL-F009）",
+            "导航组件（IL-F010）",
+            "导航组件（IL-F011）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ImmersiveMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
+          }
+        ],
+        "steps": [
+          "先识别目标到底是标题栏、悬浮 TabBar 或索引器弹窗，使用对应 Options/Style 入口。",
+          "Tabs 只修改 FloatingTabBarStyle.systemMaterial，不向 TabContent 错加材质。",
+          "清除与目标材质同层互斥的背景色和背景模糊；不删除其他层的设计背景。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "navigation-entry",
+          "kind": "require_any",
+          "patterns": [
+            "NavigationTitleOptions",
+            "FloatingTabBarStyle",
+            "barFloatingStyle",
+            "AlphabetIndexer"
+          ],
+          "onMissing": "failed",
+          "message": "未发现目标导航组件入口。"
+        },
+        {
+          "id": "tabs-material",
+          "kind": "conditional_require",
+          "when": "barFloatingStyle|FloatingTabBarStyle",
+          "patterns": [
+            "systemMaterial"
+          ],
+          "onMissing": "failed",
+          "message": "FloatingTabBarStyle 缺少 systemMaterial。"
+        },
+        {
+          "id": "tabs-background-conflict",
+          "kind": "forbid_pair",
+          "left": "(?:barFloatingStyle|FloatingTabBarStyle)[\\s\\S]{0,800}systemMaterial",
+          "right": "barBackground(?:Color|BlurStyle)",
+          "onViolation": "inconclusive",
+          "message": "Tabs 栏普通背景可能覆盖材质，需核对同一配置对象。"
+        },
+        {
+          "id": "indexer-background-conflict",
+          "kind": "forbid_pair",
+          "left": "AlphabetIndexer[\\s\\S]{0,1200}systemMaterial",
+          "right": "popupBackground(?:BlurStyle)?",
+          "onViolation": "inconclusive",
+          "message": "AlphabetIndexer 弹窗背景可能覆盖材质。"
+        }
+      ],
+      "negativeCases": [
+        "Tabs 同时配置栏背景色",
+        "AlphabetIndexer 同时配置弹窗背景或模糊",
+        "undefined 恢复默认",
+        "设备不支持"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S004",
+      "displayName": "Toast、Popup、Tips、Menu、Dialog、Sheet 接入",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "Toast",
+        "Popup",
+        "Tips",
+        "Menu",
+        "Dialog",
+        "Sheet",
+        "弹窗",
+        "提示",
+        "菜单",
+        "对话框",
+        "半模态"
+      ],
+      "targets": [
+        "Toast",
+        "Popup",
+        "Tips",
+        "Menu",
+        "Dialog",
+        "Sheet"
+      ],
+      "sources": [
+        "component",
+        "constraints",
+        "common"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "弹窗组件（IL-F012）",
+            "hint": "Toast、Popup、Tips、Menu、Dialog 和 Sheet 具有各自的 systemMaterial 配置入口或默认材质策略。",
+            "mustResolve": true
+          },
+          {
+            "topic": "弹窗组件（IL-F013）",
+            "hint": "弹窗普通背景色、背景模糊或大面积材质会覆盖效果或引入性能风险。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F017）",
+            "hint": "materialColor 必须保留透明度；不透明颜色会遮挡材质滤镜效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "性能约束（IL-F023）",
+            "hint": "应限制材质面积、嵌套、模糊叠加、动态背景、反色子树范围和重复阴影，并在真机测量性能与功耗。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "指定弹窗可正常打开关闭，目标区域材质可见且无背景覆盖、尺寸异常或回调回归。",
+          "criteriaTopics": [
+            "弹窗组件（IL-F012）",
+            "弹窗组件（IL-F013）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ImmersiveMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
+          }
+        ],
+        "steps": [
+          "先确定具体弹窗 API 和 Options 类型，使用该 API 声明的 systemMaterial 字段。",
+          "只在目标弹窗配置对象中加入材质，不把一种 Options 类型强转复用于其他弹窗。",
+          "保留打开、关闭、取消、回调和错误处理；检查普通背景、模糊、面积与透明色冲突。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "overlay-target",
+          "kind": "require_any",
+          "patterns": [
+            "showToast",
+            "bindPopup",
+            "bindTips",
+            "bindMenu",
+            "showDialog",
+            "bindSheet"
+          ],
+          "onMissing": "failed",
+          "message": "未发现受支持的弹窗调用。"
+        },
+        {
+          "id": "overlay-material",
+          "kind": "require_any",
+          "patterns": [
+            "systemMaterial\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "目标弹窗 Options 中缺少 systemMaterial。"
+        },
+        {
+          "id": "overlay-background-conflict",
+          "kind": "forbid_pair",
+          "left": "systemMaterial\\s*:",
+          "right": "background(?:Color|BlurStyle)\\s*:",
+          "onViolation": "inconclusive",
+          "message": "同文件发现普通背景与材质，需确认是否位于同一弹窗 Options。"
+        }
+      ],
+      "negativeCases": [
+        "普通背景覆盖",
+        "不透明 materialColor",
+        "超大 Dialog/Sheet",
+        "取消与关闭回调",
+        "设备不支持"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S005",
+      "displayName": "Button、Select、Toggle、Slider、ChipGroup、SegmentButton 接入",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "Button",
+        "Select",
+        "Toggle",
+        "Slider",
+        "ChipGroup",
+        "SegmentButton",
+        "按钮",
+        "选择器",
+        "开关",
+        "滑块",
+        "胶囊"
+      ],
+      "targets": [
+        "Button",
+        "Select",
+        "Toggle",
+        "Slider",
+        "ChipGroup",
+        "SegmentButton",
+        "SegmentButtonV2"
+      ],
+      "sources": [
+        "component",
+        "common"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "控件组件（IL-F014）",
+            "hint": "Button、Select、Toggle、Slider、ChipGroup 和 SegmentButton 系列提供组件或样式级材质入口。",
+            "mustResolve": true
+          },
+          {
+            "topic": "控件组件（IL-F015）",
+            "hint": "Select 按钮和下拉菜单是两个独立入口，分别使用 systemMaterial 与 menuSystemMaterial。",
+            "mustResolve": true
+          },
+          {
+            "topic": "控件组件（IL-F016）",
+            "hint": "Toggle 的 Checkbox 形态当前不适配沉浸材质，应保留普通样式。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F019）",
+            "hint": "interactive 与 lightEffect 控制交互和流光；Button 开启流光后需同时验证原按压和悬停反馈。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "目标控件材质、状态和交互符合其专用契约，未支持形态保持普通样式。",
+          "criteriaTopics": [
+            "控件组件（IL-F014）",
+            "控件组件（IL-F015）",
+            "控件组件（IL-F016）",
+            "材质参数（IL-F019）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ImmersiveMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
+          }
+        ],
+        "steps": [
+          "使用目标组件声明的 systemMaterial 或样式字段，不假定所有组件参数形状相同。",
+          "Select 的按钮和菜单分别决定是否接入；Toggle Checkbox 不接入并保留普通样式。",
+          "开启 interactive 或 lightEffect 后复测点击、长按、悬停、拖动和禁用态。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "control-target",
+          "kind": "require_any",
+          "patterns": [
+            "\\b(?:Button|Select|Toggle|Slider|ChipGroup|SegmentButtonV?2?)\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "未发现受支持的目标控件。"
+        },
+        {
+          "id": "control-material",
+          "kind": "require_any",
+          "patterns": [
+            "systemMaterial",
+            "menuSystemMaterial"
+          ],
+          "onMissing": "failed",
+          "message": "未发现控件材质入口。"
+        },
+        {
+          "id": "select-dual-entry",
+          "kind": "conditional_require",
+          "when": "\\bSelect\\s*\\(",
+          "patterns": [
+            "systemMaterial",
+            "menuSystemMaterial"
+          ],
+          "onMissing": "inconclusive",
+          "message": "Select 的按钮与菜单是否都需接入尚未完整表达。"
+        },
+        {
+          "id": "checkbox-unsupported",
+          "kind": "forbid_pair",
+          "left": "ToggleType\\.Checkbox",
+          "right": "systemMaterial",
+          "onViolation": "failed",
+          "message": "Toggle Checkbox 不在首版支持范围。"
+        }
+      ],
+      "negativeCases": [
+        "Select 只接按钮或只接菜单",
+        "Toggle Checkbox",
+        "禁用态",
+        "交互与流光覆盖旧反馈",
+        "设备不支持"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S006",
+      "displayName": "materialColor、反色、交互、光效和阴影参数",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "materialColor",
+        "colorInvert",
+        "反色",
+        "interactive",
+        "lightEffect",
+        "光效",
+        "流光",
+        "applyShadow",
+        "阴影",
+        "透明度"
+      ],
+      "targets": [
+        "ImmersiveOptions",
+        "ImmersiveMaterial"
+      ],
+      "sources": [
+        "common",
+        "faq",
+        "component",
+        "constraints"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "材质参数（IL-F017）",
+            "hint": "materialColor 必须保留透明度；不透明颜色会遮挡材质滤镜效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F018）",
+            "hint": "colorInvert 只保证对资源颜色生效，硬编码颜色不能据此判定已反色。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F019）",
+            "hint": "interactive 与 lightEffect 控制交互和流光；Button 开启流光后需同时验证原按压和悬停反馈。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F020）",
+            "hint": "applyShadow 与普通 shadow 属性存在顺序和所有权约束，避免重复阴影。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "不直接照搬疑似不透明示例；材质透明度、反色、交互、流光与阴影分别可观察且未互相覆盖。",
+          "criteriaTopics": [
+            "材质参数（IL-F017）",
+            "材质参数（IL-F018）",
+            "材质参数（IL-F019）",
+            "材质参数（IL-F020）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ImmersiveMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
+          }
+        ],
+        "steps": [
+          "只设置开发目标要求的材质参数，其他字段保持 undefined 或原状态。",
+          "materialColor 使用带透明度的资源色或 ARGB 值；反色目标优先使用资源颜色。",
+          "applyShadow 与普通 shadow 只保留一个所有者，并按目标 API 的属性顺序检查。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "material-construction",
+          "kind": "require_any",
+          "patterns": [
+            "new\\s+uiMaterial\\.ImmersiveMaterial",
+            "ImmersiveMaterialFactory"
+          ],
+          "onMissing": "failed",
+          "message": "未发现材质参数构造。"
+        },
+        {
+          "id": "opaque-color",
+          "kind": "forbid",
+          "pattern": "materialColor\\s*:\\s*(?:Color\\.(?:Black|White|Red|Green|Blue)|['\"]#[0-9a-fA-F]{6}['\"])",
+          "onViolation": "inconclusive",
+          "message": "materialColor 疑似不透明，可能完全遮挡滤镜。"
+        },
+        {
+          "id": "hardcoded-color-invert",
+          "kind": "forbid_pair",
+          "left": "colorInvert",
+          "right": "#[0-9a-fA-F]{6,8}",
+          "onViolation": "inconclusive",
+          "message": "反色与硬编码颜色并存，不能证明硬编码颜色会反色。"
+        },
+        {
+          "id": "duplicate-shadow",
+          "kind": "forbid_pair",
+          "left": "applyShadow\\s*:\\s*true",
+          "right": "\\.shadow\\s*\\(",
+          "onViolation": "inconclusive",
+          "message": "系统阴影与普通 shadow 可能重复。"
+        }
+      ],
+      "negativeCases": [
+        "完全不透明 materialColor",
+        "硬编码颜色反色",
+        "interactive false/null",
+        "lightEffect undefined/null",
+        "重复阴影"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S008",
+      "displayName": "性能约束与无效果故障诊断",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "性能",
+        "功耗",
+        "卡顿",
+        "无效果",
+        "不生效",
+        "白屏",
+        "故障",
+        "诊断",
+        "面积",
+        "嵌套",
+        "模糊叠加",
+        "动态背景"
+      ],
+      "targets": [
+        "material regions",
+        "runtime diagnostics"
+      ],
+      "sources": [
+        "overview",
+        "common",
+        "constraints",
+        "faq"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "能力查询（IL-F008）",
+            "hint": "运行时应查询 isImmersiveMaterialSupported；全局材质档位可由 getGlobalMaterialLevel 获取。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F017）",
+            "hint": "materialColor 必须保留透明度；不透明颜色会遮挡材质滤镜效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数（IL-F020）",
+            "hint": "applyShadow 与普通 shadow 属性存在顺序和所有权约束，避免重复阴影。",
+            "mustResolve": true
+          },
+          {
+            "topic": "性能约束（IL-F023）",
+            "hint": "应限制材质面积、嵌套、模糊叠加、动态背景、反色子树范围和重复阴影，并在真机测量性能与功耗。",
+            "mustResolve": true
+          },
+          {
+            "topic": "诊断排障（IL-F024）",
+            "hint": "无视觉效果时应排查普通背景覆盖、透明度、属性顺序、渲染区域、设备能力与算力档位。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "故障原因可由证据定位；性能和功耗相对基线无不可接受退化。",
+          "criteriaTopics": [
+            "性能约束（IL-F023）",
+            "诊断排障（IL-F024）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/ImmersiveMaterialProbe.ets",
+            "origin": "test-harness",
+            "adaptationNotes": "设备能力与档位诊断探针，仅用于验证辅助，无官网对应。"
+          }
+        ],
+        "steps": [
+          "先记录设备支持状态和全局材质档位，再定位目标材质区域。",
+          "逐项排除普通背景覆盖、不透明材质色、属性顺序、嵌套、模糊叠加、动态背景和重复阴影。",
+          "性能与功耗只在真机、固定场景、固定时长和对照基线下给出结论。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "diagnostic-probe",
+          "kind": "require_any",
+          "patterns": [
+            "isImmersiveMaterialSupported",
+            "getGlobalMaterialLevel"
+          ],
+          "onMissing": "inconclusive",
+          "message": "缺少运行能力与档位诊断信息。"
+        },
+        {
+          "id": "nested-material",
+          "kind": "manual",
+          "result": "inconclusive",
+          "message": "需根据组件树确认材质是否嵌套。"
+        },
+        {
+          "id": "blur-stacking",
+          "kind": "forbid_pair",
+          "left": "systemMaterial",
+          "right": "backgroundBlurStyle|foregroundBlurStyle",
+          "onViolation": "inconclusive",
+          "message": "材质与普通模糊可能叠加。"
+        },
+        {
+          "id": "performance-device-only",
+          "kind": "manual",
+          "result": "inconclusive",
+          "message": "性能与功耗结论必须来自真机测量。"
+        }
+      ],
+      "negativeCases": [
+        "大面积材质",
+        "嵌套材质",
+        "模糊叠加",
+        "动态背景",
+        "大范围反色",
+        "重复阴影"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S009",
+      "displayName": "HdsNavigation 标题栏接入沉浸光感",
+      "route": "hds-api23",
+      "intentPatterns": [
+        "HdsNavigation",
+        "HDS导航",
+        "HDS标题栏",
+        "标题栏按钮",
+        "TitleBarStyleOptions"
+      ],
+      "targets": [
+        "HdsNavigation"
+      ],
+      "sources": [
+        "hds-component-material-guide",
+        "hds-material-api",
+        "hds-navigation-api",
+        "hds-tabs-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "HDS 版本门槛（IL-F027）",
+            "hint": "HDS 组件沉浸光感材质从 6.1.0(23) 起提供，仅支持 Stage 模型，系统能力为 SystemCapability.UIDesign.HDSComponent.Core。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HdsNavigation（IL-F028）",
+            "hint": "HdsNavigation 通过 TitleBarStyleOptions.systemMaterialEffect 为标题栏按钮设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 材质参数（IL-F030）",
+            "hint": "HDS SystemMaterialParams 包含可选的 materialType 和 materialLevel；默认 materialType 为 NONE，默认 materialLevel 为 ADAPTIVE，因此省略 materialType 不能视为已经启用材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS MaterialType（IL-F031）",
+            "hint": "HDS MaterialType 取值为 NONE=0、ADAPTIVE=100、IMMERSIVE=101；ADAPTIVE 表示自适应系统材质且默认采用沉浸式材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 自适应策略（IL-F033）",
+            "hint": "官网推荐 HDS 使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，让系统根据设备算力动态平衡材质效果和性能。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 设备差异（IL-F035）",
+            "hint": "HDS 材质在 Phone、Tablet 可调用；PC/2in1 使用前需查询设备材质能力；HdsTabs 的该接口在 TV 无效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 示例审计（IL-F036）",
+            "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "HdsNavigation 标题栏按钮保持原交互并显示系统自适应沉浸光感；PC/2in1 的材质能力已查询。",
+          "criteriaTopics": [
+            "HdsNavigation（IL-F028）",
+            "HDS 材质参数（IL-F030）",
+            "HDS 自适应策略（IL-F033）",
+            "HDS 设备差异（IL-F035）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/HdsMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "sourceSnapshotId": "hds-component-material-guide",
+            "anchor": "再根据查询结果选用相应的材质效果枚举",
+            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
+          }
+        ],
+        "steps": [
+          "确认工程使用 Stage 模型和 6.1.0(23) 及以上的 HDS SDK 声明。",
+          "保留原 HdsNavigation 内容、滚动绑定、标题和菜单，只在 titleBar.style 中合并 systemMaterialEffect。",
+          "默认使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE；自定义档位需求转入设备能力选择场景。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "hds-nav-kit-import",
+          "kind": "require_any",
+          "patterns": [
+            "from\\s+['\"]@kit\\.UIDesignKit['\"]"
+          ],
+          "onMissing": "failed",
+          "message": "缺少 @kit.UIDesignKit 导入。"
+        },
+        {
+          "id": "hds-nav-target",
+          "kind": "require_any",
+          "patterns": [
+            "\\bHdsNavigation\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "未发现 HdsNavigation。"
+        },
+        {
+          "id": "hds-nav-title-material",
+          "kind": "require_any",
+          "patterns": [
+            "titleBar\\s*\\([\\s\\S]{0,1600}style\\s*:[\\s\\S]{0,800}systemMaterialEffect\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "HdsNavigation 的 titleBar.style 中缺少 systemMaterialEffect。"
+        },
+        {
+          "id": "hds-nav-adaptive-pair",
+          "kind": "require_any",
+          "patterns": [
+            "materialType\\s*:\\s*hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}materialLevel\\s*:\\s*hdsMaterial\\.MaterialLevel\\.ADAPTIVE"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现官网推荐的 ADAPTIVE 类型与 ADAPTIVE 等级组合。"
+        }
+      ],
+      "negativeCases": [
+        "省略 materialType 导致默认 NONE",
+        "标题栏滚动与菜单交互回归",
+        "PC/2in1 未查询材质能力",
+        "视觉证据缺失"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S010",
+      "displayName": "HdsTabs 底部悬浮页签接入沉浸光感",
+      "route": "hds-api23",
+      "intentPatterns": [
+        "HdsTabs",
+        "HDS底部页签",
+        "HDS页签",
+        "底部悬浮页签",
+        "HdsTabsFloatingStyle"
+      ],
+      "targets": [
+        "HdsTabs"
+      ],
+      "sources": [
+        "hds-component-material-guide",
+        "hds-material-api",
+        "hds-tabs-api",
+        "hds-navigation-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "HDS 版本门槛（IL-F027）",
+            "hint": "HDS 组件沉浸光感材质从 6.1.0(23) 起提供，仅支持 Stage 模型，系统能力为 SystemCapability.UIDesign.HDSComponent.Core。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HdsTabs（IL-F029）",
+            "hint": "HdsTabs 通过 HdsTabsFloatingStyle.systemMaterialEffect 为底部悬浮页签设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 材质参数（IL-F030）",
+            "hint": "HDS SystemMaterialParams 包含可选的 materialType 和 materialLevel；默认 materialType 为 NONE，默认 materialLevel 为 ADAPTIVE，因此省略 materialType 不能视为已经启用材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS MaterialType（IL-F031）",
+            "hint": "HDS MaterialType 取值为 NONE=0、ADAPTIVE=100、IMMERSIVE=101；ADAPTIVE 表示自适应系统材质且默认采用沉浸式材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 自适应策略（IL-F033）",
+            "hint": "官网推荐 HDS 使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，让系统根据设备算力动态平衡材质效果和性能。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 设备差异（IL-F035）",
+            "hint": "HDS 材质在 Phone、Tablet 可调用；PC/2in1 使用前需查询设备材质能力；HdsTabs 的该接口在 TV 无效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 示例审计（IL-F036）",
+            "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "HdsTabs 底部悬浮页签保持切换与布局行为，并在受支持设备显示系统自适应沉浸光感。",
+          "criteriaTopics": [
+            "HdsTabs（IL-F029）",
+            "HDS 材质参数（IL-F030）",
+            "HDS 自适应策略（IL-F033）",
+            "HDS 设备差异（IL-F035）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/HdsMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "sourceSnapshotId": "hds-component-material-guide",
+            "anchor": "再根据查询结果选用相应的材质效果枚举",
+            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
+          }
+        ],
+        "steps": [
+          "确认工程使用 Stage 模型和 6.1.0(23) 及以上的 HDS SDK 声明。",
+          "保留原 HdsTabs、TabContent、controller 和页签样式，只在 barFloatingStyle 中合并 systemMaterialEffect。",
+          "默认使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，并在 Phone/Tablet/PC 目标设备记录视觉证据。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "hds-tabs-kit-import",
+          "kind": "require_any",
+          "patterns": [
+            "from\\s+['\"]@kit\\.UIDesignKit['\"]"
+          ],
+          "onMissing": "failed",
+          "message": "缺少 @kit.UIDesignKit 导入。"
+        },
+        {
+          "id": "hds-tabs-target",
+          "kind": "require_any",
+          "patterns": [
+            "\\bHdsTabs\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "未发现 HdsTabs。"
+        },
+        {
+          "id": "hds-tabs-floating-material",
+          "kind": "require_any",
+          "patterns": [
+            "barFloatingStyle\\s*\\([\\s\\S]{0,1200}systemMaterialEffect\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "HdsTabs 的 barFloatingStyle 中缺少 systemMaterialEffect。"
+        },
+        {
+          "id": "hds-tabs-adaptive-pair",
+          "kind": "require_any",
+          "patterns": [
+            "materialType\\s*:\\s*hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}materialLevel\\s*:\\s*hdsMaterial\\.MaterialLevel\\.ADAPTIVE"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现官网推荐的 ADAPTIVE 类型与 ADAPTIVE 等级组合。"
+        }
+      ],
+      "negativeCases": [
+        "省略 materialType 导致默认 NONE",
+        "页签切换与悬浮布局回归",
+        "TV 上误判材质有效",
+        "PC/2in1 未查询材质能力"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S011",
+      "displayName": "HDS 导航与底部页签组合接入",
+      "route": "hds-api23",
+      "intentPatterns": [
+        "HDS组件",
+        "HDS沉浸光感",
+        "UIDesignKit沉浸光感",
+        "HDS导航和底部页签",
+        "HDS组合接入",
+        "系统自适应沉浸光感"
+      ],
+      "targets": [
+        "HdsNavigation",
+        "HdsTabs"
+      ],
+      "sources": [
+        "hds-component-material-guide",
+        "hds-material-api",
+        "hds-navigation-api",
+        "hds-tabs-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "HDS 版本门槛（IL-F027）",
+            "hint": "HDS 组件沉浸光感材质从 6.1.0(23) 起提供，仅支持 Stage 模型，系统能力为 SystemCapability.UIDesign.HDSComponent.Core。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HdsNavigation（IL-F028）",
+            "hint": "HdsNavigation 通过 TitleBarStyleOptions.systemMaterialEffect 为标题栏按钮设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HdsTabs（IL-F029）",
+            "hint": "HdsTabs 通过 HdsTabsFloatingStyle.systemMaterialEffect 为底部悬浮页签设置沉浸光感，该字段从 6.1.0(23) 起提供。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 材质参数（IL-F030）",
+            "hint": "HDS SystemMaterialParams 包含可选的 materialType 和 materialLevel；默认 materialType 为 NONE，默认 materialLevel 为 ADAPTIVE，因此省略 materialType 不能视为已经启用材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS MaterialType（IL-F031）",
+            "hint": "HDS MaterialType 取值为 NONE=0、ADAPTIVE=100、IMMERSIVE=101；ADAPTIVE 表示自适应系统材质且默认采用沉浸式材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS MaterialLevel（IL-F032）",
+            "hint": "HDS MaterialLevel 取值为 EXQUISITE=0、GENTLE=1、SMOOTH=2、ADAPTIVE=10；ADAPTIVE 档由系统按设备算力自适应；设备不支持 IMMERSIVE 时官网建议使用 SMOOTH 以降低卡顿和发热风险。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 自适应策略（IL-F033）",
+            "hint": "官网推荐 HDS 使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，让系统根据设备算力动态平衡材质效果和性能。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 设备差异（IL-F035）",
+            "hint": "HDS 材质在 Phone、Tablet 可调用；PC/2in1 使用前需查询设备材质能力；HdsTabs 的该接口在 TV 无效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 示例审计（IL-F036）",
+            "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "标题栏按钮和底部悬浮页签均按官方入口显示自适应材质，且两处原有交互与布局不回归。",
+          "criteriaTopics": [
+            "HdsNavigation（IL-F028）",
+            "HdsTabs（IL-F029）",
+            "HDS 自适应策略（IL-F033）",
+            "HDS 设备差异（IL-F035）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/HdsMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "sourceSnapshotId": "hds-component-material-guide",
+            "anchor": "再根据查询结果选用相应的材质效果枚举",
+            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
+          }
+        ],
+        "steps": [
+          "在现有 HdsNavigation 与 HdsTabs 组件树中分别定位 titleBar.style 和 barFloatingStyle。",
+          "复用同一系统自适应材质参数，分别合并到两个官方字段，不复制官网完整演示页和示例资源。",
+          "分别验证标题栏按钮与底部页签的视觉、滚动、点击和切换行为。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "hds-combined-targets",
+          "kind": "conditional_require",
+          "when": "\\bHdsNavigation\\s*\\(|\\bHdsTabs\\s*\\(",
+          "patterns": [
+            "\\bHdsNavigation\\s*\\(",
+            "\\bHdsTabs\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "组合场景必须同时包含 HdsNavigation 和 HdsTabs。"
+        },
+        {
+          "id": "hds-combined-title",
+          "kind": "require_any",
+          "patterns": [
+            "titleBar\\s*\\([\\s\\S]{0,1600}systemMaterialEffect\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "标题栏缺少 systemMaterialEffect。"
+        },
+        {
+          "id": "hds-combined-tabs",
+          "kind": "require_any",
+          "patterns": [
+            "barFloatingStyle\\s*\\([\\s\\S]{0,1200}systemMaterialEffect\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "底部悬浮页签缺少 systemMaterialEffect。"
+        },
+        {
+          "id": "hds-combined-adaptive",
+          "kind": "require_any",
+          "patterns": [
+            "hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}hdsMaterial\\.MaterialLevel\\.ADAPTIVE"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现完整的系统自适应材质组合。"
+        }
+      ],
+      "negativeCases": [
+        "只接入标题栏",
+        "只接入底部页签",
+        "复制未替换的 scenery01 资源",
+        "原滚动或页签交互回归",
+        "设备能力差异"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "IL-S012",
+      "displayName": "HDS 自定义材质等级与设备能力选择",
+      "route": "hds-api23",
+      "intentPatterns": [
+        "HDS自定义",
+        "getSystemMaterialTypes",
+        "HDS设备能力",
+        "IMMERSIVE",
+        "EXQUISITE",
+        "GENTLE",
+        "SMOOTH",
+        "HDS性能"
+      ],
+      "targets": [
+        "hdsMaterial",
+        "HdsNavigation",
+        "HdsTabs"
+      ],
+      "sources": [
+        "hds-component-material-guide",
+        "hds-material-api",
+        "hds-navigation-api",
+        "hds-tabs-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "HDS 版本门槛（IL-F027）",
+            "hint": "HDS 组件沉浸光感材质从 6.1.0(23) 起提供，仅支持 Stage 模型，系统能力为 SystemCapability.UIDesign.HDSComponent.Core。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 材质参数（IL-F030）",
+            "hint": "HDS SystemMaterialParams 包含可选的 materialType 和 materialLevel；默认 materialType 为 NONE，默认 materialLevel 为 ADAPTIVE，因此省略 materialType 不能视为已经启用材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS MaterialType（IL-F031）",
+            "hint": "HDS MaterialType 取值为 NONE=0、ADAPTIVE=100、IMMERSIVE=101；ADAPTIVE 表示自适应系统材质且默认采用沉浸式材质。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS MaterialLevel（IL-F032）",
+            "hint": "HDS MaterialLevel 取值为 EXQUISITE=0、GENTLE=1、SMOOTH=2、ADAPTIVE=10；ADAPTIVE 档由系统按设备算力自适应；设备不支持 IMMERSIVE 时官网建议使用 SMOOTH 以降低卡顿和发热风险。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 自适应策略（IL-F033）",
+            "hint": "官网推荐 HDS 使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，让系统根据设备算力动态平衡材质效果和性能。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 自定义等级（IL-F034）",
+            "hint": "HDS 自定义材质等级前应调用 getSystemMaterialTypes；支持 IMMERSIVE 时可选 EXQUISITE 或 GENTLE，不支持时建议使用 SMOOTH 以降低卡顿和发热风险。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 设备差异（IL-F035）",
+            "hint": "HDS 材质在 Phone、Tablet 可调用；PC/2in1 使用前需查询设备材质能力；HdsTabs 的该接口在 TV 无效果。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 示例审计（IL-F036）",
+            "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "运行时查询结果决定材质等级；支持 IMMERSIVE 时使用 EXQUISITE/GENTLE，不支持时使用 SMOOTH，异常路径可恢复且视觉与性能有设备证据。",
+          "criteriaTopics": [
+            "HDS MaterialType（IL-F031）",
+            "HDS MaterialLevel（IL-F032）",
+            "HDS 自定义等级（IL-F034）",
+            "HDS 设备差异（IL-F035）"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [
+          {
+            "path": "assets/HdsMaterialFactory.ets",
+            "origin": "derived-implementation",
+            "sourceSnapshotId": "hds-component-material-guide",
+            "anchor": "再根据查询结果选用相应的材质效果枚举",
+            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
+          }
+        ],
+        "steps": [
+          "在组件构建前调用 hdsMaterial.getSystemMaterialTypes，并保留异常处理。",
+          "设备支持 IMMERSIVE 时使用 EXQUISITE 或 GENTLE；不支持时使用 SMOOTH。",
+          "把选出的等级与 ADAPTIVE 材质类型组合后传入目标组件的 systemMaterialEffect。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "hds-custom-import",
+          "kind": "require_any",
+          "patterns": [
+            "hdsMaterial[\\s\\S]{0,300}from\\s+['\"]@kit\\.UIDesignKit['\"]"
+          ],
+          "onMissing": "failed",
+          "message": "缺少 hdsMaterial 官方 Kit 导入。"
+        },
+        {
+          "id": "hds-custom-probe",
+          "kind": "require_any",
+          "patterns": [
+            "hdsMaterial\\.getSystemMaterialTypes\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "自定义材质等级前必须查询设备支持的材质类型。"
+        },
+        {
+          "id": "hds-custom-supported-level",
+          "kind": "require_any",
+          "patterns": [
+            "MaterialType\\.IMMERSIVE[\\s\\S]{0,800}MaterialLevel\\.(?:EXQUISITE|GENTLE)"
+          ],
+          "onMissing": "failed",
+          "message": "缺少设备支持 IMMERSIVE 时的 EXQUISITE/GENTLE 分支。"
+        },
+        {
+          "id": "hds-custom-fallback-level",
+          "kind": "require_any",
+          "patterns": [
+            "MaterialLevel\\.SMOOTH"
+          ],
+          "onMissing": "failed",
+          "message": "缺少设备不支持 IMMERSIVE 时的 SMOOTH 回退。"
+        },
+        {
+          "id": "hds-custom-error-path",
+          "kind": "require_any",
+          "patterns": [
+            "try\\s*\\{[\\s\\S]{0,1200}catch"
+          ],
+          "onMissing": "inconclusive",
+          "message": "getSystemMaterialTypes 的异常恢复路径未明确。"
+        }
+      ],
+      "negativeCases": [
+        "不查询能力直接使用 EXQUISITE",
+        "不支持 IMMERSIVE 时仍使用高档材质",
+        "查询异常无恢复路径",
+        "PC/2in1 未查询",
+        "用构建通过代替性能与视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    }
+  ]
+}

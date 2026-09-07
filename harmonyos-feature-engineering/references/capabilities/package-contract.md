@@ -25,12 +25,12 @@
 
 每个场景至少包含稳定 ID、技术路线、意图短语、目标组件、事实引用、实现步骤、静态规则、负向用例、必需检查层和运行判据。事实未显式标注路线时归属 `profile.defaultRoute`；显式路线事实只能被同一路线场景引用。`requiredChecks` 只能使用 `static`、`sdk`、`build`、`install`、`runtime`、`visual`。
 
-低版本回退场景的静态规则必须证明官网兼容性事实要求的版本条件分支与低版本路径不引用新 API 能力。官网未陈述的写法形态判断（如版本三元的位置语义、四元版本核对）属于自登记工程规则，只能登记在 [工程验证规则](../../engineering-verification-rules.md) 并由 document-review 与 development-validation-planning 使用，不得写入能力包或作为代码模式门禁。
+场景静态规则只能强制官网事实（含哈希锁定的来源锚点）；官网未陈述的写法形态判断（如版本三元的位置语义、四元版本核对）属于自登记工程规则，只能登记在 [工程验证规则](../../engineering-verification-rules.md) 并由 document-review 与 development-validation-planning 使用，不得写入能力包或作为代码模式门禁。
 
 ## 来源反查与对勘
 
-- `sourceDocuments` 必须为每个快照登记 `officialUrl`（华为开发者官网 HTTPS 页面）；`title`、`retrievedAt`、`updatedAt` 可为 `null`，但不得用本地时间冒充抓取时间。
-- 实施前用 `scripts/verify-capability-sources.mjs crosscheck` 把每条事实与其锁定快照原文对勘；快照缺失、哈希不符时停止实施并报告能力包缺陷，不得按未对勘事实开发。
-- 链接有效性检测（`links` 模式）属于能力包发布/更新周期的门禁，不混入开发路径；检测结果只报告漂移，不自动改写锁。
+- `sourceDocuments` 必须为每个快照登记 `officialUrl`（华为开发者官网 HTTPS 页面）、`title`、`officialBodySha256`（fetch-doc official-body 口径的现网正文哈希）与真实 `retrievedAt`；不得用本地时间冒充抓取时间。
+- 每条事实来源必须携带 `anchor`（现网正文特征锚点）；构建或运行验证前必须完成 Web-first 对勘（实时抓取 → 哈希门禁 → 锚点定位 → 逐条忠实性判定），全部 `faithful` 才允许构建，由程序强制、不依赖文字指令。
+- 来源页下线或漂移时：删除或重审对应事实并换锁，不得保留无官网证据的事实；链接有效性检测（`links` 模式）属于能力包发布/更新周期的门禁，只报告漂移与受影响事实/场景，不自动改写锁。
 
 包含冲突事实的场景必须提供 `expectationMode=alternatives`，并为冲突组内每条事实提供独立预期。验证成功但只匹配其中一个规范预期时，总结果为 `passed_with_spec_conflict`，不能宣称规范冲突已消失。

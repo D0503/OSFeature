@@ -66,7 +66,7 @@ function reportTemplate(project, scenario, { conflict = false } = {}) {
     verificationVersion: "1.0",
     mode: "code-development-validation",
     input: { feature: "immersive-light", project, goal: "验证场景", module: "entry", targetFiles: [], product: "default", buildMode: "debug", device: "test-device" },
-    capabilityPackage: { featureId: "immersive-light", version: "1.4.0", digest: "b".repeat(64), scenarioId: scenario.id, route: scenario.route, requiredChecks, factRefs: scenario.factRefs, conflictingFactRefs: conflict ? ["IL-F006", "IL-F007"] : [] },
+    capabilityPackage: { featureId: "immersive-light", version: "1.5.0", digest: "b".repeat(64), scenarioId: scenario.id, route: scenario.route, requiredChecks, factRefs: scenario.factRefs, conflictingFactRefs: conflict ? ["IL-F006", "IL-F007"] : [] },
     projectBaseline: { inspectionVersion: "1.0" },
     changes: [],
     compatibility: { status: "supported", reasons: [], authorizationRequired: [], canModify: true, canBuild: true },
@@ -88,8 +88,14 @@ try {
   const capability = await loadCapability(skillRoot, "沉浸光感")
   check(capability.profile.defaultRoute === "arkui-api26", "ArkUI API 26 保持默认路线")
   check(capability.profile.routes.some((item) => item.id === "hds-api23"), "注册 HDS 6.1.0(23) 路线")
-  check(capability.factsData.facts.length === 36, "能力包登记 36 条规范与示例事实")
-  check(capability.scenariosData.scenarios.length === 12, "能力包覆盖 12 类开发场景")
+  check(capability.factsData.facts.length === 32, "能力包登记 32 条规范与示例事实（低版本两页下线后）")
+  check(capability.scenariosData.scenarios.length === 11, "能力包覆盖 11 类开发场景（低版本回退场景已随官网下线移除）")
+  for (const removed of ["IL-F021", "IL-F022", "IL-F025", "IL-F026"]) check(!capability.factsData.facts.some((fact) => fact.id === removed), `${removed} 已随来源页下线移除`)
+  check(!capability.scenariosData.scenarios.some((item) => item.id === "IL-S007"), "IL-S007 低版本回退场景已移除")
+  for (const fact of capability.factsData.facts) for (const source of fact.sources) check(typeof source.anchor === "string" && source.anchor.length > 0, `事实 ${fact.id} 的来源 ${source.snapshotId} 带现网锚点`)
+  for (const source of capability.lock.sourceDocuments) {
+    check(Boolean(source.officialUrl && source.title && source.officialBodySha256), `锁来源 ${source.snapshotId} 登记 URL/标题/现网正文哈希`)
+  }
   check(capability.lock.deviceValidationStatus === "not-complete", "ready 不冒充真机已验证")
   check(capability.feature.readinessMeaning.includes("不表示"), "注册表披露 ready 语义")
 
@@ -141,28 +147,9 @@ try {
   await makeProject(hdsApi22, { compatible: 22, target: 22, compile: 22, sdkPath: sdk })
   check((await inspectDevelopmentProject(hdsApi22, capability, { scenario: hdsNavigationScenario })).compatibility.status === "upgrade_required", "HDS API 22 工程要求升级且不自动修改")
 
-  const fallbackScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S007")
   for (const scenario of capability.scenariosData.scenarios) {
     check(scenario.staticRules.every((item) => item.id !== "argument-only-api-guard"), `场景 ${scenario.id} 不含自登记伪保护规则`)
   }
-  const argumentOnlyProject = join(tempRoot, "argument-only-guard")
-  await makeProject(argumentOnlyProject, { sdkPath: sdk })
-  await put(join(argumentOnlyProject, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { uiMaterial } from '@kit.ArkUI'
-import { deviceInfo } from '@kit.BasicServicesKit'
-@Entry @Component struct Index { build() { Column() { Text('x') }.systemMaterial(deviceInfo.sdkApiVersion >= 26 ? new uiMaterial.ImmersiveMaterial() : undefined); uiMaterial.isImmersiveMaterialSupported() } }`)
-  const argumentOnlyInspection = await inspectDevelopmentProject(argumentOnlyProject, capability, { scenario: fallbackScenario })
-  const argumentOnlyResult = await runStaticScenarioChecks(argumentOnlyProject, fallbackScenario, argumentOnlyInspection)
-  check(argumentOnlyResult.status !== "failed", "官网未裁决的参数内三元写法不再被能力包静态规则判失败")
-  check(argumentOnlyResult.rules.find((item) => item.id === "api-guard")?.status === "passed", "官网版本条件分支要求（IL-F021）仍生效")
-
-  const wholeBranchProject = join(tempRoot, "whole-branch-guard")
-  await makeProject(wholeBranchProject, { sdkPath: sdk })
-  await put(join(wholeBranchProject, "entry", "src", "main", "ets", "pages", "Index.ets"), `import { uiMaterial } from '@kit.ArkUI'
-import { deviceInfo } from '@kit.BasicServicesKit'
-@Entry @Component struct Index { build() { if (deviceInfo.sdkApiVersion >= 26 && uiMaterial.isImmersiveMaterialSupported()) { Column() { Text('x') }.systemMaterial(new uiMaterial.ImmersiveMaterial()) } else { Column() { Text('x') }.backgroundColor('#FFFFFF') } } }`)
-  const wholeBranchInspection = await inspectDevelopmentProject(wholeBranchProject, capability, { scenario: fallbackScenario })
-  const wholeBranchResult = await runStaticScenarioChecks(wholeBranchProject, fallbackScenario, wholeBranchInspection)
-  check(wholeBranchResult.rules.find((item) => item.id === "api-guard")?.status === "passed", "整段版本分支满足官网事实要求")
 
   const api25 = join(tempRoot, "api25")
   await makeProject(api25, { target: 25, compile: 25, sdkPath: sdk })
@@ -287,15 +274,48 @@ import { deviceInfo } from '@kit.BasicServicesKit'
   check(navigationSkipped.report.input.navigation === join(tempRoot, "route-steps.json"), "导航步骤文件记录进报告 input")
   check(navigationSkipped.report.checks.visual.status === "not_run", "无设备时导航跳过且视觉层保持 not_run")
 
-  const crosscheckDir = join(tempRoot, "crosscheck-snapshots")
-  await mkdir(crosscheckDir, { recursive: true })
-  const crosscheckMissing = await crosscheckCapabilitySources(capability, crosscheckDir)
-  check(crosscheckMissing.status === "failed" && crosscheckMissing.counters.file_missing > 0, "快照缺失时对勘失败")
-  const enableUrl = capability.lock.sourceDocuments.find((item) => item.snapshotId === "enable").officialUrl
-  const enableFile = join(crosscheckDir, `${new URL(enableUrl).pathname.split("/").pop()}.md`)
-  await writeFile(enableFile, "tampered-content\n", "utf8")
-  const crosscheckTampered = await crosscheckCapabilitySources(capability, crosscheckDir)
-  check(crosscheckTampered.entries.some((item) => item.snapshotId === "enable" && item.status === "hash_mismatch"), "快照哈希与锁不一致时对勘报告 hash_mismatch")
+  const anchorsMarkdownFor = (snapshotId) => capability.factsData.facts
+    .flatMap((fact) => fact.sources.filter((source) => source.snapshotId === snapshotId).map((source) => `支撑段落：${source.anchor}。`))
+    .join("\n")
+  const lockedByUrl = new Map(capability.lock.sourceDocuments.map((source) => [source.officialUrl, source]))
+  const fixtureFetcher = (mode) => async (url) => {
+    const locked = lockedByUrl.get(url)
+    if (!locked) return { ok: false, detail: "fixture 未登记 URL" }
+    if (mode === "unreachable") return { ok: false, detail: "模拟官网不可达" }
+    const matched = mode !== "drifted"
+    const content = mode === "no-anchor" ? "正文不含任何锚点。" : anchorsMarkdownFor(locked.snapshotId)
+    return { ok: true, contentSha256: matched ? locked.officialBodySha256 : "f".repeat(64), contentMarkdown: content }
+  }
+  const crosscheckOk = await crosscheckCapabilitySources(capability, { scenarioId: popupScenario.id, fetcher: fixtureFetcher("ok") })
+  check(crosscheckOk.status === "passed" && crosscheckOk.counters.crosschecked > 0, "Web-first 对勘通过时产出材料包")
+  check(crosscheckOk.entries.every((item) => item.status !== "ready_for_judgment" || (item.anchor && item.excerpt.length > 0)), "材料包含锚点与现网摘录")
+  const crosscheckDrifted = await crosscheckCapabilitySources(capability, { scenarioId: popupScenario.id, fetcher: fixtureFetcher("drifted") })
+  check(crosscheckDrifted.status === "failed" && crosscheckDrifted.counters.drifted > 0, "现网正文哈希漂移时对勘失败并阻塞")
+  const crosscheckUnreachable = await crosscheckCapabilitySources(capability, { scenarioId: popupScenario.id, fetcher: fixtureFetcher("unreachable") })
+  check(crosscheckUnreachable.status === "failed" && crosscheckUnreachable.counters.unreachable > 0, "官网不可达时对勘失败（网页唯一真值）")
+  const crosscheckNoAnchor = await crosscheckCapabilitySources(capability, { scenarioId: popupScenario.id, fetcher: fixtureFetcher("no-anchor") })
+  check(crosscheckNoAnchor.status === "failed" && crosscheckNoAnchor.counters.anchor_not_found > 0, "锚点未命中现网正文时对勘失败")
+
+  let faithfulnessMissingRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { executeBuild: true, outputDirectory: join(tempRoot, "faith-output") })
+  } catch (error) { faithfulnessMissingRejected = error instanceof Error && error.message.includes("未经事实忠实性对勘") }
+  check(faithfulnessMissingRejected, "未注入忠实性判定时构建被阻塞")
+  let faithfulnessIncompleteRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: goodProject, goal: "给 Popup 接入沉浸光感", sdk }, { executeBuild: true, faithfulness: { schemaVersion: "1.0", scenarioId: popupScenario.id, verdicts: popupScenario.factRefs.slice(0, 1).map((id) => ({ factId: id, verdict: "faithful", basis: "只判了一部分" })) }, outputDirectory: join(tempRoot, "faith-output") })
+  } catch (error) { faithfulnessIncompleteRejected = error instanceof Error && error.message.includes("faithfulness 无效") }
+  check(faithfulnessIncompleteRejected, "忠实性判定未覆盖全部事实时被拒绝")
+  const hdsCustomScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S012")
+  let goldenLiarRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project: hdsProject, goal: "调用 getSystemMaterialTypes 按设备能力选择档位", sdk }, {
+      executeBuild: true,
+      faithfulness: { schemaVersion: "1.0", scenarioId: hdsCustomScenario.id, verdicts: hdsCustomScenario.factRefs.map((id) => ({ factId: id, verdict: id === "IL-F036" ? "unfaithful" : "faithful", basis: id === "IL-F036" ? "现网示例不含 BusinessError，statement 为提炼幻觉（金标负例）。" : "statement 与现网原文一致。" })) },
+      outputDirectory: join(tempRoot, "faith-output"),
+    })
+  } catch (error) { goldenLiarRejected = error instanceof Error && error.message.includes("IL-F036=unfaithful") }
+  check(goldenLiarRejected, "金标负例 IL-F036 判 unfaithful 时构建被阻塞")
 
   const badBuild = structuredClone(passing)
   badBuild.evidence.find((item) => item.id === "EVID-003").exitCode = 1
@@ -361,7 +381,7 @@ import { deviceInfo } from '@kit.BasicServicesKit'
   check(validateDevelopmentReport(traceReport).valid, `实施依据报告有效：${validateDevelopmentReport(traceReport).errors.join("; ")}`)
   check(trace.implementation.uncoveredChanges.join() === "Support.ets", "未覆盖改动如实列出，删除步骤使用修改前位置")
   check(trace.normativeBasis.length === 1 && trace.normativeBasis[0].id === "IL-F002" && trace.normativeBasis[0].sources[0].officialUrl.endsWith("arkts-immersive-light-sense-enable"), "ArkUI 应用级事实展开官网来源且只展示引用事实")
-  check(trace.normativeBasis[0].sources[0].retrievedAt === null && trace.normativeBasis[0].sources[0].title, "未知抓取时间为 null，来源标题来自已有清单")
+  check(trace.normativeBasis[0].sources[0].retrievedAt !== null && !Number.isNaN(Date.parse(trace.normativeBasis[0].sources[0].retrievedAt)) && trace.normativeBasis[0].sources[0].title, "来源带真实现网抓取时间与标题")
   const tracePaths = await renderDevelopmentReport(traceReport, join(tempRoot, "trace-report"))
   const traceMarkdown = await readFile(tracePaths.markdownPath, "utf8")
   check(traceMarkdown.includes("工程配套选择") && traceMarkdown.includes("修改前") && traceMarkdown.includes("arkts-immersive-light-sense-enable") && traceMarkdown.includes("Support.ets"), "Markdown 展示步骤、删除位置、官网链接及未覆盖文件")
