@@ -379,6 +379,7 @@ const SIGNALS = [
   { id: "layoutBottomPadding", regex: /\bpadding\s*\(\s*\{[\s\S]{0,300}?\bbottom\s*:/ },
   { id: "scrollableContent", regex: /\b(?:List|Scroll|WaterFlow|Grid)\s*\(/ },
   { id: "contentEndOffset", regex: /\bcontentEndOffset\s*\(/ },
+  { id: "scrollTailSpacer", regex: /\bBlank\s*\(\s*\)[\s\S]{0,240}?\.height\s*\(/ },
   { id: "miniBar", regex: /\bminiBar\s*:/ },
   { id: "miniBarBuilder", regex: /\bminiBarBuilder\s*:/ },
   { id: "barLayoutMode", regex: /\bbarLayoutMode\s*:/ },
@@ -728,18 +729,6 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
         ? "Positive barBottomMargin and bottom padding were both detected. Confirm component ancestry; if the parent/ancestor padding already moves the whole HdsTabs area, set barBottomMargin to 0. Content-only TabContent padding may serve a separate anti-occlusion purpose"
         : "No obvious duplicate positive barBottomMargin and bottom padding were detected"
     ))
-    const hasScrollableTabRisk = s.hdsTabs.detected && s.scrollableContent.detected
-    checks.push(check(
-      "scrollable-tab-tail-clearance",
-      "Scrollable Tab tail clearance",
-      !hasScrollableTabRisk ? "not_applicable" : s.contentEndOffset.detected ? "pass" : "warn",
-      [...s.scrollableContent.evidence, ...s.contentEndOffset.evidence],
-      !hasScrollableTabRisk
-        ? "No obvious scrollable content was detected with HdsTabs"
-        : s.contentEndOffset.detected
-          ? "At least one contentEndOffset was detected; manually verify every scrollable Tab and any Scroll/WaterFlow/Grid tail spacer, and keep HDS-only clearance out of the source fallback"
-          : "Scrollable content and HdsTabs were detected without contentEndOffset. Check every Tab for a tail spacer, content padding, or equivalent clearance so the last actionable item can scroll above the floating bar"
-    ))
     checks.push(check(
       "mini-bar-contract",
       "MiniBar contract",
@@ -881,6 +870,25 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       configured.length === 0 ? "Application-level material is optional" : compatibility.applicationLevel.eligible ? "Metadata is in an eligible project" : compatibility.applicationLevel.reasons.join("; ")
     ))
   }
+
+  const hasFloatingTabs = route === "hds"
+    ? s.hdsTabs.detected && s.barOverlapTrue.detected && s.barFloatingStyle.detected
+    : route === "arkui"
+      ? s.nativeTabsFloatingMaterial.detected && s.barOverlapTrue.detected
+      : false
+  const hasScrollableTabRisk = hasFloatingTabs && s.scrollableContent.detected
+  const tailClearanceEvidence = [...s.contentEndOffset.evidence, ...s.scrollTailSpacer.evidence]
+  checks.push(check(
+    "scrollable-tab-tail-clearance",
+    "Scrollable Tab tail clearance",
+    !hasScrollableTabRisk ? "not_applicable" : tailClearanceEvidence.length ? "pass" : "warn",
+    [...s.scrollableContent.evidence, ...tailClearanceEvidence, ...s.layoutBottomPadding.evidence],
+    !hasScrollableTabRisk
+      ? "No overlapping HDS or ArkUI floating Tabs with scrollable content were detected"
+      : tailClearanceEvidence.length
+        ? "A tail-clearance candidate was detected. Manually verify every scrollable Tab: the last actionable item and its interaction area must scroll above the floating bar, and non-floating source paths must keep their original scroll range"
+        : "Scrollable content was detected under overlapping floating Tabs. Add contentEndOffset, a spacer, content bottom padding, or an equivalent tail clearance after the last real item in every affected Tab; calculate it from actual occlusion and do not duplicate safe-area spacing"
+  ))
 
   checks.push(check("fallback-style", "Fallback style", s.fallbackStyle.detected ? "pass" : "fail", s.fallbackStyle.evidence, "Keep a standard background or border fallback"))
   const webRisk = s.webComponent.detected && compatibleApi !== null && compatibleApi <= 23 && (s.hdsMaterialEffect.detected || s.systemMaterial.detected)

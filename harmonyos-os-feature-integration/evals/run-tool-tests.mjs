@@ -161,6 +161,18 @@ equal(failedNativeTabs.status, "failed")
 ok(failedNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-horizontal" && item.status === "fail"))
 ok(failedNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-overlap" && item.status === "fail"))
 
+const missingArkuiScrollableTailClearance = structuredClone(inspection26)
+missingArkuiScrollableTailClearance.signals.scrollableContent = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:10"] }
+missingArkuiScrollableTailClearance.signals.contentEndOffset = { detected: false, evidence: [] }
+missingArkuiScrollableTailClearance.signals.scrollTailSpacer = { detected: false, evidence: [] }
+const warnedArkuiScrollableTailClearance = verifyInspection(missingArkuiScrollableTailClearance, compatibility26, "arkui")
+equal(warnedArkuiScrollableTailClearance.status, "warnings")
+ok(warnedArkuiScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn"))
+missingArkuiScrollableTailClearance.signals.scrollTailSpacer = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:30"] }
+const detectedArkuiScrollableTailClearance = verifyInspection(missingArkuiScrollableTailClearance, compatibility26, "arkui")
+equal(detectedArkuiScrollableTailClearance.status, "passed")
+ok(detectedArkuiScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "pass"))
+
 const hybridInspection26 = structuredClone(inspection26)
 hybridInspection26.componentSystem.hds = true
 for (const signal of [

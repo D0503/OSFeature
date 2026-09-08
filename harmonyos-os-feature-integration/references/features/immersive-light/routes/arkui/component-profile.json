@@ -27,7 +27,7 @@
           "applicationEnableDefault": false,
           "defaultStyle": null,
           "entries": ["FloatingTabBarStyle.systemMaterial"],
-          "constraints": ["barOverlap-true", "vertical-false", "barPosition-End", "TabContent-unsupported"]
+          "constraints": ["barOverlap-true", "vertical-false", "barPosition-End", "TabContent-unsupported", "scrollable-tab-tail-clearance"]
         },
         {
           "id": "alphabet-indexer",

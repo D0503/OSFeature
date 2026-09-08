@@ -49,7 +49,30 @@ Tabs({ barPosition: BarPosition.End }) {
 
 应用级 `ENABLE` 不会自动给底部 Tabs 开启材质，必须通过 `FloatingTabBarStyle.systemMaterial` 显式设置。设置后不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡材质；`TabContent` 本身不支持沉浸光感。
 
-底部间距、滚动尾项避让和响应式形态仍按接入前原生 Tabs 处理。只有悬浮栏实际遮挡内容时才给增强分支增加尾部空间，低版本与普通模式不继承这段补偿。
+### 可滚动 Tab 页尾部避让
+
+`barOverlap(true)` 会让原生 ArkUI 悬浮 TabBar 覆盖在 Tab 内容上方。每个 Tab 页只要包含 `List`、`Scroll`、`WaterFlow`、可滚动 `Grid` 或自定义滚动容器，就要在最后一个真实滚动项之后增加尾部空间，使最后一个可操作项及其点击、拖拽或手势热区能够完整滚到悬浮栏上方。
+
+- `List` 可使用 `contentEndOffset`，或在最后追加不可交互的占位项；
+- `Scroll + Column` 可在真实内容末尾增加 `Blank`、bottom padding 或等价空间；
+- `WaterFlow`、`Grid` 和自定义滚动容器按各自布局方式增加末尾占位或内容 padding；
+- 尾部高度按当前窗口中的实际遮挡计算，通常包含可见栏高、栏底部间距和必要操作间隔，但不能重复加入外层已经承担的系统安全区；
+- 有动态显隐时按最大可见遮挡保留稳定空间，或让尾部空间与栏高同步，并验证动画中没有跳动和不可点击区；
+- 无滚动内容的页面不机械增加空白，所有 Tab 页必须逐页检查，不能只处理默认页。
+
+```typescript
+Scroll() {
+  Column() {
+    this.buildSourceContent()
+
+    // 位于最后一个真实滚动项之后。
+    Blank()
+      .height(this.floatingTabOcclusionHeight)
+  }
+}
+```
+
+这段空间只属于实际使用 `barOverlap(true)` 的 ArkUI 悬浮重叠分支。API 26 以下或其他回退路径如果恢复普通非悬浮 Tabs，就继续保留接入前的响应式形态、滚动范围和 padding；设备不支持或业务关闭材质时，如果页面仍保留普通样式的重叠悬浮栏，尾部避让仍然需要。悬浮栏定位所使用的外层 padding 或栏外边距，与滚动内容尾部避让是两种职责，必须按组件层级分别计算。
 
 ## AlphabetIndexer
 
@@ -70,4 +93,3 @@ Tabs({ barPosition: BarPosition.End }) {
 - [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
 - [Navigation 示例20](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-basic-components-navigation#示例20设置systemmaterial开启标题栏材质效果)
 - [Tabs 示例24](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-container-tabs#示例24tabbar悬浮样式)
-

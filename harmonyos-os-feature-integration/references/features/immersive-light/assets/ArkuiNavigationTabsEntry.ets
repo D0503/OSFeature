@@ -11,6 +11,9 @@ import { ImmersiveMaterialGuard } from './ImmersiveMaterialGuard';
  * - API 26 以下保留 sourceNavigation()；不要把增强分支的底部形态强加给源程序。
  * - 原生 Tabs 悬浮材质必须同时满足 barOverlap(true)、vertical(false)、BarPosition.End。
  * - 应用级 ENABLE 不会自动开启原生底部 Tabs，必须显式设置 FloatingTabBarStyle.systemMaterial。
+ * - 真实 Tab 页可滚动时，在最后一个滚动项之后增加按实际遮挡高度计算的尾部空间，
+ *   使末项及操作热区能够滚到悬浮栏上方；只按实际重叠布局启用，不能改变非悬浮源分支滚动范围。
+ *   设备不支持材质但仍保留 barOverlap(true) 悬浮布局时，同样需要这段尾部空间。
  */
 @ComponentV2
 export struct ArkuiNavigationTabsEntry {
@@ -20,6 +23,8 @@ export struct ArkuiNavigationTabsEntry {
 
   @Builder
   private tabContents() {
+    // 替换成 List/Scroll/WaterFlow/Grid 页面时，逐页在真实内容末尾增加
+    // contentEndOffset、Blank、bottom padding 或等价尾部空间；本静态示例无滚动内容。
     TabContent() {
       Column() {
         Text('首页')

@@ -151,10 +151,10 @@
     },
     {
       "id": "scrollable-tab-tail-clearance",
-      "route": "hds",
+      "route": "all",
       "minApi": 23,
-      "scenario": "floating-tab-scrollable-content",
-      "action": "keep-last-actionable-item-scrollable-above-floating-bar-without-changing-source-fallback"
+      "scenario": "floating-tabs-scrollable-content",
+      "action": "keep-every-scrollable-tab-last-actionable-item-scrollable-above-the-floating-bar-without-changing-non-floating-source-paths"
     },
     {
       "id": "arkui-target-api26",

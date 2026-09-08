@@ -259,6 +259,21 @@
         "给出 SliderBlockType.DEFAULT 与 SliderStyle 非 NONE 条件",
         "说明 Slider 的 undefined 专属语义并保留源样式"
       ]
+    },
+    {
+      "id": 21,
+      "prompt": "原生 ArkUI Tabs 已经通过 barOverlap(true) 做成底部悬浮材质，三个 Tab 页分别使用 List、Scroll 和 WaterFlow。滚到底时最后一个按钮会被 TabBar 挡住，应该怎样处理？",
+      "expected_output": "该规则与 HDS 悬浮 Tabs 相同：逐个检查所有可滚动 Tab 页，在最后一个真实滚动项之后增加按实际悬浮栏遮挡高度计算的尾部空间，使末项及点击、拖拽或手势热区能够完整滚到栏上方。List 可使用 contentEndOffset 或尾部占位项；Scroll + Column 可在真实内容后增加 Blank、bottom padding 或等价空间；WaterFlow 按其布局增加末尾占位或内容 padding。不能使用固定通用数值，也不能重复加入外层已经承担的安全区。补偿由实际是否使用 barOverlap(true) 的悬浮布局决定：恢复普通非悬浮 Tabs 的源路径保留原滚动范围；设备不支持材质但仍保留普通样式重叠悬浮栏时，仍需尾部避让。",
+      "files": [],
+      "expectations": [
+        "明确该规则同时适用于 ArkUI 与 HDS 悬浮 Tabs",
+        "要求逐个检查所有可滚动 Tab 页",
+        "尾部空间位于最后一个真实滚动项之后并覆盖操作热区",
+        "分别给出 List、Scroll 和 WaterFlow 的可用处理方式",
+        "按实际遮挡高度计算而非写死通用值",
+        "不重复计算外层安全区",
+        "非悬浮源路径保留原滚动范围，普通样式重叠悬浮栏仍需避让"
+      ]
     }
   ]
 }
