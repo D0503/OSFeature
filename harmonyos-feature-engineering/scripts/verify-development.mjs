@@ -202,7 +202,10 @@ async function appendObservationEvidence(evidence, item, fallbackSummary) {
 }
 
 export async function runDevelopmentVerification(skillRoot, request, options = {}) {
-  const outputDirectory = resolveReportOutputDirectory(options.outputDirectory)
+  // 开发报告默认写入目标工程根目录（报告与被验证工程同地），显式 --output 优先；
+  const outputDirectory = options.outputDirectory !== undefined && options.outputDirectory !== null
+    ? resolveReportOutputDirectory(options.outputDirectory)
+    : resolve(request.project)
   const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
   const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }

@@ -358,7 +358,7 @@ try {
   } finally {
     process.chdir(previousCwd)
   }
-  check(verification.rendered.jsonPath === join(verificationOutput, "development-verification-report.json"), "开发验证未指定输出时仍生成报告")
+  check(verification.rendered.jsonPath === join(goodProject, "development-verification-report.json"), "开发验证未指定输出时报告默认写入目标工程根")
   check(verification.report.verificationVersion === "1.1" && verification.report.implementation.recordStatus === "missing", "无实施记录且基线未知时新报告如实披露缺失")
 
   const traceProject = join(tempRoot, "trace-project")

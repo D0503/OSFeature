@@ -1,6 +1,6 @@
 # v2 报告契约（verificationVersion 2.0）
 
-固定文件名与落盘规则同 v1。JSON 根字段：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`implementation`、`normativeBasis`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
+固定文件名与落盘规则：默认写入**目标工程根目录**（`--output` 显式优先）。JSON 根字段：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`implementation`、`normativeBasis`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
 
 ## 与 v1.5 的差异
 
