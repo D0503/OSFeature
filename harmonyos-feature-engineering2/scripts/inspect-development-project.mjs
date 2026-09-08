@@ -2,7 +2,7 @@
 
 import { dirname, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import { loadCapability2, resolveScenario2 } from "./lib/capability2-tools.mjs"
+import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
 import { inspectDevelopmentProject } from "./lib/development-project.mjs"
 
 function parseArgs(argv) {
@@ -20,8 +20,8 @@ function parseArgs(argv) {
 }
 
 export async function inspectRequest(skillRoot, request) {
-  const capability = await loadCapability2(skillRoot, request.feature ?? "immersive-light")
-  const resolution = resolveScenario2(capability, request.goal, request.component)
+  const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
+  const resolution = resolveScenario(capability, request.goal, request.component)
   if (resolution.status !== "resolved") return { mode: "code-development-validation", resolution, inspection: null }
   const inspection = await inspectDevelopmentProject(request.project, capability, {
     scenario: resolution.selected,

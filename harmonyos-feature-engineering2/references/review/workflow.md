@@ -1,6 +1,6 @@
 # 文档审查流程
 
-> v2 衔接：除本地文件、目录与官网 URL 外，开发链路 `freeze-snapshot.mjs` 的产物目录（`evidence/frozen/snapshots/`，仅含 .md 正文）可直接作为审阅输入——用于在 derive-criteria 现提判据前发现新增冲突、歧义或高危变化。审阅产物（findings/门禁）不进入能力包，也不直接作为开发判据。
+> 与开发链路的衔接：除本地文件、目录与官网 URL 外，开发链路 `freeze-snapshot.mjs` 的产物目录（`evidence/frozen/snapshots/`，仅含 .md 正文）可直接作为审阅输入——用于在 derive-criteria 现提判据前发现新增冲突、歧义或高危变化。审阅产物（findings/门禁）不进入能力包，也不直接作为开发判据。
 
 ## 1. 确认边界
 

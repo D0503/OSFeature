@@ -3,7 +3,7 @@ import { execFile } from "node:child_process"
 import { access, readFile, readdir, stat } from "node:fs/promises"
 import { extname, isAbsolute, relative, resolve } from "node:path"
 import { promisify } from "node:util"
-import { capabilityRoute2 as capabilityRoute } from "./capability2-tools.mjs"
+import { capabilityRoute } from "./capability-tools.mjs"
 
 const sha256File = async (path) => createHash("sha256").update(await readFile(path)).digest("hex")
 

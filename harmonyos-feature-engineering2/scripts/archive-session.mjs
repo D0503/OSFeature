@@ -5,7 +5,7 @@
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
-import { loadCapability2 } from "./lib/capability2-tools.mjs"
+import { loadCapability } from "./lib/capability-tools.mjs"
 
 function parseArgs(argv) {
   const valued = new Set(["frozen", "criteria", "skill-root"])
@@ -27,7 +27,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (!args.frozen || !args.criteria) throw new Error("用法: node archive-session.mjs --frozen <冻结目录> --criteria <criteria.json>")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-  const capability = await loadCapability2(args["skill-root"] ?? scriptRoot)
+  const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
   const frozen = JSON.parse(await readFile(join(resolve(args.frozen), "frozen.json"), "utf8"))
   const criteriaDocument = JSON.parse(await readFile(resolve(args.criteria), "utf8"))
   if (!criteriaDocument.frozenAt || criteriaDocument.frozenAt !== frozen.frozenAt) throw new Error("criteria 与冻结快照不属于同一次冻结")

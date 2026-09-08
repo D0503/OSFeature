@@ -12,7 +12,7 @@ function digest(value) {
 // 子进程调用 fetch-doc.mjs 抓取官网页面；fetch-doc 对内容过短等场景以非零退出码输出
 // review_required——只要输出文件可解析且正文完整，仍视为页面可达。
 export async function fetchOfficialDocument(url) {
-  const workDirectory = join(tmpdir(), `v2-fetch-${digest(url).slice(0, 12)}`)
+  const workDirectory = join(tmpdir(), `cap-fetch-${digest(url).slice(0, 12)}`)
   await mkdir(workDirectory, { recursive: true })
   const outputFile = join(workDirectory, "fetch.json")
   const script = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fetch-doc.mjs")

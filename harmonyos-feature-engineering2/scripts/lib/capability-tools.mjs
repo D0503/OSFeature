@@ -47,7 +47,7 @@ function validateOfficialUrl(value, label, errors) {
 }
 
 function validateScenariosDocument(scenariosData, errors) {
-  if (scenariosData?.schemaVersion !== "2.0") errors.push("scenarios.schemaVersion 必须为 2.0")
+  if (scenariosData?.schemaVersion !== "1.0") errors.push("scenarios.schemaVersion 必须为 1.0")
   if (!nonEmptyString(scenariosData?.featureId)) errors.push("scenarios.featureId 必填")
   const routeIds = new Set((scenariosData?.routes ?? []).map((route) => route?.id).filter(Boolean))
   if (!routeIds.has(scenariosData?.defaultRoute)) errors.push("scenarios.defaultRoute 必须引用已注册路线")
@@ -137,9 +137,9 @@ async function validateSessionDocument(session, packageRoot, entryIds, errors) {
   }
 }
 
-export async function loadCapability2(skillRoot, featureQuery = "immersive-light") {
+export async function loadCapability(skillRoot, featureQuery = "immersive-light") {
   const root = resolve(skillRoot)
-  const registryPath = join(root, "capabilities2", "registry.json")
+  const registryPath = join(root, "capabilities", "registry.json")
   const registry = await readJson(registryPath, "能力注册表")
   const query = String(featureQuery).trim().toLocaleLowerCase()
   const feature = registry.features.find((item) =>
@@ -164,7 +164,7 @@ export async function loadCapability2(skillRoot, featureQuery = "immersive-light
   return { root, feature, packageRoot, scenariosData, session: null }
 }
 
-export function resolveScenario2(capability, goal, target = "") {
+export function resolveScenario(capability, goal, target = "") {
   const text = `${goal ?? ""} ${target ?? ""}`.trim().toLocaleLowerCase()
   if (!text) return { status: "needs_input", selected: null, candidates: [], reason: "缺少自然语言开发目标" }
   const ranked = capability.scenariosData.scenarios.map((scenario) => {
@@ -202,7 +202,7 @@ export function resolveScenario2(capability, goal, target = "") {
   return { status: "resolved", selected: scenario, selectedSummary, candidates: ranked.slice(1, 4).map(({ scenario: ignored, ...item }) => item), reason: "唯一最高分场景" }
 }
 
-export function capabilityRoute2(capability, routeId) {
+export function capabilityRoute(capability, routeId) {
   const id = routeId ?? capability.scenariosData.defaultRoute
   const route = capability.scenariosData.routes.find((item) => item.id === id)
   if (!route) throw new Error(`能力包未注册技术路线: ${id}`)

@@ -9,7 +9,7 @@
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, resolve } from "node:path"
-import { loadCapability2 } from "./lib/capability2-tools.mjs"
+import { loadCapability } from "./lib/capability-tools.mjs"
 import { readFrozenSnapshot } from "./lib/fetch-official.mjs"
 import { diffAgainstLatest } from "./diff-snapshots.mjs"
 
@@ -216,7 +216,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (!args.scenario || !args.frozen) throw new Error("必须提供 --scenario 与 --frozen")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-  const capability = await loadCapability2(args["skill-root"] ?? scriptRoot)
+  const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
   const frozenDirectory = resolve(args.frozen)
   const output = resolve(args.output ?? ".")
   await mkdir(output, { recursive: true })

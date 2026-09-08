@@ -4,7 +4,7 @@
 
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { dirname, resolve } from "node:path"
-import { loadCapability2, resolveScenario2 } from "./lib/capability2-tools.mjs"
+import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
 import { fetchOfficialDocument, writeFrozenSnapshot } from "./lib/fetch-official.mjs"
 
 function parseArgs(argv) {
@@ -27,11 +27,11 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (!args.scenario && !args.sources) throw new Error("用法: node freeze-snapshot.mjs --scenario IL-SXXX（或 --sources enable,overview） [--output <目录>]")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-  const capability = await loadCapability2(args["skill-root"] ?? scriptRoot)
+  const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
 
   let snapshotIds
   if (args.scenario) {
-    const resolution = resolveScenario2(capability, args.scenario === "all" ? "" : "")
+    const resolution = resolveScenario(capability, args.scenario === "all" ? "" : "")
     const scenario = capability.scenariosData.scenarios.find((item) => item.id === args.scenario)
     if (!scenario) throw new Error(`场景不存在: ${args.scenario}`)
     snapshotIds = scenario.sources

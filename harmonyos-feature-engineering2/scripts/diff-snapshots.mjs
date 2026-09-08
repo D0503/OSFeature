@@ -7,7 +7,7 @@
 
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { dirname, resolve } from "node:path"
-import { loadCapability2 } from "./lib/capability2-tools.mjs"
+import { loadCapability } from "./lib/capability-tools.mjs"
 import { readFrozenSnapshot } from "./lib/fetch-official.mjs"
 
 const VERSION_PATTERN = /(?:\d+\.\d+\.\d+|API\s?\d+|起始版本|起始API|minAPI|targetAPI|targetSDK|compatibleSDK)/i
@@ -125,7 +125,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2))
   if (!args.frozen) throw new Error("用法: node diff-snapshots.mjs --frozen <冻结目录> [--output <目录>]")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-  const capability = await loadCapability2(args["skill-root"] ?? scriptRoot)
+  const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
   const report = await diffAgainstLatest(capability, resolve(args.frozen))
   if (args.output) {
     const { mkdir, writeFile } = await import("node:fs/promises")

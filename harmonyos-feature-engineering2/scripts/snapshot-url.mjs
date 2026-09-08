@@ -125,7 +125,7 @@ async function prepareOutputDirectory(requested) {
       } catch {
         throw new Error(`输出目录包含未知内容且没有可验证的内部快照索引，拒绝刷新: ${path}`)
       }
-      if (previous?.sourceType !== "official-url-snapshot" || previous?.generatedBy !== "harmonyos-feature-engineering/scripts/snapshot-url.mjs") {
+      if (previous?.sourceType !== "official-url-snapshot" || previous?.generatedBy !== "harmonyos-feature-engineering2/scripts/snapshot-url.mjs") {
         throw new Error(`输出目录不是本工具生成的 URL 快照，拒绝刷新: ${path}`)
       }
       const previousSnapshots = Array.isArray(previous.snapshots) ? previous.snapshots : []
@@ -343,7 +343,7 @@ export async function snapshotOfficialUrl(rawUrl, options = {}) {
     officialReferences,
     mediaReferences,
     fetchFailures: failures,
-    generatedBy: "harmonyos-feature-engineering/scripts/snapshot-url.mjs",
+      generatedBy: "harmonyos-feature-engineering2/scripts/snapshot-url.mjs",
   }
   await writeFile(join(output.path, "source-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8")
   return { outputDirectory: output.path, temporary: output.temporary, manifest, documents: snapshotItems }

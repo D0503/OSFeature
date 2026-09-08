@@ -3,7 +3,7 @@
 import { isAbsolute } from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
-import { CHECK_LEVELS, LAYER_STATUSES, VERDICTS } from "./lib/capability2-tools.mjs"
+import { CHECK_LEVELS, LAYER_STATUSES, VERDICTS } from "./lib/capability-tools.mjs"
 import { validateImplementationTrace } from "./lib/implementation-trace.mjs"
 
 const CHECK_KEYS = ["static", "sdk", "build", "install", "runtime", "visual"]
@@ -53,7 +53,7 @@ export function deriveDevelopmentVerdict(report) {
 export function validateDevelopmentReport(report) {
   const errors = []
   if (!object(report)) return { valid: false, errors: ["报告根节点必须是对象"] }
-  if (report.verificationVersion !== "2.0") errors.push("verificationVersion 必须为 2.0")
+  if (report.verificationVersion !== "1.0") errors.push("verificationVersion 必须为 1.0")
   if (report.mode !== "code-development-validation") errors.push("mode 必须为 code-development-validation")
   if (!object(report.input)) errors.push("input 必须是对象")
   else {

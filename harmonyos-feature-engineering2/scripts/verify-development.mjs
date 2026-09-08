@@ -6,7 +6,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { promisify } from "node:util"
-import { loadCapability2, resolveScenario2 } from "./lib/capability2-tools.mjs"
+import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
 import { inspectDevelopmentProject, runStaticScenarioChecks, sdkCheckFromInspection } from "./lib/development-project.mjs"
 import { compareFileBaseline } from "./snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-development-report.mjs"
@@ -208,8 +208,8 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   const outputDirectory = options.outputDirectory !== undefined && options.outputDirectory !== null
     ? resolveReportOutputDirectory(options.outputDirectory)
     : resolve(request.project)
-  const capability = await loadCapability2(skillRoot, request.feature ?? "immersive-light")
-  const resolution = resolveScenario2(capability, request.goal, request.target)
+  const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
+  const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
   const scenario = resolution.selected
   if (options.baseline && resolve(options.baseline.projectRoot) !== resolve(request.project)) throw new Error("实施基线不属于目标工程")
@@ -466,7 +466,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   const conflictGroups = new Set(criteriaDocument.criteria.filter((criterion) => criterion.conflictGroup).map((criterion) => criterion.conflictGroup))
   const conflictingCriteriaRefs = criteriaDocument.criteria.filter((criterion) => criterion.conflictGroup && conflictGroups.has(criterion.conflictGroup)).map((criterion) => criterion.id)
   const report = {
-    verificationVersion: "2.0",
+    verificationVersion: "1.0",
     mode: "code-development-validation",
     input: {
       feature: capability.feature.id,

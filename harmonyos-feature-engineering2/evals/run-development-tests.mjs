@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// v2 离线回归：能力包契约、freeze/diff/derive 链路、criteria 门禁、三层链实施记录、判图与导航回归。
+// 离线回归：能力包契约、freeze/diff/derive 链路、criteria 门禁、三层链实施记录、判图与导航回归。
 
 import assert from "node:assert/strict"
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
@@ -7,7 +7,7 @@ import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
-import { loadCapability2, resolveScenario2 } from "../scripts/lib/capability2-tools.mjs"
+import { loadCapability, resolveScenario } from "../scripts/lib/capability-tools.mjs"
 import { diffAgainstLatest } from "../scripts/diff-snapshots.mjs"
 import { deriveMaterials, validateDraft } from "../scripts/derive-criteria.mjs"
 import { runDevelopmentVerification } from "../scripts/verify-development.mjs"
@@ -15,7 +15,7 @@ import { deriveDevelopmentVerdict, validateDevelopmentReport } from "../scripts/
 import { buildImplementationTrace } from "../scripts/lib/implementation-trace.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const tempRoot = await mkdtemp(join(tmpdir(), "v2-skill-tests-"))
+const tempRoot = await mkdtemp(join(tmpdir(), "dev-skill-tests-"))
 let assertions = 0
 function check(condition, message) {
   assert.ok(condition, message)
@@ -58,29 +58,29 @@ async function makeFrozen(directory, pages) {
 
 try {
   // ---------- 能力包契约 ----------
-  const capability = await loadCapability2(skillRoot, "沉浸光感")
-  check(capability.scenariosData.scenarios.length === 11, "v2 能力包登记 11 个场景")
+  const capability = await loadCapability(skillRoot, "沉浸光感")
+  check(capability.scenariosData.scenarios.length === 11, "能力包登记 11 个场景")
   check(capability.scenariosData.entryPoints.length === 11, "登记 11 个官网入口")
   check((capability.session?.criteria ?? []).length === 32, "初始上次审查判据 32 条")
   check(capability.session.conflictResolutions.some((item) => item.probeId === "disable-scope" && item.verdict === "persists"), "disable-scope 冲突监测点带初始结论")
 
-  check(resolveScenario2(capability, "应用级开启后关闭沉浸光感").selected?.id === "IL-S001", "应用级开关路由")
-  check(resolveScenario2(capability, "给 HdsTabs 底部悬浮页签接入沉浸光感").selected?.id === "IL-S010", "HdsTabs 路由")
+  check(resolveScenario(capability, "应用级开启后关闭沉浸光感").selected?.id === "IL-S001", "应用级开关路由")
+  check(resolveScenario(capability, "给 HdsTabs 底部悬浮页签接入沉浸光感").selected?.id === "IL-S010", "HdsTabs 路由")
   const s1 = capability.scenariosData.scenarios.find((item) => item.id === "IL-S001")
   check(s1.sources.includes("enable") && s1.sources.includes("overview"), "IL-S001 官网入口映射正确")
   check(s1.criteriaSpec.conflictProbes.some((probe) => probe.id === "disable-scope"), "IL-S001 声明 disable-scope 冲突监测点")
 
   const tamperedRoot = join(tempRoot, "tampered-skill")
   await cp(skillRoot, tamperedRoot, { recursive: true })
-  const tamperedScenariosPath = join(tamperedRoot, "capabilities2", "immersive-light", "scenarios.json")
+  const tamperedScenariosPath = join(tamperedRoot, "capabilities", "immersive-light", "scenarios.json")
   const tamperedScenarios = JSON.parse(await readFile(tamperedScenariosPath, "utf8"))
   tamperedScenarios.entryPoints[0].officialUrl = ""
   await writeFile(tamperedScenariosPath, `${JSON.stringify(tamperedScenarios, null, 2)}\n`, "utf8")
   let urlEnforced = false
-  try { await loadCapability2(tamperedRoot, "immersive-light") } catch { urlEnforced = true }
+  try { await loadCapability(tamperedRoot, "immersive-light") } catch { urlEnforced = true }
   check(urlEnforced, "入口缺少官网 URL 时包校验失败")
 
-  const tamperedSessionPath = join(tamperedRoot, "capabilities2", "immersive-light", "sessions", "latest", "session.json")
+  const tamperedSessionPath = join(tamperedRoot, "capabilities", "immersive-light", "sessions", "latest", "session.json")
   const tamperedScenarios2 = JSON.parse(await readFile(tamperedScenariosPath, "utf8"))
   tamperedScenarios2.entryPoints[0].officialUrl = "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview"
   await writeFile(tamperedScenariosPath, `${JSON.stringify(tamperedScenarios2, null, 2)}\n`, "utf8")
@@ -88,11 +88,11 @@ try {
   tamperedSession.criteria[0].anchor = "不存在的锚点xxx"
   await writeFile(tamperedSessionPath, `${JSON.stringify(tamperedSession, null, 2)}\n`, "utf8")
   // 锚点不校验内容命中（校验的是快照哈希完整性），此处应仍可加载；锚点失效由 diff/derive 暴露
-  await loadCapability2(tamperedRoot, "immersive-light")
+  await loadCapability(tamperedRoot, "immersive-light")
   tamperedSession.snapshots[0].contentSha256 = "0".repeat(64)
   await writeFile(tamperedSessionPath, `${JSON.stringify(tamperedSession, null, 2)}\n`, "utf8")
   let hashEnforced = false
-  try { await loadCapability2(tamperedRoot, "immersive-light") } catch { hashEnforced = true }
+  try { await loadCapability(tamperedRoot, "immersive-light") } catch { hashEnforced = true }
   check(hashEnforced, "上次审查快照正文哈希不一致时包校验失败")
 
   // ---------- freeze/diff fixture ----------
@@ -180,7 +180,7 @@ try {
   const noConfirm = await validateDraft(capability, "IL-S001", changedFrozen, draftNoConfirm, changedDiff)
   check(noConfirm.status === "invalid" && noConfirm.invalid.some((item) => item.includes("高危")), "缺少高危确认记录时拒绝")
 
-  // ---------- verify：criteria 门禁与报告 2.0 ----------
+  // ---------- verify：criteria 门禁与开发报告 ----------
   const project = join(tempRoot, "project")
   const sdk = join(tempRoot, "sdk")
   await makeSdk(sdk)
@@ -200,10 +200,10 @@ try {
 
   const criteriaForVerify = validated.criteriaDocument
   const run = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project, goal: "应用级开启后关闭沉浸光感", sdk, criteriaPath: "criteria.json" }, { criteria: criteriaForVerify, outputDirectory: join(tempRoot, "out-verify") })
-  check(run.report.verificationVersion === "2.0", "报告为 2.0 契约")
+  check(run.report.verificationVersion === "1.0", "报告契约版本正确")
   check(run.report.capabilityPackage.criteriaRefs.length === run.report.capabilityPackage.criteriaRefs.filter((id, index, all) => all.indexOf(id) === index).length && run.report.capabilityPackage.criteriaRefs.length > 0, "报告登记本次判据引用")
   check(run.report.capabilityPackage.conflictingCriteriaRefs.length === 2, "冲突判据对进入报告")
-  check(validateDevelopmentReport(run.report).valid, "2.0 报告通过结构校验")
+  check(validateDevelopmentReport(run.report).valid, "开发报告通过结构校验")
 
   const conflictReport = structuredClone(run.report)
   for (const level of Object.keys(conflictReport.checks)) conflictReport.checks[level] = { ...conflictReport.checks[level], status: "passed" }
@@ -229,7 +229,7 @@ try {
   } catch { badCriteriaRefThrown = true }
   check(badCriteriaRefThrown, "实施记录引用不存在判据时被拒绝")
 
-  // ---------- 判图与导航回归（v1.5 能力保留） ----------
+  // ---------- 判图与导航回归 ----------
   const judgmentShot = join(tempRoot, "shot.png")
   await writeFile(judgmentShot, "png", "utf8")
   const judgmentRun = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project, goal: "应用级开启后关闭沉浸光感", sdk }, {
@@ -248,7 +248,7 @@ try {
   const navSkipped = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project, goal: "应用级开启后关闭沉浸光感", sdk, navigationPath: "route-steps.json" }, { criteria: criteriaForVerify, navigate: { schemaVersion: "1.0", steps: [{ stepId: "S01", action: "launch", target: "entry/EntryAbility" }] }, outputDirectory: join(tempRoot, "out-nav") })
   check(navSkipped.report.input.navigation === "route-steps.json" && navSkipped.report.checks.visual.status === "not_run", "无设备时导航跳过且视觉保持 not_run")
 
-  console.log(`ok - ${assertions} v2 assertions`)
+  console.log(`ok - ${assertions} development assertions`)
 } finally {
   await rm(tempRoot, { recursive: true, force: true })
 }
