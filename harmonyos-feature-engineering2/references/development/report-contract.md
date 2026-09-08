@@ -1,6 +1,6 @@
 # 开发验证报告契约（verificationVersion 1.0）
 
-固定文件名与落盘规则：默认写入**目标工程根目录**（`--output` 显式优先）。JSON 根字段：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`implementation`、`normativeBasis`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
+固定文件名与落盘规则：默认写入**目标工程 `ohos-feature-engineering/<场景ID>/`**（与其他链路产物同在单一目录；`--output` 显式优先）。JSON 根字段：`verificationVersion`、`mode`、`input`、`capabilityPackage`、`projectBaseline`、`changes`、`implementation`、`normativeBasis`、`compatibility`、`checks`、`evidence`、`pendingVerifications`、`verdict`。
 
 ## 契约要点
 

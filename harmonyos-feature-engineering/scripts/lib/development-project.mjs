@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto"
+﻿import { createHash } from "node:crypto"
 import { execFile } from "node:child_process"
 import { access, readFile, readdir, stat } from "node:fs/promises"
 import { extname, isAbsolute, relative, resolve } from "node:path"
@@ -6,7 +6,7 @@ import { promisify } from "node:util"
 import { capabilityRoute, sha256File } from "./capability-tools.mjs"
 
 const execFileAsync = promisify(execFile)
-const SKIP = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
+const SKIP = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules", "ohos-feature-engineering"])
 const TEXT_EXTENSIONS = new Set([".ets", ".ts", ".json", ".json5"])
 
 async function exists(path) {

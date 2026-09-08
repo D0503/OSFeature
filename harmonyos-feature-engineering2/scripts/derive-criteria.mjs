@@ -8,10 +8,11 @@
 
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { dirname, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { loadCapability } from "./lib/capability-tools.mjs"
 import { readFrozenSnapshot } from "./lib/fetch-official.mjs"
 import { diffAgainstLatest } from "./diff-snapshots.mjs"
+import { resolveArtifactsRoot } from "./lib/artifacts-dir.mjs"
 
 function anchorLocation(content, anchor) {
   const index = content.indexOf(anchor)
@@ -35,9 +36,9 @@ function contextAround(content, anchor, contextLines = 4) {
 }
 
 function parseArgs(argv) {
-  const valued = new Set(["scenario", "frozen", "diff", "draft", "skill-root", "output"])
+  const valued = new Set(["scenario", "frozen", "diff", "draft", "skill-root", "output", "project"])
   const [mode, ...rest] = argv
-  if (mode !== "materials" && mode !== "validate") throw new Error("用法: node derive-criteria.mjs <materials|validate> --scenario IL-SXXX --frozen <冻结目录> [--draft <草稿>] [--diff <diff-report>] [--output <目录>]")
+  if (mode !== "materials" && mode !== "validate") throw new Error("用法: node derive-criteria.mjs <materials|validate> --scenario IL-SXXX --frozen <冻结目录> [--draft <草稿>] [--diff <diff-report>] [--project <目标工程绝对路径> | --output <目录>]")
   const result = { mode }
   for (let index = 0; index < rest.length; index += 1) {
     const token = rest[index]
@@ -218,15 +219,21 @@ async function main() {
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
   const frozenDirectory = resolve(args.frozen)
-  const output = resolve(args.output ?? ".")
+  let output
+  if (args.output) output = resolve(args.output)
+  else if (args.project) output = resolveArtifactsRoot(args.project)
+  else throw new Error("必须提供 --project <目标工程绝对路径>（产物默认写入 <工程>/ohos-feature-engineering）或 --output <目录>")
   await mkdir(output, { recursive: true })
+  // 按场景命名，避免多场景相互覆盖产生重复产物
+  const criteriaFileName = `criteria-${args.scenario}.json`
+  const materialsFileName = `materials-${args.scenario}.json`
 
   if (args.mode === "materials") {
     const diffReport = args.diff ? await readJsonFile(resolve(args.diff), "diff-report") : undefined
     const result = await deriveMaterials(capability, args.scenario, frozenDirectory, diffReport)
     if (result.status === "reuse_ready") {
-      await writeFile(resolve(output, "criteria.json"), `${JSON.stringify(result.criteriaDocument, null, 2)}\n`, "utf8")
-      process.stdout.write(`${JSON.stringify({ status: "reuse_ready", criteriaCount: result.criteriaDocument.criteria.length, output: resolve(output, "criteria.json") }, null, 2)}\n`)
+      await writeFile(resolve(output, criteriaFileName), `${JSON.stringify(result.criteriaDocument, null, 2)}\n`, "utf8")
+      process.stdout.write(`${JSON.stringify({ status: "reuse_ready", criteriaCount: result.criteriaDocument.criteria.length, output: resolve(output, criteriaFileName) }, null, 2)}\n`)
       return
     }
     if (result.status === "degraded_reuse") {
@@ -234,8 +241,8 @@ async function main() {
       process.exitCode = 3
       return
     }
-    await writeFile(resolve(output, "materials.json"), `${JSON.stringify(result.materials, null, 2)}\n`, "utf8")
-    process.stdout.write(`${JSON.stringify({ status: "materials_ready", highRiskCount: result.materials.highRisk.length, changedPages: result.materials.changedPages.map((page) => page.snapshotId), output: resolve(output, "materials.json") }, null, 2)}\n`)
+    await writeFile(resolve(output, materialsFileName), `${JSON.stringify(result.materials, null, 2)}\n`, "utf8")
+    process.stdout.write(`${JSON.stringify({ status: "materials_ready", highRiskCount: result.materials.highRisk.length, changedPages: result.materials.changedPages.map((page) => page.snapshotId), output: resolve(output, materialsFileName) }, null, 2)}\n`)
     return
   }
 
@@ -248,8 +255,8 @@ async function main() {
     process.exitCode = 3
     return
   }
-  await writeFile(resolve(output, "criteria.json"), `${JSON.stringify(result.criteriaDocument, null, 2)}\n`, "utf8")
-  process.stdout.write(`${JSON.stringify({ status: "validated", criteriaCount: result.criteriaDocument.criteria.length, reusedCount: result.criteriaDocument.criteria.filter((item) => item.status === "reused").length, output: resolve(output, "criteria.json") }, null, 2)}\n`)
+  await writeFile(resolve(output, criteriaFileName), `${JSON.stringify(result.criteriaDocument, null, 2)}\n`, "utf8")
+  process.stdout.write(`${JSON.stringify({ status: "validated", criteriaCount: result.criteriaDocument.criteria.length, reusedCount: result.criteriaDocument.criteria.filter((item) => item.status === "reused").length, output: resolve(output, criteriaFileName) }, null, 2)}\n`)
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {

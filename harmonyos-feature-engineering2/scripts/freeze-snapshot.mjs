@@ -1,14 +1,15 @@
 #!/usr/bin/env node
-// 按场景官网入口实时抓取并冻结本次快照：evidence/frozen/{frozen.json, snapshots/*.md}
+// 按场景官网入口实时抓取并冻结本次快照：<工程>/ohos-feature-engineering/frozen/{frozen.json, snapshots/*.md}
 // 任一入口不可达即整体失败（网页唯一真值，不回退缓存）。
 
 import { fileURLToPath, pathToFileURL } from "node:url"
-import { dirname, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
 import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
 import { fetchOfficialDocument, writeFrozenSnapshot } from "./lib/fetch-official.mjs"
+import { resolveArtifactsRoot } from "./lib/artifacts-dir.mjs"
 
 function parseArgs(argv) {
-  const valued = new Set(["scenario", "sources", "skill-root", "output"])
+  const valued = new Set(["scenario", "sources", "skill-root", "output", "project"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -25,7 +26,7 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.scenario && !args.sources) throw new Error("用法: node freeze-snapshot.mjs --scenario IL-SXXX（或 --sources enable,overview） [--output <目录>]")
+  if (!args.scenario && !args.sources) throw new Error("用法: node freeze-snapshot.mjs --scenario IL-SXXX（或 --sources enable,overview） --project <目标工程绝对路径> [--output <目录>]")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
 
@@ -58,7 +59,10 @@ async function main() {
     process.exitCode = 3
     return
   }
-  const outputDirectory = resolve(args.output ?? "evidence/frozen")
+  let outputDirectory
+  if (args.output) outputDirectory = resolve(args.output)
+  else if (args.project) outputDirectory = join(resolveArtifactsRoot(args.project), "frozen")
+  else throw new Error("必须提供 --project <目标工程绝对路径>（产物默认写入 <工程>/ohos-feature-engineering/frozen）或 --output <目录>")
   const frozen = await writeFrozenSnapshot(outputDirectory, pages)
   process.stdout.write(`${JSON.stringify({ status: "frozen", outputDirectory, frozenAt: frozen.frozenAt, snapshots: frozen.snapshots.map((item) => ({ snapshotId: item.snapshotId, contentSha256: item.contentSha256.slice(0, 12), title: item.title })) }, null, 2)}\n`)
 }

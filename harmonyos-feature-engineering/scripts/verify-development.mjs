@@ -13,6 +13,7 @@ import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-
 import { renderDevelopmentReport } from "./render-development-report.mjs"
 import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 import { buildImplementationTrace } from "./lib/implementation-trace.mjs"
+import { scenarioArtifactsDirectory } from "./lib/artifacts-dir.mjs"
 
 const execFileAsync = promisify(execFile)
 
@@ -202,14 +203,14 @@ async function appendObservationEvidence(evidence, item, fallbackSummary) {
 }
 
 export async function runDevelopmentVerification(skillRoot, request, options = {}) {
-  // 开发报告默认写入目标工程根目录（报告与被验证工程同地），显式 --output 优先；
-  const outputDirectory = options.outputDirectory !== undefined && options.outputDirectory !== null
-    ? resolveReportOutputDirectory(options.outputDirectory)
-    : resolve(request.project)
   const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
   const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
   const scenario = resolution.selected
+  // 开发报告与 evidence 默认统一写入 <工程>/ohos-feature-engineering/<场景ID>/（过程产物单一目录），显式 --output 优先；
+  const outputDirectory = options.outputDirectory !== undefined && options.outputDirectory !== null
+    ? resolveReportOutputDirectory(options.outputDirectory)
+    : scenarioArtifactsDirectory(request.project, scenario.id)
   if (options.baseline && resolve(options.baseline.projectRoot) !== resolve(request.project)) throw new Error("实施基线不属于目标工程")
   if (options.executeBuild || options.executeRun) {
     if (!options.faithfulness) {
@@ -541,7 +542,7 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--faithfulness <faithfulness-judgment.json>] [--execute-build] [--execute-run --device <设备>] [--navigate <route-steps.json>] [--capture-screenshot] [--capture-layout] [--implementation <实施记录>] [--judgment <visual-judgment.json>] [--output <目录>]")
+  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--faithfulness <faithfulness-judgment.json>] [--execute-build] [--execute-run --device <设备>] [--navigate <route-steps.json>] [--capture-screenshot] [--capture-layout] [--implementation <实施记录>] [--judgment <visual-judgment.json>] [--output <目录>]（报告与 evidence 默认写入 <工程>/ohos-feature-engineering/<场景ID>/）")
   if (!isAbsolute(args.project)) throw new Error("project 必须是绝对路径")
   const repairAttempts = Number(args["repair-attempts"] ?? 0)
   if (!Number.isInteger(repairAttempts) || repairAttempts < 0 || repairAttempts > 2) throw new Error("repair-attempts 必须是 0 到 2")

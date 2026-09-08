@@ -61,11 +61,11 @@ metadata:
 10. 设备运行成功后可执行自动判图：目标页面不是启动页时，先生成冻结的导航步骤文件 `route-steps.json` 并用 `--navigate` 执行——动作仅限 `launch/tap/swipe/input/wait`，locator 仅限 `text/id/type`（text/type 经组件树解析中心坐标，id 直接点击）；带 `expectPage` 的步骤执行后用组件树核验当前页面，失败即停止在该步骤并记录 `stepId + expected + actual`（组件树存为 `component_tree` 证据）；导航失败后跳过截图采集，视觉层保持 `not_run`；路由切换不点返回键，重新推包从首页执行。之后用 `scripts/verify-development.mjs --capture-screenshot` 采集设备截图并登记 `screenshot` 证据；模型先自检能否读取图片，不能读取时视觉层保持 `not_run` 并把原因写入 `pendingVerifications`，降级为外部观察机制。可读图时逐条对照场景 `expectedOutcomes` 判定（冲突场景须声明匹配的冲突事实）；图片无法判定时用 `--capture-layout` 采集完整组件树（`component_tree` 证据）做结构判断。判定写入 `visual-judgment.json`（schemaVersion、scenarioId、可选 runtime、visual.status/basis/evidence、matchedFactRefs），经 `--judgment` 注入并登记为 `visual_judgment` 证据；判图不确定只能是 `inconclusive`，不得标记通过，也不得用判图结果反向改写能力包事实。
 11. 视觉结论必须来自截图、录屏、可复查日志、用户明确观察或通过校验的模型判定记录。没有观察或判定证据时不得标记视觉通过；构建通过不等于视觉成功。
 12. 实施及定向修复时按顺序记录实际代码步骤、文件位置、能力包事实引用及工程配套选择理由。用 `scripts/snapshot-project-files.mjs compare` 生成 before/after 哈希与精确 diff；通过 `verify-development.mjs --implementation <记录文件>` 传入实施记录。按 [报告契约](references/development/report-contract.md) 形成 1.1 版 JSON，自动从能力包展开官网来源，用 `scripts/validate-development-report.mjs` 校验，再由 `scripts/render-development-report.mjs` 展示步骤、位置与依据。记录缺失或与 diff 不符时如实披露，不将场景计划当作已实施步骤。
-13. 开发验证报告与 `evidence/` 默认生成在目标工程根目录（`--output` 显式指定时改用指定目录）。答复同时返回结果、分层证据、待验证项和精确改动。
+13. 开发验证报告与 `evidence/` 默认统一生成在目标工程 `ohos-feature-engineering/<场景ID>/` 目录（与其他链路产物同在单一目录；`--output` 显式指定时改用指定目录）。答复同时返回结果、分层证据、待验证项和精确改动。
 
 ## 硬性边界
 
-- 代码开发验证报告与证据默认写入**目标工程根目录**（固定文件名），显式输出目录优先。审阅与清单报告默认写入本次执行开始时的工作目录。固定报告可被后续运行覆盖，但不得删除或覆盖未登记的用户文件。
+- 代码开发验证报告与证据默认写入**目标工程 `ohos-feature-engineering/<场景ID>/`**（固定文件名，与其他链路产物同在单一目录），显式输出目录优先。审阅与清单报告默认写入本次执行开始时的工作目录。固定报告可被后续运行覆盖，但不得删除或覆盖未登记的用户文件。
 - 本地文件来源不等于官方事实；来源身份与技术正确性必须分开判断。
 - 外部技术事实只有获得同版本 API 参考、官方关联页、SDK 声明、官方示例或可复现构建支持时，才可标记 `confirmed`。
 - 同一资料集内只有两个原子命题的主体以及版本、模式、组件、条件、环境和生命周期完全对齐，且结果不能同时成立时，才可标记 `confirmed/internal_consistency`。必须保留两侧原文范围，不得把“部分”扩大为“全部”、把特定场景扩大为通用原则；任一作用域未说明或不一致时降级为 `ambiguous`、`version_caveat`、`likely` 或 `pending`。

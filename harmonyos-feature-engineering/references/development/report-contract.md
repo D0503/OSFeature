@@ -1,6 +1,6 @@
 # 代码开发验证报告契约
 
-固定文件名为 `development-verification-report.json` 和 `development-verification-report.md`。报告始终落盘：默认写入**目标工程根目录**（`--output` 显式优先）。构建日志、设备日志和截图索引放在同目录的 `evidence/`。
+固定文件名为 `development-verification-report.json` 和 `development-verification-report.md`。报告始终落盘：默认写入**目标工程 `ohos-feature-engineering/<场景ID>/`**（与其他链路产物同在单一目录；`--output` 显式优先）。构建日志、设备日志和截图索引放在同目录的 `evidence/`。
 
 重复运行覆盖固定报告和同名内部证据文件，不得删除或覆盖 `evidence/` 中未登记的用户文件。
 

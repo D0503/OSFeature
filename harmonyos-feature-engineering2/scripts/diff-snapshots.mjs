@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { dirname, resolve } from "node:path"
 import { loadCapability } from "./lib/capability-tools.mjs"
 import { readFrozenSnapshot } from "./lib/fetch-official.mjs"
+import { resolveArtifactsRoot } from "./lib/artifacts-dir.mjs"
 
 const VERSION_PATTERN = /(?:\d+\.\d+\.\d+|API\s?\d+|起始版本|起始API|minAPI|targetAPI|targetSDK|compatibleSDK)/i
 const API_SIGNATURE_PATTERN = /(?:[A-Za-z][A-Za-z0-9_]*\s*\(|\b(?:interface|enum|参数名|返回值|默认值|可选|必填|SystemCapability)\b|materialType|materialLevel|systemMaterial|systemMaterialEffect)/i
@@ -55,7 +56,7 @@ function classifyChange(removed, added) {
 const HIGH_RISK = new Set(["api-signature", "version", "deletion", "new", "removed"])
 
 function parseArgs(argv) {
-  const valued = new Set(["frozen", "skill-root", "output"])
+  const valued = new Set(["frozen", "skill-root", "output", "project"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -123,14 +124,15 @@ export async function diffAgainstLatest(capability, frozenDirectory) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.frozen) throw new Error("用法: node diff-snapshots.mjs --frozen <冻结目录> [--output <目录>]")
+  if (!args.frozen) throw new Error("用法: node diff-snapshots.mjs --frozen <冻结目录> [--project <目标工程绝对路径> | --output <目录>]")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
   const report = await diffAgainstLatest(capability, resolve(args.frozen))
-  if (args.output) {
+  const outputDirectory = args.output ? resolve(args.output) : args.project ? resolveArtifactsRoot(args.project) : null
+  if (outputDirectory) {
     const { mkdir, writeFile } = await import("node:fs/promises")
-    await mkdir(args.output, { recursive: true })
-    await writeFile(resolve(args.output, "diff-report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8")
+    await mkdir(outputDirectory, { recursive: true })
+    await writeFile(resolve(outputDirectory, "diff-report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8")
   }
   process.stdout.write(`${JSON.stringify({ status: report.status, frozenAt: report.frozenAt, pages: report.pages.map(({ removedExcerpt, addedExcerpt, ...page }) => page), highRiskCount: report.highRisk.length }, null, 2)}\n`)
   if (report.status !== "clean") process.exitCode = 3
