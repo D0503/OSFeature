@@ -66,7 +66,12 @@
           "SegmentButton",
           "SegmentButtonV2"
         ]
-      }
+      },
+      "intentPatterns": [
+        "ArkUI",
+        "uiMaterial",
+        "@kit.ArkUI"
+      ]
     },
     {
       "id": "hds-api23",
@@ -114,7 +119,21 @@
         "tablet": "supported",
         "pc2in1": "query-material-types-first",
         "tv": "HdsTabs-material-no-effect"
-      }
+      },
+      "intentPatterns": [
+        "HDS",
+        "hdsMaterial",
+        "HdsNavigation",
+        "HdsTabs",
+        "UIDesignKit",
+        "HDS导航",
+        "HDS标题栏",
+        "HDS页签",
+        "HDS自定义",
+        "HDS设备能力",
+        "HDS性能",
+        "HDS沉浸光感"
+      ]
     }
   ],
   "projectSignals": [
@@ -277,6 +296,26 @@
       "snapshotId": "hds-material-api",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ui-design-hdsmaterial",
       "title": "hdsMaterial (hds沉浸光感材质)"
+    },
+    {
+      "snapshotId": "catalog",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense",
+      "title": "沉浸光感目录"
+    },
+    {
+      "snapshotId": "typical-scenes",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sample",
+      "title": "沉浸光感典型场景"
+    },
+    {
+      "snapshotId": "ui-material-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uimaterial",
+      "title": "@ohos.arkui.uiMaterial (系统材质)"
+    },
+    {
+      "snapshotId": "design-guidance",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/design-guides/immersivelight-0000002612101053",
+      "title": "沉浸光感设计规范"
     }
   ],
   "scenarios": [
@@ -299,7 +338,8 @@
       ],
       "sources": [
         "overview",
-        "enable"
+        "enable",
+        "ui-material-api"
       ],
       "criteriaSpec": {
         "required": [
@@ -441,7 +481,8 @@
       ],
       "sources": [
         "enable",
-        "overview"
+        "overview",
+        "ui-material-api"
       ],
       "criteriaSpec": {
         "required": [
@@ -542,7 +583,13 @@
         "AlphabetIndexer",
         "导航",
         "页签",
-        "索引器"
+        "索引器",
+        "索引条",
+        "标题栏",
+        "标题栏按钮",
+        "底部导航栏",
+        "底部悬浮页签",
+        "TabBar"
       ],
       "targets": [
         "Navigation",
@@ -551,7 +598,10 @@
         "AlphabetIndexer"
       ],
       "sources": [
-        "component"
+        "component",
+        "ui-material-api",
+        "enable",
+        "constraints"
       ],
       "criteriaSpec": {
         "required": [
@@ -568,6 +618,11 @@
           {
             "topic": "导航组件（IL-F011）",
             "hint": "AlphabetIndexer 弹窗材质与 popupBackground、popupBackgroundBlurStyle 存在互斥覆盖关系。",
+            "mustResolve": true
+          },
+          {
+            "topic": "导航材质生效条件",
+            "hint": "从组件指南核对 Tabs 悬浮所需的 barOverlap、vertical、barPosition 条件、TabContent 不支持情况，以及 Navigation 标题栏实际生效的子区域。",
             "mustResolve": true
           }
         ],
@@ -605,7 +660,9 @@
             "NavigationTitleOptions",
             "FloatingTabBarStyle",
             "barFloatingStyle",
-            "AlphabetIndexer"
+            "AlphabetIndexer",
+            "\\bNavigation\\s*\\(",
+            "\\bNavDestination\\s*\\("
           ],
           "onMissing": "failed",
           "message": "未发现目标导航组件入口。"
@@ -667,7 +724,29 @@
         "提示",
         "菜单",
         "对话框",
-        "半模态"
+        "半模态",
+        "AlertDialog",
+        "CustomDialog",
+        "ActionSheet",
+        "bindSheet",
+        "DatePickerDialog",
+        "TimePickerDialog",
+        "TextPickerDialog",
+        "CalendarPickerDialog",
+        "DatePicker",
+        "TimePicker",
+        "TextPicker",
+        "CalendarPicker",
+        "SelectionMenu",
+        "PromptAction",
+        "ArkUI_NativeDialog",
+        "弹出框",
+        "日期选择",
+        "时间选择",
+        "文本选择",
+        "文本菜单",
+        "长按菜单",
+        "气泡"
       ],
       "targets": [
         "Toast",
@@ -680,7 +759,11 @@
       "sources": [
         "component",
         "constraints",
-        "common"
+        "common",
+        "ui-material-api",
+        "faq",
+        "enable",
+        "overview"
       ],
       "criteriaSpec": {
         "required": [
@@ -702,6 +785,11 @@
           {
             "topic": "性能约束（IL-F023）",
             "hint": "应限制材质面积、嵌套、模糊叠加、动态背景、反色子树范围和重复阴影，并在真机测量性能与功耗。",
+            "mustResolve": true
+          },
+          {
+            "topic": "弹窗具体类型与例外",
+            "hint": "区分各 PickerDialog、ActionSheet、SelectionMenu 与接口的入口；核对 CalendarPicker 拉起的弹出框和组件本身的差别，不因同属弹窗而推定支持。",
             "mustResolve": true
           }
         ],
@@ -725,6 +813,7 @@
           }
         ],
         "steps": [
+          "先核对目标类型是否支持、默认开启条件和生效区域；CalendarPicker 拉起的弹出框等不支持分支只说明约束，不强行增加材质入口。",
           "先确定具体弹窗 API 和 Options 类型，使用该 API 声明的 systemMaterial 字段。",
           "只在目标弹窗配置对象中加入材质，不把一种 Options 类型强转复用于其他弹窗。",
           "保留打开、关闭、取消、回调和错误处理；检查普通背景、模糊、面积与透明色冲突。"
@@ -740,7 +829,13 @@
             "bindTips",
             "bindMenu",
             "showDialog",
-            "bindSheet"
+            "bindSheet",
+            "\\b(?:AlertDialog|ActionSheet|DatePickerDialog|TimePickerDialog|TextPickerDialog|CalendarPickerDialog)\\s*\\.\\s*show\\s*\\(",
+            "\\bCustomDialogController\\s*\\(",
+            "\\bopenCustomDialog\\s*\\(",
+            "\\bbindContextMenu\\s*\\(",
+            "\\bbindSelectionMenu\\s*\\(",
+            "\\bcopyOption\\s*\\("
           ],
           "onMissing": "failed",
           "message": "未发现受支持的弹窗调用。"
@@ -794,7 +889,15 @@
         "选择器",
         "开关",
         "滑块",
-        "胶囊"
+        "胶囊",
+        "滑动条",
+        "子页签",
+        "操作块",
+        "分段按钮",
+        "多选分段",
+        "复选框",
+        "SegmentButtonV2",
+        "Checkbox"
       ],
       "targets": [
         "Button",
@@ -807,7 +910,11 @@
       ],
       "sources": [
         "component",
-        "common"
+        "common",
+        "ui-material-api",
+        "enable",
+        "constraints",
+        "faq"
       ],
       "criteriaSpec": {
         "required": [
@@ -829,6 +936,16 @@
           {
             "topic": "材质参数（IL-F019）",
             "hint": "interactive 与 lightEffect 控制交互和流光；Button 开启流光后需同时验证原按压和悬停反馈。",
+            "mustResolve": true
+          },
+          {
+            "topic": "选择控件差异与边界",
+            "hint": "分别核对 Toggle.Switch 参数只作开关标记、Toggle.Checkbox 不支持、Slider 参数及 DEFAULT/NONE 交互条件。",
+            "mustResolve": true
+          },
+          {
+            "topic": "子页签与操作块入口",
+            "hint": "核对 ChipGroup 普通/选中/图标三种材质入口、SegmentButton 胶囊多选限制与 V2 拖拽跟随条件。",
             "mustResolve": true
           }
         ],
@@ -904,7 +1021,11 @@
         "Toggle Checkbox",
         "禁用态",
         "交互与流光覆盖旧反馈",
-        "设备不支持"
+        "设备不支持",
+        "Toggle.Switch 修改材质参数但视觉不随之改变",
+        "SliderBlockType 非 DEFAULT 或 SliderStyle.NONE",
+        "SegmentButton capsule 多选不支持",
+        "ChipGroup 选中与图标材质入口遗漏"
       ],
       "requiredChecks": [
         "static",
@@ -913,7 +1034,19 @@
         "install",
         "runtime",
         "visual"
-      ]
+      ],
+      "intentGroups": [
+        [
+          "子页签"
+        ],
+        [
+          "操作块"
+        ],
+        [
+          "分段按钮"
+        ]
+      ],
+      "intentPriority": 1
     },
     {
       "id": "IL-S006",
@@ -929,7 +1062,15 @@
         "流光",
         "applyShadow",
         "阴影",
-        "透明度"
+        "透明度",
+        "交互形变",
+        "点光源",
+        "跟手",
+        "弹性形变",
+        "材质赋色",
+        "染色",
+        "自定义阴影",
+        "颜色没有变化"
       ],
       "targets": [
         "ImmersiveOptions",
@@ -939,7 +1080,9 @@
         "common",
         "faq",
         "component",
-        "constraints"
+        "constraints",
+        "ui-material-api",
+        "design-guidance"
       ],
       "criteriaSpec": {
         "required": [
@@ -961,6 +1104,16 @@
           {
             "topic": "材质参数（IL-F020）",
             "hint": "applyShadow 与普通 shadow 属性存在顺序和所有权约束，避免重复阴影。",
+            "mustResolve": true
+          },
+          {
+            "topic": "交互参数有效性与设备差异",
+            "hint": "核对 interactive、lightEffect 对各算力设备的生效差异、默认值、null/undefined，以及原点击/悬停反馈是否被替代。",
+            "mustResolve": true
+          },
+          {
+            "topic": "自动反色完整条件",
+            "hint": "核对设备档位、材质厚度、系统强弱配置与具体支持的系统颜色资源，不把任意资源颜色都视为可反色。",
             "mustResolve": true
           }
         ],
@@ -1058,7 +1211,21 @@
         "面积",
         "嵌套",
         "模糊叠加",
-        "动态背景"
+        "动态背景",
+        "看不到材质",
+        "没有材质效果",
+        "效果消失",
+        "样式显示异常",
+        "渲染区域",
+        "可视区域",
+        "显示层级",
+        "背景遮挡",
+        "周围背景",
+        "参数稳定",
+        "区域稳定",
+        "子树稳定",
+        "低算力差异",
+        "out of scope"
       ],
       "targets": [
         "material regions",
@@ -1068,7 +1235,8 @@
         "overview",
         "common",
         "constraints",
-        "faq"
+        "faq",
+        "ui-material-api"
       ],
       "criteriaSpec": {
         "required": [
@@ -1095,6 +1263,26 @@
           {
             "topic": "诊断排障（IL-F024）",
             "hint": "无视觉效果时应排查普通背景覆盖、透明度、属性顺序、渲染区域、设备能力与算力档位。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质区域与绘制层级",
+            "hint": "核对布局区域和可视区域、width/height/borderRadius 的关系，Text 文本与背板差别、自绘制组件内容层遮挡与属性设置顺序。",
+            "mustResolve": true
+          },
+          {
+            "topic": "材质参数与区域稳定性",
+            "hint": "核对频繁改变 style/materialColor 与频繁增删子节点的开销，区分必要交互与无必要重算。",
+            "mustResolve": true
+          },
+          {
+            "topic": "折射现象与故障区分",
+            "hint": "对照 FAQ 判断边框呈现周围背景是否为正常折射，按需求选择厚度或半透明赋色；不能直接判为渲染故障。",
+            "mustResolve": true
+          },
+          {
+            "topic": "设备自适应与用户系统设置",
+            "hint": "核对低算力显示差异、系统强弱设置及深浅色变化，不能承诺所有设备显示同样滤镜。",
             "mustResolve": true
           }
         ],
@@ -1161,7 +1349,11 @@
         "模糊叠加",
         "动态背景",
         "大范围反色",
-        "重复阴影"
+        "重复阴影",
+        "材质参数或子树频繁变化",
+        "正常边框折射被误判故障",
+        "Text 文本内容与背板混淆",
+        "TextArea 内容层遮挡背板"
       ],
       "requiredChecks": [
         "static",
@@ -1170,7 +1362,46 @@
         "install",
         "runtime",
         "visual"
-      ]
+      ],
+      "intentGroups": [
+        [
+          "不生效"
+        ],
+        [
+          "看不到材质"
+        ],
+        [
+          "没有材质效果"
+        ],
+        [
+          "样式显示异常"
+        ],
+        [
+          "渲染区域"
+        ],
+        [
+          "可视区域"
+        ],
+        [
+          "显示层级"
+        ],
+        [
+          "周围背景"
+        ],
+        [
+          "区域稳定"
+        ],
+        [
+          "参数稳定"
+        ],
+        [
+          "区域内频繁"
+        ],
+        [
+          "out of scope"
+        ]
+      ],
+      "intentPriority": 3
     },
     {
       "id": "IL-S009",
@@ -1180,7 +1411,6 @@
         "HdsNavigation",
         "HDS导航",
         "HDS标题栏",
-        "标题栏按钮",
         "TitleBarStyleOptions"
       ],
       "targets": [
@@ -1320,7 +1550,6 @@
         "HdsTabs",
         "HDS底部页签",
         "HDS页签",
-        "底部悬浮页签",
         "HdsTabsFloatingStyle"
       ],
       "targets": [
@@ -1461,8 +1690,7 @@
         "HDS沉浸光感",
         "UIDesignKit沉浸光感",
         "HDS导航和底部页签",
-        "HDS组合接入",
-        "系统自适应沉浸光感"
+        "HDS组合接入"
       ],
       "targets": [
         "HdsNavigation",
@@ -1605,7 +1833,23 @@
         "install",
         "runtime",
         "visual"
-      ]
+      ],
+      "intentGroups": [
+        [
+          "HdsNavigation",
+          "HdsTabs"
+        ],
+        [
+          "HDS导航",
+          "页签"
+        ],
+        [
+          "HDS",
+          "导航",
+          "页签"
+        ]
+      ],
+      "intentPriority": 1
     },
     {
       "id": "IL-S012",
@@ -1619,12 +1863,12 @@
         "EXQUISITE",
         "GENTLE",
         "SMOOTH",
-        "HDS性能"
+        "HDS性能",
+        "自定义等级",
+        "材质选级"
       ],
       "targets": [
-        "hdsMaterial",
-        "HdsNavigation",
-        "HdsTabs"
+        "hdsMaterial"
       ],
       "sources": [
         "hds-component-material-guide",
@@ -1757,6 +2001,809 @@
         "查询异常无恢复路径",
         "PC/2in1 未查询",
         "用构建通过代替性能与视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "HDS",
+          "自定义"
+        ],
+        [
+          "HdsNavigation",
+          "EXQUISITE"
+        ],
+        [
+          "HdsTabs",
+          "EXQUISITE"
+        ],
+        [
+          "getSystemMaterialTypes"
+        ],
+        [
+          "HdsNavigation",
+          "自定义"
+        ],
+        [
+          "HdsTabs",
+          "自定义"
+        ],
+        [
+          "HDS",
+          "材质选级"
+        ]
+      ],
+      "intentPriority": 2
+    },
+    {
+      "id": "IL-S013",
+      "displayName": "搜索框标题栏沉浸光感与滚动收起",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "搜索框标题栏",
+        "搜索标题栏",
+        "搜索栏标题栏",
+        "搜索框收起",
+        "搜索框隐藏",
+        "典型场景"
+      ],
+      "targets": [],
+      "sources": [
+        "typical-scenes",
+        "common",
+        "design-guidance",
+        "enable",
+        "component",
+        "constraints",
+        "ui-material-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "搜索标题栏材质入口",
+            "hint": "完整读取典型场景“搜索框标题栏效果”，核对 Search、标题栏及自定义标题子组件的材质入口。",
+            "mustResolve": true
+          },
+          {
+            "topic": "搜索标题栏滚动联动",
+            "hint": "提取上滑缩小标题栏、隐藏搜索框、保留分类列表的交互；区分只要材质与要求滚动联动的任务。",
+            "mustResolve": true
+          },
+          {
+            "topic": "搜索标题栏透底与布局",
+            "hint": "核对 BarStyle.STACK、contentStartOffset、安全区及现有 Tabs 悬浮配置的配合。",
+            "mustResolve": true
+          },
+          {
+            "topic": "搜索标题栏材质嵌套审查",
+            "hint": "比较示例中父子节点同时设置材质与功耗优化的嵌套限制，现提时判断适用范围并给出监测结论。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": [
+          {
+            "id": "search-title-nesting",
+            "topic": "典型搜索标题栏多层材质示例与避免材质嵌套的适用关系",
+            "positions": [
+              "typical-scenes",
+              "constraints"
+            ]
+          }
+        ]
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "搜索标题栏材质入口",
+            "搜索标题栏滚动联动",
+            "搜索标题栏透底与布局",
+            "搜索标题栏材质嵌套审查"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "从 typical-scenes 的“搜索框标题栏效果”章节现提判据，不以通用导航示例替代。",
+          "只修改目标搜索框、标题栏和用户要求的联动；保留搜索提交、分类选择与导航。",
+          "要求联动时检查快速跨越阈值、回滑和回弹，确保偏移与透明度在有效范围，不照抄示例未覆盖的边界。",
+          "示例页签、分类、图片、数据和路由只按既有工程需要补齐，不新增用户未要求的业务内容。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s013-entry",
+          "kind": "require_any",
+          "patterns": [
+            "\\bsystemMaterial\\b"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "搜索",
+          "标题栏"
+        ],
+        [
+          "搜索栏",
+          "标题栏"
+        ],
+        [
+          "Search",
+          "标题栏"
+        ],
+        [
+          "搜索框",
+          "上滑"
+        ],
+        [
+          "搜索框",
+          "收起"
+        ],
+        [
+          "搜索框",
+          "隐藏"
+        ]
+      ],
+      "intentPriority": 2
+    },
+    {
+      "id": "IL-S014",
+      "displayName": "内容区标题吸顶并融入沉浸光感标题栏",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "内容区标题",
+        "内容区小标题",
+        "多层标题",
+        "标题吸顶",
+        "分类吸顶",
+        "分类栏吸顶",
+        "典型场景"
+      ],
+      "targets": [],
+      "sources": [
+        "typical-scenes",
+        "design-guidance",
+        "enable",
+        "component",
+        "constraints",
+        "ui-material-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "内容标题迁入条件",
+            "hint": "读取典型场景“内容区标题栏开启沉浸光感”，提取独立子组件、滚动位置与迁入 NavDestination 标题栏的条件。",
+            "mustResolve": true
+          },
+          {
+            "topic": "内容标题连续性",
+            "hint": "核对显示切换、回滑恢复、选择状态和点击事件连续性；根据实际布局统一坐标单位与阈值。",
+            "mustResolve": true
+          },
+          {
+            "topic": "内容标题区域与嵌套约束",
+            "hint": "结合功耗优化核对生效区域、标题栏与内部组件的多层材质设置，不能只抄示例。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": [
+          {
+            "id": "content-title-nesting",
+            "topic": "内容标题示例的父子材质配置与避免嵌套的适用关系",
+            "positions": [
+              "typical-scenes",
+              "constraints"
+            ]
+          }
+        ]
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "内容标题迁入条件",
+            "内容标题连续性",
+            "内容标题区域与嵌套约束"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "从 typical-scenes 的“内容区标题栏开启沉浸光感”章节现提判据。",
+          "复用既有内容标题，按实际滚动位置切换显示，核对阈值相等、快速滚动、回滑，保留选择状态。",
+          "只实现所需材质和标题迁入，补齐真实资源、导入及路由，不增加示例业务页面。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s014-entry",
+          "kind": "require_any",
+          "patterns": [
+            "\\bsystemMaterial\\b"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "内容区",
+          "标题栏"
+        ],
+        [
+          "标题",
+          "吸顶"
+        ],
+        [
+          "分类",
+          "吸顶"
+        ],
+        [
+          "小标题",
+          "滚动"
+        ]
+      ],
+      "intentPriority": 2
+    },
+    {
+      "id": "IL-S015",
+      "displayName": "应用材质配置与设备能力查询",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "getMaterialInfo",
+        "MaterialInfo",
+        "getGlobalMaterialLevel",
+        "isImmersiveMaterialSupported",
+        "材质配置",
+        "材质状态",
+        "查询设备",
+        "是否支持",
+        "设备能力查询"
+      ],
+      "targets": [],
+      "sources": [
+        "enable",
+        "overview",
+        "ui-material-api",
+        "faq"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "应用材质配置查询",
+            "hint": "核对 getMaterialInfo 返回 state/type 的含义、entry metadata 来源及 MaterialState 与配置值映射，不能将应用使能与设备支持混为一谈。",
+            "mustResolve": true
+          },
+          {
+            "topic": "设备等级与支持查询",
+            "hint": "核对 getGlobalMaterialLevel、isImmersiveMaterialSupported 的返回值、设备决定且不可修改的约束。",
+            "mustResolve": true
+          },
+          {
+            "topic": "查询后的组件策略",
+            "hint": "依据应用配置与设备支持选择用户要求的设置或 Material.empty，保留普通样式；不假定 undefined 等于关闭。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "应用材质配置查询",
+            "设备等级与支持查询",
+            "查询后的组件策略"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "只查询用户需要的信息或接入已有业务判断；纯查询说明不创建工程。",
+          "使用 ArkUI 的查询接口，区分应用状态、设备等级和材质样式；不调用 HDS 接口替代。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s015-entry",
+          "kind": "require_any",
+          "patterns": [
+            "getMaterialInfo\\s*\\(",
+            "getGlobalMaterialLevel\\s*\\(",
+            "isImmersiveMaterialSupported\\s*\\("
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "getMaterialInfo"
+        ],
+        [
+          "getGlobalMaterialLevel"
+        ],
+        [
+          "isImmersiveMaterialSupported"
+        ],
+        [
+          "查询",
+          "材质"
+        ],
+        [
+          "设备",
+          "是否支持"
+        ]
+      ],
+      "intentPriority": 2
+    },
+    {
+      "id": "IL-S016",
+      "displayName": "材质厚度选择与系统显示自适应",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "ImmersiveStyle",
+        "ULTRA_THIN",
+        "THIN",
+        "REGULAR",
+        "THICK",
+        "ULTRA_THICK",
+        "材质厚度",
+        "材质样式",
+        "超薄",
+        "超厚",
+        "系统强弱",
+        "深浅色",
+        "系统档位",
+        "强弱档位"
+      ],
+      "targets": [],
+      "sources": [
+        "overview",
+        "ui-material-api",
+        "design-guidance",
+        "faq",
+        "constraints"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "材质厚度选择",
+            "hint": "核对五种 ImmersiveStyle、默认样式与高/中/低算力适用差异，结合顶部、底部、临时浮层和弹窗的设计建议。",
+            "mustResolve": true
+          },
+          {
+            "topic": "系统显示自适应",
+            "hint": "区分设备算力等级、系统强弱设置、深浅色与开发者材质样式；设计建议不升级为强制，不创建应用内系统档位开关。",
+            "mustResolve": true
+          },
+          {
+            "topic": "设计建议与性能边界",
+            "hint": "核对顶部渐变模糊等设计建议和避免模糊叠加要求的区域及层级关系，识别适用条件后再实施。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": [
+          {
+            "id": "design-blur-layering",
+            "topic": "顶部渐变模糊设计建议与避免材质模糊叠加的区域关系",
+            "positions": [
+              "design-guidance",
+              "constraints"
+            ]
+          }
+        ]
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "材质厚度选择",
+            "系统显示自适应",
+            "设计建议与性能边界"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "只对既有目标选取材质厚度；以本次 API 和设计正文为依据。",
+          "系统强弱与深浅色通过系统设置观察，不伪造一致视觉效果或增加应用设置页。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s016-entry",
+          "kind": "require_any",
+          "patterns": [
+            "ImmersiveStyle",
+            "ImmersiveMaterial"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "材质",
+          "厚度"
+        ],
+        [
+          "系统",
+          "强弱"
+        ],
+        [
+          "深浅色"
+        ],
+        [
+          "ImmersiveStyle"
+        ],
+        [
+          "ULTRA_THIN"
+        ],
+        [
+          "THIN"
+        ],
+        [
+          "REGULAR"
+        ],
+        [
+          "THICK"
+        ],
+        [
+          "ULTRA_THICK"
+        ]
+      ],
+      "intentPriority": 2
+    },
+    {
+      "id": "IL-S017",
+      "displayName": "沉浸式空间动效与系统自适应",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "空间动效",
+        "非线性形变",
+        "边缘流光",
+        "粒子动画",
+        "粒子效果",
+        "弹出动效",
+        "菜单形变"
+      ],
+      "targets": [],
+      "sources": [
+        "overview",
+        "component",
+        "constraints",
+        "enable",
+        "ui-material-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "空间动效与支持组件",
+            "hint": "从简介提取非线性形变、边缘流光、粒子动画对应的组件，不把点光源 lightEffect 等同于全部空间动效。",
+            "mustResolve": true
+          },
+          {
+            "topic": "空间动效触发条件",
+            "hint": "核对设备算力、系统强弱设置和弹窗尺寸影响；系统自动提供的效果不自行仿制粒子或动画。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "空间动效与支持组件",
+            "空间动效触发条件"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "依据 overview 的空间动效表和目标组件开启条件实施，保留既有弹出/关闭/滑动交互。",
+          "在支持条件下观察系统动效，不承诺任意设备可显示同样形变或粒子；不增加自制动画替代系统能力。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s017-entry",
+          "kind": "require_any",
+          "patterns": [
+            "\\bsystemMaterial\\b"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "空间动效"
+        ],
+        [
+          "非线性形变"
+        ],
+        [
+          "边缘流光"
+        ],
+        [
+          "粒子动画"
+        ],
+        [
+          "粒子效果"
+        ]
+      ],
+      "intentPriority": 2
+    },
+    {
+      "id": "IL-S018",
+      "displayName": "ArkUI 与 HDS 材质接口和路线核验",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "材质等级差异",
+        "材质样式差异",
+        "路线选择",
+        "ArkUI与HDS",
+        "uiMaterial与hdsMaterial"
+      ],
+      "targets": [],
+      "sources": [
+        "faq",
+        "overview",
+        "ui-material-api",
+        "hds-material-api",
+        "hds-component-material-guide"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "两套材质等级与样式",
+            "hint": "对照 FAQ、ArkUI API 与 HDS API 核对：ArkUI 等级只可查询、HDS 等级可配置；HDS 没有对等的 ImmersiveStyle 厚度参数。",
+            "mustResolve": true
+          },
+          {
+            "topic": "路线与工程约束",
+            "hint": "按用户明确的组件/Kit 和现有工程选择技术路线；不把 EXQUISITE 等同名枚举当作 HDS 的唯一证据，不自动升级 SDK。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "两套材质等级与样式",
+            "路线与工程约束"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "纯比较问题只解释接口差异；实施请求先明确目标路线，再使用对应接入场景。",
+          "用户明确 uiMaterial 却要求设置设备等级时说明其约束，不切换成 HDS 实现；涉及两套 Kit 时分别核对命名空间。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s018-entry",
+          "kind": "require_any",
+          "patterns": [
+            "uiMaterial",
+            "hdsMaterial"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ],
+      "intentGroups": [
+        [
+          "uiMaterial",
+          "hdsMaterial"
+        ],
+        [
+          "ArkUI",
+          "HDS"
+        ],
+        [
+          "uiMaterial",
+          "EXQUISITE"
+        ],
+        [
+          "uiMaterial",
+          "GENTLE"
+        ],
+        [
+          "uiMaterial",
+          "SMOOTH"
+        ]
+      ],
+      "intentPriority": 3,
+      "crossRoute": true
+    },
+    {
+      "id": "IL-S019",
+      "displayName": "通用组件背板材质与生效区域",
+      "route": "arkui-api26",
+      "intentPatterns": [
+        "Search",
+        "搜索框",
+        "搜索栏",
+        "TextArea",
+        "TextInput",
+        "Text",
+        "Column",
+        "Row",
+        "Stack",
+        "Scroll",
+        "布局容器",
+        "滚动容器",
+        "输入框",
+        "文本区域",
+        "卡片背板",
+        "通用组件"
+      ],
+      "targets": [],
+      "sources": [
+        "enable",
+        "component",
+        "constraints",
+        "ui-material-api",
+        "faq"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "通用材质生效区域",
+            "hint": "核对通用 systemMaterial 的标题栏/底部 TabBar 范围和特殊组件例外，不承诺在任意内容区生效。",
+            "mustResolve": true
+          },
+          {
+            "topic": "背板与内容层边界",
+            "hint": "区分 Text 文本本身和布局背板、TextArea 等自绘制内容层背景遮挡，以及布局区域与可视区域。",
+            "mustResolve": true
+          },
+          {
+            "topic": "通用入口与原交互",
+            "hint": "核对样式设置顺序、区域尺寸、透明背景和边框，保留输入、搜索、选择与滚动交互。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按本次冻结正文现提预期；只验证用户目标涉及的效果、状态与交互，不把构建通过视为视觉通过。",
+          "criteriaTopics": [
+            "通用材质生效区域",
+            "背板与内容层边界",
+            "通用入口与原交互"
+          ]
+        }
+      ],
+      "implementation": {
+        "assets": [],
+        "steps": [
+          "先确认目标组件所在区域及专用入口；普通搜索框不自动增加标题栏、分类列表或滚动收起。",
+          "只给符合本次判据的目标区域接入材质；不支持时报告约束，不移动或新增业务组件来制造支持。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "il-s019-entry",
+          "kind": "require_any",
+          "patterns": [
+            "\\bsystemMaterial\\b"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现预期入口文本；需对照本次判据核对目标代码与实际调用位置。"
+        }
+      ],
+      "negativeCases": [
+        "缺少本次官网判据",
+        "超出官网生效范围",
+        "改变用户已有交互",
+        "用静态命中或编译成功代替视觉结论"
       ],
       "requiredChecks": [
         "static",

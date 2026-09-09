@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { isAbsolute } from "node:path"
+import { isAbsolute, resolve } from "node:path"
 import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { CHECK_LEVELS, LAYER_STATUSES, VERDICTS } from "./lib/capability-tools.mjs"
@@ -51,6 +51,7 @@ export function deriveDevelopmentVerdict(report) {
 }
 
 export function validateDevelopmentReport(report) {
+  if (report?.collectionVersion !== undefined) return validateDevelopmentReportCollection(report)
   const errors = []
   if (!object(report)) return { valid: false, errors: ["报告根节点必须是对象"] }
   if (report.verificationVersion !== "1.0") errors.push("verificationVersion 必须为 1.0")
@@ -146,6 +147,22 @@ export function validateDevelopmentReport(report) {
   }
   if (report.implementation !== undefined || report.normativeBasis !== undefined) errors.push(...validateImplementationTrace(report))
   return { valid: errors.length === 0, errors }
+}
+
+export function validateDevelopmentReportCollection(collection) {
+  const errors = []
+  if (collection?.collectionVersion !== "1.0") errors.push("collectionVersion 必须为 1.0")
+  if (collection?.mode !== "code-development-validation") errors.push("mode 必须为 code-development-validation")
+  if (!string(collection?.project) || !isAbsolute(collection.project)) errors.push("project 必须是绝对路径")
+  if (!Array.isArray(collection?.reports) || !collection.reports.length) errors.push("reports 必须是非空数组")
+  else for (const [index, report] of collection.reports.entries()) {
+    if (report?.collectionVersion !== undefined) { errors.push(`reports[${index}] 不允许嵌套汇总报告`); continue }
+    const validation = validateDevelopmentReport(report)
+    errors.push(...validation.errors.map((error) => `reports[${index}]: ${error}`))
+    const normalize = (path) => process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path)
+    if (string(report?.input?.project) && string(collection.project) && normalize(report.input.project) !== normalize(collection.project)) errors.push(`reports[${index}] 不属于同一工程`)
+  }
+  return { valid: !errors.length, errors }
 }
 
 async function main() {

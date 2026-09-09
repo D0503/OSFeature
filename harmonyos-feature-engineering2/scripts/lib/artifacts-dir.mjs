@@ -11,10 +11,3 @@ export function resolveArtifactsRoot(projectPath) {
   if (!isAbsolute(root)) throw new Error("project 必须是绝对路径")
   return join(root, ARTIFACTS_DIR_NAME)
 }
-
-export function scenarioArtifactsDirectory(projectPath, scenarioId) {
-  if (typeof scenarioId !== "string" || !/^[A-Za-z0-9_-]+$/.test(scenarioId)) {
-    throw new Error("scenarioId 必须是合法目录名")
-  }
-  return join(resolveArtifactsRoot(projectPath), scenarioId)
-}

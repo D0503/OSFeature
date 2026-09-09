@@ -13,6 +13,7 @@ import { deriveMaterials, validateDraft } from "../scripts/derive-criteria.mjs"
 import { runDevelopmentVerification } from "../scripts/verify-development.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "../scripts/validate-development-report.mjs"
 import { buildImplementationTrace } from "../scripts/lib/implementation-trace.mjs"
+import { renderDevelopmentReport } from "../scripts/render-development-report.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const tempRoot = await mkdtemp(join(tmpdir(), "dev-skill-tests-"))
@@ -59,8 +60,8 @@ async function makeFrozen(directory, pages) {
 try {
   // ---------- 能力包契约 ----------
   const capability = await loadCapability(skillRoot, "沉浸光感")
-  check(capability.scenariosData.scenarios.length === 11, "能力包登记 11 个场景")
-  check(capability.scenariosData.entryPoints.length === 11, "登记 11 个官网入口")
+  check(capability.scenariosData.scenarios.length === 18, "能力包登记 18 个场景")
+  check(capability.scenariosData.entryPoints.length === 15, "登记 15 个官网入口")
   check((capability.session?.criteria ?? []).length === 32, "初始上次审查判据 32 条")
   check(capability.session.conflictResolutions.some((item) => item.probeId === "disable-scope" && item.verdict === "persists"), "disable-scope 冲突监测点带初始结论")
 
@@ -238,6 +239,51 @@ try {
     outputDirectory: join(tempRoot, "out-judgment"),
   })
   check(judgmentRun.report.checks.visual.status === "passed" && judgmentRun.report.evidence.some((item) => item.type === "visual_judgment"), "判图注入路径保留")
+
+  // 多目标汇总与可随 Markdown 搬运的截图。
+  const combinedOutput = join(tempRoot, "combined report")
+  const first = structuredClone(judgmentRun.report)
+  const firstShot = first.evidence.find((item) => item.type === "screenshot")
+  const imageBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aX1cAAAAASUVORK5CYII=", "base64")
+  await writeFile(judgmentShot, imageBytes)
+  firstShot.sha256 = createHash("sha256").update(imageBytes).digest("hex")
+  const second = structuredClone(run.report)
+  second.input.goal = "给搜索框标题栏接入沉浸光感"
+  second.capabilityPackage.scenarioId = "IL-S013"
+  await Promise.all([renderDevelopmentReport(first, combinedOutput), renderDevelopmentReport(second, combinedOutput)])
+  const combinedPath = join(combinedOutput, "development-verification-report.json")
+  let combined = JSON.parse(await readFile(combinedPath, "utf8"))
+  check(combined.reports.length === 2 && validateDevelopmentReport(combined).valid, "同工程多场景并发渲染合并为同一份有效报告")
+  let markdown = await readFile(join(combinedOutput, "development-verification-report.md"), "utf8")
+  check(markdown.includes(first.input.goal) && markdown.includes(second.input.goal) && !/^## IL-S/m.test(markdown), "汇总按开发目标展示两个场景")
+  const imageLink = markdown.match(/!\[[^\]]*\]\(<([^>]+)>\)/)?.[1]
+  check(imageLink?.startsWith("evidence/images/") && (await readFile(resolve(combinedOutput, decodeURIComponent(imageLink)))).equals(imageBytes), "Markdown 内嵌真实截图并使用随报告目录可搬运的相对路径")
+  const storedShot = combined.reports[0].evidence.find((item) => item.type === "screenshot")
+  check(storedShot.path !== judgmentShot && firstShot.path === judgmentShot, "截图复制到报告证据目录且不修改调用方数据")
+  first.verdict.summary = "重跑后的最新结论"
+  await renderDevelopmentReport(first, combinedOutput)
+  combined = JSON.parse(await readFile(combinedPath, "utf8"))
+  check(combined.reports.length === 2 && combined.reports[0].verdict.summary === "重跑后的最新结论", "同目标重跑更新结论，保留其他目标")
+  const third = structuredClone(second)
+  third.input.goal = "同一场景的另一个开发目标"
+  await renderDevelopmentReport(third, combinedOutput)
+  check(JSON.parse(await readFile(combinedPath, "utf8")).reports.length === 3, "同场景不同目标分别保留")
+  const missingImage = structuredClone(first)
+  missingImage.input.goal = "截图丢失的目标"
+  missingImage.evidence.find((item) => item.type === "screenshot").path = join(tempRoot, "missing.png")
+  await renderDevelopmentReport(missingImage, combinedOutput)
+  markdown = await readFile(join(combinedOutput, "development-verification-report.md"), "utf8")
+  check(markdown.includes("截图文件缺失，无法预览。") && !/!\[[^\]]*\]\([^\n]*missing\.png/.test(markdown), "缺失截图明确提示，不输出损坏图片链接")
+  const otherProject = structuredClone(second)
+  otherProject.input.project = join(tempRoot, "another-project")
+  let otherProjectRejected = false
+  const beforeReject = await readFile(combinedPath, "utf8")
+  try { await renderDevelopmentReport(otherProject, combinedOutput) } catch { otherProjectRejected = true }
+  check(otherProjectRejected && await readFile(combinedPath, "utf8") === beforeReject, "拒绝把其他工程混入已有报告且保留文件")
+  const rerendered = await renderDevelopmentReport(JSON.parse(beforeReject), join(tempRoot, "rerendered"))
+  check(rerendered.reportCount === 4, "汇总 JSON 可独立重新渲染 Markdown")
+  const defaultRun = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project, goal: "应用级开启后关闭沉浸光感", sdk }, { criteria: criteriaForVerify })
+  check(defaultRun.rendered.markdownPath === join(project, "ohos-feature-engineering", "development-verification-report.md"), "默认报告直接写入工程统一目录")
 
   let badNavigationRejected = false
   try {

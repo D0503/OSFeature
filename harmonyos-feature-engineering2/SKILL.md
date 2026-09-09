@@ -15,6 +15,8 @@ metadata:
 
 - 用户要求审查 Markdown/HTML/TXT 单文件、文档目录或 `developer.huawei.com` URL，或要求审查某次开发冻结的官网快照：进入 `document-review`。
 - 用户提供特性名、目标 HarmonyOS 工程绝对路径和自然语言开发目标，要求接入、开发、构建或验证：进入 `code-development-validation`（七步链路）。
+- 开发目标先按 [场景与资料映射](references/development/scenario-routing.md) 定位。“沉浸光感典型场景：搜索框标题栏具有沉浸光感效果”对应 IL-S013，“内容区标题栏开启沉浸光感”对应 IL-S014；缺工程路径仍可先定位场景和章节，实施前补齐路径。
+- 只询问接口、支持范围、设计建议或两套 Kit 差异时，按场景映射读取相关资料并解释，不创建工程、不执行构建。用户要求多个效果时分别解析目标，不能用单个最高分丢弃其他需求。
 - 同时要求多模式输出时先明确独立产物；审查报告不作为开发的直接判据，开发判据只能来自本次冻结快照现提。
 
 ## document-review 工作流（资料审阅）
@@ -35,7 +37,7 @@ metadata:
    - 有变化 → 产出 `materials-<场景ID>.json`（变化段原文＋骨架 required topics＋冲突监测点含上次结论＋高危清单）。代理逐条现提草稿：每个 topic 至少一条判据（statement 忠实原文、anchor 逐字存在于本次快照）；每个冲突监测点给结论（persists/resolved/changed，persists 时两侧判据成对标 conflictGroup）；**高危变化先向用户确认**再记入 confirmations。
    - `node scripts/derive-criteria.mjs validate --scenario <ID> --frozen <目录> --project <工程绝对路径> --draft <草稿> [--diff ...]` 校验（锚点命中、骨架覆盖、监测结论、高危确认；未覆盖 topic 自动补入锚点仍命中的 reused 判据），通过产出最终 `criteria-<场景ID>.json`。
 5. **生成代码**：按场景实施规则与判据改代码；实施记录三层链——代码行 → 判据 id（`basis.type="criteria"`）→ 快照原文行。
-6. **构建运行**：`node scripts/verify-development.mjs --project <绝对路径> --goal <目标> --criteria <工程>/ohos-feature-engineering/criteria-<场景ID>.json [--execute-build] [--execute-run --device <设备>] [--navigate route-steps.json] [--capture-screenshot] [--judgment visual-judgment.json] [--implementation 实施记录]`。报告与 `evidence/` 默认统一写入 `<工程>/ohos-feature-engineering/<场景ID>/`（`--output` 显式优先）。`--execute-build/--execute-run` 时判据集必检（结构＋冲突监测点覆盖），缺失即拒绝。六层验证（static/sdk/build/install/runtime/visual）、导航编排（route-steps.json＋expectPage 断言）、截图采集与模型判图注入。
+6. **构建运行**：`node scripts/verify-development.mjs --project <绝对路径> --goal <目标> --criteria <工程>/ohos-feature-engineering/criteria-<场景ID>.json [--execute-build] [--execute-run --device <设备>] [--navigate route-steps.json] [--capture-screenshot] [--judgment visual-judgment.json] [--implementation 实施记录]`。所有目标的报告合并写入 `<工程>/ohos-feature-engineering/development-verification-report.json/md`（`--output` 显式优先）。多个场景按顺序执行并更新同一份报告；同一场景的同一目标重跑替换结果，不同目标保留。Markdown 按开发目标展示并内嵌截图，截图与日志保存在报告旁的 `evidence/` 中。`--execute-build/--execute-run` 时判据集必检（结构＋冲突监测点覆盖），缺失即拒绝。六层验证（static/sdk/build/install/runtime/visual）、导航编排（route-steps.json＋expectPage 断言）、截图采集与模型判图注入。
 7. **归档**：验证成功后 `node scripts/archive-session.mjs --frozen <目录> --criteria <工程>/ohos-feature-engineering/criteria-<场景ID>.json` 按 topic/快照合并为新的 `sessions/latest`（其他场景未触及的判据与快照保留）。
 
 ## 硬性边界
@@ -48,7 +50,7 @@ metadata:
 - 高危变化（api-signature/version/deletion/新页）未经用户确认不得继续生成代码。
 - 冲突监测点结论为 persists 时必须保留双预期（两条判据同 conflictGroup），验证按 `passed_with_spec_conflict/inconclusive/failed` 状态机裁决，不得提前选边。
 - 构建与运行前的判据校验由程序强制；判图结论只能匹配判据预期，不得反向改写判据。
-- 实施记录引用不存在的判据 id 时拒绝；报告契约要求 criteriaRefs/conflictingCriteriaRefs/frozenAt。开发报告默认写入 `<工程>/ohos-feature-engineering/<场景ID>/`。
+- 实施记录引用不存在的判据 id 时拒绝；报告契约要求 criteriaRefs/conflictingCriteriaRefs/frozenAt。开发汇总报告默认写入 `<工程>/ohos-feature-engineering/`，截图须在 Markdown 中直接展示。
 
 ## 资源
 
@@ -56,13 +58,13 @@ metadata:
 - 开发链路：`scripts/freeze-snapshot.mjs` / `diff-snapshots.mjs` / `derive-criteria.mjs` / `archive-session.mjs`（链路 2/3/4/7）。
 - `scripts/verify-development.mjs`：判据门禁＋六层验证＋导航＋判图。
 - `scripts/lib/capability-tools.mjs`：能力包加载与契约校验（scenarios＋sessions/latest 完整性）。
-- `capabilities/immersive-light/`：scenarios.json（11 场景＋11 官网入口＋判据骨架＋冲突监测点）、sessions/latest（上次审查）、assets（带来源分类）。
+- `capabilities/immersive-light/`：scenarios.json（18 场景＋15 官网入口＋判据骨架＋冲突监测点）、sessions/latest（上次审查）、assets（带来源分类）。
 - `references/engineering-verification-rules.md`：自登记工程验证规则（非官网事实），仅限审阅模式。
-- evals：`run-development-tests.mjs`（开发链路 42 断言）。
+- evals：`run-development-tests.mjs`（开发链路）、`run-routing-tests.mjs`（自然语言路由、来源与新增判据门禁）。
 
 ## 完成标准
 
 - 审阅产出覆盖九个质量维度的完整 findings 与 `integrationGate`，可从 `confirmed` 反查证据。
-- 开发每次均产生（统一落在 `<工程>/ohos-feature-engineering/` 单一目录）：frozen.json（冻结快照）、diff-report.json、criteria-<场景ID>.json（reuse 或 fresh）、开发验证报告（`<场景ID>/development-verification-report.*`）。
+- 开发每次均产生（统一落在 `<工程>/ohos-feature-engineering/` 单一目录）：frozen.json（冻结快照）、diff-report.json、criteria-<场景ID>.json（reuse 或 fresh）、开发汇总报告（`development-verification-report.json/md`，含各目标结果与截图预览）。
 - 开发报告可从代码行反查判据、判据反查冻结快照锚点、快照反查官网 URL 与哈希。
-- 全部断言（`node evals/run-development-tests.mjs`）通过。
+- 全部断言（`node evals/run-development-tests.mjs` 和 `node evals/run-routing-tests.mjs`）通过。

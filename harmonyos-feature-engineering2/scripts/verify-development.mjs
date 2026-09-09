@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFile, spawn } from "node:child_process"
-import { createHash } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { access, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -13,7 +13,7 @@ import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-
 import { renderDevelopmentReport } from "./render-development-report.mjs"
 import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 import { buildImplementationTrace } from "./lib/implementation-trace.mjs"
-import { scenarioArtifactsDirectory } from "./lib/artifacts-dir.mjs"
+import { resolveArtifactsRoot } from "./lib/artifacts-dir.mjs"
 
 const execFileAsync = promisify(execFile)
 
@@ -164,11 +164,10 @@ async function runDeveco(args, cwd) {
   })
 }
 
-async function appendCommandEvidence(evidence, outputDirectory, type, name, result, summary) {
+async function appendCommandEvidence(evidence, evidenceDirectory, type, name, result, summary) {
   const content = [`$ ${result.command}`, result.stdout, result.stderr].filter(Boolean).join("\n")
   let path = null
-  if (outputDirectory) {
-    const evidenceDirectory = join(outputDirectory, "evidence")
+  if (evidenceDirectory) {
     await mkdir(evidenceDirectory, { recursive: true })
     path = join(evidenceDirectory, name)
     await writeFile(path, content, "utf8")
@@ -209,10 +208,11 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
   const scenario = resolution.selected
-  // 开发报告与 evidence 默认统一写入 <工程>/ohos-feature-engineering/<场景ID>/（与其他链路产物同目录），显式 --output 优先；
+  // 多目标报告统一写入工程产物目录；每次运行的原始证据独立保存。
   const outputDirectory = options.outputDirectory !== undefined && options.outputDirectory !== null
     ? resolveReportOutputDirectory(options.outputDirectory)
-    : scenarioArtifactsDirectory(request.project, scenario.id)
+    : resolveArtifactsRoot(request.project)
+  const evidenceDirectory = join(outputDirectory, "evidence", randomUUID())
   if (options.baseline && resolve(options.baseline.projectRoot) !== resolve(request.project)) throw new Error("实施基线不属于目标工程")
   if (options.executeBuild || options.executeRun) {
     if (!options.criteria) {
@@ -258,7 +258,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     const args = ["build", "--product", product, "--build-mode", buildMode]
     if (request.module) args.push("--modules", validateCliToken(request.module, "module"))
     buildResult = await runDeveco(args, request.project)
-    const id = await appendCommandEvidence(evidence, outputDirectory, "build_log", "build.log", buildResult, buildResult.exitCode === 0 ? "devecocli build 成功" : "devecocli build 失败")
+    const id = await appendCommandEvidence(evidence, evidenceDirectory, "build_log", "build.log", buildResult, buildResult.exitCode === 0 ? "devecocli build 成功" : "devecocli build 失败")
     checks.build = check(required.has("build"), buildResult.exitCode === 0 ? "passed" : "failed", buildResult.exitCode === 0 ? "真实 debug 构建通过。" : `构建失败，退出码 ${buildResult.exitCode ?? "unknown"}。`, [id], { command: buildResult.command, exitCode: buildResult.exitCode, repairAttempts: options.repairAttempts ?? 0 })
   } else {
     checks.build = check(required.has("build"), "not_run", "尚未执行 devecocli build。")
@@ -272,7 +272,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     if (request.product) args.push("--product", validateCliToken(request.product, "product"))
     if (request.buildMode) args.push("--build-mode", validateCliToken(request.buildMode, "build mode"))
     runResult = await runDeveco(args, request.project)
-    const id = await appendCommandEvidence(evidence, outputDirectory, "device_log", "device-run.log", runResult, runResult.exitCode === 0 ? "devecocli run 安装并拉起成功" : "devecocli run 失败")
+    const id = await appendCommandEvidence(evidence, evidenceDirectory, "device_log", "device-run.log", runResult, runResult.exitCode === 0 ? "devecocli run 安装并拉起成功" : "devecocli run 失败")
     checks.install = check(required.has("install"), runResult.exitCode === 0 ? "passed" : "failed", runResult.exitCode === 0 ? "应用安装并拉起。" : "安装或拉起失败。", [id], { command: runResult.command, exitCode: runResult.exitCode })
     if (runResult.exitCode === 0) checks.runtime = check(required.has("runtime"), "inconclusive", "应用已拉起，但尚无可区分规范预期的运行观察。", [id])
     else checks.runtime = check(required.has("runtime"), "not_run", "安装/拉起失败，未进入运行观察。")
@@ -293,7 +293,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
       const executedSteps = []
       let failure = null
       const appendLayoutEvidence = async (layoutContent, stepId) => {
-        const layoutPath = join(outputDirectory, "evidence", `nav-${stepId}-layout.json`)
+        const layoutPath = join(evidenceDirectory, `nav-${stepId}-layout.json`)
         await mkdir(dirname(layoutPath), { recursive: true })
         await writeFile(layoutPath, `${layoutContent}\n`, "utf8")
         evidence.push({ id: nextEvidenceId(evidence), type: "component_tree", path: layoutPath, sha256: digest(`${layoutContent}\n`), capturedAt: new Date().toISOString(), summary: `导航步骤 ${stepId} 时的组件树。` })
@@ -322,7 +322,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
             const center = tree ? findNodeInLayout(tree, step.locator.by, step.locator.value) : null
             if (!center) {
               if (content) await appendLayoutEvidence(content, step.stepId)
-              await appendCommandEvidence(evidence, outputDirectory, "device_log", `nav-${step.stepId}-layout-failed.log`, layoutResult, `导航步骤 ${step.stepId}：组件树采集失败。`)
+              await appendCommandEvidence(evidence, evidenceDirectory, "device_log", `nav-${step.stepId}-layout-failed.log`, layoutResult, `导航步骤 ${step.stepId}：组件树采集失败。`)
               failure = { stepId: step.stepId, expected: `定位 ${step.locator.by}=${step.locator.value}`, actual: "组件树中未找到可点击节点或组件树不可解析" }
               break
             }
@@ -351,7 +351,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
         }
         if (command) {
           const result = await runDeveco(command.args, request.project)
-          const id = await appendCommandEvidence(evidence, outputDirectory, "device_log", `nav-${step.stepId}.log`, result, command.summary)
+          const id = await appendCommandEvidence(evidence, evidenceDirectory, "device_log", `nav-${step.stepId}.log`, result, command.summary)
           if (result.exitCode !== 0) {
             failure = { stepId: step.stepId, expected: command.summary, actual: `命令退出码 ${result.exitCode ?? "unknown"}`, evidenceId: id }
             executedSteps.push({ stepId: step.stepId, action: step.action, status: "failed", reason: failure.actual })
@@ -364,7 +364,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
           const matched = layoutResult.exitCode === 0 && content.includes(step.expectPage)
           if (!matched) {
             if (content) await appendLayoutEvidence(content, step.stepId)
-            else await appendCommandEvidence(evidence, outputDirectory, "device_log", `nav-${step.stepId}-layout-failed.log`, layoutResult, `导航步骤 ${step.stepId}：组件树采集失败。`)
+            else await appendCommandEvidence(evidence, evidenceDirectory, "device_log", `nav-${step.stepId}-layout-failed.log`, layoutResult, `导航步骤 ${step.stepId}：组件树采集失败。`)
             failure = { stepId: step.stepId, expected: step.expectPage, actual: "当前组件树未包含预期页面标识" }
             executedSteps.push({ stepId: step.stepId, action: step.action, status: "failed", reason: `expectPage=${step.expectPage} 未命中` })
             break
@@ -384,13 +384,13 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
 
   const navigationFailed = navigationResult?.status === "failed"
   if (options.captureScreenshot && request.device && !navigationFailed) {
-    const screenshotPath = join(outputDirectory, "evidence", "device-visual.png")
+    const screenshotPath = join(evidenceDirectory, "device-visual.png")
     await mkdir(dirname(screenshotPath), { recursive: true })
     const shotResult = await runDeveco(["ui", "screenshot", "--device", validateCliToken(request.device, "device"), "--path", screenshotPath], request.project)
     if (shotResult.exitCode === 0 && await exists(screenshotPath)) {
       evidence.push({ id: nextEvidenceId(evidence), type: "screenshot", path: screenshotPath, sha256: await sha256File(screenshotPath), capturedAt: shotResult.endedAt, summary: "设备屏幕截图（devecocli ui screenshot）。" })
     } else {
-      await appendCommandEvidence(evidence, outputDirectory, "device_log", "screenshot-failed.log", shotResult, "截图采集失败。")
+      await appendCommandEvidence(evidence, evidenceDirectory, "device_log", "screenshot-failed.log", shotResult, "截图采集失败。")
     }
   }
 
@@ -398,12 +398,12 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     const layoutResult = await runDeveco(["ui", "layout", "--device", validateCliToken(request.device, "device"), "--format", "json", "--mode", "full", "--depth", "0"], request.project)
     const layoutContent = layoutResult.stdout.trim()
     if (layoutResult.exitCode === 0 && layoutContent) {
-      const layoutPath = join(outputDirectory, "evidence", "device-layout.json")
+      const layoutPath = join(evidenceDirectory, "device-layout.json")
       await mkdir(dirname(layoutPath), { recursive: true })
       await writeFile(layoutPath, `${layoutContent}\n`, "utf8")
       evidence.push({ id: nextEvidenceId(evidence), type: "component_tree", path: layoutPath, sha256: digest(`${layoutContent}\n`), capturedAt: layoutResult.endedAt, summary: "完整组件树（devecocli ui layout --mode full）。" })
     } else {
-      await appendCommandEvidence(evidence, outputDirectory, "device_log", "layout-failed.log", layoutResult, "组件树采集失败。")
+      await appendCommandEvidence(evidence, evidenceDirectory, "device_log", "layout-failed.log", layoutResult, "组件树采集失败。")
     }
   }
 
@@ -544,7 +544,7 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--criteria <criteria.json>] [--execute-build] [--execute-run --device <设备>] [--navigate <route-steps.json>] [--capture-screenshot] [--capture-layout] [--implementation <实施记录>] [--judgment <visual-judgment.json>] [--output <目录>]（报告与 evidence 默认写入 <工程>/ohos-feature-engineering/<场景ID>/）")
+  if (!args.project || !args.goal) throw new Error("用法: node verify-development.mjs --project <绝对路径> --goal <开发目标> [--criteria <criteria.json>] [--execute-build] [--execute-run --device <设备>] [--navigate <route-steps.json>] [--capture-screenshot] [--capture-layout] [--implementation <实施记录>] [--judgment <visual-judgment.json>] [--output <目录>]（汇总报告与 evidence 默认写入 <工程>/ohos-feature-engineering/）")
   if (!isAbsolute(args.project)) throw new Error("project 必须是绝对路径")
   const repairAttempts = Number(args["repair-attempts"] ?? 0)
   if (!Number.isInteger(repairAttempts) || repairAttempts < 0 || repairAttempts > 2) throw new Error("repair-attempts 必须是 0 到 2")

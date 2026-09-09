@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { join } from "node:path"
+import { extname, isAbsolute, join, relative, resolve } from "node:path"
+import { createHash } from "node:crypto"
 import { pathToFileURL } from "node:url"
-import { validateDevelopmentReport } from "./validate-development-report.mjs"
+import { validateDevelopmentReport, validateDevelopmentReportCollection } from "./validate-development-report.mjs"
 import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 
 function text(value) {
@@ -47,7 +48,7 @@ function implementationMarkdown(report) {
   return lines
 }
 
-export function developmentReportMarkdown(report) {
+export function developmentReportMarkdown(report, outputDirectory) {
   const lines = [
     "# 代码开发验证报告",
     "",
@@ -83,23 +84,106 @@ export function developmentReportMarkdown(report) {
   else for (const item of report.pendingVerifications) lines.push(`- ${item.id} [${item.level}] ${item.reason}`)
   lines.push("", "## 证据", "")
   if (!report.evidence.length) lines.push("无。")
-  else for (const item of report.evidence) lines.push(`- ${item.id} [${item.type}] ${item.summary}${item.path ? ` — ${item.path}` : ""}`)
+  else for (const item of report.evidence) {
+    lines.push(`- ${item.id} [${item.type}] ${item.summary}${item.path ? ` — ${item.path}` : ""}`)
+    if (item.type === "screenshot") {
+      if (item.previewMissing || !item.path) lines.push("", "截图文件缺失，无法预览。", "")
+      else {
+        const path = outputDirectory ? relative(outputDirectory, item.path) : item.path
+        const url = path.replaceAll("\\", "/").split("/").map(encodeURIComponent).join("/")
+        const caption = String(item.summary || "设备截图").replace(/[\[\]\r\n]/g, " ")
+        lines.push("", `![${caption}](<${url}>)`, "")
+      }
+    }
+  }
   if (report.capabilityPackage.conflictingCriteriaRefs?.length) {
     lines.push("", "## 规范冲突披露", "", `本次判据集保留冲突判据：${report.capabilityPackage.conflictingCriteriaRefs.join("、")}。本次匹配：${report.verdict.matchedCriteriaRefs.join("、") || "未确定"}。`)
   }
   return `${lines.join("\n")}\n`
 }
 
-export async function renderDevelopmentReport(report, outputDirectory) {
-  const validation = validateDevelopmentReport(report)
-  if (!validation.valid) throw new Error(validation.errors.join("; "))
+export function developmentReportCollectionMarkdown(collection, outputDirectory) {
+  const cell = (value) => String(value).replaceAll("|", "\\|").replace(/[\r\n]+/g, " ")
+  const lines = ["# 代码开发验证报告", "", `- 工程：${collection.project}`, `- 开发目标数：${collection.reports.length}`, "",
+    "## 验证结果总览", "", "| 开发目标 | 技术路线 | 结果 |", "|---|---|---|"]
+  for (const report of collection.reports) lines.push(`| ${cell(report.input.goal)} | ${cell(report.capabilityPackage.route)} | ${cell(report.verdict.status)} |`)
+  for (const report of collection.reports) {
+    lines.push("", `## ${cell(report.input.goal)}`, "")
+    const detail = developmentReportMarkdown(report, outputDirectory).split("\n").slice(2)
+      .filter((line) => !line.startsWith("- 场景：") && !line.startsWith("- 工程：") && !line.startsWith("- 目标："))
+      .map((line) => /^(#{2,3}) /.test(line) ? `#${line}` : line)
+    lines.push(`- 判据策略：${report.capabilityPackage.criteriaStrategy}，冻结于 ${report.capabilityPackage.frozenAt ?? "未知"}`, "", ...detail)
+  }
+  return `${lines.join("\n").trimEnd()}\n`
+}
+
+function reportKey(report) {
+  return JSON.stringify([report.capabilityPackage.featureId, report.capabilityPackage.route, report.capabilityPackage.scenarioId,
+    report.input.goal, report.input.target ?? null, report.input.module ?? null])
+}
+
+async function readExisting(path) {
+  try { return JSON.parse(await readFile(path, "utf8")) }
+  catch (error) { if (error.code === "ENOENT") return null; throw error }
+}
+
+async function preserveScreenshots(report, output) {
+  for (const evidence of report.evidence) {
+    if (evidence.type !== "screenshot") continue
+    if (!evidence.path) { evidence.previewMissing = true; continue }
+    const source = isAbsolute(evidence.path) ? evidence.path : resolve(report.input.project, evidence.path)
+    let bytes
+    try { bytes = await readFile(source) }
+    catch (error) { if (error.code === "ENOENT") { evidence.previewMissing = true; continue }; throw error }
+    const hash = createHash("sha256").update(bytes).digest("hex")
+    if (evidence.sha256 && evidence.sha256.toLowerCase() !== hash) throw new Error(`截图内容与证据哈希不一致: ${source}`)
+    const images = join(output, "evidence", "images")
+    const suffix = extname(source).toLowerCase()
+    if (![".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"].includes(suffix)) throw new Error(`截图文件格式不支持 Markdown 预览: ${source}`)
+    await mkdir(images, { recursive: true })
+    const destination = join(images, `${hash}${suffix}`)
+    await writeFile(destination, bytes)
+    evidence.path = destination
+    evidence.sha256 = hash
+    delete evidence.previewMissing
+  }
+}
+
+async function renderMergedReport(report, outputDirectory) {
   const output = resolveReportOutputDirectory(outputDirectory)
-  await mkdir(output, { recursive: true })
   const jsonPath = join(output, "development-verification-report.json")
   const markdownPath = join(output, "development-verification-report.md")
-  await writeFile(jsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8")
-  await writeFile(markdownPath, developmentReportMarkdown(report), "utf8")
-  return { jsonPath, markdownPath }
+  const incoming = report?.collectionVersion ? report.reports : [report]
+  const validation = report?.collectionVersion ? validateDevelopmentReportCollection(report) : validateDevelopmentReport(report)
+  if (!validation.valid) throw new Error(validation.errors.join("; "))
+  const existing = await readExisting(jsonPath)
+  if (existing) {
+    const valid = existing.collectionVersion ? validateDevelopmentReportCollection(existing) : validateDevelopmentReport(existing)
+    if (!valid.valid) throw new Error(`已有报告无效: ${valid.errors.join("; ")}`)
+  }
+  const project = incoming[0].input.project
+  const merged = new Map()
+  for (const item of [...(existing ? (existing.collectionVersion ? existing.reports : [existing]) : []), ...incoming]) {
+    const normalized = (path) => process.platform === "win32" ? resolve(path).toLowerCase() : resolve(path)
+    if (normalized(item.input.project) !== normalized(project)) throw new Error("不能在同一报告中合并不同工程")
+    merged.set(reportKey(item), structuredClone(item))
+  }
+  const collection = { collectionVersion: "1.0", mode: "code-development-validation", project, reports: [...merged.values()] }
+  await mkdir(output, { recursive: true })
+  for (const item of collection.reports) await preserveScreenshots(item, output)
+  await writeFile(jsonPath, `${JSON.stringify(collection, null, 2)}\n`, "utf8")
+  await writeFile(markdownPath, developmentReportCollectionMarkdown(collection, output), "utf8")
+  return { jsonPath, markdownPath, reportCount: collection.reports.length }
+}
+
+const pendingRenders = new Map()
+export async function renderDevelopmentReport(report, outputDirectory) {
+  const key = resolveReportOutputDirectory(outputDirectory)
+  const previous = pendingRenders.get(key) ?? Promise.resolve()
+  const current = previous.catch(() => {}).then(() => renderMergedReport(report, key))
+  pendingRenders.set(key, current)
+  try { return await current }
+  finally { if (pendingRenders.get(key) === current) pendingRenders.delete(key) }
 }
 
 async function main() {

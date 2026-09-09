@@ -16,8 +16,11 @@ capabilities/registry.json  # 能力注册表
 
 - `entryPoints[]`：官网入口全集——`snapshotId`（唯一）、`officialUrl`（华为开发者官网 HTTPS）、`title`（必填）。
 - `routes[] / safety / verification / projectSignals`：技术路线门槛、安全策略与六层验证策略。
+- `routes[].intentPatterns?`：明确命名路线或 Kit 的词。命中时只考虑相应路线及 `crossRoute` 场景；没有显式路线时不得仅凭共用枚举值认定 HDS。
 - `scenarios[]`：每个场景必须包含——
   - `id / displayName / route / intentPatterns / targets`：路由信息；
+  - `intentGroups?`：组内全部词命中、组间任意一组成立；单词组表示需要优先识别的专有词。`intentPriority?` 默认 1；2 用于明确专题需求，3 用于故障或跨 Kit 约束。先比较组优先级再比较普通匹配分，同级同分保留歧义。英文标识符按边界匹配，混合中文别名忽略空格。
+  - `crossRoute?`：跨 Kit 差异核验场景可绕过显式路线过滤；它不能授权切换用户指定的 Kit，实施须转入已确定路线的目标场景。
   - `sources[]`：该场景需要的官网入口（⊆ entryPoints）；
   - `criteriaSpec.required[]`：判据需求骨架——`topic`（稳定主题名）、`hint`（上次审查结论参考）、`mustResolve`；
   - `criteriaSpec.conflictProbes[]`：冲突监测点——`id`、`topic`、`positions`；现提时必须逐一给结论；
