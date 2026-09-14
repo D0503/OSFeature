@@ -14,6 +14,8 @@ import { renderDevelopmentReport } from "./render-development-report.mjs"
 import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 import { buildImplementationTrace } from "./lib/implementation-trace.mjs"
 import { resolveArtifactsRoot } from "./lib/artifacts-dir.mjs"
+import { validateImplementation } from "./validate-implementation.mjs"
+import { runHvigorBuild } from "./lib/hvigor-build.mjs"
 
 const execFileAsync = promisify(execFile)
 
@@ -204,6 +206,7 @@ async function appendObservationEvidence(evidence, item, fallbackSummary) {
 }
 
 export async function runDevelopmentVerification(skillRoot, request, options = {}) {
+  const executeCommand = options.commandRunner ?? runDeveco
   const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
   const resolution = resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
@@ -220,6 +223,8 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     }
     const invalid = validateCriteriaDocument(options.criteria, scenario)
     if (invalid.length) throw new Error(`criteria 无效: ${invalid.join("; ")}`)
+    const gate = await validateImplementation({ project: request.project, criteria: options.criteria, implementation: options.implementation, baseline: options.baseline, frozenDirectory: options.frozenDirectory ?? join(resolveArtifactsRoot(request.project), "frozen"), phase: "applied" })
+    if (!gate.valid) throw new Error(`实施依据门禁未通过（尚未构建或运行）: ${gate.errors.join("; ")}`)
   }
   buildImplementationTrace(options.criteria ?? { criteria: [], snapshots: [] }, options.implementation, [], false)
   const inspection = await inspectDevelopmentProject(request.project, capability, {
@@ -250,6 +255,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   checks.sdk = check(required.has("sdk"), sdkResult.status, sdkResult.message, sdkRefs)
 
   let buildResult = null
+  const buildInputs = []
   if (inspection.compatibility.status !== "supported") {
     checks.build = check(required.has("build"), "blocked", `兼容门禁未通过：${inspection.compatibility.reasons.join("；")}`)
   } else if (options.executeBuild) {
@@ -257,13 +263,36 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     const buildMode = validateCliToken(request.buildMode ?? "debug", "build mode")
     const args = ["build", "--product", product, "--build-mode", buildMode]
     if (request.module) args.push("--modules", validateCliToken(request.module, "module"))
-    buildResult = await runDeveco(args, request.project)
-    const id = await appendCommandEvidence(evidence, evidenceDirectory, "build_log", "build.log", buildResult, buildResult.exitCode === 0 ? "devecocli build 成功" : "devecocli build 失败")
+    // Preserve the inputs of this attempt before compiling; diagnosis must not cite later edits.
+    for (const file of options.baseline.files) {
+      const originalPath = resolve(request.project, file.path)
+      if (!(await exists(originalPath))) continue
+      const content = await readFile(originalPath)
+      const path = join(evidenceDirectory, "build-inputs", "code", file.path)
+      await mkdir(dirname(path), { recursive: true })
+      await writeFile(path, content)
+      buildInputs.push({ type: "code", originalPath, path, sha256: digest(content) })
+    }
+    for (const snapshot of options.criteria.snapshots) {
+      if (!/^[\w-]+$/.test(snapshot.snapshotId)) throw new Error("快照 id 无效")
+      const originalPath = join(options.frozenDirectory ?? join(resolveArtifactsRoot(request.project), "frozen"), "snapshots", `${snapshot.snapshotId}.md`)
+      const content = await readFile(originalPath)
+      if (digest(content) !== snapshot.contentSha256) throw new Error("构建输入的冻结正文哈希不匹配")
+      const path = join(evidenceDirectory, "build-inputs", "official", `${snapshot.snapshotId}.md`)
+      await mkdir(dirname(path), { recursive: true })
+      await writeFile(path, content)
+      buildInputs.push({ type: "official_source", snapshotId: snapshot.snapshotId, officialUrl: snapshot.officialUrl, originalPath, path, sha256: digest(content) })
+    }
+    buildResult = options.commandRunner
+      ? await executeCommand(args, request.project)
+      : await runHvigorBuild(request.project, { product, buildMode, module: request.module, modules: inspection.modules, sdkPath: inspection.sdk.path })
+    const id = await appendCommandEvidence(evidence, evidenceDirectory, "build_log", "build.log", buildResult, buildResult.exitCode === 0 ? "构建成功" : `构建失败${buildResult.failedStage ? `（${buildResult.failedStage}）` : ""}`)
     checks.build = check(required.has("build"), buildResult.exitCode === 0 ? "passed" : "failed", buildResult.exitCode === 0 ? "真实 debug 构建通过。" : `构建失败，退出码 ${buildResult.exitCode ?? "unknown"}。`, [id], { command: buildResult.command, exitCode: buildResult.exitCode, repairAttempts: options.repairAttempts ?? 0 })
   } else {
-    checks.build = check(required.has("build"), "not_run", "尚未执行 devecocli build。")
+    checks.build = check(required.has("build"), "not_run", "尚未执行构建。")
   }
 
+  const buildFailed = checks.build.status === "failed"
   let runResult = null
   const observations = options.observations ?? {}
   if (options.executeRun && checks.build.status === "passed" && request.device) {
@@ -271,7 +300,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     if (request.module) args.push("--module", validateCliToken(request.module, "module"))
     if (request.product) args.push("--product", validateCliToken(request.product, "product"))
     if (request.buildMode) args.push("--build-mode", validateCliToken(request.buildMode, "build mode"))
-    runResult = await runDeveco(args, request.project)
+    runResult = await executeCommand(args, request.project)
     const id = await appendCommandEvidence(evidence, evidenceDirectory, "device_log", "device-run.log", runResult, runResult.exitCode === 0 ? "devecocli run 安装并拉起成功" : "devecocli run 失败")
     checks.install = check(required.has("install"), runResult.exitCode === 0 ? "passed" : "failed", runResult.exitCode === 0 ? "应用安装并拉起。" : "安装或拉起失败。", [id], { command: runResult.command, exitCode: runResult.exitCode })
     if (runResult.exitCode === 0) checks.runtime = check(required.has("runtime"), "inconclusive", "应用已拉起，但尚无可区分规范预期的运行观察。", [id])
@@ -283,7 +312,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   }
 
   let navigationResult = null
-  if (options.navigate) {
+  if (options.navigate && !buildFailed) {
     const invalid = validateNavigationSteps(options.navigate)
     if (invalid.length) throw new Error(`route-steps 无效: ${invalid.join("; ")}`)
     if (!request.device) {
@@ -299,7 +328,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
         evidence.push({ id: nextEvidenceId(evidence), type: "component_tree", path: layoutPath, sha256: digest(`${layoutContent}\n`), capturedAt: new Date().toISOString(), summary: `导航步骤 ${stepId} 时的组件树。` })
       }
       const currentLayout = async () => {
-        const result = await runDeveco(["ui", "layout", "--device", device, "--format", "json"], request.project)
+        const result = await executeCommand(["ui", "layout", "--device", device, "--format", "json"], request.project)
         return { result, content: result.stdout.trim() }
       }
       for (const step of options.navigate.steps) {
@@ -350,7 +379,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
           executedSteps.push({ stepId: step.stepId, action: step.action, status: "passed", detail: `等待 ${step.timeoutMs}ms。` })
         }
         if (command) {
-          const result = await runDeveco(command.args, request.project)
+          const result = await executeCommand(command.args, request.project)
           const id = await appendCommandEvidence(evidence, evidenceDirectory, "device_log", `nav-${step.stepId}.log`, result, command.summary)
           if (result.exitCode !== 0) {
             failure = { stepId: step.stepId, expected: command.summary, actual: `命令退出码 ${result.exitCode ?? "unknown"}`, evidenceId: id }
@@ -383,10 +412,10 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   }
 
   const navigationFailed = navigationResult?.status === "failed"
-  if (options.captureScreenshot && request.device && !navigationFailed) {
+  if (options.captureScreenshot && request.device && !navigationFailed && !buildFailed) {
     const screenshotPath = join(evidenceDirectory, "device-visual.png")
     await mkdir(dirname(screenshotPath), { recursive: true })
-    const shotResult = await runDeveco(["ui", "screenshot", "--device", validateCliToken(request.device, "device"), "--path", screenshotPath], request.project)
+    const shotResult = await executeCommand(["ui", "screenshot", "--device", validateCliToken(request.device, "device"), "--path", screenshotPath], request.project)
     if (shotResult.exitCode === 0 && await exists(screenshotPath)) {
       evidence.push({ id: nextEvidenceId(evidence), type: "screenshot", path: screenshotPath, sha256: await sha256File(screenshotPath), capturedAt: shotResult.endedAt, summary: "设备屏幕截图（devecocli ui screenshot）。" })
     } else {
@@ -394,8 +423,8 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     }
   }
 
-  if (options.captureLayout && request.device && !navigationFailed) {
-    const layoutResult = await runDeveco(["ui", "layout", "--device", validateCliToken(request.device, "device"), "--format", "json", "--mode", "full", "--depth", "0"], request.project)
+  if (options.captureLayout && request.device && !navigationFailed && !buildFailed) {
+    const layoutResult = await executeCommand(["ui", "layout", "--device", validateCliToken(request.device, "device"), "--format", "json", "--mode", "full", "--depth", "0"], request.project)
     const layoutContent = layoutResult.stdout.trim()
     if (layoutResult.exitCode === 0 && layoutContent) {
       const layoutPath = join(evidenceDirectory, "device-layout.json")
@@ -408,6 +437,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   }
 
   for (const level of ["runtime", "visual"]) {
+    if (buildFailed) continue
     const observation = observations[level]
     if (!observation) continue
     const refs = []
@@ -415,7 +445,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     checks[level] = check(required.has(level), observation.status, observation.summary, refs)
   }
 
-  if (options.judgment) {
+  if (options.judgment && !buildFailed) {
     const judgment = options.judgment
     const invalid = []
     if (judgment.schemaVersion !== "1.0") invalid.push("schemaVersion 必须为 1.0")
@@ -460,6 +490,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     checks.visual = check(required.has("visual"), "not_run", summary)
   }
 
+  if (buildFailed) for (const level of ["install", "runtime", "visual"]) checks[level] = check(required.has(level), "not_run", "本轮构建失败，未执行设备操作或采用观察结论。")
   const changes = options.baseline ? (await compareFileBaseline(options.baseline)).changes : []
   const criteriaDocument = options.criteria ?? { criteria: [], snapshots: [], strategy: "reuse", frozenAt: null }
   const trace = buildImplementationTrace(criteriaDocument, options.implementation, changes, Boolean(options.baseline))
@@ -496,6 +527,12 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     projectBaseline: inspection,
     changes,
     ...trace,
+    ...(buildResult ? { buildInputs } : {}),
+    ...(buildFailed ? { buildDiagnosis: {
+      category: "unknown", summary: "构建失败，原因待确认；先对照官网、代码及环境，只读排查。",
+      decision: "investigate_only", buildLog: (() => { const item = evidence.find((e) => e.type === "build_log"); return { path: item.path, sha256: item.sha256 } })(),
+      evidence: [],
+    } } : {}),
     compatibility: inspection.compatibility,
     checks,
     evidence,
@@ -503,7 +540,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
     verdict: {
       status: "blocked",
       summary: "待计算。",
-      matchedCriteriaRefs: options.judgment?.matchedCriteriaRefs ?? [],
+      matchedCriteriaRefs: buildFailed ? [] : options.judgment?.matchedCriteriaRefs ?? [],
     },
   }
   for (const level of scenario.requiredChecks) {
@@ -526,7 +563,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
 
 function parseArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "implementation", "observations", "judgment", "navigate", "criteria", "output", "repair-attempts", "skill-root"])
+  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "implementation", "observations", "judgment", "navigate", "criteria", "frozen", "output", "repair-attempts", "skill-root"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -571,6 +608,7 @@ async function main() {
     criteriaPath: args.criteria ?? null,
   }, {
     executeBuild: Boolean(args["execute-build"]),
+    frozenDirectory: args.frozen,
     executeRun: Boolean(args["execute-run"]),
     navigate,
     judgment,

@@ -34,9 +34,10 @@ metadata:
 3. **比较上次**：`node scripts/diff-snapshots.mjs --frozen <工程>/ohos-feature-engineering/frozen --project <工程绝对路径>` 与 `capabilities/<feature>/sessions/latest` 比较（diff-report.json 写入 `<工程>/ohos-feature-engineering/`）。unchanged / changed（分类 api-signature｜version｜deletion｜content，前三类+新增页为高危）。
 4. **现提判据**：`node scripts/derive-criteria.mjs materials --scenario <ID> --frozen <目录> --project <工程绝对路径> [--diff diff-report.json]`（产物按场景命名，写入 `<工程>/ohos-feature-engineering/`）
    - 全部 unchanged → 直接产出复用判据集 `criteria-<场景ID>.json`（strategy=reuse，锚点已重新命中本次快照）；
+   - 若返回 `degraded_reuse`（如骨架增加主题、旧判据未覆盖），按返回的缺失主题和场景 `criteriaSpec.required` 阅读本次冻结原文，补提草稿后执行下述 validate；不能沿用不完整的旧判据，也不把骨架提示写成事实。
    - 有变化 → 产出 `materials-<场景ID>.json`（变化段原文＋骨架 required topics＋冲突监测点含上次结论＋高危清单）。代理逐条现提草稿：每个 topic 至少一条判据（statement 忠实原文、anchor 逐字存在于本次快照）；每个冲突监测点给结论（persists/resolved/changed，persists 时两侧判据成对标 conflictGroup）；**高危变化先向用户确认**再记入 confirmations。
    - `node scripts/derive-criteria.mjs validate --scenario <ID> --frozen <目录> --project <工程绝对路径> --draft <草稿> [--diff ...]` 校验（锚点命中、骨架覆盖、监测结论、高危确认；未覆盖 topic 自动补入锚点仍命中的 reused 判据），通过产出最终 `criteria-<场景ID>.json`。
-5. **生成代码**：按场景实施规则与判据改代码；实施记录三层链——代码行 → 判据 id（`basis.type="criteria"`）→ 快照原文行。
+5. **生成代码**：先完整阅读 [官网依据开发](references/development/official-implementation.md)，按用户意图区分 `demo` 与 `existing_project`，不能按目录是否存在猜测。Demo 有适用示例时基于示例最小适配，无示例时按官方接口、说明和契约实现；现有工程参考示例、保留有效架构并严格遵守官方契约。两种模式都不得增加需求外内容或把建议变成强制要求；判据复用仍须阅读相关冻结原文。修改前保存基线并在同一实施记录填写模式、契约来源和实现方式，执行 `validate-implementation.mjs --phase plan`；修改后逐项对照真实代码，补齐位置和 review，执行 `--phase applied --baseline <基线>`。实施记录三层链——代码行 → 判据 id（`basis.type="criteria"`）→ 快照原文行；缺少示例不拒绝开发、不额外请求确认。
 6. **构建运行**：`node scripts/verify-development.mjs --project <绝对路径> --goal <目标> --criteria <工程>/ohos-feature-engineering/criteria-<场景ID>.json [--execute-build] [--execute-run --device <设备>] [--navigate route-steps.json] [--capture-screenshot] [--judgment visual-judgment.json] [--implementation 实施记录]`。所有目标的报告合并写入 `<工程>/ohos-feature-engineering/development-verification-report.json/md`（`--output` 显式优先）。多个场景按顺序执行并更新同一份报告；同一场景的同一目标重跑替换结果，不同目标保留。Markdown 按开发目标展示并内嵌截图，截图与日志保存在报告旁的 `evidence/` 中。`--execute-build/--execute-run` 时判据集必检（结构＋冲突监测点覆盖），缺失即拒绝。六层验证（static/sdk/build/install/runtime/visual）、导航编排（route-steps.json＋expectPage 断言）、截图采集与模型判图注入。
 7. **归档**：验证成功后 `node scripts/archive-session.mjs --frozen <目录> --criteria <工程>/ohos-feature-engineering/criteria-<场景ID>.json` 按 topic/快照合并为新的 `sessions/latest`（其他场景未触及的判据与快照保留）。
 
@@ -50,6 +51,9 @@ metadata:
 - 高危变化（api-signature/version/deletion/新页）未经用户确认不得继续生成代码。
 - 冲突监测点结论为 persists 时必须保留双预期（两条判据同 conflictGroup），验证按 `passed_with_spec_conflict/inconclusive/failed` 状态机裁决，不得提前选边。
 - 构建与运行前的判据校验由程序强制；判图结论只能匹配判据预期，不得反向改写判据。
+- 构建由脚本直接调用 ohpm 与 Hvigor，同步和打包均使用 `--no-daemon`；不改工程配置，不以 `devecocli build` 替换该执行器。工具链定位与失败处理见 [官网依据开发](references/development/official-implementation.md#构建失败归因)。
+- 构建与运行前还强制执行官网实施依据 applied 门禁，必须提供 `--baseline` 和 `--implementation`；`--frozen` 可覆盖默认冻结目录。工程选择不能豁免契约，现有工程不做示例结构一致性门禁。来源与覆盖校验不代表语义已正确；AI 对照和实际运行分别验证。
+- 构建失败先按 [失败归因](references/development/official-implementation.md#构建失败归因) 只读分析，再决定是否修复。确认官网文档问题时，必须停止修改和重试、保留现场并直接报告证据；不得替换方案、删除功能或改写判据以求编译通过。Demo 和现有工程均适用。只有用户之后明确要求绕过官网问题，才另行处理。
 - 实施记录引用不存在的判据 id 时拒绝；报告契约要求 criteriaRefs/conflictingCriteriaRefs/frozenAt。开发汇总报告默认写入 `<工程>/ohos-feature-engineering/`，截图须在 Markdown 中直接展示。
 
 ## 资源
@@ -58,7 +62,7 @@ metadata:
 - 开发链路：`scripts/freeze-snapshot.mjs` / `diff-snapshots.mjs` / `derive-criteria.mjs` / `archive-session.mjs`（链路 2/3/4/7）。
 - `scripts/verify-development.mjs`：判据门禁＋六层验证＋导航＋判图。
 - `scripts/lib/capability-tools.mjs`：能力包加载与契约校验（scenarios＋sessions/latest 完整性）。
-- `capabilities/immersive-light/`：scenarios.json（18 场景＋15 官网入口＋判据骨架＋冲突监测点）、sessions/latest（上次审查）、assets（带来源分类）。
+- `capabilities/immersive-light/`：scenarios.json（18 场景＋15 官网入口＋判据骨架＋冲突监测点）、sessions/latest（上次审查）。
 - `references/engineering-verification-rules.md`：自登记工程验证规则（非官网事实），仅限审阅模式。
 - evals：`run-development-tests.mjs`（开发链路）、`run-routing-tests.mjs`（自然语言路由、来源与新增判据门禁）。
 
@@ -67,4 +71,4 @@ metadata:
 - 审阅产出覆盖九个质量维度的完整 findings 与 `integrationGate`，可从 `confirmed` 反查证据。
 - 开发每次均产生（统一落在 `<工程>/ohos-feature-engineering/` 单一目录）：frozen.json（冻结快照）、diff-report.json、criteria-<场景ID>.json（reuse 或 fresh）、开发汇总报告（`development-verification-report.json/md`，含各目标结果与截图预览）。
 - 开发报告可从代码行反查判据、判据反查冻结快照锚点、快照反查官网 URL 与哈希。
-- 全部断言（`node evals/run-development-tests.mjs` 和 `node evals/run-routing-tests.mjs`）通过。
+- 全部断言（`node evals/run-development-tests.mjs`、`node evals/run-routing-tests.mjs` 和 `node evals/run-implementation-tests.mjs`）通过。

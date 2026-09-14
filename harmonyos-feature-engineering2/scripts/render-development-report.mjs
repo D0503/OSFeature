@@ -14,10 +14,19 @@ function text(value) {
 function implementationMarkdown(report) {
   if (!report.implementation) return []
   const { implementation, normativeBasis } = report
-  const status = { applied: "已实施", partial: "部分实施", not_applied: "未实施" }
+  const status = { applied: "已实施", partial: "部分实施", not_applied: "未实施", existing: "现有代码满足" }
   const lines = ["## 代码实现步骤与依据", "",
     `- 实施记录：${{ recorded: "已记录", missing: "实施记录缺失", not_started: "未实施代码变更" }[implementation.recordStatus]}`,
     `- 基线对照：${implementation.baselineAvailable ? "已提供" : "基线缺失，无法确认本次代码变化"}`, ""]
+  if (implementation.developmentMode) {
+    lines.push(`- 开发模式：${implementation.developmentMode === "demo" ? "Demo" : "现有工程"}`, "- 依据校验检查来源和记录覆盖；语义对照与运行效果分别验证。", "")
+    for (const req of implementation.requirements ?? []) {
+      lines.push(`- ${req.criteriaId}：${req.approach}`)
+      for (const source of req.sources ?? []) lines.push(`  - 官网冻结来源：${source.snapshotId}:${source.lineStart}-${source.lineEnd}，片段 SHA-256：\`${source.sha256}\``)
+      if (req.review?.status !== "passed") lines.push(`  - 待解决：${req.review?.basis ?? "尚未完成契约对照"}`)
+    }
+    lines.push("")
+  }
   for (const step of implementation.steps) {
     lines.push(`### ${step.id} · ${status[step.status]}`, "", step.description, "")
     for (const location of step.locations) lines.push(`- 位置：\`${location.path}:${location.lineStart}-${location.lineEnd}\`（${location.version === "before" ? "修改前" : "修改后"}；${location.correlation === "matched" ? "已对应 diff" : "未确认变更"}）`)
@@ -72,6 +81,15 @@ export function developmentReportMarkdown(report, outputDirectory) {
     "|---|---:|---|---|",
   ]
   for (const [level, item] of Object.entries(report.checks)) lines.push(`| ${level} | ${item.required ? "是" : "否"} | ${item.status} | ${item.summary.replaceAll("|", "\\|")} |`)
+  if (report.buildDiagnosis) {
+    const d = report.buildDiagnosis
+    const labels = { unknown: "原因待确认", implementation_error: "AI 实现错误", environment_issue: "工程或环境问题", official_documentation: "官网文档问题" }
+    const decisions = { investigate_only: "只读排查，不猜测修改", repair_according_to_official: "按官网修复，更新实施记录并重新验证", resolve_prerequisites: "在授权范围内处理工程前提，无法处理则报告阻塞", stop_repair: "停止修改和重试，保留失败现场" }
+    lines.push("", "## 构建失败归因", "", `- 原因：${labels[d.category]}`, `- 结论：${d.summary}`, `- 处理：${decisions[d.decision]}`, `- 构建日志：[查看日志](<${d.buildLog.path.replaceAll("\\", "/")}>) · SHA-256：\`${d.buildLog.sha256}\``)
+    for (const ref of d.evidence) lines.push(`- ${ref.type}：[${ref.lineStart}–${ref.lineEnd} 行](<${ref.path.replaceAll("\\", "/")}>) · SHA-256：\`${ref.sha256}\``)
+    if (d.premises?.basis) lines.push(`- 前提核对：${d.premises.basis}`)
+    lines.push("", "程序校验了记录结构；归因由 AI 对照证据分析，不代表程序自动证明官网错误。")
+  }
   lines.push("", "## 代码变化", "")
   if (!report.changes.length) lines.push("未记录触及文件。")
   for (const change of report.changes) {

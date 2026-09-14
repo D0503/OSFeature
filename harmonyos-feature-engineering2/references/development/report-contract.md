@@ -14,9 +14,13 @@
 
 ## 六层与证据
 
+实施记录新增 `developmentMode` 与 `requirements`，字段和模式规则见 [官网依据开发](official-implementation.md)。`existing` 步骤支持已有代码满足要求。历史记录和报告可继续渲染；新构建要求完整的来源、区段覆盖与对照记录。报告简要展示模式、官网来源和未解决项，完整映射保留在 JSON；程序校验不能证明语义等价。
+
 static/sdk/build/install/runtime/visual；`component_tree/visual_judgment/screenshot` 证据类型与视觉组合规则、导航编排（route-steps.json + expectPage 断言）、判图注入（visual-judgment.json）。
 
 ## 合并与展示
+
+可选 `buildInputs[]` 保存本轮构建前的代码与冻结正文副本及全文件哈希。构建失败时新增 `buildDiagnosis`，分类与证据契约见 [构建失败归因](official-implementation.md#构建失败归因)。初次为 unknown，后续通过 `record-build-diagnosis.mjs` 以日志路径和哈希唯一定位并更新条目，不重建、不改判据；官网问题必须 stop_repair，原构建及总结果保持 failed，设备层保持 not_run。旧报告未包含这些字段时继续兼容。
 
 - `render-development-report.mjs` 接受单目标报告或汇总报告，读取输出目录已有的报告再合并。同工程按能力、路线、场景、开发目标、target、module 识别条目；相同条目重跑替换，不同目标保留，不混入其他工程。
 - 多场景 CLI 按顺序执行并使用同一输出目录。历史单目标 JSON 可逐份传给渲染脚本合并；已有单目标根结构也可直接读取。

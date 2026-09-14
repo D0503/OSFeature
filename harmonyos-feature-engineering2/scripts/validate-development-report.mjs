@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises"
 import { pathToFileURL } from "node:url"
 import { CHECK_LEVELS, LAYER_STATUSES, VERDICTS } from "./lib/capability-tools.mjs"
 import { validateImplementationTrace } from "./lib/implementation-trace.mjs"
+import { validateBuildDiagnosis } from "./lib/build-diagnosis.mjs"
 
 const CHECK_KEYS = ["static", "sdk", "build", "install", "runtime", "visual"]
 const COMPATIBILITY = new Set(["supported", "upgrade_required", "blocked", "insufficient_context"])
@@ -146,6 +147,7 @@ export function validateDevelopmentReport(report) {
     if (report.verdict.status !== expected) errors.push(`verdict.status 应为 ${expected}`)
   }
   if (report.implementation !== undefined || report.normativeBasis !== undefined) errors.push(...validateImplementationTrace(report))
+  if (report.buildDiagnosis !== undefined) errors.push(...validateBuildDiagnosis(report))
   return { valid: errors.length === 0, errors }
 }
 

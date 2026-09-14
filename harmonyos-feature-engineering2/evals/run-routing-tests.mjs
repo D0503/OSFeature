@@ -93,6 +93,39 @@ try {
   check(missing.status === "invalid" && missing.invalid.some((item) => item.includes("search-title-nesting")), "未审查新增冲突监测点时拒绝草稿")
   draft.conflictResolutions = [{ probeId: "search-title-nesting", verdict: "resolved", basis: "测试夹具无嵌套冲突" }]
   check((await validateDraft(capability, scenario.id, directory, draft, diff)).status === "validated", "新增主题与监测结论完整时可生成判据")
+  const hdsTopics = {
+    "IL-S009": ["HDS 导航材质与背景滚动联动"],
+    "IL-S010": ["HDS 页签悬浮布局条件"],
+    "IL-S011": ["HDS 导航材质与背景滚动联动", "HDS 页签悬浮布局条件"],
+    "IL-S012": ["HDS 自定义等级的目标组件接入"],
+  }
+  for (const [id, topics] of Object.entries(hdsTopics)) {
+    const hds = capability.scenariosData.scenarios.find((s) => s.id === id)
+    const frozen = join(temporary, id)
+    await mkdir(join(frozen, "snapshots"), { recursive: true })
+    const pages = []
+    for (const snapshotId of hds.sources) {
+      const content = `HDS 测试冻结原文 ${snapshotId}`
+      await writeFile(join(frozen, "snapshots", `${snapshotId}.md`), content)
+      pages.push({ ...entryById.get(snapshotId), contentSha256: createHash("sha256").update(content).digest("hex") })
+    }
+    await writeFile(join(frozen, "frozen.json"), JSON.stringify({ frozenAt: "2026-09-10T00:00:00Z", snapshots: pages }))
+    const change = await diffAgainstLatest(capability, frozen)
+    const material = await deriveMaterials(capability, id, frozen, change)
+    check(material.status === "materials_ready" && topics.every((t) => material.materials.requiredTopics.some((r) => r.topic === t)), `${id} 材料包含新增核对主题`)
+    const input = { schemaVersion: "1.0", scenarioId: id, conflictResolutions: [],
+      confirmations: change.highRisk.map((r) => ({ snapshotId: r.snapshotId, category: r.category, userDecision: "proceed", note: "离线夹具" })),
+      criteria: hds.criteriaSpec.required.map((r, i) => ({ id: `${id}-T${i}`, topic: r.topic, statement: "本次冻结原文的要求", snapshotId: hds.sources[0], anchor: "HDS 测试冻结原文" })) }
+    const incomplete = { ...input, criteria: input.criteria.filter((c) => !topics.includes(c.topic)) }
+    check((await validateDraft(capability, id, frozen, incomplete, change)).status === "invalid", `${id} 遗漏新增主题不能生成完整判据`)
+    check((await validateDraft(capability, id, frozen, input, change)).status === "validated", `${id} 判据从本次冻结原文补齐后通过`)
+    const reuse = await deriveMaterials(capability, id, join(root, "capabilities/immersive-light/sessions/latest"), { status: "clean" })
+    check(reuse.status === "degraded_reuse" && topics.every((t) => reuse.reason.includes(t)), `${id} 旧判据不得静默跳过新主题`)
+  }
+  const custom = capability.scenariosData.scenarios.find((s) => s.id === "IL-S012")
+  await writeFile(join(project, "Index.ets"), `import { hdsMaterial } from '@kit.UIDesignKit';\ntry { const types = hdsMaterial.getSystemMaterialTypes(); if (types.includes(hdsMaterial.MaterialType.IMMERSIVE)) { const level = hdsMaterial.MaterialLevel.EXQUISITE; } } catch (e) { console.error('query failed'); }`)
+  const customResult = await runStaticScenarioChecks(project, custom, { modules: [] })
+  check(customResult.status === "passed", "缺少 SMOOTH 不单独判失败；等级策略由本次判据和观察核对")
 } finally {
   await rm(temporary, { recursive: true, force: true })
 }

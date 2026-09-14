@@ -81,9 +81,9 @@
         "model": "stage",
         "minCompileApi": 23,
         "minTargetApi": 23,
-        "minCompatibleApi": 23,
-        "compatibleApiMayBeLower": false,
-        "compatibilityPolicy": "首个 HDS 路线仅验证 6.1.0(23) 及以上工程；官方沉浸光感指南未提供低于 23 的 HDS 回退实现。"
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "最低兼容版本按用户需求与本次冻结官网依据确定；接口起始版本不能直接推导为 compatibleSdkVersion 下限。compatible 低于接口起始版本时须对照实际代码核验低版本调用条件与兼容行为，程序版本门禁通过不代表低版本运行已验证。"
       },
       "sdk": {
         "preferredApi": 23,
@@ -402,19 +402,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ApplicationMaterialMetadata.json5",
-            "origin": "mechanical-adaptation",
-            "sourceSnapshotId": "enable",
-            "anchor": "ohos.arkui.UIMaterial.state"
-          },
-          {
-            "path": "assets/ImmersiveMaterialProbe.ets",
-            "origin": "test-harness",
-            "adaptationNotes": "设备能力与档位诊断探针，仅用于验证辅助，无官网对应。"
-          }
-        ],
         "steps": [
           "在用户确认的 entry 模块 module.json5 中只修改 module.metadata。",
           "目标工程只保留用户要求的最终 default、enable 或 disable 状态。",
@@ -514,13 +501,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ImmersiveMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
-          }
-        ],
         "steps": [
           "保持组件树、状态、事件和普通样式基线不变，只增加 systemMaterial 值来源。",
           "开启使用 ImmersiveMaterial，关闭使用 Material.empty，恢复使用 undefined。",
@@ -639,13 +619,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ImmersiveMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
-          }
-        ],
         "steps": [
           "先识别目标到底是标题栏、悬浮 TabBar 或索引器弹窗，使用对应 Options/Style 入口。",
           "Tabs 只修改 FloatingTabBarStyle.systemMaterial，不向 TabContent 错加材质。",
@@ -805,13 +778,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ImmersiveMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
-          }
-        ],
         "steps": [
           "先核对目标类型是否支持、默认开启条件和生效区域；CalendarPicker 拉起的弹出框等不支持分支只说明约束，不强行增加材质入口。",
           "先确定具体弹窗 API 和 Options 类型，使用该 API 声明的 systemMaterial 字段。",
@@ -963,13 +929,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ImmersiveMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
-          }
-        ],
         "steps": [
           "使用目标组件声明的 systemMaterial 或样式字段，不假定所有组件参数形状相同。",
           "Select 的按钮和菜单分别决定是否接入；Toggle Checkbox 不接入并保留普通样式。",
@@ -1131,13 +1090,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ImmersiveMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "adaptationNotes": "按官网 ImmersiveMaterial 构造逻辑封装的最小工厂，非官网代码原样复制。"
-          }
-        ],
         "steps": [
           "只设置开发目标要求的材质参数，其他字段保持 undefined 或原状态。",
           "materialColor 使用带透明度的资源色或 ARGB 值；反色目标优先使用资源颜色。",
@@ -1149,8 +1101,7 @@
           "id": "material-construction",
           "kind": "require_any",
           "patterns": [
-            "new\\s+uiMaterial\\.ImmersiveMaterial",
-            "ImmersiveMaterialFactory"
+            "new\\s+uiMaterial\\.ImmersiveMaterial"
           ],
           "onMissing": "failed",
           "message": "未发现材质参数构造。"
@@ -1298,13 +1249,6 @@
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/ImmersiveMaterialProbe.ets",
-            "origin": "test-harness",
-            "adaptationNotes": "设备能力与档位诊断探针，仅用于验证辅助，无官网对应。"
-          }
-        ],
         "steps": [
           "先记录设备支持状态和全局材质档位，再定位目标材质区域。",
           "逐项排除普通背景覆盖、不透明材质色、属性顺序、嵌套、模糊叠加、动态背景和重复阴影。",
@@ -1458,35 +1402,32 @@
             "topic": "HDS 示例审计（IL-F036）",
             "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
             "mustResolve": true
+          },
+          {
+            "topic": "HDS 导航材质与背景滚动联动",
+            "hint": "从本次冻结的 HdsNavigation 文档核对 systemMaterialEffect 与 originalStyle、scrollEffectStyle、scrollEffectOpts、背景色、模糊半径的联动及版本差异；区分默认行为与可配置项，只提取目标涉及的约束，不预置取值。",
+            "mustResolve": true
           }
         ],
         "conflictProbes": []
       },
       "expectedOutcomeTemplates": [
         {
-          "assertion": "HdsNavigation 标题栏按钮保持原交互并显示系统自适应沉浸光感；PC/2in1 的材质能力已查询。",
+          "assertion": "依据本次判据验证标题栏目标区域的材质、背景与滚动效果、点击交互和适用设备行为。",
           "criteriaTopics": [
             "HdsNavigation（IL-F028）",
             "HDS 材质参数（IL-F030）",
             "HDS 自适应策略（IL-F033）",
-            "HDS 设备差异（IL-F035）"
+            "HDS 设备差异（IL-F035）",
+            "HDS 导航材质与背景滚动联动"
           ]
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/HdsMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "sourceSnapshotId": "hds-component-material-guide",
-            "anchor": "再根据查询结果选用相应的材质效果枚举",
-            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
-          }
-        ],
         "steps": [
-          "确认工程使用 Stage 模型和 6.1.0(23) 及以上的 HDS SDK 声明。",
-          "保留原 HdsNavigation 内容、滚动绑定、标题和菜单，只在 titleBar.style 中合并 systemMaterialEffect。",
-          "默认使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE；自定义档位需求转入设备能力选择场景。"
+          "按 developmentMode 实施：Demo 有适用官网示例时做最小适配，无示例时依据本次官网判据实现；现有工程参考示例、保留有效架构和业务交互，只做满足本次判据的必要改动。",
+          "按本次判据核对导航材质入口、版本和生效范围，并核对接入前后背景、滚动样式的联动；不能假定配置保持不变就代表效果不变。",
+          "按本次官网推荐和用户需求选择材质参数；自定义档位目标使用设备能力选择场景。"
         ]
       },
       "staticRules": [
@@ -1516,22 +1457,14 @@
           ],
           "onMissing": "failed",
           "message": "HdsNavigation 的 titleBar.style 中缺少 systemMaterialEffect。"
-        },
-        {
-          "id": "hds-nav-adaptive-pair",
-          "kind": "require_any",
-          "patterns": [
-            "materialType\\s*:\\s*hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}materialLevel\\s*:\\s*hdsMaterial\\.MaterialLevel\\.ADAPTIVE"
-          ],
-          "onMissing": "inconclusive",
-          "message": "未发现官网推荐的 ADAPTIVE 类型与 ADAPTIVE 等级组合。"
         }
       ],
       "negativeCases": [
         "省略 materialType 导致默认 NONE",
         "标题栏滚动与菜单交互回归",
         "PC/2in1 未查询材质能力",
-        "视觉证据缺失"
+        "视觉证据缺失",
+        "遗漏材质与原有背景、滚动样式的联动条件"
       ],
       "requiredChecks": [
         "static",
@@ -1597,35 +1530,32 @@
             "topic": "HDS 示例审计（IL-F036）",
             "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
             "mustResolve": true
+          },
+          {
+            "topic": "HDS 页签悬浮布局条件",
+            "hint": "从本次冻结的 HdsTabs 文档与沉浸光感示例核对 barFloatingStyle、barOverlap、vertical、barPosition 的配套关系及实际生效条件；区分规范要求与示例选择，具体取值从原文现提，不以只出现材质字段判定悬浮布局成立。",
+            "mustResolve": true
           }
         ],
         "conflictProbes": []
       },
       "expectedOutcomeTemplates": [
         {
-          "assertion": "HdsTabs 底部悬浮页签保持切换与布局行为，并在受支持设备显示系统自适应沉浸光感。",
+          "assertion": "依据本次判据验证底部页签的悬浮布局、内容关系、切换交互及适用设备上的材质效果。",
           "criteriaTopics": [
             "HdsTabs（IL-F029）",
             "HDS 材质参数（IL-F030）",
             "HDS 自适应策略（IL-F033）",
-            "HDS 设备差异（IL-F035）"
+            "HDS 设备差异（IL-F035）",
+            "HDS 页签悬浮布局条件"
           ]
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/HdsMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "sourceSnapshotId": "hds-component-material-guide",
-            "anchor": "再根据查询结果选用相应的材质效果枚举",
-            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
-          }
-        ],
         "steps": [
-          "确认工程使用 Stage 模型和 6.1.0(23) 及以上的 HDS SDK 声明。",
-          "保留原 HdsTabs、TabContent、controller 和页签样式，只在 barFloatingStyle 中合并 systemMaterialEffect。",
-          "默认使用 materialType=ADAPTIVE、materialLevel=ADAPTIVE，并在 Phone/Tablet/PC 目标设备记录视觉证据。"
+          "按 developmentMode 实施：Demo 有适用官网示例时做最小适配，无示例时依据本次官网判据实现；现有工程参考示例、保留有效架构和业务交互，只做满足本次判据的必要改动。",
+          "从本次判据落实 HdsTabs 材质入口与悬浮布局配套条件；已有条件可复用，缺失条件按官方要求补齐。",
+          "按本次官网推荐和用户需求选择参数，在目标设备验证悬浮位置、内容关系、切换交互及材质效果。"
         ]
       },
       "staticRules": [
@@ -1655,22 +1585,14 @@
           ],
           "onMissing": "failed",
           "message": "HdsTabs 的 barFloatingStyle 中缺少 systemMaterialEffect。"
-        },
-        {
-          "id": "hds-tabs-adaptive-pair",
-          "kind": "require_any",
-          "patterns": [
-            "materialType\\s*:\\s*hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}materialLevel\\s*:\\s*hdsMaterial\\.MaterialLevel\\.ADAPTIVE"
-          ],
-          "onMissing": "inconclusive",
-          "message": "未发现官网推荐的 ADAPTIVE 类型与 ADAPTIVE 等级组合。"
         }
       ],
       "negativeCases": [
         "省略 materialType 导致默认 NONE",
         "页签切换与悬浮布局回归",
         "TV 上误判材质有效",
-        "PC/2in1 未查询材质能力"
+        "PC/2in1 未查询材质能力",
+        "只配置材质字段而遗漏悬浮布局配套条件"
       ],
       "requiredChecks": [
         "static",
@@ -1748,35 +1670,38 @@
             "topic": "HDS 示例审计（IL-F036）",
             "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
             "mustResolve": true
+          },
+          {
+            "topic": "HDS 导航材质与背景滚动联动",
+            "hint": "从本次冻结的 HdsNavigation 文档核对 systemMaterialEffect 与 originalStyle、scrollEffectStyle、scrollEffectOpts、背景色、模糊半径的联动及版本差异；区分默认行为与可配置项，只提取目标涉及的约束，不预置取值。",
+            "mustResolve": true
+          },
+          {
+            "topic": "HDS 页签悬浮布局条件",
+            "hint": "从本次冻结的 HdsTabs 文档与沉浸光感示例核对 barFloatingStyle、barOverlap、vertical、barPosition 的配套关系及实际生效条件；区分规范要求与示例选择，具体取值从原文现提，不以只出现材质字段判定悬浮布局成立。",
+            "mustResolve": true
           }
         ],
         "conflictProbes": []
       },
       "expectedOutcomeTemplates": [
         {
-          "assertion": "标题栏按钮和底部悬浮页签均按官方入口显示自适应材质，且两处原有交互与布局不回归。",
+          "assertion": "依据本次判据分别验证导航材质与背景滚动联动、底部页签材质与悬浮布局，以及两处交互。",
           "criteriaTopics": [
             "HdsNavigation（IL-F028）",
             "HdsTabs（IL-F029）",
             "HDS 自适应策略（IL-F033）",
-            "HDS 设备差异（IL-F035）"
+            "HDS 设备差异（IL-F035）",
+            "HDS 导航材质与背景滚动联动",
+            "HDS 页签悬浮布局条件"
           ]
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/HdsMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "sourceSnapshotId": "hds-component-material-guide",
-            "anchor": "再根据查询结果选用相应的材质效果枚举",
-            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
-          }
-        ],
         "steps": [
-          "在现有 HdsNavigation 与 HdsTabs 组件树中分别定位 titleBar.style 和 barFloatingStyle。",
-          "复用同一系统自适应材质参数，分别合并到两个官方字段，不复制官网完整演示页和示例资源。",
-          "分别验证标题栏按钮与底部页签的视觉、滚动、点击和切换行为。"
+          "按 developmentMode 实施：Demo 有适用官网示例时做最小适配，无示例时依据本次官网判据实现；现有工程参考示例、保留有效架构和业务交互，只做满足本次判据的必要改动。",
+          "分别从本次判据落实导航标题栏与底部页签的材质入口，核对导航背景滚动联动和页签悬浮布局条件；仅接入用户要求的相关示例内容。",
+          "分别验证两处的材质、布局、滚动、点击和切换行为，不以一处生效代替另一处验证。"
         ]
       },
       "staticRules": [
@@ -1808,15 +1733,6 @@
           ],
           "onMissing": "failed",
           "message": "底部悬浮页签缺少 systemMaterialEffect。"
-        },
-        {
-          "id": "hds-combined-adaptive",
-          "kind": "require_any",
-          "patterns": [
-            "hdsMaterial\\.MaterialType\\.ADAPTIVE[\\s\\S]{0,300}hdsMaterial\\.MaterialLevel\\.ADAPTIVE"
-          ],
-          "onMissing": "inconclusive",
-          "message": "未发现完整的系统自适应材质组合。"
         }
       ],
       "negativeCases": [
@@ -1824,7 +1740,8 @@
         "只接入底部页签",
         "复制未替换的 scenery01 资源",
         "原滚动或页签交互回归",
-        "设备能力差异"
+        "设备能力差异",
+        "组合接入遗漏导航联动或页签悬浮条件"
       ],
       "requiredChecks": [
         "static",
@@ -1905,7 +1822,7 @@
           },
           {
             "topic": "HDS 自定义等级（IL-F034）",
-            "hint": "HDS 自定义材质等级前应调用 getSystemMaterialTypes；支持 IMMERSIVE 时可选 EXQUISITE 或 GENTLE，不支持时建议使用 SMOOTH 以降低卡顿和发热风险。",
+            "hint": "从本次冻结官网核对自定义等级前的设备能力查询、支持与不支持时的可选策略，以及各条说明是强制要求还是建议；不得把推荐等级固定为必选值。",
             "mustResolve": true
           },
           {
@@ -1917,35 +1834,32 @@
             "topic": "HDS 示例审计（IL-F036）",
             "hint": "HDS 官网指南示例是需补齐工程上下文的片段：示例导入仅含 @kit.UIDesignKit 与 @kit.ArkUI 的 SymbolGlyphModifier，示例本身不含异常处理代码；scenery01 明确要求替换为本地资源。",
             "mustResolve": true
+          },
+          {
+            "topic": "HDS 自定义等级的目标组件接入",
+            "hint": "依据用户目标核对选定等级最终如何传入 HdsNavigation 标题栏或 HdsTabs 页签材质入口及生效范围；导航目标同时核对背景滚动联动，页签目标同时核对悬浮布局条件。组合目标分别核对两处；纯能力查询不额外创建组件。",
+            "mustResolve": true
           }
         ],
         "conflictProbes": []
       },
       "expectedOutcomeTemplates": [
         {
-          "assertion": "运行时查询结果决定材质等级；支持 IMMERSIVE 时使用 EXQUISITE/GENTLE，不支持时使用 SMOOTH，异常路径可恢复且视觉与性能有设备证据。",
+          "assertion": "依据本次判据核对设备能力与所选等级的关系；涉及组件接入时验证等级实际传入目标入口并生效，仅查询目标验证查询结果。不把官网建议提升为必过条件。",
           "criteriaTopics": [
             "HDS MaterialType（IL-F031）",
             "HDS MaterialLevel（IL-F032）",
             "HDS 自定义等级（IL-F034）",
-            "HDS 设备差异（IL-F035）"
+            "HDS 设备差异（IL-F035）",
+            "HDS 自定义等级的目标组件接入"
           ]
         }
       ],
       "implementation": {
-        "assets": [
-          {
-            "path": "assets/HdsMaterialFactory.ets",
-            "origin": "derived-implementation",
-            "sourceSnapshotId": "hds-component-material-guide",
-            "anchor": "再根据查询结果选用相应的材质效果枚举",
-            "adaptationNotes": "封装官网系统自适应与按设备能力选级的逻辑为静态工厂。"
-          }
-        ],
         "steps": [
-          "在组件构建前调用 hdsMaterial.getSystemMaterialTypes，并保留异常处理。",
-          "设备支持 IMMERSIVE 时使用 EXQUISITE 或 GENTLE；不支持时使用 SMOOTH。",
-          "把选出的等级与 ADAPTIVE 材质类型组合后传入目标组件的 systemMaterialEffect。"
+          "按 developmentMode 实施：Demo 有适用官网示例时做最小适配，无示例时依据本次官网判据实现；现有工程参考示例、保留有效架构和业务交互，只做满足本次判据的必要改动。",
+          "按本次判据核对能力查询、等级选择与异常处理；忠实区分强制约束和推荐策略，不因未使用某个推荐等级直接判失败。",
+          "按目标组件核对所选等级最终传入的材质入口及配套条件，纯查询目标不增加组件。"
         ]
       },
       "staticRules": [
@@ -1977,15 +1891,6 @@
           "message": "缺少设备支持 IMMERSIVE 时的 EXQUISITE/GENTLE 分支。"
         },
         {
-          "id": "hds-custom-fallback-level",
-          "kind": "require_any",
-          "patterns": [
-            "MaterialLevel\\.SMOOTH"
-          ],
-          "onMissing": "failed",
-          "message": "缺少设备不支持 IMMERSIVE 时的 SMOOTH 回退。"
-        },
-        {
           "id": "hds-custom-error-path",
           "kind": "require_any",
           "patterns": [
@@ -2000,7 +1905,8 @@
         "不支持 IMMERSIVE 时仍使用高档材质",
         "查询异常无恢复路径",
         "PC/2in1 未查询",
-        "用构建通过代替性能与视觉结论"
+        "用构建通过代替性能与视觉结论",
+        "只计算等级但未传入用户要求的目标组件"
       ],
       "requiredChecks": [
         "static",
@@ -2109,7 +2015,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "从 typical-scenes 的“搜索框标题栏效果”章节现提判据，不以通用导航示例替代。",
           "只修改目标搜索框、标题栏和用户要求的联动；保留搜索提交、分类选择与导航。",
@@ -2232,7 +2137,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "从 typical-scenes 的“内容区标题栏开启沉浸光感”章节现提判据。",
           "复用既有内容标题，按实际滚动位置切换显示，核对阈值相等、快速滚动、回滑，保留选择状态。",
@@ -2337,7 +2241,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "只查询用户需要的信息或接入已有业务判断；纯查询说明不创建工程。",
           "使用 ArkUI 的查询接口，区分应用状态、设备等级和材质样式；不调用 HDS 接口替代。"
@@ -2459,7 +2362,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "只对既有目标选取材质厚度；以本次 API 和设计正文为依据。",
           "系统强弱与深浅色通过系统设置观察，不伪造一致视觉效果或增加应用设置页。"
@@ -2570,7 +2472,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "依据 overview 的空间动效表和目标组件开启条件实施，保留既有弹出/关闭/滑动交互。",
           "在支持条件下观察系统动效，不承诺任意设备可显示同样形变或粒子；不增加自制动画替代系统能力。"
@@ -2664,7 +2565,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "纯比较问题只解释接口差异；实施请求先明确目标路线，再使用对应接入场景。",
           "用户明确 uiMaterial 却要求设置设备等级时说明其约束，不切换成 HDS 实现；涉及两套 Kit 时分别核对命名空间。"
@@ -2782,7 +2682,6 @@
         }
       ],
       "implementation": {
-        "assets": [],
         "steps": [
           "先确认目标组件所在区域及专用入口；普通搜索框不自动增加标题栏、分类列表或滚动收起。",
           "只给符合本次判据的目标区域接入材质；不支持时报告约束，不移动或新增业务组件来制造支持。"

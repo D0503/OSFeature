@@ -14,6 +14,9 @@ import { runDevelopmentVerification } from "../scripts/verify-development.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "../scripts/validate-development-report.mjs"
 import { buildImplementationTrace } from "../scripts/lib/implementation-trace.mjs"
 import { renderDevelopmentReport } from "../scripts/render-development-report.mjs"
+import { captureFileBaseline } from "../scripts/snapshot-project-files.mjs"
+import { recordBuildDiagnosis } from "../scripts/record-build-diagnosis.mjs"
+import { inspectDevelopmentProject } from "../scripts/lib/development-project.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const tempRoot = await mkdtemp(join(tmpdir(), "dev-skill-tests-"))
@@ -42,8 +45,8 @@ async function makeSdk(root) {
   await put(join(root, "openharmony", "ets", "api", "@ohos.arkui.uiMaterial.d.ts"), "class Material { static empty: Material } class ImmersiveMaterial extends Material {} interface ImmersiveOptions {} enum ImmersiveStyle {} function isImmersiveMaterialSupported(): boolean; function getGlobalMaterialLevel(): number;")
   await put(join(root, "openharmony", "ets", "component", "common.d.ts"), "interface CommonAttribute { systemMaterial(value: object): CommonAttribute }")
   await put(join(root, "hms", "ets", "kits", "@kit.UIDesignKit.d.ts"), "export { hdsMaterial, HdsNavigation, HdsTabs, TitleBarStyleOptions, HdsTabsFloatingStyle, SystemMaterialParams };")
-  await put(join(root, "hms", "ets", "api", "@hds.hds.hdsMaterial.d.ets"), "namespace hdsMaterial { enum MaterialType { NONE, ADAPTIVE, IMMERSIVE } enum MaterialLevel { EXQUISITE, GENTLE, SMOOTH, ADAPTIVE } function getSystemMaterialTypes(): Array<MaterialType>; }")
-  await put(join(root, "hms", "ets", "api", "@hds.hds.hdsBaseComponent.d.ets"), "interface SystemMaterialParams {} interface TitleBarStyleOptions { systemMaterialEffect?: SystemMaterialParams } interface HdsTabsFloatingStyle { systemMaterialEffect?: SystemMaterialParams } declare function HdsNavigation(): void; declare function HdsTabs(): void;")
+  await put(join(root, "hms", "ets", "api", "@hms.hds.hdsMaterial.d.ets"), "namespace hdsMaterial { enum MaterialType { NONE, ADAPTIVE, IMMERSIVE } enum MaterialLevel { EXQUISITE, GENTLE, SMOOTH, ADAPTIVE } function getSystemMaterialTypes(): Array<MaterialType>; }")
+  await put(join(root, "hms", "ets", "api", "@hms.hds.hdsBaseComponent.d.ets"), "interface SystemMaterialParams {} interface TitleBarStyleOptions { systemMaterialEffect?: SystemMaterialParams } interface HdsTabsFloatingStyle { systemMaterialEffect?: SystemMaterialParams } declare function HdsNavigation(): void; declare function HdsTabs(): void;")
 }
 
 async function makeFrozen(directory, pages) {
@@ -186,6 +189,24 @@ try {
   const sdk = join(tempRoot, "sdk")
   await makeSdk(sdk)
   await makeProject(project, { sdk })
+  const hdsProject = join(tempRoot, "hds-compatible20")
+  await makeProject(hdsProject, { sdk })
+  const hdsProfilePath = join(hdsProject, "build-profile.json5")
+  const hdsProfile = JSON.parse(await readFile(hdsProfilePath, "utf8"))
+  const hdsProduct = hdsProfile.app.products[0]
+  hdsProduct.compatibleSdkVersion = 20
+  hdsProduct.targetSdkVersion = 23
+  const hdsScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S010")
+  await put(hdsProfilePath, JSON.stringify(hdsProfile))
+  const inspectHds = () => inspectDevelopmentProject(hdsProject, capability, { scenario: hdsScenario, sdkPath: sdk })
+  check((await inspectHds()).compatibility.status === "supported", "HDS compatible=20、target=23、SDK=26 不被固定最低兼容门禁阻塞")
+  hdsProduct.targetSdkVersion = 20
+  await put(hdsProfilePath, JSON.stringify(hdsProfile))
+  check((await inspectHds()).compatibility.status === "upgrade_required", "HDS target 不足仍被版本门禁阻塞")
+  hdsProduct.targetSdkVersion = 23
+  hdsProduct.compileSdkVersion = 20
+  await put(hdsProfilePath, JSON.stringify(hdsProfile))
+  check((await inspectHds()).compatibility.status === "upgrade_required", "HDS 显式 compile 不足仍被版本门禁阻塞")
 
   let criteriaGateRejected = false
   try {
@@ -200,11 +221,79 @@ try {
   check(badCriteriaRejected, "判据集结构无效时被拒绝")
 
   const criteriaForVerify = validated.criteriaDocument
+  let implementationGateRejected = false
+  try {
+    await runDevelopmentVerification(skillRoot, { project, goal: "应用级开启后关闭沉浸光感", sdk }, { executeBuild: true, criteria: criteriaForVerify })
+  } catch (error) { implementationGateRejected = error.message.includes("实施依据门禁未通过（尚未构建或运行）") }
+  check(implementationGateRejected, "完整判据不能绕过实施依据门禁，拒绝发生在设备命令之前")
   const run = await runDevelopmentVerification(skillRoot, { feature: "immersive-light", project, goal: "应用级开启后关闭沉浸光感", sdk, criteriaPath: "criteria.json" }, { criteria: criteriaForVerify, outputDirectory: join(tempRoot, "out-verify") })
   check(run.report.verificationVersion === "1.0", "报告契约版本正确")
   check(run.report.capabilityPackage.criteriaRefs.length === run.report.capabilityPackage.criteriaRefs.filter((id, index, all) => all.indexOf(id) === index).length && run.report.capabilityPackage.criteriaRefs.length > 0, "报告登记本次判据引用")
   check(run.report.capabilityPackage.conflictingCriteriaRefs.length === 2, "冲突判据对进入报告")
   check(validateDevelopmentReport(run.report).valid, "开发报告通过结构校验")
+
+  // A real verification path with an injected command runner must never operate a device after failure.
+  const codePath = "entry/src/main/ets/pages/Index.ets"
+  const buildBaseline = await captureFileBaseline(project, [codePath])
+  const impl = { developmentMode: "demo", requirements: criteriaForVerify.criteria.map((c) => {
+    const body = changedBodies.get(c.snapshotId)
+    return { criteriaId: c.id, strength: "required", disposition: "implement", approach: "Fixture contract implementation", sources: [{ snapshotId: c.snapshotId, lineStart: 1, lineEnd: 1, sha256: digest(body.split(/\r?\n/)[0]) }], review: { status: "passed", basis: "Fixture code references the official contract" } }
+  }), steps: [{ id: "BUILD-INPUT", description: "Existing fixture", status: "existing", locations: [{ path: codePath, version: "after", lineStart: 1, lineEnd: 1 }], basis: criteriaForVerify.criteria.map((c) => ({ type: "criteria", criteriaId: c.id, reason: "Fixture official contract" })) }] }
+  const commands = []
+  const failedOutput = join(tempRoot, "failed-build")
+  const failed = await runDevelopmentVerification(skillRoot, { project, goal: "应用级开启后关闭沉浸光感", sdk, device: "mock-device" }, {
+    criteria: criteriaForVerify, implementation: impl, baseline: buildBaseline, frozenDirectory: changedFrozen,
+    executeBuild: true, executeRun: true, captureScreenshot: true, captureLayout: true,
+    navigate: { schemaVersion: "1.0", steps: [{ stepId: "launch", action: "launch", target: "fixture" }] },
+    observations: { runtime: { status: "passed", summary: "stale" }, visual: { status: "passed", summary: "stale" } },
+    judgment: { visual: { status: "passed" }, matchedCriteriaRefs: ["C-1"] }, outputDirectory: failedOutput,
+    commandRunner: async (args) => { commands.push(args); const now = new Date().toISOString(); return { exitCode: 1, stdout: "compile error: fixture", stderr: "", command: `mock ${args.join(" ")}`, startedAt: now, endedAt: now } },
+  })
+  check(commands.length === 1 && commands[0][0] === "build", "构建失败后无安装、启动、导航或采集命令")
+  check(["install", "runtime", "visual"].every((level) => failed.report.checks[level].status === "not_run") && failed.report.verdict.status === "failed" && !failed.report.verdict.matchedCriteriaRefs.length, "旧观察和判图不能覆盖构建失败")
+  check(failed.report.buildDiagnosis.category === "unknown", "首次失败不按关键词归因官网")
+  const reportPath = join(failedOutput, "development-verification-report.json")
+  const other = structuredClone(run.report); other.input.goal = "Other target"
+  await renderDevelopmentReport(other, failedOutput)
+  const diagnostic = { ...failed.report.buildDiagnosis, category: "official_documentation", summary: "Fixture official contract contradicts SDK", decision: "stop_repair", sdkComparisonRequired: true,
+    premises: { codeMatchesOfficial: true, versionSatisfied: true, configurationSatisfied: true, basis: "Fixture versions/configuration checked against frozen official text" },
+    evidence: [...failed.report.buildInputs.filter((e) => e.type === "code" || e.type === "official_source"), failed.report.evidence.find((e) => e.type === "sdk_declaration")].map((e) => ({ type: e.type, path: e.path, sha256: e.sha256, lineStart: 1, lineEnd: 1 })) }
+  const unchangedReport = await readFile(reportPath, "utf8")
+  for (const kind of ["code", "official_source", "sdk_declaration", "log", "hash", "premise"]) {
+    const bad = structuredClone(diagnostic)
+    if (["code", "official_source", "sdk_declaration"].includes(kind)) bad.evidence = bad.evidence.filter((e) => e.type !== kind)
+    if (kind === "log") bad.buildLog.path = join(tempRoot, "unrelated.log")
+    if (kind === "hash") bad.evidence[0].sha256 = "0".repeat(64)
+    if (kind === "premise") bad.premises.versionSatisfied = false
+    let rejected = false
+    try { await recordBuildDiagnosis(reportPath, bad) } catch { rejected = true }
+    check(rejected && await readFile(reportPath, "utf8") === unchangedReport, `归因 ${kind} 无效时拒绝且不写回`)
+  }
+  const originalCode = await readFile(join(project, codePath), "utf8")
+  const buildLogBytes = await readFile(diagnostic.buildLog.path)
+  await writeFile(diagnostic.buildLog.path, "changed log")
+  let changedLogRejected = false
+  try { await recordBuildDiagnosis(reportPath, diagnostic) } catch { changedLogRejected = true }
+  check(changedLogRejected && await readFile(reportPath, "utf8") === unchangedReport, "证据路径匹配但日志文件内容已变化时拒绝写回")
+  await writeFile(diagnostic.buildLog.path, buildLogBytes)
+  await writeFile(join(project, codePath), "later edited code")
+  await recordBuildDiagnosis(reportPath, diagnostic)
+  let recorded = JSON.parse(await readFile(reportPath, "utf8"))
+  check(recorded.reports.length === 2 && recorded.reports.find((r) => r.input.goal === other.input.goal).verdict.status === other.verdict.status, "归因写回保留其他目标")
+  check(recorded.reports.find((r) => r.buildDiagnosis)?.buildDiagnosis.decision === "stop_repair" && commands.length === 1, "官网问题记录停止修复且不重新构建，证据取自失败前代码副本")
+  check((await readFile(join(failedOutput, "development-verification-report.md"), "utf8")).includes("停止修改和重试"), "报告突出官网问题停止修复")
+  await writeFile(join(project, codePath), originalCode)
+  for (const [category, decision] of [["implementation_error", "repair_according_to_official"], ["environment_issue", "resolve_prerequisites"], ["unknown", "investigate_only"]]) {
+    await recordBuildDiagnosis(reportPath, { ...failed.report.buildDiagnosis, category, decision, summary: category })
+    check(JSON.parse(await readFile(reportPath, "utf8")).reports.some((r) => r.buildDiagnosis?.category === category && r.verdict.status === "failed"), `${category} 保持构建失败且分类独立`)
+  }
+  recorded = JSON.parse(await readFile(reportPath, "utf8"))
+  const duplicate = structuredClone(recorded.reports.find((r) => r.buildDiagnosis)); duplicate.input.goal = "Duplicate build evidence"
+  recorded.reports.push(duplicate)
+  await writeFile(reportPath, JSON.stringify(recorded))
+  let ambiguousRejected = false
+  try { await recordBuildDiagnosis(reportPath, diagnostic) } catch { ambiguousRejected = true }
+  check(ambiguousRejected, "相同日志匹配多个条目时拒绝")
 
   const conflictReport = structuredClone(run.report)
   for (const level of Object.keys(conflictReport.checks)) conflictReport.checks[level] = { ...conflictReport.checks[level], status: "passed" }

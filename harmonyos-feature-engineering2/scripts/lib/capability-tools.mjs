@@ -5,7 +5,6 @@ import { dirname, isAbsolute, join, resolve, relative } from "node:path"
 export const CHECK_LEVELS = new Set(["static", "sdk", "build", "install", "runtime", "visual"])
 export const LAYER_STATUSES = new Set(["passed", "failed", "blocked", "not_run", "inconclusive"])
 export const VERDICTS = new Set(["passed", "passed_with_spec_conflict", "build_passed_runtime_pending", "inconclusive", "failed", "blocked"])
-export const ASSET_ORIGINS = new Set(["official-exact", "mechanical-adaptation", "derived-implementation", "test-harness", "corrected-variant"])
 
 async function exists(path) {
   try { await access(path); return true } catch { return false }
@@ -96,16 +95,6 @@ function validateScenariosDocument(scenariosData, errors) {
     if (!Array.isArray(scenario?.requiredChecks) || !scenario.requiredChecks.includes("static") || !scenario.requiredChecks.includes("build")) errors.push(`${label} 必须包含 static 与 build`)
     else for (const level of scenario.requiredChecks) if (!CHECK_LEVELS.has(level)) errors.push(`${label}.requiredChecks 包含无效层 ${level}`)
     if (!Array.isArray(scenario?.expectedOutcomeTemplates) || !scenario.expectedOutcomeTemplates.length) errors.push(`${label}.expectedOutcomeTemplates 必须是非空数组`)
-    for (const [assetIndex, asset] of (scenario?.implementation?.assets ?? []).entries()) {
-      const assetLabel = `${label}.implementation.assets[${assetIndex}]`
-      if (typeof asset === "string") { errors.push(`${assetLabel} 必须是对象（path + origin 来源分类）`); continue }
-      if (!nonEmptyString(asset?.path)) errors.push(`${assetLabel}.path 必填`)
-      if (!ASSET_ORIGINS.has(asset?.origin)) errors.push(`${assetLabel}.origin 必须是 ${[...ASSET_ORIGINS].join("/")}`)
-      if ((asset?.origin === "official-exact" || asset?.origin === "mechanical-adaptation") && (!nonEmptyString(asset?.sourceSnapshotId) || !entryIds.has(asset.sourceSnapshotId) || !nonEmptyString(asset?.anchor))) {
-        errors.push(`${assetLabel} 来源分类 ${asset.origin} 必须提供入口 sourceSnapshotId 与官网代码锚点 anchor`)
-      }
-      if (asset?.origin === "corrected-variant" && !nonEmptyString(asset?.adaptationNotes)) errors.push(`${assetLabel} 来源分类 corrected-variant 必须提供 adaptationNotes`)
-    }
   }
   return { routeIds, entryIds, probeIds }
 }

@@ -11,10 +11,10 @@
 | 按钮、滑动条、子页签、操作块、分段按钮 | IL-S005 | component：Button/Select/Toggle/Slider/ChipGroup/SegmentButton |
 | 交互形变、点光源、赋色、反色、自定义阴影 | IL-S006 | common、ui-material-api、faq：各参数及生效条件 |
 | 不生效、背景遮挡、边框折射、渲染区域、层级、功耗、参数稳定 | IL-S008 | faq 对应问题、constraints 八项优化 |
-| 明确 HDS 标题栏或 HdsNavigation | IL-S009 | hds-component-material-guide、hds-navigation-api |
-| 明确 HDS 底部页签或 HdsTabs | IL-S010 | hds-component-material-guide、hds-tabs-api |
-| HdsNavigation 和 HdsTabs 一起接入 | IL-S011 | HDS 指南：系统自适应示例 |
-| HDS 自定义等级、getSystemMaterialTypes | IL-S012 | HDS 指南：自定义效果；hds-material-api |
+| 明确 HDS 标题栏或 HdsNavigation | IL-S009 | HDS 指南、hds-navigation-api：材质入口及背景、滚动样式联动 |
+| 明确 HDS 底部页签或 HdsTabs | IL-S010 | HDS 指南、hds-tabs-api：材质入口及悬浮布局配套条件 |
+| HdsNavigation 和 HdsTabs 一起接入 | IL-S011 | HDS 指南及两个组件 API：分别核对导航联动与页签悬浮条件 |
+| HDS 自定义等级、getSystemMaterialTypes | IL-S012 | HDS 指南、hds-material-api：选级条件；按目标组件继续核对对应 API 的接入位置与生效条件 |
 | 沉浸光感典型场景：搜索框标题栏具有沉浸光感效果；搜索框随上滑隐藏 | IL-S013 | typical-scenes：搜索框标题栏效果 |
 | 内容区标题栏开启沉浸光感；分类栏吸顶；内容标题进入顶部标题栏 | IL-S014 | typical-scenes：内容区标题栏开启沉浸光感 |
 | getMaterialInfo、材质配置状态、设备是否支持、设备等级查询 | IL-S015 | ui-material-api：MaterialInfo 及三个查询接口 |

@@ -15,7 +15,7 @@ export function validateImplementationRecord(record) {
     if (!string(step.id) || ids.has(step.id)) errors.push(`${label}.id 缺失或重复`)
     ids.add(step.id)
     if (!string(step.description)) errors.push(`${label}.description 缺失`)
-    if (!["applied", "partial", "not_applied"].includes(step.status)) errors.push(`${label}.status 无效`)
+    if (!["applied", "partial", "not_applied", "existing"].includes(step.status)) errors.push(`${label}.status 无效`)
     if (!Array.isArray(step.locations) || !step.locations.length) errors.push(`${label}.locations 必须非空`)
     else for (const location of step.locations) {
       if (!safePath(location?.path) || !["before", "after"].includes(location?.version) || !Number.isInteger(location?.lineStart) || location.lineStart < 1 || !Number.isInteger(location?.lineEnd) || location.lineEnd < location.lineStart) errors.push(`${label}.locations 路径、版本或行号无效`)
@@ -68,7 +68,7 @@ export function buildImplementationTrace(criteriaDocument, record, changes, base
     step.locations = input.locations.map((location) => {
       const change = byPath.get(location.path)
       const matched = baselineAvailable && matchesChange(location, change)
-      if (!matched && step.status !== "not_applied") step.issues.push(`${location.path}:${location.lineStart}-${location.lineEnd} 无可对应的基线差异，实施情况待确认。`)
+      if (!matched && !["not_applied", "existing"].includes(step.status)) step.issues.push(`${location.path}:${location.lineStart}-${location.lineEnd} 无可对应的基线差异，实施情况待确认。`)
       if (matched && step.status !== "not_applied") covered.add(location.path)
       return { ...location, correlation: matched ? "matched" : "unverified", beforeSha256: change?.beforeSha256 ?? null, afterSha256: change?.afterSha256 ?? null }
     })
@@ -95,6 +95,7 @@ export function buildImplementationTrace(criteriaDocument, record, changes, base
   })
   return {
     implementation: {
+      ...(record?.developmentMode ? { developmentMode: record.developmentMode, requirements: structuredClone(record.requirements ?? []) } : {}),
       recordStatus: record?.steps?.length ? "recorded" : changes.some((change) => change.status !== "unchanged") || !baselineAvailable ? "missing" : "not_started",
       baselineAvailable: Boolean(baselineAvailable), steps,
       uncoveredChanges: changes.filter((change) => change.status !== "unchanged" && !covered.has(change.path)).map((change) => change.path),
