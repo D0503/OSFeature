@@ -224,13 +224,13 @@
     {
       "id": 18,
       "prompt": "这是原生 ArkUI Tabs，不是 HdsTabs。我想给底部 TabBar 做沉浸光感悬浮效果，应该选哪条路线？",
-      "expected_output": "选择 ArkUI 路线。使用 FloatingTabBarStyle.systemMaterial，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End；应用级 ENABLE 不会自动给底部 Tabs 开启材质。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
+      "expected_output": "选择 ArkUI 路线。必须显式配置 barFloatingStyle，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End。上述悬浮条件生效后系统默认启用 THIN 材质，不要求显式设置 FloatingTabBarStyle.systemMaterial；显式入口只用于自定义样式、赋色、反色、交互或流光。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
       "files": [],
       "expectations": [
         "原生 Tabs 路由到 ArkUI 而不是 HDS",
-        "包含 FloatingTabBarStyle.systemMaterial",
+        "说明 ENABLE 下先显式配置 barFloatingStyle，完整悬浮条件生效后默认使用 THIN",
         "同时要求 barOverlap(true)、vertical(false) 和 BarPosition.End",
-        "说明应用级 ENABLE 不会自动开启底部 Tabs 材质",
+        "不按 DEFAULT 与 ENABLE 拆分 Tabs 接入路径，且不强制显式设置 FloatingTabBarStyle.systemMaterial",
         "说明背景冲突、TabContent 限制及组合路线条件"
       ]
     },
@@ -273,6 +273,43 @@
         "按实际遮挡高度计算而非写死通用值",
         "不重复计算外层安全区",
         "非悬浮源路径保留原滚动范围，普通样式重叠悬浮栏仍需避让"
+      ]
+    },
+    {
+      "id": 22,
+      "prompt": "ArkUI 应用分别配置 default、enable、disable 时，Navigation 标题栏、底部悬浮 Tabs、Dialog 和 Menu 的沉浸光感默认行为有什么不同？",
+      "expected_output": "按 MaterialState 矩阵逐项回答，但 Tabs 不拆成两条接入路径：无论 DEFAULT 还是 ENABLE，都必须先让 barFloatingStyle、barOverlap(true)、vertical(false)、BarPosition.End 完整生效，随后使用系统默认 THIN，不强制显式设置 systemMaterial。Navigation、Dialog 和 Menu 仍按各自 DEFAULT/ENABLE 规则处理；DISABLE 覆盖应用默认与组件显式设置，所有材质均不生效。",
+      "files": [],
+      "expectations": [
+        "区分 DEFAULT、ENABLE、DISABLE",
+        "说明 Tabs 在 DEFAULT 与 ENABLE 下采用同一组完整悬浮条件与默认 THIN 规则",
+        "说明 DEFAULT 下 Dialog 的背景条件和 Menu 默认关闭",
+        "说明 DISABLE 覆盖显式设置"
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "我给普通内容区的 Button 和 Chip 设置了 systemMaterial，接口能编译但运行时提示 Material inactive: out of scope，为什么？",
+      "expected_output": "先按生效域排查，而不是归因为接口或版本。Button、Chip/ChipGroup、SegmentButton 等不能笼统视为普通内容区任意位置可用；需要核对是否位于官方支持的 Navigation 标题栏或底部悬浮 TabBar 等区域。静态扫描不能确认祖先关系时输出 warn 并要求人工核对；日志已明确 out of scope 时判定失败。Select、Toggle、Slider 以及弹窗、菜单等官方 all-page 组件另按各自入口处理。",
+      "files": [],
+      "expectations": [
+        "识别 out of scope 为生效域问题",
+        "区分 navigation-title、bottom-floating-tabbar、all-page",
+        "普通内容区 Button 或 Chip 不被误判为任意区域生效",
+        "静态祖先关系不明确时保守输出 warn"
+      ]
+    },
+    {
+      "id": 24,
+      "prompt": "ImmersiveOptions 里的 style、materialColor、colorInvert、lightEffect 和 shadow 在低算力设备上分别怎么降级？lightEffect 传 {}、null、undefined 有什么区别？",
+      "expected_output": "说明参数按设备算力和系统档位降级：style、colorInvert、lightEffect 只在对应高/中算力表现生效；低算力不区分 style，materialColor 作为普通背景色。colorInvert 依赖薄材质、系统强弱档位和支持反色的资源色。lightEffect: {} 开启默认白色流光，null 明确关闭，undefined 保留组件当前默认行为。自定义 shadow 与材质默认阴影冲突时先设置 applyShadow:false。关键交互反馈不能只依赖流光。",
+      "files": [],
+      "expectations": [
+        "说明低算力不区分 style 且 materialColor 作为背景色",
+        "说明 colorInvert 的薄材质、系统档位和资源色条件",
+        "区分 lightEffect 的空对象、null、undefined",
+        "说明 applyShadow 与自定义 shadow 的优先关系",
+        "保留非材质交互反馈"
       ]
     }
   ]

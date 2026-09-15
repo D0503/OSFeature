@@ -35,9 +35,7 @@ Tabs({ barPosition: BarPosition.End }) {
 .vertical(false)
 .barOverlap(true)
 .barFloatingStyle({
-  systemMaterial: new uiMaterial.ImmersiveMaterial({
-    style: uiMaterial.ImmersiveStyle.ULTRA_THIN
-  })
+  adaptToHandedness: true
 })
 ```
 
@@ -47,7 +45,19 @@ Tabs({ barPosition: BarPosition.End }) {
 2. `vertical(false)`；
 3. `barPosition: BarPosition.End`。
 
-应用级 `ENABLE` 不会自动给底部 Tabs 开启材质，必须通过 `FloatingTabBarStyle.systemMaterial` 显式设置。设置后不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡材质；`TabContent` 本身不支持沉浸光感。
+必须由工程显式配置 `barFloatingStyle` 并满足上述三个布局条件。悬浮样式生效后，系统默认启用 `THIN` 材质，不要求显式设置 `FloatingTabBarStyle.systemMaterial`。
+
+需要覆盖系统默认样式、赋色、反色、交互或点光源时，再显式配置：
+
+```typescript
+.barFloatingStyle({
+  systemMaterial: new uiMaterial.ImmersiveMaterial({
+    style: uiMaterial.ImmersiveStyle.THIN
+  })
+})
+```
+
+无论采用默认还是显式材质，都不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡效果；`TabContent` 本身不支持沉浸光感。
 
 ### 可滚动 Tab 页尾部避让
 
@@ -77,15 +87,15 @@ Scroll() {
 ## AlphabetIndexer
 
 - 应用级 `ENABLE` 时提示弹窗默认使用 `THICK`；
-- `popupBackground` 和 `popupBackgroundBlurStyle` 未主动设置或为 `undefined` 时，才允许默认材质；
+- `popupBackground`、`popupBackgroundBlurStyle` 均未设置或为 `undefined` 时，提示弹窗默认开启沉浸光感，材质样式为 `THICK`；
 - 两个背景属性与沉浸光感互斥，主动设置后材质不生效；
 - 高、中算力设备显示 `THICK`，低算力设备降级为普通白色背景；
-- 组件级可通过 `systemMaterial` 设置，但仍需保留普通背景路径。
+- 提示弹窗通过上述背景属性条件控制默认材质，回退时保留普通背景路径。
 
 ## 路由判定
 
 - 扫描到 `HdsTabs`：选择 HDS；
-- 扫描到原生 `Tabs`、`FloatingTabBarStyle.systemMaterial` 或 ArkUI `uiMaterial`：选择 ArkUI；
+- 扫描到原生 `Tabs` 的有效悬浮形态、`FloatingTabBarStyle.systemMaterial` 或 ArkUI `uiMaterial`：选择 ArkUI；
 - 同一工程两类组件都需要改造：同时选择 HDS 与 ArkUI。
 
 ## 来源

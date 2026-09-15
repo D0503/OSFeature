@@ -48,7 +48,7 @@ export class ImmersiveMaterialGuard {
       uiMaterial.isImmersiveMaterialSupported();
   }
 
-  /** 浮动工具栏、悬浮按钮：超薄高透明（官方推荐场景） */
+  /** 顶部浮动工具栏、悬浮按钮：超薄高透明（底部悬浮 TabBar 的系统默认是 THIN） */
   public static floatingMaterial(interactive: boolean, enableLightEffect: boolean): uiMaterial.ImmersiveMaterial {
     return ImmersiveMaterialGuardImpl.create(uiMaterial.ImmersiveStyle.ULTRA_THIN, interactive, enableLightEffect);
   }
@@ -58,8 +58,8 @@ export class ImmersiveMaterialGuard {
     return ImmersiveMaterialGuardImpl.create(uiMaterial.ImmersiveStyle.THIN, interactive, false);
   }
 
-  /** 卡片、通用内容区域：常规厚度 */
-  public static cardMaterial(): uiMaterial.ImmersiveMaterial {
+  /** 合法生效区域中的常规厚度材质；调用前必须核对组件矩阵的 effectScopes */
+  public static regularMaterialForAllowedScope(): uiMaterial.ImmersiveMaterial {
     return ImmersiveMaterialGuardImpl.create(uiMaterial.ImmersiveStyle.REGULAR, false, false);
   }
 

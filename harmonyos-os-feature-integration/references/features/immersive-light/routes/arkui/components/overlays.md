@@ -10,7 +10,9 @@
 | Menu | 开启，默认 `THICK` | `ContextMenuOptions.systemMaterial` 等实际入口 Options | 按调用入口确认类型，不复用 HDS 的 `HdsNavigationMenuContentOptions` |
 | Dialog/Sheet | 开启，默认 `ULTRA_THICK` | `CustomDialogControllerOptions`、`AlertDialogParam`、`ActionSheetOptions`、`SheetOptions` 等 | 背景色或背景模糊会遮挡；避免大面积材质 |
 
-DatePicker、TextPicker、TimePicker 的弹出效果按 CustomDialog 类验证。CalendarPicker 拉起的弹出框当前不支持沉浸光感；对 CalendarPicker 组件使用通用属性时，效果作用于组件本身，不是其弹出框。
+`DEFAULT` 与 `ENABLE` 不能合并理解：Dialog、Toast、AlphabetIndexer 和启用 `copyOption` 的文本选择菜单在 `DEFAULT` 下存在系统默认材质，但可能受背景色、模糊和阴影配置影响；普通 Menu 与 SelectionMenu 需要 `ENABLE` 才默认开启。Popup、Tips 在 `DEFAULT`、`ENABLE` 下都不会自动开启，需要使用各自 Options 显式设置。
+
+CalendarPickerDialog、DatePickerDialog、TextPickerDialog、TimePickerDialog 的沉浸光感效果按 CustomDialog 类验证。CalendarPicker 拉起的弹出框当前不支持沉浸光感；对 CalendarPicker 组件使用通用属性时，效果作用于组件本身，不是其弹出框。
 
 ## 实施规则
 
@@ -19,9 +21,9 @@ DatePicker、TextPicker、TimePicker 的弹出效果按 CustomDialog 类验证�
 3. 明确关闭使用 `uiMaterial.Material.empty`，除非该组件官方说明了不同语义。
 4. 弹窗已有背景色、背景模糊、自定义阴影或大尺寸时，先决定保留原视觉还是采用材质，不叠加碰运气。
 5. 大面积 Dialog/Sheet 的 GPU 和动效开销单独评估；关键内容不能依赖透明背景才能辨识。
+6. SelectionMenu、文本选择菜单和 PickerDialog 的系统默认行为按[组件矩阵](../component-profile.json)逐项核对，不用一个泛化 Dialog/Menu 类型代替。
 
 ## 来源
 
 - [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
 - [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)
-

@@ -20,7 +20,7 @@ assert.equal(registry.features.length, 1)
 assert.deepEqual(registry.features[0], {
   id: "immersive-light",
   displayName: "沉浸光感",
-  aliases: ["沉浸光感实现", "悬浮导航Tab", "悬浮导航 Tab", "Immersive Light", "HDS 沉浸材质"],
+  aliases: ["沉浸光感实现", "悬浮导航Tab", "悬浮导航 Tab", "Immersive Light", "HDS 沉浸材质", "uiMaterial", "systemMaterial"],
   status: "ready",
   entry: "references/features/immersive-light/README.md",
   profile: "references/features/immersive-light/profile.json"
@@ -38,6 +38,8 @@ function matchFeature(prompt) {
 
 assert.equal(matchFeature("请接入沉浸光感")?.id, "immersive-light")
 assert.equal(matchFeature("悬浮导航Tab怎么实现")?.id, "immersive-light")
+assert.equal(matchFeature("帮我接入 uiMaterial")?.id, "immersive-light")
+assert.equal(matchFeature("排查 SYSTEMMATERIAL 不生效")?.id, "immersive-light")
 assert.equal(matchFeature("请接入碰一碰"), null)
 assert.equal(matchFeature("帮我实现窗口沉浸式并处理安全区"), null)
 
@@ -162,7 +164,8 @@ assert.match(arkuiActivation, /targetSdkVersion >= 26.*适用于 ArkUI 整条路
 assert.match(arkuiActivation, /DISABLE[\s\S]*uiMaterial\.Material\.empty[\s\S]*undefined/)
 assert.match(arkuiActivation, /未配置或 `default`[\s\S]*不能视为“完全无变化”/)
 assert.match(arkuiNavigation, /barOverlap\(true\)[\s\S]*vertical\(false\)[\s\S]*BarPosition\.End/)
-assert.match(arkuiNavigation, /应用级 `ENABLE` 不会自动给底部 Tabs 开启材质/)
+assert.match(arkuiNavigation, /必须由工程显式配置 `barFloatingStyle`/)
+assert.match(arkuiNavigation, /系统默认启用 `THIN` 材质，不要求显式设置 `FloatingTabBarStyle\.systemMaterial`/)
 assert.match(arkuiNavigation, /### 可滚动 Tab 页尾部避让/)
 assert.match(arkuiNavigation, /List[\s\S]*contentEndOffset[\s\S]*Scroll \+ Column[\s\S]*Blank[\s\S]*WaterFlow/)
 assert.match(arkuiNavigation, /最后一个可操作项及其点击、拖拽或手势热区/)
@@ -174,6 +177,8 @@ assert.match(arkuiOverlays, /CalendarPicker.*当前不支持/)
 assert.match(arkuiControls, /ToggleType\.Checkbox|Checkbox 当前不支持/)
 assert.match(arkuiControls, /Slider.*`undefined` 恢复原 Slider/)
 assert.match(arkuiControls, /backgroundSystemMaterial.*selectedBackgroundSystemMaterial.*iconBackgroundSystemMaterial/)
+assert.match(arkuiCommonMaterial, /`lightEffect`[ -￿]*`\{\}`[ -￿]*`null`[ -￿]*`undefined`/)
+assert.match(arkuiCommonMaterial, /低算力[ -￿]*`materialColor`[ -￿]*背景色/)
 
 assert.match(assetsCatalog, /三组对照均出现的迁移模式（3\/3）/)
 assert.match(assetsCatalog, /原始对照工程被移除不会影响能力包/)
@@ -253,15 +258,30 @@ assert.ok(arkuiRoute?.components.includes("Navigation"))
 assert.ok(arkuiRoute?.components.includes("Tabs"))
 assert.ok(arkuiRoute?.components.includes("Toggle"))
 assert.ok(arkuiRoute?.components.includes("SegmentButtonV2"))
-assert.equal(arkuiComponentProfile.schemaVersion, "1.0")
+for (const name of ["ChipGroupV2", "CalendarPickerDialog", "DatePickerDialog", "TextPickerDialog", "TimePickerDialog"]) {
+  assert.ok(arkuiRoute.components.includes(name))
+  assert.ok(arkuiComponentProfile.groups.some((group) => group.components.some((component) => component.names.includes(name))))
+}
+assert.ok(arkuiComponentProfile.groups.flatMap((group) => group.components).find((component) => component.id === "segment-button").constraints.includes("MultiCapsuleSegmentButtonV2-unsupported"))
+const indexerProfile = arkuiComponentProfile.groups.flatMap((group) => group.components).find((component) => component.id === "alphabet-indexer")
+assert.deepEqual(indexerProfile.entries, ["popupBackground", "popupBackgroundBlurStyle"])
+assert.equal(arkuiComponentProfile.schemaVersion, "1.1")
 assert.equal(arkuiComponentProfile.routeId, "arkui")
 assert.equal(arkuiComponentProfile.minTargetApi, 26)
 assert.equal(arkuiComponentProfile.activation.explicitDisable, "uiMaterial.Material.empty")
 assert.equal(arkuiComponentProfile.groups.map((group) => group.id).join(","), "navigation,overlays,controls")
 const arkuiComponentIds = arkuiComponentProfile.groups.flatMap((group) => group.components.map((component) => component.id))
-for (const componentId of ["navigation-title", "tabs-bottom-bar", "alphabet-indexer", "toast", "popup", "tips", "menu", "dialog-sheet", "button", "select", "toggle", "slider", "chip-group", "segment-button"]) {
+for (const componentId of ["navigation-title", "tabs-bottom-bar", "alphabet-indexer", "toast", "popup", "tips", "menu", "dialog-sheet", "selection-menu", "text-selection-menu", "button", "select", "toggle", "slider", "chip", "chip-group", "segment-button"]) {
   assert.ok(arkuiComponentIds.includes(componentId))
 }
+assert.deepEqual(arkuiComponentProfile.effectScopeValues, ["all-page", "navigation-title", "bottom-floating-tabbar"])
+const tabsProfile = arkuiComponentProfile.groups.flatMap((group) => group.components).find((item) => item.id === "tabs-bottom-bar")
+assert.equal(tabsProfile?.applicationDefaults.default.enabled, true)
+assert.equal(tabsProfile?.applicationDefaults.enable.enabled, true)
+assert.equal(tabsProfile?.defaultStyle, "THIN")
+assert.ok(tabsProfile?.applicationDefaults.enable.conditions.includes("barOverlap-true"))
+assert.ok(tabsProfile?.effectScopes.includes("bottom-floating-tabbar"))
+assert.ok(arkuiComponentProfile.groups.flatMap((group) => group.components).every((item) => item.applicationDefaults?.default && item.applicationDefaults?.enable))
 assert.ok(profile.routes.every((route) => !("sdkRequirements" in route)))
 assert.equal(profile.documents.assets, "assets-catalog.md")
 assert.equal(profile.documents.fallback, "shared/fallback.md")
@@ -274,7 +294,7 @@ assert.ok(profile.constraints.some((item) => item.id === "scrollable-tab-tail-cl
 assert.ok(profile.constraints.some((item) => item.id === "arkui-target-api26"))
 assert.ok(profile.constraints.some((item) => item.id === "arkui-native-tabs-contract"))
 assert.ok(profile.constraints.some((item) => item.id === "arkui-explicit-disable"))
-assert.ok(arkuiComponentProfile.groups.flatMap((group) => group.components).find((item) => item.id === "tabs-bottom-bar")?.constraints.includes("scrollable-tab-tail-clearance"))
+assert.ok(tabsProfile?.constraints.includes("scrollable-tab-tail-clearance"))
 assert.ok(profile.evidence.sources.includes("https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable"))
 assert.ok(profile.evidence.sources.includes("https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation"))
 assert.equal(profile.fallbackPolicy.baseline, "pre-integration-source-state")
@@ -315,7 +335,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-os-feature-integration")
-assert.equal(evals.evals.length, 21)
+assert.equal(evals.evals.length, 24)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)
 assert.match(floatingTabEval?.prompt ?? "", /悬浮导航Tab/)
@@ -381,4 +401,14 @@ assert.ok(presetControlsEval?.expectations.some((item) => item.includes("内部�
 assert.ok(presetControlsEval?.expectations.some((item) => item.includes("SliderBlockType.DEFAULT")))
 assert.ok(presetControlsEval?.expectations.some((item) => item.includes("undefined 专属语义")))
 
-process.stdout.write(`${JSON.stringify({ status: "passed", assertions: 261 })}\n`)
+const stateMatrixEval = evals.evals.find((item) => item.id === 22)
+assert.match(stateMatrixEval?.prompt ?? "", /default、enable、disable/)
+assert.ok(stateMatrixEval?.expectations.some((item) => item.includes("默认 THIN")))
+const effectScopeEval = evals.evals.find((item) => item.id === 23)
+assert.match(effectScopeEval?.prompt ?? "", /out of scope/)
+assert.ok(effectScopeEval?.expectations.some((item) => item.includes("navigation-title")))
+const parameterTierEval = evals.evals.find((item) => item.id === 24)
+assert.match(parameterTierEval?.prompt ?? "", /低算力/)
+assert.ok(parameterTierEval?.expectations.some((item) => item.includes("空对象、null、undefined")))
+
+process.stdout.write(`${JSON.stringify({ status: "passed" })}\n`)

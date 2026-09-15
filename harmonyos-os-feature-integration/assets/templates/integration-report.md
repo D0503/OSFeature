@@ -5,6 +5,7 @@
 - 工程事实：
 - 本机 SDK 根清单与 API 证据：
 - 兼容性结论、`recommendedRoute` 与 `selectedRoutes`：
+- 应用材质状态（原始值 / `effectiveApplicationMaterialState`）：
 
 ## 已修改
 
@@ -22,6 +23,7 @@
 ## 验证结果
 
 - 各路线静态验证：
+- ArkUI 生效域与参数风险：
 - 各路线构建：
 - 各路线真机：已验证 / 未验证
 

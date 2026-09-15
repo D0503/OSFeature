@@ -132,11 +132,13 @@ try {
           errors.push({ path: "profile.routes.arkui.documents.componentProfile", message: error instanceof Error ? error.message : String(error) })
         }
         if (componentProfile) {
-          issue(errors, componentProfile.schemaVersion === "1.0", "componentProfile.schemaVersion", "组件矩阵 schemaVersion 必须为 1.0")
+          issue(errors, componentProfile.schemaVersion === "1.1", "componentProfile.schemaVersion", "组件矩阵 schemaVersion 必须为 1.1")
           issue(errors, componentProfile.featureId === feature.id, "componentProfile.featureId", "组件矩阵 featureId 不一致")
           issue(errors, componentProfile.routeId === "arkui", "componentProfile.routeId", "组件矩阵 routeId 必须为 arkui")
           issue(errors, componentProfile.minTargetApi === 26, "componentProfile.minTargetApi", "组件矩阵必须要求 target API 26")
           issue(errors, componentProfile.activation?.explicitDisable === "uiMaterial.Material.empty", "componentProfile.activation.explicitDisable", "组件矩阵必须声明明确关闭方式")
+          const effectScopes = new Set(componentProfile.effectScopeValues ?? [])
+          issue(errors, ["all-page", "navigation-title", "bottom-floating-tabbar"].every((scope) => effectScopes.has(scope)), "componentProfile.effectScopeValues", "组件矩阵缺少标准生效域")
           issue(errors, Array.isArray(componentProfile.groups) && componentProfile.groups.length === 3, "componentProfile.groups", "组件矩阵必须包含三类组件")
           const componentIds = new Set()
           for (const [groupIndex, group] of (componentProfile.groups ?? []).entries()) {
@@ -147,18 +149,28 @@ try {
               issue(errors, typeof component.id === "string" && component.id.length > 0 && !componentIds.has(component.id), `componentProfile.groups[${groupIndex}].components[${componentIndex}].id`, "组件 id 必须是唯一非空字符串")
               componentIds.add(component.id)
               issue(errors, Array.isArray(component.names) && component.names.length > 0, `componentProfile.groups[${groupIndex}].components[${componentIndex}].names`, "组件名称不能为空")
-              issue(errors, typeof component.applicationEnableDefault === "boolean", `componentProfile.groups[${groupIndex}].components[${componentIndex}].applicationEnableDefault`, "必须声明 ENABLE 默认行为")
+              for (const state of ["default", "enable"]) {
+                const stateDefault = component.applicationDefaults?.[state]
+                issue(errors, typeof stateDefault?.enabled === "boolean", `componentProfile.groups[${groupIndex}].components[${componentIndex}].applicationDefaults.${state}.enabled`, "必须声明状态默认行为")
+                issue(errors, Array.isArray(stateDefault?.conditions) && stateDefault.conditions.every((condition) => typeof condition === "string" && condition.length > 0), `componentProfile.groups[${groupIndex}].components[${componentIndex}].applicationDefaults.${state}.conditions`, "状态条件必须是字符串数组")
+              }
               issue(errors, Array.isArray(component.entries) && component.entries.length > 0, `componentProfile.groups[${groupIndex}].components[${componentIndex}].entries`, "组件入口不能为空")
+              issue(errors, Array.isArray(component.effectScopes) && component.effectScopes.length > 0 && component.effectScopes.every((scope) => effectScopes.has(scope)), `componentProfile.groups[${groupIndex}].components[${componentIndex}].effectScopes`, "组件必须声明合法生效域")
             }
           }
-          for (const requiredId of ["navigation-title", "tabs-bottom-bar", "alphabet-indexer", "toast", "popup", "tips", "menu", "dialog-sheet", "button", "select", "toggle", "slider", "chip-group", "segment-button"]) {
+          for (const requiredId of ["navigation-title", "tabs-bottom-bar", "alphabet-indexer", "toast", "popup", "tips", "menu", "dialog-sheet", "selection-menu", "text-selection-menu", "button", "select", "toggle", "slider", "chip", "chip-group", "segment-button"]) {
             issue(errors, componentIds.has(requiredId), `componentProfile.components.${requiredId}`, "组件矩阵缺少必需组件")
           }
         }
 
         for (const source of [
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
           "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation"
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
+          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
+          "https://developer.huawei.com/consumer/cn/doc/design-guides/immersivelight-0000002612101053"
         ]) {
           issue(errors, profile.evidence?.sources?.includes(source), "profile.evidence.sources", `缺少官方证据: ${source}`)
         }

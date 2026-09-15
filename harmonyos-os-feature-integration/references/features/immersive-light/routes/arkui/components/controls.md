@@ -8,12 +8,14 @@
 | Select | 按钮和菜单都开启 | 按钮 `systemMaterial`，菜单 `menuSystemMaterial` | 两个入口相互独立；按钮默认 `ULTRA_THIN` 并开启交互与流光，菜单默认 `THICK` |
 | Toggle | 开启 | `systemMaterial` | Checkbox 当前不支持；Switch 参数只是开启标记并使用内部预设；Button 类型按 Button 规则 |
 | Slider | 开启 | `systemMaterial` | 参数只是开启标记；`undefined` 恢复原 Slider；交互效果要求 `SliderBlockType.DEFAULT` 且 `SliderStyle` 非 `NONE` |
-| ChipGroup | 开启，默认 `ULTRA_THIN` | `backgroundSystemMaterial`、`selectedBackgroundSystemMaterial`、`iconBackgroundSystemMaterial` | 三个入口分别控制普通、选中和图标背景 |
-| SegmentButton/V2 | 开启，默认 `THIN` | 对应 Options 的 `backgroundSystemMaterial` | capsule 且 multiply=true 不支持；V2 开启后支持选中项跟随拖拽 |
+| Chip / ChipGroup / ChipGroupV2 | 开启，默认 `ULTRA_THIN` | Chip 使用 `systemMaterial`；ChipGroup/ChipGroupV2 使用 `backgroundSystemMaterial`、`selectedBackgroundSystemMaterial`、`iconBackgroundSystemMaterial` | 先核对目标所在生效区域；ChipGroup/ChipGroupV2 三个入口分别控制普通、选中和图标背景 |
+| SegmentButton/V2 | 开启，默认 `THIN` | 对应 Options 的 `backgroundSystemMaterial` | SegmentButton 的 capsule 且 multiply=true 不支持；MultiCapsuleSegmentButtonV2 不支持沉浸光感；受支持的 V2 开启后支持选中项跟随拖拽 |
 
 ## 自动反色
 
 `colorInvert: true` 只会处理支持反色的系统资源。Button、ChipGroup、SegmentButton 的文字或图标若使用硬编码颜色，不应承诺自动反色。深浅色模式下逐项检查选中、未选中、禁用、按压和悬浮状态。
+
+Button、Chip/ChipGroup/ChipGroupV2、SegmentButton 等普通交互组件不能仅凭接口存在就放在任意内容区；应位于 Navigation/NavDestination 标题栏或有效的底部横向悬浮 TabBar。Select、Toggle、Slider 属于官方明确允许在页面内全部区域生效的组件。具体以[组件矩阵](../component-profile.json)的 `effectScopes` 为准。
 
 ## 交互保留
 
@@ -30,4 +32,3 @@
 
 - [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
 - [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)
-

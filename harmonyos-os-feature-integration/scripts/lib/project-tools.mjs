@@ -351,11 +351,18 @@ function inspectModules(files) {
     const name = parseScalar(file.content, "name")
     const type = parseScalar(file.content, "type")
     const metadataMaterial = /ohos\.arkui\.UIMaterial\.state/.exec(file.content)
+    const applicationMaterialState = metadataMaterial ? parseScalar(file.content.slice(metadataMaterial.index), "value").value ?? "present" : null
+    const effectiveApplicationMaterialState = applicationMaterialState === null
+      ? "default"
+      : ["default", "enable", "disable"].includes(applicationMaterialState)
+        ? applicationMaterialState
+        : "invalid"
     modules.push({
       path: file.path,
       name: typeof name.value === "string" ? name.value : "unknown",
       type: type.value === "entry" || type.value === "feature" || type.value === "shared" ? type.value : "unknown",
-      applicationMaterialState: metadataMaterial ? parseScalar(file.content.slice(metadataMaterial.index), "value").value ?? "present" : null
+      applicationMaterialState,
+      effectiveApplicationMaterialState
     })
   }
   return modules
@@ -368,6 +375,10 @@ const SIGNALS = [
   { id: "nativeTabs", regex: /\bTabs\s*\(/ },
   { id: "nativeTabsFloatingStyle", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(/ },
   { id: "nativeTabsFloatingMaterial", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(\s*\{[\s\S]{0,800}?\bsystemMaterial\s*:/ },
+  { id: "navigationTitleMaterial", regex: /\.title\s*\([\s\S]{0,1600}?\bsystemMaterial\s*:/ },
+  { id: "allPageMaterialEntry", regex: /\b(?:ShowToastOptions|PopupOptions|TipsOptions|ContextMenuOptions|CustomDialogControllerOptions|AlertDialogParam|ActionSheetOptions|SheetOptions)\b[\s\S]{0,800}?\bsystemMaterial\s*:|\b(?:Select|Toggle|Slider)\s*\([\s\S]{0,1200}?\.systemMaterial\s*\(/ },
+  { id: "ordinaryContentMaterialEntry", regex: /\b(?:Column|Row|Stack|Button|Chip)\s*\([^)]*\)[\s\S]{0,300}?\.systemMaterial\s*\(/ },
+  { id: "outOfScopeMaterialLog", regex: /Material inactive:\s*out of scope\.\s*Use component in navigation title bar or Tabbar\./i },
   { id: "barFloatingStyle", regex: /\bbarFloatingStyle\b/ },
   { id: "barPositionEnd", regex: /\bbarPosition\s*:\s*BarPosition\.End\b|\bbarPosition\s*\(\s*BarPosition\.End\s*\)/ },
   { id: "barOverlapTrue", regex: /\bbarOverlap\s*\(\s*true\s*\)/ },
@@ -394,15 +405,34 @@ const SIGNALS = [
   { id: "menuSystemMaterial", regex: /\bmenuSystemMaterial\b/ },
   { id: "backgroundSystemMaterial", regex: /\b(?:backgroundSystemMaterial|selectedBackgroundSystemMaterial|iconBackgroundSystemMaterial)\b/ },
   { id: "alphabetIndexer", regex: /\bAlphabetIndexer\s*\(/ },
+  { id: "toastComponent", regex: /\b(?:showToast|ShowToastOptions)\b/ },
+  { id: "dialogComponent", regex: /\b(?:AlertDialog|CustomDialog(?:Controller(?:Options)?)?|ActionSheet)\b/ },
+  { id: "menuComponent", regex: /\b(?:ContextMenuOptions|Menu|bindMenu|bindContextMenu)\b/ },
+  { id: "selectionMenu", regex: /\bSelectionMenu\b/ },
+  { id: "textSelectionMenu", regex: /\bcopyOption\b/ },
+  { id: "chipComponent", regex: /\bChip\s*\(/ },
+  { id: "chipGroup", regex: /\bChipGroup(?:V2)?\s*\(/ },
   { id: "selectComponent", regex: /\bSelect\s*\(/ },
+  { id: "toggleComponent", regex: /\bToggle\s*\(/ },
   { id: "toggleCheckbox", regex: /\bToggle\s*\(\s*\{[\s\S]{0,200}?\btype\s*:\s*ToggleType\.Checkbox\b/ },
   { id: "sliderComponent", regex: /\bSlider\s*\(/ },
-  { id: "popupBackgroundConflict", regex: /\b(?:popupBackground|popupBackgroundBlurStyle)\s*\(/ },
+  { id: "segmentButton", regex: /\bSegmentButton(?:V2)?\s*\(/ },
+  { id: "popupBackgroundConflict", regex: /\b(?:popupBackground|popupBackgroundBlurStyle)\s*\(\s*(?!\s*undefined\s*\))[^)]*\)/ },
   { id: "apiAvailable26", regex: /apiAvailable\s*\(\s*['"]26\.0\.0['"]\s*\)/ },
   { id: "materialSupported", regex: /isImmersiveMaterialSupported\s*\(/ },
   { id: "fallbackStyle", regex: /\b(?:backgroundColor|borderColor|borderWidth|backgroundBlurStyle)\s*\(/ },
   { id: "webComponent", regex: /\bWeb\s*\(|\bWebView\b|sameLayer/i },
-  { id: "materialEmpty", regex: /\bMaterial\.empty\b/ }
+  { id: "materialEmpty", regex: /\bMaterial\.empty\b/ },
+  { id: "materialColor", regex: /\bmaterialColor\s*:/ },
+  { id: "opaqueMaterialColor", regex: /\bmaterialColor\s*:\s*(?:Color\.(?!Transparent\b)\w+|['"]#(?:[0-9A-Fa-f]{6}|FF[0-9A-Fa-f]{6})['"])/ },
+  { id: "colorInvertTrue", regex: /\bcolorInvert\s*:\s*true\b/ },
+  { id: "hardcodedForegroundColor", regex: /\b(?:fontColor|fillColor|placeholderColor)\s*\(\s*(?:Color\.\w+|['"]#[0-9A-Fa-f]{6,8}['"])/ },
+  { id: "applyShadowFalse", regex: /\bapplyShadow\s*:\s*false\b/ },
+  { id: "customShadow", regex: /\.shadow\s*\(/ },
+  { id: "componentBackgroundColor", regex: /\bbackgroundColor\s*(?:\(|:)/ },
+  { id: "backgroundBlurConflict", regex: /\b(?:backgroundBlurStyle|backgroundEffect)\s*\(/ },
+  { id: "lightEffectEnabled", regex: /\blightEffect\s*:\s*\{[^}]*\}/ },
+  { id: "interactionFallback", regex: /\b(?:stateEffect|hoverEffect|pressed|hover|onTouch)\b/ }
 ]
 
 export async function inspectProject(projectPath, options = {}) {
@@ -584,7 +614,7 @@ export function evaluateCompatibility(inspection, profile) {
 
   const detectedRouteSignals = {
     hds: Boolean(inspection.componentSystem?.hds),
-    arkui: Boolean(inspection.componentSystem?.arkuiMaterial)
+    arkui: Boolean(inspection.componentSystem?.arkuiMaterial || inspection.componentSystem?.arkuiNativeNavigation)
   }
   const selectedRoutes = routes
     .filter((route) => availableRoutes.includes(route.id) && detectedRouteSignals[route.id])
@@ -645,6 +675,11 @@ export function evaluateCompatibility(inspection, profile) {
 
 function check(id, label, status, evidence = [], message = "") {
   return { id, label, status, message, evidence }
+}
+
+function effectiveArkuiMaterialState(inspection) {
+  const entryModule = inspection.modules.find((module) => module.type === "entry")
+  return entryModule?.effectiveApplicationMaterialState ?? "default"
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
@@ -770,13 +805,63 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     ))
     checks.push(check("capability-guard", "Device capability query", s.adaptiveMaterial.detected ? "pass" : "warn", s.adaptiveMaterial.evidence, "Custom material levels need a device capability query"))
   } else if (route === "arkui") {
-    checks.push(check("arkui-import", "ArkUI uiMaterial import", s.uiMaterial.detected ? "pass" : "fail", s.uiMaterial.evidence, "uiMaterial usage is required"))
+    const materialState = effectiveArkuiMaterialState(inspection)
     const materialEntryEvidence = [
       ...s.systemMaterial.evidence,
       ...s.menuSystemMaterial.evidence,
       ...s.backgroundSystemMaterial.evidence
     ]
-    checks.push(check("arkui-material-entry", "ArkUI material entry", materialEntryEvidence.length ? "pass" : "fail", materialEntryEvidence, "Use systemMaterial or the component-specific material entry"))
+    const usesExplicitMaterial = materialEntryEvidence.length > 0
+    const tabsSystemDefault = ["default", "enable"].includes(materialState) && s.nativeTabsFloatingStyle.detected
+    const enableDefaultTarget = [
+      s.nativeNavigation,
+      s.nativeTabsFloatingStyle,
+      s.alphabetIndexer,
+      s.toastComponent,
+      s.dialogComponent,
+      s.menuComponent,
+      s.selectionMenu,
+      s.textSelectionMenu,
+      s.chipComponent,
+      s.chipGroup,
+      s.selectComponent,
+      s.toggleComponent,
+      s.sliderComponent,
+      s.segmentButton
+    ].some((signal) => signal.detected)
+    const defaultTarget = [
+      s.alphabetIndexer,
+      s.toastComponent,
+      s.dialogComponent,
+      s.textSelectionMenu
+    ].some((signal) => signal.detected)
+    const usesApplicationDefault = tabsSystemDefault || (materialState === "enable"
+      ? enableDefaultTarget
+      : materialState === "default" && defaultTarget)
+    checks.push(check(
+      "arkui-import",
+      "ArkUI uiMaterial import",
+      !usesExplicitMaterial ? "not_applicable" : s.uiMaterial.detected ? "pass" : "fail",
+      s.uiMaterial.evidence,
+      !usesExplicitMaterial ? "Application-level defaults do not require a uiMaterial import" : "Explicit material entries require uiMaterial"
+    ))
+    checks.push(check(
+      "arkui-material-entry",
+      "ArkUI material entry",
+      materialState === "disable" && (usesExplicitMaterial || s.nativeTabsFloatingStyle.detected)
+        ? "fail"
+        : usesExplicitMaterial || usesApplicationDefault
+          ? "pass"
+          : "fail",
+      materialEntryEvidence,
+      materialState === "disable"
+        ? "MaterialState.DISABLE prevents both application defaults and explicit material"
+        : usesApplicationDefault && !usesExplicitMaterial
+          ? tabsSystemDefault
+            ? "The effective native Tabs floating style uses the system default THIN material"
+            : `MaterialState.${materialState.toUpperCase()} provides a default for a detected supported component`
+          : "Use an application default that covers the target or an explicit component material entry"
+    ))
     const needsLowerVersionTree = compatibleApi !== null && compatibleApi < 26
     checks.push(check(
       "version-guard",
@@ -787,9 +872,15 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
         ? "compatibleSdkVersion is API 26 or later"
         : "compatibleSdkVersion is below 26; guard the whole API 26 tree with deviceInfo.sdkApiVersion >= 26"
     ))
-    checks.push(check("capability-guard", "Material capability guard", s.materialSupported.detected ? "pass" : "fail", s.materialSupported.evidence, "Check isImmersiveMaterialSupported"))
+    checks.push(check(
+      "capability-guard",
+      "Material capability guard",
+      !usesExplicitMaterial ? "not_applicable" : s.materialSupported.detected ? "pass" : "fail",
+      s.materialSupported.evidence,
+      !usesExplicitMaterial ? "Application-level default material is system managed" : "Check isImmersiveMaterialSupported for explicit material and preserve the source path"
+    ))
 
-    const nativeNavigationMaterial = s.nativeNavigation.detected && s.systemMaterial.detected
+    const nativeNavigationMaterial = s.navigationTitleMaterial.detected || (materialState === "enable" && s.nativeNavigation.detected)
     checks.push(check(
       "arkui-navigation-stack",
       "Native Navigation title material layout",
@@ -804,12 +895,25 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
 
     const nativeTabsCandidate = s.nativeTabsFloatingStyle.detected
     const nativeTabsMaterial = s.nativeTabsFloatingMaterial.detected
+    const nativeTabsMaterialActive = nativeTabsMaterial || tabsSystemDefault
     checks.push(check(
       "arkui-native-tabs-floating-style",
       "Native Tabs floating material entry",
-      !nativeTabsCandidate ? "not_applicable" : nativeTabsMaterial ? "pass" : "fail",
+      !nativeTabsCandidate
+        ? "not_applicable"
+        : materialState === "disable"
+          ? "fail"
+          : nativeTabsMaterialActive
+            ? "pass"
+            : "fail",
       [...s.nativeTabsFloatingStyle.evidence, ...s.nativeTabsFloatingMaterial.evidence],
-      "Native Tabs material requires FloatingTabBarStyle.systemMaterial"
+      materialState === "disable"
+        ? "MaterialState.DISABLE prevents native Tabs material"
+        : nativeTabsMaterial
+          ? "Explicit FloatingTabBarStyle.systemMaterial detected"
+          : tabsSystemDefault
+            ? "The complete floating layout uses the system default THIN material; explicit systemMaterial is optional"
+            : "Complete barFloatingStyle, barOverlap(true), vertical(false), and BarPosition.End"
     ))
     for (const [id, title, signal, message] of [
       ["arkui-native-tabs-overlap", "Native Tabs overlap", s.barOverlapTrue, "Native floating Tabs require barOverlap(true)"],
@@ -819,7 +923,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       checks.push(check(
         id,
         title,
-        !nativeTabsMaterial ? "not_applicable" : signal.detected ? "pass" : "fail",
+        !nativeTabsCandidate ? "not_applicable" : signal.detected ? "pass" : "fail",
         [...s.nativeTabs.evidence, ...signal.evidence],
         message
       ))
@@ -827,7 +931,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     checks.push(check(
       "arkui-native-tabs-background-conflict",
       "Native Tabs material background conflict",
-      !nativeTabsMaterial ? "not_applicable" : s.barBackgroundConflict.detected ? "warn" : "pass",
+      !nativeTabsMaterialActive ? "not_applicable" : s.barBackgroundConflict.detected ? "warn" : "pass",
       [...s.barFloatingStyle.evidence, ...s.barBackgroundConflict.evidence],
       s.barBackgroundConflict.detected
         ? "barBackgroundColor/barBackgroundBlurStyle may cover the native Tabs material"
@@ -837,7 +941,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     checks.push(check(
       "arkui-alphabet-indexer-background-conflict",
       "AlphabetIndexer popup material conflict",
-      !s.alphabetIndexer.detected || !s.systemMaterial.detected ? "not_applicable" : s.popupBackgroundConflict.detected ? "warn" : "pass",
+      !s.alphabetIndexer.detected || materialState === "disable" ? "not_applicable" : s.popupBackgroundConflict.detected ? "warn" : "pass",
       [...s.alphabetIndexer.evidence, ...s.popupBackgroundConflict.evidence],
       s.popupBackgroundConflict.detected
         ? "popupBackground/popupBackgroundBlurStyle conflict with AlphabetIndexer immersive material"
@@ -861,20 +965,116 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       [...s.toggleCheckbox.evidence, ...s.systemMaterial.evidence],
       "ToggleType.Checkbox currently does not adapt immersive material; preserve the source visual style"
     ))
+    const signalCount = (signal) => signal.count ?? signal.evidence.length
+    const provenScopeCount = signalCount(s.navigationTitleMaterial) + signalCount(s.nativeTabsFloatingMaterial) + signalCount(s.allPageMaterialEntry)
+    const allExplicitScopesProven = provenScopeCount >= signalCount(s.systemMaterial)
+    const confirmedOutOfScope = s.outOfScopeMaterialLog.detected || (
+      s.ordinaryContentMaterialEntry.detected &&
+      !s.nativeNavigation.detected &&
+      !s.nativeTabs.detected &&
+      !s.allPageMaterialEntry.detected
+    )
+    checks.push(check(
+      "arkui-material-effect-scope",
+      "ArkUI material effect scope",
+      confirmedOutOfScope
+        ? "fail"
+        : !s.systemMaterial.detected
+          ? "not_applicable"
+          : allExplicitScopesProven
+            ? "pass"
+            : "warn",
+      [...s.outOfScopeMaterialLog.evidence, ...s.ordinaryContentMaterialEntry.evidence, ...s.navigationTitleMaterial.evidence, ...s.nativeTabsFloatingMaterial.evidence, ...s.allPageMaterialEntry.evidence],
+      confirmedOutOfScope
+        ? s.outOfScopeMaterialLog.detected
+          ? "Runtime evidence confirms that the material target is outside the supported scope"
+          : "An explicit material entry was found on ordinary content while no supported title, floating TabBar, or all-page target exists"
+        : !s.systemMaterial.detected
+          ? "No explicit systemMaterial target detected"
+          : allExplicitScopesProven
+            ? "Every explicit material entry has a supported scope candidate"
+            : "Static scanning cannot prove the component ancestry; verify navigation-title, bottom-floating-tabbar, or all-page component scope manually"
+    ))
+
+    checks.push(check(
+      "arkui-material-color-opacity",
+      "ArkUI materialColor opacity",
+      !s.materialColor.detected ? "not_applicable" : s.opaqueMaterialColor.detected ? "warn" : "pass",
+      [...s.materialColor.evidence, ...s.opaqueMaterialColor.evidence],
+      s.opaqueMaterialColor.detected ? "An obviously opaque materialColor can cover the material filter" : "No obviously opaque materialColor literal detected"
+    ))
+    checks.push(check(
+      "arkui-color-invert-resource",
+      "ArkUI colorInvert resource colors",
+      !s.colorInvertTrue.detected ? "not_applicable" : s.hardcodedForegroundColor.detected ? "warn" : "pass",
+      [...s.colorInvertTrue.evidence, ...s.hardcodedForegroundColor.evidence],
+      s.hardcodedForegroundColor.detected ? "Hard-coded foreground colors do not participate in automatic inversion; use supported resource colors" : "No obvious hard-coded foreground color conflict detected"
+    ))
+    checks.push(check(
+      "arkui-shadow-conflict",
+      "ArkUI material shadow conflict",
+      !s.systemMaterial.detected || !s.customShadow.detected ? "not_applicable" : s.applyShadowFalse.detected ? "pass" : "warn",
+      [...s.customShadow.evidence, ...s.applyShadowFalse.evidence],
+      s.applyShadowFalse.detected ? "Material shadow is disabled before using a custom shadow" : "Custom shadow is present; set applyShadow:false when the custom shadow must win"
+    ))
+    checks.push(check(
+      "arkui-background-blur-conflict",
+      "ArkUI material background blur conflict",
+      !s.systemMaterial.detected || !s.backgroundBlurConflict.detected ? "not_applicable" : "warn",
+      s.backgroundBlurConflict.evidence,
+      "backgroundBlurStyle/backgroundEffect can cover or duplicate the material filter"
+    ))
+    const defaultBackgroundConflict = materialState === "default" && defaultTarget &&
+      (s.componentBackgroundColor.detected || s.backgroundBlurConflict.detected || s.customShadow.detected)
+    checks.push(check(
+      "arkui-default-state-background-conflict",
+      "ArkUI DEFAULT component background conditions",
+      materialState !== "default" || !defaultTarget
+        ? "not_applicable"
+        : defaultBackgroundConflict
+          ? "warn"
+          : "pass",
+      [...s.componentBackgroundColor.evidence, ...s.backgroundBlurConflict.evidence, ...s.customShadow.evidence],
+      defaultBackgroundConflict
+        ? "DEFAULT material for Dialog, Toast, or AlphabetIndexer depends on leaving component background color, blur, and shadow unset; verify the matched property belongs to that component"
+        : "No obvious background color, blur, or shadow conflict was detected for the DEFAULT component candidate"
+    ))
+    checks.push(check(
+      "arkui-light-effect-fallback",
+      "ArkUI lightEffect fallback feedback",
+      !s.lightEffectEnabled.detected ? "not_applicable" : s.interactionFallback.detected ? "pass" : "warn",
+      [...s.lightEffectEnabled.evidence, ...s.interactionFallback.evidence],
+      s.interactionFallback.detected ? "A non-material interaction feedback candidate was detected" : "lightEffect can replace press/hover feedback; manually confirm a lower-tier and disabled fallback"
+    ))
+
     const configured = inspection.modules.filter((module) => module.applicationMaterialState !== null)
+    const invalidConfigured = configured.filter((module) => module.effectiveApplicationMaterialState === "invalid")
+    const misplacedConfigured = configured.filter((module) => module.type !== "entry")
     checks.push(check(
       "application-level-config",
       "Application-level material metadata",
-      configured.length === 0 ? "not_applicable" : compatibility.applicationLevel.eligible ? "pass" : "fail",
+      configured.length === 0
+        ? "not_applicable"
+        : invalidConfigured.length > 0 || misplacedConfigured.length > 0 || !compatibility.applicationLevel.eligible
+          ? "fail"
+          : "pass",
       configured.map((module) => ({ path: module.path })),
-      configured.length === 0 ? "Application-level material is optional" : compatibility.applicationLevel.eligible ? "Metadata is in an eligible project" : compatibility.applicationLevel.reasons.join("; ")
+      configured.length === 0
+        ? "Application-level material is optional"
+        : invalidConfigured.length > 0
+          ? "Application material state must be default, enable, or disable"
+          : misplacedConfigured.length > 0
+            ? "Application material state metadata is only valid in an entry module"
+          : compatibility.applicationLevel.eligible
+            ? "Metadata is in an eligible project"
+            : compatibility.applicationLevel.reasons.join("; ")
     ))
   }
 
   const hasFloatingTabs = route === "hds"
     ? s.hdsTabs.detected && s.barOverlapTrue.detected && s.barFloatingStyle.detected
     : route === "arkui"
-      ? s.nativeTabsFloatingMaterial.detected && s.barOverlapTrue.detected
+      ? s.nativeTabsFloatingStyle.detected && s.barOverlapTrue.detected
       : false
   const hasScrollableTabRisk = hasFloatingTabs && s.scrollableContent.detected
   const tailClearanceEvidence = [...s.contentEndOffset.evidence, ...s.scrollTailSpacer.evidence]

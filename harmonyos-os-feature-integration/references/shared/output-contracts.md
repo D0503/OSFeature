@@ -6,7 +6,7 @@
 
 ## 工程实施
 
-使用 `assets/templates/integration-report.md`，按 `selectedRoutes` 区分实际修改、源程序状态保留对照、静态验证、构建、真机验证、未完成条件和证据来源。
+使用 `assets/templates/integration-report.md`，按 `selectedRoutes` 区分实际修改、源程序状态保留对照、静态验证、构建、真机验证、未完成条件和证据来源。涉及 ArkUI 材质时单列规范化应用状态、组件生效域、参数风险和材质效果真机待验证项。
 
 ## 故障排查
 

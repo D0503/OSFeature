@@ -10,7 +10,8 @@ import { ImmersiveMaterialGuard } from './ImmersiveMaterialGuard';
  * - 只用于原生 Navigation/Tabs；HdsNavigation/HdsTabs 使用 HDS 资产。
  * - API 26 以下保留 sourceNavigation()；不要把增强分支的底部形态强加给源程序。
  * - 原生 Tabs 悬浮材质必须同时满足 barOverlap(true)、vertical(false)、BarPosition.End。
- * - 应用级 ENABLE 不会自动开启原生底部 Tabs，必须显式设置 FloatingTabBarStyle.systemMaterial。
+ * - 必须显式满足完整悬浮布局条件；悬浮样式生效后默认使用 THIN，
+ *   无需强制设置 FloatingTabBarStyle.systemMaterial。
  * - 真实 Tab 页可滚动时，在最后一个滚动项之后增加按实际遮挡高度计算的尾部空间，
  *   使末项及操作热区能够滚到悬浮栏上方；只按实际重叠布局启用，不能改变非悬浮源分支滚动范围。
  *   设备不支持材质但仍保留 barOverlap(true) 悬浮布局时，同样需要这段尾部空间。
@@ -72,10 +73,7 @@ export struct ArkuiNavigationTabsEntry {
       .vertical(false)
       .barOverlap(true)
       .barFloatingStyle({
-        adaptToHandedness: true,
-        systemMaterial: this.isMaterialSupported
-          ? ImmersiveMaterialGuard.floatingMaterial(true, true)
-          : uiMaterial.Material.empty
+        adaptToHandedness: true
       })
     }
     .width('100%')
@@ -89,7 +87,7 @@ export struct ArkuiNavigationTabsEntry {
   }
 
   build() {
-    if (this.isRuntimeApiAvailable) {
+    if (this.isRuntimeApiAvailable && this.isMaterialSupported) {
       this.api26Navigation()
     } else {
       this.sourceNavigation()

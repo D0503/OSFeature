@@ -9,7 +9,9 @@
         "悬浮导航Tab",
         "悬浮导航 Tab",
         "Immersive Light",
-        "HDS 沉浸材质"
+        "HDS 沉浸材质",
+        "uiMaterial",
+        "systemMaterial"
       ],
       "status": "ready",
       "entry": "references/features/immersive-light/README.md",

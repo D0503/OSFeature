@@ -40,6 +40,7 @@ equal(inspection23.api.compile, 23)
 equal(inspection23.localSdk.status, "valid")
 equal(inspection23.localSdk.apiVersion, 23)
 equal(inspection23.modules[0].type, "entry")
+equal(inspection23.modules[0].effectiveApplicationMaterialState, "default")
 equal(inspection23.signals.hdsTabs.detected, true)
 equal(inspection23.signals.barFloatingStyle.detected, true)
 equal(inspection23.signals.barPositionEnd.detected, true)
@@ -126,14 +127,15 @@ equal(inspection26.api.target, 26)
 equal(inspection26.api.compile, 26)
 equal(inspection26.localSdk.apiVersion, 26)
 equal(inspection26.modules[0].applicationMaterialState, "enable")
-equal(inspection26.signals.uiMaterial.detected, true)
-equal(inspection26.signals.systemMaterial.detected, true)
+equal(inspection26.modules[0].effectiveApplicationMaterialState, "enable")
+equal(inspection26.signals.uiMaterial.detected, false)
+equal(inspection26.signals.systemMaterial.detected, false)
 equal(inspection26.signals.apiAvailable26.detected, false)
-equal(inspection26.signals.sdkApiVersion26Guard.detected, true)
-equal(inspection26.signals.materialSupported.detected, true)
+equal(inspection26.signals.sdkApiVersion26Guard.detected, false)
+equal(inspection26.signals.materialSupported.detected, false)
 equal(inspection26.signals.nativeTabs.detected, true)
 equal(inspection26.signals.nativeTabsFloatingStyle.detected, true)
-equal(inspection26.signals.nativeTabsFloatingMaterial.detected, true)
+equal(inspection26.signals.nativeTabsFloatingMaterial.detected, false)
 equal(inspection26.signals.verticalFalse.detected, true)
 equal(inspection26.componentSystem.arkuiNativeNavigation, true)
 
@@ -151,7 +153,44 @@ const verification26 = verifyInspection(inspection26, compatibility26, "auto")
 equal(verification26.status, "passed")
 equal(verification26.counts.fail, 0)
 ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass"))
+ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.message.includes("default THIN")))
+ok(verification26.checks.some((item) => item.id === "arkui-import" && item.status === "not_applicable"))
+ok(verification26.checks.some((item) => item.id === "capability-guard" && item.status === "not_applicable"))
 ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-horizontal" && item.status === "pass"))
+
+const defaultNativeTabs = structuredClone(inspection26)
+defaultNativeTabs.modules[0].applicationMaterialState = null
+defaultNativeTabs.modules[0].effectiveApplicationMaterialState = "default"
+const passedDefaultNativeTabs = verifyInspection(defaultNativeTabs, compatibility26, "arkui")
+equal(passedDefaultNativeTabs.status, "passed")
+ok(passedDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass" && item.message.includes("default THIN")))
+
+const explicitDefaultNativeTabs = structuredClone(defaultNativeTabs)
+explicitDefaultNativeTabs.signals.uiMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:1"] }
+explicitDefaultNativeTabs.signals.systemMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+explicitDefaultNativeTabs.signals.nativeTabsFloatingMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+explicitDefaultNativeTabs.signals.materialSupported = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
+const passedExplicitDefaultNativeTabs = verifyInspection(explicitDefaultNativeTabs, compatibility26, "arkui")
+equal(passedExplicitDefaultNativeTabs.status, "passed")
+ok(passedExplicitDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.message.includes("Explicit")))
+
+const disabledNativeTabs = structuredClone(explicitDefaultNativeTabs)
+disabledNativeTabs.modules[0].applicationMaterialState = "disable"
+disabledNativeTabs.modules[0].effectiveApplicationMaterialState = "disable"
+const failedDisabledNativeTabs = verifyInspection(disabledNativeTabs, compatibility26, "arkui")
+equal(failedDisabledNativeTabs.status, "failed")
+ok(failedDisabledNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "fail"))
+
+const invalidMaterialState = structuredClone(inspection26)
+invalidMaterialState.modules[0].applicationMaterialState = "enabled"
+invalidMaterialState.modules[0].effectiveApplicationMaterialState = "invalid"
+const failedInvalidMaterialState = verifyInspection(invalidMaterialState, compatibility26, "arkui")
+ok(failedInvalidMaterialState.checks.some((item) => item.id === "application-level-config" && item.status === "fail"))
+
+const misplacedMaterialState = structuredClone(inspection26)
+misplacedMaterialState.modules[0].type = "feature"
+const failedMisplacedMaterialState = verifyInspection(misplacedMaterialState, compatibility26, "arkui")
+ok(failedMisplacedMaterialState.checks.some((item) => item.id === "application-level-config" && item.status === "fail"))
 
 const invalidNativeTabs = structuredClone(inspection26)
 invalidNativeTabs.signals.verticalFalse = { detected: false, evidence: [] }
@@ -197,8 +236,12 @@ equal(hybridVerification26.status, "passed")
 
 const hdsOnlyInspection26 = structuredClone(hybridInspection26)
 hdsOnlyInspection26.componentSystem.arkuiMaterial = false
+hdsOnlyInspection26.componentSystem.arkuiNativeNavigation = false
 hdsOnlyInspection26.signals.uiMaterial = { detected: false, evidence: [] }
 hdsOnlyInspection26.signals.systemMaterial = { detected: false, evidence: [] }
+hdsOnlyInspection26.signals.nativeNavigation = { detected: false, evidence: [] }
+hdsOnlyInspection26.signals.nativeTabs = { detected: false, evidence: [] }
+hdsOnlyInspection26.signals.nativeTabsFloatingStyle = { detected: false, evidence: [] }
 const hdsOnlyCompatibility26 = evaluateCompatibility(hdsOnlyInspection26, profile)
 equal(hdsOnlyCompatibility26.recommendedRoute, "arkui")
 equal(hdsOnlyCompatibility26.selectedRoutes.join(","), "hds")
@@ -284,6 +327,9 @@ equal(compatibilityLowCompile.recommendedRoute, "hds")
 ok(compatibilityLowCompile.upgradeOptions.some((option) => option.route === "arkui" && option.upgradeCompileApi === 26))
 
 const missingProtection = structuredClone(inspection26)
+missingProtection.signals.uiMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:1"] }
+missingProtection.signals.systemMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
+missingProtection.signals.nativeTabsFloatingMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
 missingProtection.signals.materialSupported = { detected: false, evidence: [] }
 missingProtection.signals.fallbackStyle = { detected: false, evidence: [] }
 const failedVerification = verifyInspection(missingProtection, compatibility26, "arkui")
@@ -291,6 +337,77 @@ equal(failedVerification.status, "failed")
 ok(failedVerification.checks.some((item) => item.id === "version-guard" && item.status === "not_applicable"))
 ok(failedVerification.checks.some((item) => item.id === "capability-guard" && item.status === "fail"))
 ok(failedVerification.checks.some((item) => item.id === "fallback-style" && item.status === "fail"))
+
+const parameterRisks = structuredClone(explicitDefaultNativeTabs)
+parameterRisks.signals.materialColor = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:10"] }
+parameterRisks.signals.opaqueMaterialColor = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:10"] }
+parameterRisks.signals.colorInvertTrue = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:11"] }
+parameterRisks.signals.hardcodedForegroundColor = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:12"] }
+parameterRisks.signals.customShadow = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:13"] }
+parameterRisks.signals.applyShadowFalse = { detected: false, count: 0, evidence: [] }
+parameterRisks.signals.backgroundBlurConflict = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:14"] }
+parameterRisks.signals.lightEffectEnabled = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Risks.ets:15"] }
+parameterRisks.signals.interactionFallback = { detected: false, count: 0, evidence: [] }
+const warnedParameterRisks = verifyInspection(parameterRisks, compatibility26, "arkui")
+for (const id of ["arkui-material-color-opacity", "arkui-color-invert-resource", "arkui-shadow-conflict", "arkui-background-blur-conflict", "arkui-light-effect-fallback"]) {
+  ok(warnedParameterRisks.checks.some((item) => item.id === id && item.status === "warn"))
+}
+
+const outOfScopeMaterial = structuredClone(explicitDefaultNativeTabs)
+outOfScopeMaterial.signals.nativeTabsFloatingMaterial = { detected: false, count: 0, evidence: [] }
+outOfScopeMaterial.signals.outOfScopeMaterialLog = { detected: true, count: 1, evidence: ["hilog:1"] }
+const failedOutOfScopeMaterial = verifyInspection(outOfScopeMaterial, compatibility26, "arkui")
+ok(failedOutOfScopeMaterial.checks.some((item) => item.id === "arkui-material-effect-scope" && item.status === "fail"))
+
+const confirmedOrdinaryContentMaterial = structuredClone(explicitDefaultNativeTabs)
+confirmedOrdinaryContentMaterial.signals.nativeTabsFloatingMaterial = { detected: false, count: 0, evidence: [] }
+confirmedOrdinaryContentMaterial.signals.navigationTitleMaterial = { detected: false, count: 0, evidence: [] }
+confirmedOrdinaryContentMaterial.signals.allPageMaterialEntry = { detected: false, count: 0, evidence: [] }
+confirmedOrdinaryContentMaterial.signals.nativeNavigation = { detected: false, count: 0, evidence: [] }
+confirmedOrdinaryContentMaterial.signals.nativeTabs = { detected: false, count: 0, evidence: [] }
+confirmedOrdinaryContentMaterial.signals.nativeTabsFloatingStyle = { detected: false, count: 0, evidence: [] }
+confirmedOrdinaryContentMaterial.signals.ordinaryContentMaterialEntry = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Card.ets:10"] }
+const failedOrdinaryContentMaterial = verifyInspection(confirmedOrdinaryContentMaterial, compatibility26, "arkui")
+ok(failedOrdinaryContentMaterial.checks.some((item) => item.id === "arkui-material-effect-scope" && item.status === "fail"))
+
+const unknownScopeMaterial = structuredClone(explicitDefaultNativeTabs)
+unknownScopeMaterial.signals.nativeTabsFloatingMaterial = { detected: false, count: 0, evidence: [] }
+unknownScopeMaterial.signals.navigationTitleMaterial = { detected: false, count: 0, evidence: [] }
+unknownScopeMaterial.signals.allPageMaterialEntry = { detected: false, count: 0, evidence: [] }
+const warnedUnknownScope = verifyInspection(unknownScopeMaterial, compatibility26, "arkui")
+ok(warnedUnknownScope.checks.some((item) => item.id === "arkui-material-effect-scope" && item.status === "warn"))
+
+const indexerDefault = structuredClone(inspection26)
+indexerDefault.signals.alphabetIndexer = { detected: true, count: 1, evidence: ["Indexer.ets:10"] }
+indexerDefault.signals.systemMaterial = { detected: false, count: 0, evidence: [] }
+indexerDefault.signals.popupBackgroundConflict = { detected: false, count: 0, evidence: [] }
+ok(verifyInspection(indexerDefault, compatibility26, "arkui").checks.some((item) => item.id === "arkui-alphabet-indexer-background-conflict" && item.status === "pass"))
+indexerDefault.signals.popupBackgroundConflict = { detected: true, count: 1, evidence: ["Indexer.ets:12"] }
+ok(verifyInspection(indexerDefault, compatibility26, "arkui").checks.some((item) => item.id === "arkui-alphabet-indexer-background-conflict" && item.status === "warn"))
+
+const enabledSliderDefault = structuredClone(inspection26)
+for (const id of ["nativeTabs", "nativeTabsFloatingStyle", "barOverlapTrue", "verticalFalse", "barPositionEnd"]) {
+  enabledSliderDefault.signals[id] = { detected: false, count: 0, evidence: [] }
+}
+enabledSliderDefault.signals.sliderComponent = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Slider.ets:10"] }
+const enabledSliderResult = verifyInspection(enabledSliderDefault, compatibility26, "arkui")
+ok(enabledSliderResult.checks.some((item) => item.id === "arkui-material-entry" && item.status === "pass"))
+const defaultSlider = structuredClone(enabledSliderDefault)
+defaultSlider.modules[0].applicationMaterialState = null
+defaultSlider.modules[0].effectiveApplicationMaterialState = "default"
+const defaultSliderResult = verifyInspection(defaultSlider, compatibility26, "arkui")
+ok(defaultSliderResult.checks.some((item) => item.id === "arkui-material-entry" && item.status === "fail"))
+
+const defaultDialog = structuredClone(defaultSlider)
+defaultDialog.signals.sliderComponent = { detected: false, count: 0, evidence: [] }
+defaultDialog.signals.dialogComponent = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Dialog.ets:10"] }
+defaultDialog.signals.componentBackgroundColor = { detected: false, count: 0, evidence: [] }
+const defaultDialogResult = verifyInspection(defaultDialog, compatibility26, "arkui")
+ok(defaultDialogResult.checks.some((item) => item.id === "arkui-material-entry" && item.status === "pass"))
+ok(defaultDialogResult.checks.some((item) => item.id === "arkui-default-state-background-conflict" && item.status === "pass"))
+defaultDialog.signals.componentBackgroundColor = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Dialog.ets:11"] }
+const warnedDefaultDialog = verifyInspection(defaultDialog, compatibility26, "arkui")
+ok(warnedDefaultDialog.checks.some((item) => item.id === "arkui-default-state-background-conflict" && item.status === "warn"))
 
 const lowCompatibleArkui = structuredClone(inspection26)
 lowCompatibleArkui.api.compatible = 22

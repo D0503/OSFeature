@@ -79,13 +79,21 @@
         "sheet",
         "menu",
         "dialog",
+        "CalendarPickerDialog",
+        "DatePickerDialog",
+        "TextPickerDialog",
+        "TimePickerDialog",
         "Button",
         "Select",
         "Toggle",
         "Slider",
         "ChipGroup",
+        "ChipGroupV2",
         "SegmentButton",
-        "SegmentButtonV2"
+        "SegmentButtonV2",
+        "Chip",
+        "SelectionMenu",
+        "Text.copyOption selection menu"
       ],
       "applicationLevel": {
         "minTargetApi": 26,
@@ -188,13 +196,19 @@
     "sharedValidation": "shared/validation.md"
   },
   "evidence": {
-    "baselineDate": "2026-09-01",
+    "baselineDate": "2026-09-08",
     "policy": "snapshot-first-verify-on-change-or-conflict",
     "sources": [
       "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-spatiality-immersive",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sample",
+      "https://developer.huawei.com/consumer/cn/doc/design-guides/immersivelight-0000002612101053",
       "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/ui-design-hds-component-material",
       "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdsnavigation",
       "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/api/ui-design-hdstabs",

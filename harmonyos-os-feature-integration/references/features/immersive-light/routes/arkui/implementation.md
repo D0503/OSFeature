@@ -27,7 +27,7 @@ ArkUI 路线覆盖 API 26+ 的原生 ArkUI `Navigation`、`Tabs`、弹窗和交�
 
 ## 实施顺序
 
-1. 读取[组件矩阵](component-profile.json)，识别应用级默认行为、组件入口、明确关闭方式和限制。
+1. 读取[组件矩阵](component-profile.json)，识别 `DEFAULT`/`ENABLE` 默认行为、生效区域、组件入口、明确关闭方式和限制。
 2. 记录目标组件的接入前代码、交互态、响应式布局和普通样式。
 3. 选择应用级开启、组件级开启或两者组合；先解决 `DEFAULT`/`ENABLE`/`DISABLE` 行为，再设置具体材质。
 4. 对 API 26 以下、不支持设备、系统关闭和业务关闭路径保留接入前状态。

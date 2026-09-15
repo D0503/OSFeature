@@ -20,12 +20,12 @@ Column() {
 
 | 参数 | 作用 | 注意 |
 |---|---|---|
-| `style` | 材质厚度 | `ULTRA_THIN`、`THIN`、`REGULAR`、`THICK`、`ULTRA_THICK` |
-| `materialColor` | 材质赋色 | 应带透明度；完全不透明颜色会遮挡滤镜效果 |
-| `colorInvert` | 子树前景自动反色 | 文字、图标须使用支持反色的系统颜色资源，硬编码颜色不会自动反色 |
+| `style` | 材质厚度 | 默认 `REGULAR`；只影响高、中算力设备，低算力设备不区分五种样式 |
+| `materialColor` | 材质赋色 | 应带透明度；完全不透明颜色会遮挡滤镜效果；低算力设备将其作为背景色 |
+| `colorInvert` | 子树前景自动反色 | 只在高、中算力设备生效，薄材质和较强系统档位更容易触发；颜色须使用支持反色的系统资源 |
 | `applyShadow` | 材质阴影 | 默认开启；需要自定义阴影时关闭材质阴影 |
-| `interactive` | 按压弹性形变 | 部分预设组件不直接采用传入参数 |
-| `lightEffect` | 触摸流光 | 可能替代组件原有点击态和悬浮态；低算力设备会降级 |
+| `interactive` | 按压弹性形变 | 对所有支持材质的算力档位生效；部分预设组件不直接采用传入参数 |
+| `lightEffect` | 触摸点光源反馈 | `{}` 开启默认白色流光，`null` 显式关闭，`undefined` 保留组件默认；只在高、中算力设备生效 |
 
 ## 属性覆盖
 
@@ -35,6 +35,12 @@ Column() {
 - `applyShadow: true` 时材质阴影优先于通用阴影；
 - 需要跨算力档位保持同一颜色时，用带透明度的 `materialColor`，不要再叠加背景色；
 - Select、Navigation、Tabs、ChipGroup、SegmentButton 等存在专属材质入口，先使用组件文档指定的入口。
+
+## 生效区域门禁
+
+接口可调用不等于当前位置会生效。弹窗、菜单及官方明确支持全页面的 Select、Toggle、Slider 等可以在页面内使用；其他普通容器和交互组件只在 Navigation/NavDestination 标题栏或有效的底部横向悬浮 TabBar 内生效。生成代码前先查询[组件矩阵](component-profile.json)的 `effectScopes`。
+
+出现 `Material inactive: out of scope. Use component in navigation title bar or Tabbar.` 时，先调整组件位置或保留普通样式，不要继续叠加背景模糊或重复材质。
 
 ## 视觉区域
 
@@ -52,4 +58,3 @@ Column() {
 
 - [沉浸式系统材质视效](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability)
 - [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
-

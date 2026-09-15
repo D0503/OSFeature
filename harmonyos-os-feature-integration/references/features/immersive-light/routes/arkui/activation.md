@@ -45,6 +45,8 @@ uiMaterial.isImmersiveMaterialSupported()
 
 使用 `uiMaterial.getMaterialInfo()` 读取实际状态，不根据 metadata 文件单独推测最终运行状态。
 
+原生底部 Tabs 必须由工程显式配置 `barFloatingStyle`，并同时满足 `barOverlap(true)`、`vertical(false)` 和 `BarPosition.End`；悬浮样式生效后系统默认使用 `THIN` 材质，不强制显式设置 `FloatingTabBarStyle.systemMaterial`。应用级 `DISABLE` 仍会统一禁止材质。
+
 ## 组件级优先关系
 
 | 应用状态与组件值 | 结果 |
@@ -57,6 +59,8 @@ uiMaterial.isImmersiveMaterialSupported()
 因此，通用组件需要“明确关闭”时使用 `uiMaterial.Material.empty`，不要把 `undefined` 当成统一的关闭值。组件专属行为以[组件矩阵](component-profile.json)为准，例如 Slider 明确规定 `undefined` 恢复原 Slider 样式，Navigation 标题栏的 `undefined` 则继续受应用状态影响。
 
 Select 的按钮和下拉菜单是两个独立入口，必须分别决定 `systemMaterial` 与 `menuSystemMaterial`，不能用一个值代替两个开关。
+
+每个组件在 `DEFAULT`、`ENABLE` 下的默认行为、附加条件和生效区域以[组件矩阵](component-profile.json)为准。应用状态允许默认开启不等于组件可以在任意区域生效；普通组件仍须位于官方允许的标题栏或底部悬浮 TabBar 区域。
 
 ## 应用升级检查
 
@@ -72,4 +76,3 @@ Select 的按钮和下拉菜单是两个独立入口，必须分别决定 `syste
 
 - [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)
 - [沉浸光感兼容性适配](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-compatibility)
-
