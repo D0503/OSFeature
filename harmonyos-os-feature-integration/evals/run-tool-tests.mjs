@@ -288,7 +288,7 @@ equal(compatibilityUpgraded.decisionRequired, true)
 ok(compatibilityUpgraded.missingConditions.some((item) => item.includes("runtime version guards")))
 equal(compatibilityUpgraded.fallbackPolicy.baseline, "pre-integration-source-state")
 ok(compatibilityUpgraded.fallbackRequirements.includes("preserve-pre-integration-source-state"))
-ok(compatibilityUpgraded.fallbackRequirements.includes("sdkApiVersion-26-tree-guard"))
+ok(compatibilityUpgraded.fallbackRequirements.includes("sdkApiVersion-26-call-guard"))
 
 const lowCompatibleHds = structuredClone(inspection23)
 lowCompatibleHds.api.compatible = 20
@@ -413,11 +413,11 @@ const lowCompatibleArkui = structuredClone(inspection26)
 lowCompatibleArkui.api.compatible = 22
 const lowCompatibleArkuiCompatibility = evaluateCompatibility(lowCompatibleArkui, profile)
 lowCompatibleArkui.signals.sdkApiVersion26Guard = { detected: false, evidence: [] }
-const failedArkuiTreeGuard = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
-ok(failedArkuiTreeGuard.checks.some((item) => item.id === "version-guard" && item.status === "fail"))
+const failedArkuiCallGuard = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
+ok(failedArkuiCallGuard.checks.some((item) => item.id === "version-guard" && item.status === "fail"))
 lowCompatibleArkui.signals.sdkApiVersion26Guard = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
-const guardedArkuiTree = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
-ok(guardedArkuiTree.checks.some((item) => item.id === "version-guard" && item.status === "pass"))
+const guardedArkuiCalls = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
+ok(guardedArkuiCalls.checks.some((item) => item.id === "version-guard" && item.status === "pass"))
 
 const missingSdkInspection = await inspectProject(fixture23, { sdkPath: resolve(evalDir, "fixtures", "missing-sdk") })
 equal(missingSdkInspection.localSdk.status, "invalid")

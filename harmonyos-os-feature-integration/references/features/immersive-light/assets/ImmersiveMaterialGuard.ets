@@ -16,7 +16,8 @@ import { uiMaterial } from '@kit.ArkUI';
  * - uiMaterial 模块、ImmersiveMaterial、isImmersiveMaterialSupported：@since 26.0.0，
  *   @stagemodelonly。API 23～25 工程不得引用本资产，应走 HDS 路线。
  * - targetSdkVersion 与 compileSdkVersion 必须达到 26；compatibleSdkVersion 可以更低。
- * - API 26 以下的整树版本降级使用低版本可用的 deviceInfo.sdkApiVersion，
+ * - 兼容 API 26 以下时使用低版本可用的 deviceInfo.sdkApiVersion 保护新增调用，
+ *   仅材质变化时复用原组件；组件、布局或导航结构变化时使用组件树分支，
  *   不把 API 26 才存在的 apiAvailable 作为最外层保护。
  * - isImmersiveMaterialSupported() / getGlobalMaterialLevel() 官方注明"由设备决定、
  *   应用运行后不会改变"：可在页面字段初始化时求值一次并复用，不必逐帧调用。

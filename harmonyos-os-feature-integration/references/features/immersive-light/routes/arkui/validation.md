@@ -5,7 +5,7 @@
 ## ArkUI 矩阵
 
 - 本机 SDK、compile API、target API 均达到 26；target 低于 26 时路线不可用而不是仅禁用应用级 metadata；
-- `compatibleSdkVersion < 26` 时，`sdkApiVersion >= 26` 整树保护成功与失败两条路径；
+- `compatibleSdkVersion < 26` 时，验证 `sdkApiVersion >= 26` 的支持与低版本路径；仅材质变化时检查调用和配置保护，组件、布局或导航结构变化时检查组件树分支；
 - `isImmersiveMaterialSupported()` 返回 true/false；
 - 高、中、低算力设备及系统“强、均衡、弱”档位；
 - 深色和浅色模式；
@@ -45,7 +45,8 @@
 
 ## ArkUI 验收
 
-- target/compile/本机 SDK 路线门禁均达到 API 26；compatible 低于 26 时使用低版本可用的整树保护；
+- 悬浮 TabBar 默认 `.barWidth(328)`；验证 4 个和 5 个 Tab 的边界：数量大于 4 且工程已有一多断点时，`sm` 为 328vp，其他已识别断点为 360vp；无断点或断点尚未确定时为 328vp。页签数量和断点变化后栏宽同步更新，左右留白一致，且没有重复缩进或误缩窄 TabContent；
+- target/compile/本机 SDK 路线门禁均达到 API 26；compatible 低于 26 时按改动范围保护调用或组件树，确保新增 API 不在低版本求值；compatible 达到 26 时无需 API 26 版本分支；
 - 不支持、禁用和旧版本路径保持接入前组件状态与普通样式；
 - 应用级配置满足 target API 与 entry module 限制；
 - 已按[组件矩阵](component-profile.json)核对 `DEFAULT`/`ENABLE` 默认开启、专属入口、明确关闭、生效域和组件限制；

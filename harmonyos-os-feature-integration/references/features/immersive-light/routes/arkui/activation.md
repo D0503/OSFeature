@@ -11,7 +11,7 @@ ArkUI 沉浸光感的构建门禁是：
 - `targetSdkVersion >= 26`；
 - Stage 模型。
 
-`targetSdkVersion >= 26` 适用于 ArkUI 整条路线，不只适用于应用级 metadata。`compatibleSdkVersion` 可以保持低版本，但这意味着 API 26 以下设备必须使用低版本可用的 `deviceInfo.sdkApiVersion` 建立整树分支。不要把 API 26 才存在的 `deviceInfo.apiAvailable` 当作 API 26 以下设备的最外层保护。
+`targetSdkVersion >= 26` 适用于 ArkUI 整条路线，不只适用于应用级 metadata。`compatibleSdkVersion < 26` 时，用低版本可用的 `deviceInfo.sdkApiVersion` 保护新增接口调用和配置；仅材质变化时复用原组件，涉及组件、布局或导航结构变化时才使用组件树分支。`compatibleSdkVersion >= 26` 时无需增加 API 26 版本分支。具体写法见[共享回退策略](../../shared/fallback.md)。不要把 API 26 才存在的 `deviceInfo.apiAvailable` 当作 API 26 以下设备的最外层保护。
 
 进入 API 26 分支后，再调用：
 

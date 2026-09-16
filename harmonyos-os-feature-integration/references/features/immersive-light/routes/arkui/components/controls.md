@@ -4,7 +4,7 @@
 
 | 组件 | 应用级 `ENABLE` 默认 | 组件级入口 | 关键限制 |
 |---|---|---|---|
-| Button | 不开启 | `systemMaterial` | `lightEffect` 会替代默认按压态和悬浮态；自动反色需要系统颜色资源 |
+| Button | 不开启 | `systemMaterial` | 仅在 Navigation/NavDestination 标题栏或有效的底部横向悬浮 TabBar 内生效；`lightEffect` 会替代默认按压态和悬浮态；自动反色需要系统颜色资源 |
 | Select | 按钮和菜单都开启 | 按钮 `systemMaterial`，菜单 `menuSystemMaterial` | 两个入口相互独立；按钮默认 `ULTRA_THIN` 并开启交互与流光，菜单默认 `THICK` |
 | Toggle | 开启 | `systemMaterial` | Checkbox 当前不支持；Switch 参数只是开启标记并使用内部预设；Button 类型按 Button 规则 |
 | Slider | 开启 | `systemMaterial` | 参数只是开启标记；`undefined` 恢复原 Slider；交互效果要求 `SliderBlockType.DEFAULT` 且 `SliderStyle` 非 `NONE` |

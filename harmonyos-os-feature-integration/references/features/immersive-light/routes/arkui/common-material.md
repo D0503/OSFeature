@@ -49,8 +49,8 @@ Column() {
 ## 资产使用
 
 - 能力与版本门禁使用 [ImmersiveMaterialGuard.ets](../../assets/ImmersiveMaterialGuard.ets)；
-- 通用组件降级模式使用 [ArkuiMaterialFallbackEntry.ets](../../assets/ArkuiMaterialFallbackEntry.ets)；
-- 原生标题栏与悬浮页签使用 [ArkuiNavigationTabsEntry.ets](../../assets/ArkuiNavigationTabsEntry.ets)。
+- 通用组件的调用保护与回退方式见[共享回退策略](../../shared/fallback.md)；
+- 原生标题栏与悬浮页签的配置组合见[导航类组件](components/navigation.md)。
 
 资产是可复制骨架，不替代目标工程真实构建与真机验证。
 

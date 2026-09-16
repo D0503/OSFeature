@@ -664,7 +664,7 @@ export function evaluateCompatibility(inspection, profile) {
     missingConditions: reasons,
     fallbackRequirements: effectiveApi >= 26
       ? [
-          ...(availableRoutes.includes("arkui") && compatible < 26 ? ["sdkApiVersion-26-tree-guard"] : []),
+          ...(availableRoutes.includes("arkui") && compatible < 26 ? ["sdkApiVersion-26-call-guard"] : []),
           "isImmersiveMaterialSupported",
           "preserve-standard-background-border",
           "preserve-pre-integration-source-state"
@@ -862,15 +862,15 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
             : `MaterialState.${materialState.toUpperCase()} provides a default for a detected supported component`
           : "Use an application default that covers the target or an explicit component material entry"
     ))
-    const needsLowerVersionTree = compatibleApi !== null && compatibleApi < 26
+    const needsVersionGuard = compatibleApi !== null && compatibleApi < 26
     checks.push(check(
       "version-guard",
-      "API 26 lower-version tree guard",
-      !needsLowerVersionTree ? "not_applicable" : s.sdkApiVersion26Guard.detected ? "pass" : "fail",
+      "API 26 runtime version guard",
+      !needsVersionGuard ? "not_applicable" : s.sdkApiVersion26Guard.detected ? "pass" : "fail",
       s.sdkApiVersion26Guard.evidence,
-      !needsLowerVersionTree
+      !needsVersionGuard
         ? "compatibleSdkVersion is API 26 or later"
-        : "compatibleSdkVersion is below 26; guard the whole API 26 tree with deviceInfo.sdkApiVersion >= 26"
+        : "Guard API 26 calls and configuration with deviceInfo.sdkApiVersion >= 26; use a component-tree branch for component, layout, or navigation changes. Static detection does not prove every new call is protected"
     ))
     checks.push(check(
       "capability-guard",

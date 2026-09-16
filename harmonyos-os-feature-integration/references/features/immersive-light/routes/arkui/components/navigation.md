@@ -34,6 +34,7 @@ Tabs({ barPosition: BarPosition.End }) {
 }
 .vertical(false)
 .barOverlap(true)
+.barWidth(328)
 .barFloatingStyle({
   adaptToHandedness: true
 })
@@ -58,6 +59,26 @@ Tabs({ barPosition: BarPosition.End }) {
 ```
 
 无论采用默认还是显式材质，都不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡效果；`TabContent` 本身不支持沉浸光感。
+
+### 悬浮 TabBar 宽度与左右边距
+
+工程改造时，ArkUI 悬浮 TabBar 默认设置 `.barWidth(328)`，宽度为 328vp，居中并保持左右留白一致。栏宽按以下规则选择：
+
+| Tab 数量与工程条件 | 当前断点 | `.barWidth()` |
+|---|---|---:|
+| Tab 数量不超过 4，或工程没有一多断点 | 任意 | 328 |
+| Tab 数量大于 4，且工程已有一多断点 | `sm` | 328 |
+| Tab 数量大于 4，且工程已有一多断点 | 其他已识别断点 | 360 |
+
+- Tab 数量按实际显示的页签计算；沿用工程已有断点状态与监听，页签数量或断点变化时同步更新栏宽。断点尚未确定时使用 328vp。
+- 只有工程已有一多断点时才使用下面的条件写法，字段替换为工程的实际页签数量和断点变量；没有断点时直接使用 `.barWidth(328)`。
+
+```typescript
+.barWidth(this.tabCount > 4 && !!this.currentBreakpoint && this.currentBreakpoint !== 'sm' ? 360 : 328)
+```
+
+- 这里约束的是悬浮 TabBar 背板。`Tabs` 内容容器可以保持 `.width('100%')`，不要将整页 `TabContent` 一并缩窄。定位时复用工程已有水平边距，避免重复计入外层缩进，并检查窄窗口下的可用空间。
+- 该调整应用于悬浮分支；普通 Tabs 回退分支保留接入前的宽度和边距。
 
 ### 可滚动 Tab 页尾部避让
 

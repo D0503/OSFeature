@@ -13,3 +13,32 @@ HDS、ArkUI 及其组合路线共用 `profile.json` 的 `fallbackPolicy`。所�
 HDS 与 ArkUI 的悬浮 Tabs 增强分支所需的底部间距和滚动页尾部空间，不得无条件进入普通非悬浮 `Tabs` 的源程序路径。是否保留尾部空间取决于实际布局：低版本、设备不支持或业务关闭材质的分支若恢复普通非悬浮 Tabs，就保留源程序滚动范围；若仍使用 `barOverlap(true)` 的普通样式悬浮栏，仍要防止滚动末项被遮挡。ArkUI 的 `systemMaterial`、应用级开关和 API 26 Options 属性不得在不满足版本与设备能力时替换源程序路径。
 
 组合路线分别执行各自门禁：HDS 不可用时只回退 HDS 目标组件，ArkUI 不可用时只回退 ArkUI 目标组件；一个路线失败不自动撤销另一条已经满足条件的路线。实施前保存源程序状态基线，实施后按目标文件和交互逐项对照。
+
+## ArkUI 版本保护粒度
+
+| 工程条件与改动 | 处理方式 |
+|---|---|
+| `compatibleSdkVersion >= 26` | 无需增加 API 26 版本分支，仍按组件规则处理设备能力和关闭状态 |
+| `compatibleSdkVersion < 26`，仅增加材质属性 | 复用原组件，保护材质对象构造、新枚举取值、能力查询和属性调用；低版本继续使用原属性 |
+| `compatibleSdkVersion < 26`，涉及组件、布局或导航结构变化 | 在受影响的组件范围建立分支，低版本保留原组件、布局、状态与事件 |
+
+最小调用保护示例（用于普通 ArkTS 方法体，组件配置入口按实际工程接入）：
+
+```typescript
+import { deviceInfo } from '@kit.BasicServicesKit';
+import { uiMaterial } from '@kit.ArkUI';
+
+if (deviceInfo.sdkApiVersion >= 26) {
+  if (uiMaterial.isImmersiveMaterialSupported() &&
+    uiMaterial.getMaterialInfo().state !== uiMaterial.MaterialState.DISABLE) {
+    const material = new uiMaterial.ImmersiveMaterial({
+      style: uiMaterial.ImmersiveStyle.REGULAR
+    });
+    // 在此保护范围内通过目标组件支持的配置入口应用 material。
+  }
+}
+```
+
+仅保护材质值不足以保护链式属性调用本身；不能在低版本路径上无条件调用 `.systemMaterial(undefined)` 或访问 `uiMaterial.Material.empty`。如果现有声明式写法无法单独保护新增属性调用，就在最小受影响组件范围使用条件分支，公共内容与业务状态继续复用。不支持设备、应用或业务关闭时保留原属性和原交互；具体材质厚度与生效区域按目标组件选择。
+
+静态扫描只能发现版本判断候选，不能证明每个新增调用都被覆盖；实施时检查求值位置，并通过目标工程构建与最低兼容版本运行验证。
