@@ -24,14 +24,14 @@
 - 内容延伸到页签下方：`.barOverlap(true)`。该属性决定栏与 `TabContent` 是否重叠，是悬浮层次的核心布局条件。
 - 使用 `.barFloatingStyle(...)`，其中包含 `systemMaterialEffect: ADAPTIVE + ADAPTIVE` 和 `adaptToHandedness: true`。
 
-这些是三组迁移对照的共同实现，不自动等同于所有应用的强制规范。尤其是“大断点也保持底部悬浮”属于已核验工程采用的迁移策略；HarmonyOS 大屏设计仍可能要求侧边导航。扫描到旧工程的 `vertical`、动态 `barPosition`、`barWidth`、`divider` 或横屏侧栏时，方案必须明确列出“统一改底部”与“保留大屏侧栏分支”的取舍，由产品目标决定。
+当前接入按[共享栏宽与断点规则](../../shared/validation.md#悬浮-tab-栏宽与断点)执行：沉浸光感分支在所有断点和横竖屏统一为底部横向 Tab，移除侧栏切换条件及外层 `barWidth`。仅低版本兼容分支保留源程序响应式布局；设备不支持或材质关闭不恢复侧栏。
 
 ### 尺寸与间距经验
 
 | 项目 | 证据 | 建议 |
 |---|---|---|
 | 栏高 | Mall、Recipes 固定 56vp；News 显示时 56vp、隐藏时 0 | 56vp 可作为显示态基线；存在滚动隐藏时保留 `56/0` 动态状态，不把 56 写死到所有场景 |
-| 栏宽 | 三组接入后都删除了原生 `Tabs.barWidth(...)` | 优先让 HDS 使用系统宽度；确需定制时使用 `barFloatingStyle.barWidth` 的 small/medium/large 范围，而不是沿用旧侧栏的 96vp 或 `'100%'` |
+| 栏宽 | 三组接入后都删除了原生 `Tabs.barWidth(...)` | 接入分支删除外层 `.barWidth(...)`，由 `barFloatingStyle.barWidth` 的配置或默认行为自动生效，不额外添加固定宽度 |
 | 底部外边距 | News、Recipes 为 28vp；Mall 未设置；Spatialization 根据导航指示区高度动态计算 | HDS 默认 0；当前接入按窗口沉浸状态显式设置：已开启为 28vp，未开启为 0vp 并补齐一级页底部安全区扩展 |
 | 页签项 | Mall、Recipes 使用 24vp Symbol、`Caption_M` 和 4vp padding；News 保留原 Image 自定义页签 | 新页面可采用系统 Symbol 模式；已有手势、双击或业务状态的自定义 TabBar 应优先保留行为，只调整不再适用的侧栏尺寸 |
 | 宿主高度 | Mall 明确填满，News 由外层 Column 填满，Recipes 由导航内容布局承担 | 保证 HdsTabs 获得完整可用区域即可，不强制使用同一种 `.height('100%')` 写法 |
@@ -59,7 +59,7 @@ MiniBar 的版本边界以同版本 HdsTabs API 为准，不从 Spatialization �
 
 1. 先用本机 SDK 根清单和工程 compile/compatible/target API 确定 HDS 路线是否可用。
 2. 扫描主 Tabs 页面、每个 Tab 页的滚动容器与最后一个可操作项、控制器调用点、自定义 TabBar、断点侧栏逻辑、`HdsTabs` 父级/祖先 bottom padding、底部安全区和自研悬浮组件；如果 `compatibleSdkVersion < 23`，同时保存接入前普通 `Tabs` 的断点、横竖屏、窗口模式和全部条件属性组合。
-3. 明确大屏策略：参考迁移快照统一为底部悬浮，或保留侧边导航分支；不要静默删除大屏交互。
+3. 接入分支在所有断点和窗口尺寸统一为底部横向悬浮 Tab，使用 `vertical(false)` 与 `BarPosition.End`；侧栏布局仅保留在低版本兼容分支。
 4. 以 `HdsTabs + BarPosition.End + scrollable(false) + barOverlap(true) + barFloatingStyle` 为悬浮底部方案核心，再按证据选择栏高、底部外边距、遮罩和动画。先追踪外层 bottom padding 的用途和分支：普通 Tab 的导航条避让仅保留在普通分支，悬浮分支由栏底部间距负责；其他布局用途按实际作用处理，不仅凭祖先存在 padding 就清零 `barBottomMargin`。
 5. 保留 `onChange`、外部 `changeIndex`、双击、隐藏、刷新等业务行为；`HdsTabsController extends TabsController`，但替换后仍要扫描所有控制器类型和调用点。低版本普通 `Tabs` 分支必须保留源程序原有体验，包括不同断点和横竖屏下的底部/侧边形态，不能照抄 HDS 分支的统一底部配置。
 6. 处理内容被悬浮栏遮挡、全屏视频深浅色、横竖屏、分屏/自由窗口和底部手势区；安全区写法按实际布局选择。每个可滚动 Tab 页在最后一个内容项之后保留足够的滚动尾部空间，使末项能够完整滚到悬浮栏上方；该空间只用于 HDS 悬浮分支，不得无条件改变低版本源程序的滚动范围。

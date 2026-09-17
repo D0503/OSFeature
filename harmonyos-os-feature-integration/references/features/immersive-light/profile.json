@@ -165,6 +165,13 @@
       "action": "verify-window-immersion-call-chain-use-explicit-margin-28-if-enabled-else-0-and-expand-all-first-level-tab-scroll-ancestor-chains"
     },
     {
+      "id": "floating-tabs-width-and-breakpoints",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "floating-tabs-layout",
+      "action": "remove-outer-barWidth-use-floating-style-width-and-bottom-horizontal-tabs-at-all-breakpoints-preserve-original-layout-only-in-legacy-api-branch"
+    },
+    {
       "id": "scrollable-tab-tail-clearance",
       "route": "all",
       "minApi": 23,

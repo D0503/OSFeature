@@ -454,6 +454,22 @@ equal(autoSdkInspection.localSdk.status, "valid")
 equal(autoSdkInspection.localSdk.source, "local.properties:sdk.dir")
 
 const cliInspection = run("inspect-project.mjs", ["--project", fixture23, "--sdk", sdk23])
+for (const [inspection, compatibility, route] of [[inspection23, compatibility23, "hds"], [inspection26, compatibility26, "arkui"]]) {
+  const duplicate = structuredClone(inspection)
+  duplicate.signals.scrollableContent = { detected: true, evidence: ["BenefitPage.ets:140"] }
+  duplicate.signals.contentEndOffset = { detected: true, evidence: ["CouponListSection.ets:196", "TaskListSection.ets:139"] }
+  duplicate.signals.scrollTailSpacer = { detected: true, evidence: ["BenefitPage.ets:180"] }
+  const result = verifyInspection(duplicate, compatibility, route)
+  const tail = result.checks.find((v) => v.id === "scrollable-tab-tail-clearance")
+  equal(tail.status, "warn")
+  ok(tail.message.includes("may duplicate the same clearance"))
+  ok(tail.message.includes("sibling Blank"))
+  equal(tail.evidence.filter((v) => typeof v === "string").length, 4)
+  duplicate.signals.scrollTailSpacer = { detected: false, evidence: [] }
+  const single = verifyInspection(duplicate, compatibility, route).checks.find((v) => v.id === "scrollable-tab-tail-clearance")
+  equal(single.status, "warn")
+  ok(!single.message.includes("may duplicate the same clearance"))
+}
 await writeFile(versionProfilePath, versionProfile)
 const paddingSourcePath = resolve(versionProject, "entry", "src", "main", "ets", "pages", "Index.ets")
 for (const route of ["hds", "arkui"]) {
@@ -478,6 +494,32 @@ for (const route of ["hds", "arkui"]) {
 }
 equal(cliInspection.api.compatible, 23)
 const bottomExpansion = ".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])"
+for (const route of ["hds", "arkui"]) {
+  const tabs = route === "hds" ? "HdsTabs" : "Tabs"
+  const floating = `${tabs}({ barPosition: BarPosition.End }) {}.vertical( false ).barOverlap(true).barFloatingStyle({ barWidth: customWidth })`
+  for (const [source, widthCount, directionCount, positionCount, status] of [
+    [floating, 0, 0, 0, "warn"],
+    [floating.replace("barWidth: customWidth", ""), 0, 0, 0, "warn"],
+    [`${floating}.barWidth(oldWidth)`, 1, 0, 0, "warn"],
+    [`if (apiReady) { ${floating} } else { Tabs({ barPosition: oldPosition }) {}.vertical(isLarge).barWidth(oldWidth) }`, 1, 1, 1, "warn"],
+    [floating.replace(".vertical( false )", ".vertical(getDirection(breakpoint))"), 0, 1, 0, "warn"],
+    [floating.replace("BarPosition.End", "isLarge ? BarPosition.Start : BarPosition.End"), 0, 0, 1, "warn"],
+    [floating.replace("BarPosition.End", "BarPosition.End === position ? position : BarPosition.Start"), 0, 0, 1, "warn"],
+    [`${floating}\n// .barWidth(oldWidth).vertical(true)\n/* barPosition: oldPosition */`, 0, 0, 0, "warn"],
+    ["Tabs({ barPosition: oldPosition }) {}.vertical(isLarge).barWidth(oldWidth)", 1, 1, 1, "not_applicable"]
+  ]) {
+    await writeFile(paddingSourcePath, source)
+    const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+    equal(inspected.signals.outerBarWidth.count, widthCount)
+    equal(inspected.signals.tabDirectionCandidate.count, directionCount)
+    equal(inspected.signals.tabPositionCandidate.count, positionCount)
+    const result = verifyInspection(inspected, evaluateCompatibility(inspected, profile), route)
+    const layout = result.checks.find((v) => v.id === "floating-tabs-width-and-breakpoints")
+    equal(layout.status, status)
+    if (status === "warn") ok(layout.message.includes("legacy API branch"))
+    equal(await readFile(paddingSourcePath, "utf8"), source)
+  }
+}
 for (const route of ["hds", "arkui"]) {
   const tabs = route === "hds" ? "HdsTabs" : "Tabs"
   for (const [windowSource, trueCount, falseCount, callCount] of [

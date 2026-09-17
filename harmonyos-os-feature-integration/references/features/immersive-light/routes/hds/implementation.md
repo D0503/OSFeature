@@ -217,7 +217,7 @@ MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等�
 
 - `BarPosition.End`、`scrollable(false)`、`barOverlap(true)`、`barFloatingStyle` 和 `ADAPTIVE + ADAPTIVE` 是三组迁移对照的共同模式。
 - 56vp 是显示态栏高基线；需要随滚动隐藏时可在 56 和 0 之间切换。
-- 不默认设置栏宽。三组迁移对照都移除了原生 `Tabs.barWidth`；如确需控制悬浮胶囊宽度，使用 `barFloatingStyle.barWidth` 的 small/medium/large 范围并做多窗口验证。
+- 接入分支删除外层 `.barWidth(...)`，由 `barFloatingStyle.barWidth` 的配置或默认行为自动生效，不额外添加固定宽度。
 - 迁移快照中部分工程使用 `barBottomMargin: 28`，不能据此推断 HDS 默认值；当前接入按窗口沉浸状态显式选择 28vp 或 0vp，并检查祖先 padding 的用途与分支，避免重复避让。
 - `animationDuration(0)`、透明 `gradientMask` 和透明背景按工程实际交互选择；底部 `expandSafeArea` 按窗口沉浸状态规则处理，未开启窗口沉浸式时覆盖所有一级页及完整父组件链。
 - `HdsTabsController` 继承 `TabsController`，既有 `changeIndex` 通常可继续使用；仍需扫描所有类型声明、控制器注入、双击、隐藏和刷新回调。
@@ -245,19 +245,19 @@ MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等�
 
 ### 滚动 Tab 页尾部避让
 
-先按[共享验证规则](../../shared/validation.md#悬浮-tab-的滚动尾部避让)追踪真实滚动容器。保持页面与滚动视口延伸到悬浮栏下方，补偿放在实际列表内容末尾；不得通过页面外层 bottom padding 缩短内容区。列表位于自定义子组件时继续深入该组件；下方 Scroll 示例仅用于 Scroll 实际负责内容滚动的情形。
+先按[共享验证规则](../../shared/validation.md#悬浮-tab-的滚动尾部避让)追踪真实滚动容器。保持页面与滚动视口延伸到悬浮栏下方，补偿放在实际列表内容末尾；不得通过页面外层 bottom padding 缩短内容区。列表位于自定义子组件时继续深入该组件，先查清已有补偿和各窗口模式下的滚动职责再修改。
 
 `barOverlap(true)` 会让悬浮栏覆盖在 Tab 内容上方。每个包含 `List`、`Scroll`、`WaterFlow`、可滚动 `Grid` 或自定义滚动容器的 Tab 页都必须单独检查：滚动到末尾时，最后一个可见项、按钮和手势热区应能完整移动到悬浮栏上方，不能停在材质胶囊下面。
 
 滚动页需要在内容末尾提供“悬浮栏遮挡高度”对应的尾部空间：
 
 - 对 `List`，优先使用 `contentEndOffset`，或按工程既有写法追加不可交互的尾部占位项；
-- 对 `Scroll + Column` 等容器，在真实内容的最后追加 bottom padding 或尾部 `Blank`；
+- 对确实负责内容滚动的 `Scroll + Column`，确认尾部空间随内容滚动且不挤占子列表视口后，才使用内容末尾 padding 或占位；
 - 尾部空间以当前布局坐标中的实际遮挡为准，通常至少覆盖可见 `barHeight + barBottomMargin`，使用最终实际配置的栏间距，HDS 未设置时默认 0，再结合必要的操作间隔；外层已经承担的系统安全区不要重复加入；
 - 有动态隐藏能力时，可按最大可见悬浮栏高度保留稳定滚动范围，或让尾部空间与栏高同步变化，但必须验证动画过程中没有跳动和不可点击区；
 - 无滚动能力的静态 Tab 页不机械增加尾部空白；所有 Tab 页逐页检查，不能只验证默认选中的第一页。
 
-`List` 示例：
+`List` 示例（无已有尾部间距时）；已有配置则在原处核对和调整，保留基础间距且不重复加入遮挡补偿：
 
 ```typescript
 List() {
@@ -270,29 +270,17 @@ List() {
 .contentEndOffset(this.floatingTabOcclusionHeight)
 ```
 
-`Scroll` 示例：
-
-```typescript
-Scroll() {
-  Column() {
-    this.buildSourceContent()
-
-    // 位于最后一个真实滚动项之后，使末项可滚到悬浮栏上方。
-    Blank()
-      .height(this.floatingTabOcclusionHeight)
-  }
-}
-```
+优先更新内部列表已有的 `contentEndOffset`，先检查其是否已包含本次遮挡补偿，不能在外层再加一份。外层 Scroll 禁止滚动、内部 Tabs/List 填充剩余高度时，Tabs/List 后方的兄弟 Blank 是固定布局占位，不属于列表尾部补偿。Scroll 内容末尾占位仅在已确认该 Scroll 实际负责滚动且不会挤占内层列表视口时适用，具体前置检查与逐页验收见[共享规则](../../shared/validation.md#悬浮-tab-的滚动尾部避让)。
 
 这里的页尾空间与上一节的外层 bottom padding 职责不同：外层 padding / `barBottomMargin` 决定悬浮栏位置，滚动内容尾部空间决定最后一项能否滚出悬浮栏遮挡。二者可能同时存在，但每一段高度只能按其坐标和职责计算一次。
 
 如果 HDS 与低版本普通 `Tabs` 共用 Tab 内容 Builder，不要把 HDS 专用尾部空间无条件施加给低版本分支。通过明确参数或各页面自己的布局状态只在存在悬浮遮挡的分支启用；低版本继续保留源程序原有滚动范围、padding 和末项体验。
 
-大断点处理必须作为显式设计决策：如果目标是迁移快照所示的统一悬浮导航，可删除旧的 `vertical`、动态 `barPosition`、侧栏 `barWidth` 和 `divider`，在大断点继续显示底部悬浮 Tab；如果产品仍要求平板/PC 侧边导航，则保留断点分支，只在小中断点使用底部 HDS 悬浮栏。不要仅因对照快照采用底部方案就静默破坏既有大屏信息架构。
+按[共享栏宽与断点规则](../../shared/validation.md#悬浮-tab-栏宽与断点)，接入分支在所有断点、横竖屏和窗口尺寸均使用 `vertical(false)`、`BarPosition.End` 的底部悬浮 Tab。删除外层 `barWidth`、侧栏切换条件和侧栏专属尺寸、分割线配置；保留业务事件与状态。设备不支持或材质关闭时仅回退材质，仍保持底部布局。
 
 ### 低版本分支必须保留源程序体验
 
-当 `compatibleSdkVersion < 23` 时，HDS 与普通 `Tabs` 是两棵运行时条件组件树。HDS 分支可以按产品确认后的新方案统一为底部悬浮，但普通 `Tabs` 分支不是简化示例或全新降级设计，必须保留接入前源程序的行为：
+当 `compatibleSdkVersion < 23` 时，HDS 与普通 `Tabs` 是两棵运行时条件组件树。HDS 分支统一为底部悬浮，低版本普通 `Tabs` 分支必须保留接入前源程序的行为：
 
 - 继续使用原有断点、横竖屏和窗口模式条件，保持对应的底部横向栏或侧边纵向栏；
 - 原样迁移这些条件控制的 `vertical`、`barPosition`、`barMode`、`barWidth`、`barHeight`、`divider` 和背景属性；

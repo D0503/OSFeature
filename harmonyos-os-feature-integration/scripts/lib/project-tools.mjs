@@ -375,6 +375,9 @@ function inspectModules(files) {
 }
 
 const SIGNALS = [
+  { id: "outerBarWidth", regex: /\.\s*barWidth\s*\(/ },
+  { id: "tabDirectionCandidate", regex: /\bvertical\s*(?:\((?!\s*false\s*\))|:(?!\s*false\b))/ },
+  { id: "tabPositionCandidate", regex: /\bbarPosition\s*(?:\((?!\s*BarPosition\.End\s*\))|:(?!\s*BarPosition\.End\s*[,}]))/ },
   { id: "hdsNavigation", regex: /\bHds(?:Navigation|NavDestination)\b/ },
   { id: "hdsTabs", regex: /\bHdsTabs\b/ },
   { id: "nativeNavigation", regex: /\b(?:Navigation|NavDestination)\s*\(/ },
@@ -1082,6 +1085,17 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     ? s.hdsTabs.detected && s.barFloatingStyle.detected
     : route === "arkui" && s.nativeTabsFloatingStyle.detected
   const needsPaddingReview = hasFloatingStyle && s.layoutBottomPadding.detected
+  const tabLayoutCandidates = [s.outerBarWidth, s.tabDirectionCandidate, s.tabPositionCandidate]
+    .flatMap((signal) => signal?.evidence ?? [])
+  checks.push(check(
+    "floating-tabs-width-and-breakpoints",
+    "Floating Tabs width and breakpoint layout",
+    hasFloatingStyle ? "warn" : "not_applicable",
+    tabLayoutCandidates,
+    !hasFloatingStyle ? "No floating Tabs detected" :
+      (tabLayoutCandidates.length ? "Outer barWidth or direction/position candidates detected. " : "No outer barWidth or side-layout candidate detected; this does not prove branch coverage. ") +
+      "Review component ownership, wrappers and version branches. Remove outer .barWidth(...) only from the immersive integration branch; use barFloatingStyle.barWidth or its defaults. Use vertical(false) and BarPosition.End at every breakpoint, orientation and window size. Preserve original responsive side/bottom layout and widths only in the legacy API branch. Material disabled or unsupported-device fallback keeps bottom Tabs. Static coexistence is not a failure; verify layouts on target pages"
+  ))
   checks.push(check(
     "floating-tabs-window-immersion",
     "Floating Tabs window immersion and safe-area ancestry",
@@ -1109,8 +1123,10 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     [...s.scrollableContent.evidence, ...tailClearanceEvidence, ...s.layoutBottomPadding.evidence],
     !hasScrollableTabRisk
       ? "No overlapping HDS or ArkUI floating Tabs with scrollable content were detected"
-      : tailClearanceEvidence.length
-        ? "A tail-clearance candidate was detected, not verified. Trace each Tab into its actual scrolling child, confirm existing spacing and actual occlusion, and verify the last actionable item can scroll above the bar. Keep the viewport extending behind the bar; page-level bottom padding is not tail-clearance evidence"
+      : s.contentEndOffset.detected && s.scrollTailSpacer.detected
+        ? "Both contentEndOffset and a Blank height candidate were detected. Review component paths, existing compensation and scroll ownership in each window mode before editing: these may duplicate the same clearance. A sibling Blank after a weighted/fill-height List or Tabs can shrink its viewport and leave fixed space behind the floating bar, especially when the outer Scroll is disabled. Coexistence is not proof of a defect; verify every Tab and inner list by scrolling content behind the bar and operating the last item"
+        : tailClearanceEvidence.length
+        ? "A tail-clearance candidate was detected, not verified. Record each Tab's actual scrolling child, existing compensation and window-dependent scroll ownership. A Blank outside a weighted/fill-height List or Tabs must not replace scrolling-tail clearance. Prefer updating the actual scroller's existing tail configuration once; page-level bottom padding is not tail-clearance evidence. Verify scrolling behind the bar and last-item operation on every Tab and inner list"
         : "Trace each Tab into its actual scrolling container, including nested children and scrollable/window conditions. Add tail clearance inside the scrolling content, not page-level bottom padding that shrinks the viewport and leaves fixed blank space behind the bar. Preserve existing spacing and apply compensation only where the host has actual floating-bar occlusion"
   ))
 

@@ -129,15 +129,15 @@
     {
       "id": 11,
       "prompt": "我的工程在 LG/XL 大断点使用左侧纵向 Tabs，手机使用底部 Tabs。现在要接入悬浮导航Tab，大断点是否也改到底部？barOverlap、栏宽和栏高应该怎么处理？",
-      "expected_output": "先说明能力包内置的三组迁移对照快照都把大断点或横屏侧栏改为底部 HdsTabs，但这属于已核验工程的迁移选择而非所有大屏应用的强制规则；原始对照工程不是 Skill 运行依赖。给出统一底部与保留大屏侧栏分支两个方案并结合产品目标选择；统一底部方案使用 BarPosition.End、scrollable(false)、barOverlap(true) 和 barFloatingStyle，显示态栏高可参考 56vp，隐藏时同步为 0；默认不沿用旧侧栏 barWidth。HDS 默认栏底部间距为 0；实际接入先查窗口沉浸状态，已开启显式 28vp，未开启显式 0vp 并扩展所有一级页滚动容器及全部父组件的底部系统安全区。保留现有 changeIndex、自定义 TabBar、隐藏和刷新行为，并覆盖大屏、多窗口、安全区和遮挡验证。",
+      "expected_output": "HDS 和 ArkUI 沉浸光感接入分支在所有断点、横竖屏和窗口尺寸统一为底部横向 Tab，使用 vertical(false)、BarPosition.End、barOverlap(true) 和 barFloatingStyle。删除外层 barWidth，由 barFloatingStyle.barWidth 配置或默认行为自动生效，不添加固定宽度。仅低版本兼容分支保留原侧边/底部响应式布局与栏宽；材质关闭或设备不支持不恢复侧栏。HDS 显示态栏高可参考 56vp，隐藏时同步为 0。HDS 默认栏底部间距为 0；实际接入先查窗口沉浸状态，已开启显式 28vp，未开启显式 0vp 并扩展所有一级页滚动容器及全部父组件的底部系统安全区。保留现有 changeIndex、自定义 TabBar、隐藏和刷新行为，并覆盖大屏、多窗口、安全区和遮挡验证。原始迁移对照工程不是 Skill 运行依赖。",
       "files": [],
       "expectations": [
         "说明内置迁移对照的大断点或横屏最终都采用底部悬浮 HdsTabs，且原始工程不是运行依赖",
-        "没有把样例选择误写成所有大屏应用的强制规范",
-        "同时给出统一底部和保留大屏侧栏分支的决策依据",
+        "HDS 和 ArkUI 接入分支在所有断点和窗口尺寸使用 vertical(false) 与 BarPosition.End",
+        "仅低版本兼容分支保留源程序侧边/底部响应式布局；材质关闭或设备不支持仍为底部 Tab",
         "统一底部方案包含 BarPosition.End、barOverlap(true)、barFloatingStyle 和 ADAPTIVE 材质",
         "说明 56vp 是显示态基线、隐藏时可为 0；底部间距按窗口沉浸状态选择 28vp 或 0vp",
-        "不默认沿用旧侧栏 barWidth，并要求验证大屏、多窗口、安全区和内容遮挡"
+        "删除接入分支外层 barWidth，由 barFloatingStyle.barWidth 或默认行为自动生效，不添加固定宽度，并验证大屏、多窗口、安全区和内容遮挡"
       ]
     },
     {
@@ -297,6 +297,19 @@
         "区分 navigation-title、bottom-floating-tabbar、all-page",
         "普通内容区 Button 或 Chip 不被误判为任意区域生效",
         "静态祖先关系不明确时保守输出 warn"
+      ]
+    },
+    {
+      "id": 26,
+      "prompt": "BenefitPage 外层 Scroll 平时 scrollable 为 None，窗口状态变化后才允许滚动。其 Column 中，Tabs 使用 layoutWeight(1)，里面的 CouponListSection 和 TaskListSection 各有 List，已经配置 contentEndOffset(12 + floatingTabOcclusion)。接入悬浮 Tab 后又在 Tabs 后面加 Blank().height(floatingTabOcclusion)，现在栏下始终是空白。请修复。",
+      "expected_output": "先沿 BenefitPage、Tabs、两个自定义列表组件确认真实滚动容器，记录窗口条件、原有尾部补偿和唯一补偿位置。通常外层 Scroll 为 None，Tabs 后的兄弟 Blank 挤占列表视口，且与内部 List 已有补偿重复，应移除这层错误占位，保留并核对内部 contentEndOffset；不要再加外层 padding 或简单换一个占位组件。外层启用滚动的窗口状态独立检查职责，不能无条件内外双补偿。逐个内部列表执行滚动开始、内容经过悬浮栏下方、滚至末尾和末项操作，普通/独立页面保持原行为。没有实际执行时报告未验证，固定空白未消除时不能交付为通过。",
+      "files": [],
+      "expectations": [
+        "修改前检查子组件并明确真实滚动容器、窗口条件和已有补偿",
+        "识别 weighted Tabs 后的 Blank 为挤占视口的兄弟占位",
+        "核对内部 contentEndOffset，排除内外重复补偿",
+        "窗口模式改变时分别判断，不机械增加外层空间",
+        "逐个列表滚动验证内容经过栏下及末项可操作，未验证不能通过"
       ]
     },
     {
