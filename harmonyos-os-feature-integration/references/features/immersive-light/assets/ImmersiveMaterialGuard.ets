@@ -6,7 +6,7 @@ import { uiMaterial } from '@kit.ArkUI';
  *
  * 来源：官方《开启沉浸光感》《组件适配沉浸光感》与《@ohos.arkui.uiMaterial》
  * API 参考中的能力查询、组件参数与降级规则。
- * 与 HDS 路线的 HdsMaterialGuard.ets 对称，索引见 ../routes/arkui/assets.md。
+ * 使用索引见 ../routes/arkui/assets.md。
  *
  * 职责边界：只回答"当前设备能不能用 ArkUI 沉浸式系统材质"和"常见场景的材质参数用什么"，
  * 不做页面布局、不做弹窗 Options 适配（弹窗入口在 ../routes/arkui/implementation.md 的适配器模式中
@@ -20,7 +20,8 @@ import { uiMaterial } from '@kit.ArkUI';
  *   仅材质变化时复用原组件；组件、布局或导航结构变化时使用组件树分支，
  *   不把 API 26 才存在的 apiAvailable 作为最外层保护。
  * - isImmersiveMaterialSupported() / getGlobalMaterialLevel() 官方注明"由设备决定、
- *   应用运行后不会改变"：可在页面字段初始化时求值一次并复用，不必逐帧调用。
+ *   应用运行后不会改变"：在应用启动完成、退出启动加载页后查询一次并复用，不必逐帧调用。
+ *   不得在模块加载、静态/成员字段初始化或启动加载页中提前查询。
  * - 不支持沉浸式材质的设备上设置 ImmersiveMaterial 不报错、无效果，且不覆盖任何
  *   通用属性——降级样式（背景色、边框）会自动保留。
  * - 应用级 MaterialState.DISABLE 时，显式 systemMaterial 也不生效。
@@ -42,7 +43,8 @@ export class ImmersiveMaterialGuard {
   /**
    * 当前设备是否可用 ArkUI 沉浸式系统材质。
    * 版本（sdkApiVersion）与设备能力（isImmersiveMaterialSupported）双重判断；
-   * 结果运行期不变，可在页面成员初始化时调用一次。
+   * 调用方须确认应用已启动完成且已退出启动加载页；本方法只检查版本与能力，
+   * 不检测启动就绪状态。就绪后调用一次并复用结果。
    */
   public static isMaterialSupported(): boolean {
     return ImmersiveMaterialGuard.isRuntimeApiAvailable() &&

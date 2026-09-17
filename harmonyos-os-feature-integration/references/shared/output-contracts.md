@@ -6,7 +6,9 @@
 
 ## 工程实施
 
-使用 `assets/templates/integration-report.md`，按 `selectedRoutes` 区分实际修改、源程序状态保留对照、静态验证、构建、真机验证、未完成条件和证据来源。涉及 ArkUI 材质时单列规范化应用状态、组件生效域、参数风险和材质效果真机待验证项。
+使用 `assets/templates/integration-report.md` 的四部分结构：沉浸光感改造汇总、沉浸光感类别、视觉验证结果、升级与兼容。按实际页面和组件说明改动与文件，区分 HDS / ArkUI 路线及实际类别；视觉部分附目标页截图、设备系统信息和各阶段结果，升级兼容部分保留版本前后对照及回退行为验证结果。应用状态、生效域和参数风险按本次涉及内容写入对应目标结论。
+
+按[验证闭环](../workflows/verification.md)由 `verify-development.mjs` 生成 `<工程>/os-feature-integration/integration-report.md`，`--output` 可覆盖目录。最终只交付一份 Markdown 与其引用的截图，不生成 JSON 汇总报告；过程日志与判定数据留在临时目录。未执行、未到达目标页或未判图均不得写成通过。
 
 ## 故障排查
 

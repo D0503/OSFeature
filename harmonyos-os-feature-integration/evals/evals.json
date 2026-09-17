@@ -129,14 +129,14 @@
     {
       "id": 11,
       "prompt": "我的工程在 LG/XL 大断点使用左侧纵向 Tabs，手机使用底部 Tabs。现在要接入悬浮导航Tab，大断点是否也改到底部？barOverlap、栏宽和栏高应该怎么处理？",
-      "expected_output": "先说明能力包内置的三组迁移对照快照都把大断点或横屏侧栏改为底部 HdsTabs，但这属于已核验工程的迁移选择而非所有大屏应用的强制规则；原始对照工程不是 Skill 运行依赖。给出统一底部与保留大屏侧栏分支两个方案并结合产品目标选择；统一底部方案使用 BarPosition.End、scrollable(false)、barOverlap(true) 和 barFloatingStyle，显示态栏高可参考 56vp，隐藏时同步为 0；默认不沿用旧侧栏 barWidth，28vp 底部间距仅为常见对照值。保留现有 changeIndex、自定义 TabBar、隐藏和刷新行为，并覆盖大屏、多窗口、安全区和遮挡验证。",
+      "expected_output": "先说明能力包内置的三组迁移对照快照都把大断点或横屏侧栏改为底部 HdsTabs，但这属于已核验工程的迁移选择而非所有大屏应用的强制规则；原始对照工程不是 Skill 运行依赖。给出统一底部与保留大屏侧栏分支两个方案并结合产品目标选择；统一底部方案使用 BarPosition.End、scrollable(false)、barOverlap(true) 和 barFloatingStyle，显示态栏高可参考 56vp，隐藏时同步为 0；默认不沿用旧侧栏 barWidth。HDS 默认栏底部间距为 0；实际接入先查窗口沉浸状态，已开启显式 28vp，未开启显式 0vp 并扩展所有一级页滚动容器及全部父组件的底部系统安全区。保留现有 changeIndex、自定义 TabBar、隐藏和刷新行为，并覆盖大屏、多窗口、安全区和遮挡验证。",
       "files": [],
       "expectations": [
         "说明内置迁移对照的大断点或横屏最终都采用底部悬浮 HdsTabs，且原始工程不是运行依赖",
         "没有把样例选择误写成所有大屏应用的强制规范",
         "同时给出统一底部和保留大屏侧栏分支的决策依据",
         "统一底部方案包含 BarPosition.End、barOverlap(true)、barFloatingStyle 和 ADAPTIVE 材质",
-        "说明 56vp 是显示态基线、隐藏时可为 0，且 28vp 底部间距不是固定规范",
+        "说明 56vp 是显示态基线、隐藏时可为 0；底部间距按窗口沉浸状态选择 28vp 或 0vp",
         "不默认沿用旧侧栏 barWidth，并要求验证大屏、多窗口、安全区和内容遮挡"
       ]
     },
@@ -169,15 +169,15 @@
     },
     {
       "id": 14,
-      "prompt": "悬浮 HdsTabs 配置了 barBottomMargin: 28，但包住它的 Column 已经有 .padding({ bottom: this.vm.windowModel.windowBottomPadding })。barBottomMargin 还应该保留 28 吗？",
-      "expected_output": "先确认 bottom padding 所在的组件层级。该 Column 的 padding 会移动整个 HdsTabs 布局区域，已经承担同一底部间距，因此 barBottomMargin 应设为 0，不能再叠加 28vp。28vp 只是部分迁移工程的常见起点，不是固定规范。如果 bottom padding 仅位于某个 TabContent 的滚动内容内部，用途是避免末项被悬浮栏遮挡，则它与栏的位置可能职责不同，不能只根据关键词清零；需要结合组件树和真机窗口矩阵验证。",
+      "prompt": "普通 Tabs 与悬浮 HdsTabs 共用的 Column 有 .padding({ bottom: this.vm.windowModel.windowBottomPadding })，原用途是普通 Tab 避让导航条。悬浮分支配置了 barBottomMargin: 28，这两处该如何处理？原生 ArkUI 悬浮 Tabs 使用默认栏间距时呢？",
+      "expected_output": "先追踪窗口沉浸状态以及 padding 的用途、祖先关系和所属分支。普通 Tab 为避让导航条设置的外层 padding 仅保留在普通分支；悬浮分支内容和滚动视口继续延伸到栏下方。已开启窗口沉浸式时两条路线显式配置栏间距 28vp，未开启时显式 0vp 并扩展所有一级页滚动容器及全部父组件的底部系统安全区。共用容器可按实际悬浮布局条件配置 bottom: useFloatingTab ? 0 : windowBottomPadding，不应仅因祖先存在 padding 就清零 margin。列表内部尾部补偿及其他布局用途的 padding 独立判断；静态共存仅标 warn，结合实际调用链、组件树和分支验证。滚动尾部补偿计算沿用能力包现有规则。",
       "files": [],
       "expectations": [
-        "先判断 bottom padding 是否位于影响 HdsTabs 布局边界的父级或祖先",
-        "对题目给出的父级 Column 场景明确将 barBottomMargin 设为 0",
-        "说明不能把外层 bottom padding 与 28vp barBottomMargin 重复叠加",
-        "说明 28vp 是迁移经验值而不是固定规范",
-        "区分外层布局 padding 与 TabContent 内部防遮挡 padding",
+        "追踪 padding 用途、祖先关系和所属分支",
+        "普通 Tab 的导航条避让 padding 仅保留在普通分支",
+        "悬浮分支由栏底部间距负责，内容继续延伸到栏下方",
+        "覆盖 HDS 和 ArkUI，以及显式和默认栏间距",
+        "其他布局用途与 TabContent 内部补偿独立判断，不机械清零 margin 或删除 padding",
         "要求覆盖导航指示区、横竖屏和多窗口验证"
       ]
     },
@@ -297,6 +297,20 @@
         "区分 navigation-title、bottom-floating-tabbar、all-page",
         "普通内容区 Button 或 Chip 不被误判为任意区域生效",
         "静态祖先关系不明确时保守输出 warn"
+      ]
+    },
+    {
+      "id": 25,
+      "prompt": "为 HDS 或 ArkUI 接入悬浮 Tab。工程 WindowUtil 把 setWindowLayoutFullScreen(isFull) 封装起来，初始化中的 true 调用已注释。MainEntry 包住各 TabContent，HomePage 根 Stack 内有 Scroll。应如何选择 barBottomMargin 并处理内容延伸？其他 Tab 页和普通分支如何处理？",
+      "expected_output": "先追踪封装参数、调用时序、条件和后续关闭操作，注释不算调用，不能仅凭未发现 true 就判未开启。HDS 默认 barBottomMargin 为 0，ArkUI 默认为 28vp；确认目标窗口已开启沉浸式则两条路线均显式 28vp，未开启则显式 0vp，并在所有一级 Tab 页、真实滚动容器及全部父组件配置 expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])。MainEntry 父容器、Tabs/HdsTabs、TabContent、HomePage 根 Stack 到 Scroll 整条链都要检查，不能只处理 Scroll 或默认页。不自动开启全局窗口沉浸式；扩展只在需要的悬浮布局分支生效，普通与独立页面保留原行为和顶部避让。静态线索不能证明实际状态或父组件覆盖，保持 warn 并逐页运行验证。滚动尾部补偿沿用现有公式和实际栏间距。",
+      "files": [],
+      "expectations": [
+        "区分 HDS 默认 0 和 ArkUI 默认 28vp",
+        "先查窗口调用链，忽略注释并核对参数、条件和后续关闭",
+        "已开启显式 28vp，未开启显式 0vp 并扩展底部系统安全区",
+        "所有一级页的滚动容器及全部父组件均需覆盖",
+        "不自动开启全局窗口沉浸式，保持普通分支和独立页面原行为",
+        "静态保持 warn，运行验证内容延伸、顶部避让及分支切换"
       ]
     },
     {

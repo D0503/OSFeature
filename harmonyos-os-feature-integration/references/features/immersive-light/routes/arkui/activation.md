@@ -11,15 +11,23 @@ ArkUI 沉浸光感的构建门禁是：
 - `targetSdkVersion >= 26`；
 - Stage 模型。
 
+上述 API 26 指版本等级；写入 `build-profile.json5` 的 `targetSdkVersion` 和显式 `compileSdkVersion` 时使用 `"26.0.0"`，无括号后缀。`compatibleSdkVersion` 按已确认的最低兼容要求保留，只有设为 API 26 时才同样写 `"26.0.0"`。
+
 `targetSdkVersion >= 26` 适用于 ArkUI 整条路线，不只适用于应用级 metadata。`compatibleSdkVersion < 26` 时，用低版本可用的 `deviceInfo.sdkApiVersion` 保护新增接口调用和配置；仅材质变化时复用原组件，涉及组件、布局或导航结构变化时才使用组件树分支。`compatibleSdkVersion >= 26` 时无需增加 API 26 版本分支。具体写法见[共享回退策略](../../shared/fallback.md)。不要把 API 26 才存在的 `deviceInfo.apiAvailable` 当作 API 26 以下设备的最外层保护。
 
-进入 API 26 分支后，再调用：
+应用启动完成、退出启动加载页且满足 API 26 运行版本条件后，再调用：
 
 ```typescript
 uiMaterial.isImmersiveMaterialSupported()
 ```
 
 能力不支持时，继续使用接入前组件树、状态、事件和普通样式。
+
+### 能力查询时机
+
+`uiMaterial.isImmersiveMaterialSupported()` 必须由工程现有的启动完成、业务页面就绪流程触发。不得在模块顶层、静态或成员字段初始化、启动加载页中调用，也不得通过这些位置间接调用 `ImmersiveMaterialGuard.isMaterialSupported()`。生命周期回调名称本身不能证明启动已完成；检查它与加载页退出的实际先后关系，不以固定延时替代就绪条件。
+
+启动尚未完成时，保持接入前样式，能力状态保留为“未查询”；不要把此时的默认值永久缓存为“不支持”。就绪后查询一次并复用结果，通过工程现有状态机制更新目标组件。API 版本保护仍须在查询之前执行。
 
 ## 应用级 MaterialState
 

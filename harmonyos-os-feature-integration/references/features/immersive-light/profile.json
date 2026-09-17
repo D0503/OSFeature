@@ -152,10 +152,17 @@
     },
     {
       "id": "floating-bar-bottom-spacing-single-owner",
-      "route": "hds",
+      "route": "all",
       "minApi": 23,
       "scenario": "floating-tab-bottom-spacing",
-      "action": "avoid-stacking-ancestor-bottom-padding-and-positive-bar-bottom-margin"
+      "action": "review-padding-purpose-and-branch-ownership-preserve-normal-tab-navigation-avoidance-without-shrinking-floating-content"
+    },
+    {
+      "id": "floating-tabs-window-immersion",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "floating-tab-bottom-spacing",
+      "action": "verify-window-immersion-call-chain-use-explicit-margin-28-if-enabled-else-0-and-expand-all-first-level-tab-scroll-ancestor-chains"
     },
     {
       "id": "scrollable-tab-tail-clearance",

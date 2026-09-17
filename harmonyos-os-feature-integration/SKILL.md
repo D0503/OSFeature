@@ -31,7 +31,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 ## 固定数据流
 
-按“识别特性 → 验证本机 SDK → 扫描工程 → 兼容性与 SDK 门禁 → 加载能力包 → 方案或实施 → 静态验证 → 项目构建 → 交付报告”执行。每一步保留文件证据和无法确认项，后一步不得覆盖前一步的限制。本机 SDK 未定位、根清单无效或 API 低于路线门槛时，不得仅凭工程版本选择路线。
+按“识别特性 → 验证本机 SDK → 扫描工程 → 兼容性与 SDK 门禁 → 加载能力包 → 方案或实施 → 静态验证 → 构建 → 安装启动 → 目标页导航 → 运行与视觉验证 → 交付报告”执行。每一步保留文件证据和无法确认项，后一步不得覆盖前一步的限制。本机 SDK 未定位、根清单无效或 API 低于路线门槛时，不得仅凭工程版本选择路线。
 
 ### 升级接入与路线决策（通用）
 
@@ -71,8 +71,8 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 2. 检查实际工程和本机 SDK 根清单，不假设文件路径、组件类型或 SDK 版本；
 3. 修改范围保持在用户请求与已确认路线内，复用工程现有架构与类型；
 4. 按能力包 `fallbackPolicy` 为旧版本、不支持设备、未授权和特性关闭路径保留接入前的源程序状态；只在满足条件的增强分支接入新特性；
-5. 执行工程可用的静态检查和构建；
-6. 区分编译结果与真机视觉验证，未验证内容明确列出。
+5. 按[验证闭环](references/workflows/verification.md)运行 `verify-development.mjs`，自动执行具备条件的静态检查、SDK 检查和构建；明确设备后继续安装、导航和截图；
+6. AI 阅读本轮证据后补录运行与视觉判定；最终只交付一份 Markdown 汇总报告及其截图，包含实际改造、沉浸光感类别、视觉验证和升级兼容，未验证项明确列出。
 
 ### 故障排查
 
@@ -94,12 +94,14 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 | 命中已注册能力 | 注册项的 `entry` 以及入口指定的任务资料 |
 | 工程、SDK 扫描和兼容性判断 | 运行 `node scripts/inspect-project.mjs --project <path> [--sdk <path>]` 与 `node scripts/check-compatibility.mjs --project <path> --feature <id> [--sdk <path>]`；自动定位失败时必须显式传入 `--sdk` |
 | 实施后静态验证 | 运行 `node scripts/verify-integration.mjs --project <path> --feature <id> [--sdk <path>]` |
+| 工程验证闭环与报告 | 按[验证闭环](references/workflows/verification.md)调用 `scripts/verify-development.mjs`，采集目标页证据并补录判定 |
 | 输出计划或报告 | [共享输出契约](references/shared/output-contracts.md) 与 `assets/templates/` |
 | 新增能力包 | [references/feature-package-contract.md](references/feature-package-contract.md) |
 | 检查 Skill 结构 | 运行 `node scripts/validate-structure.mjs` |
 | 检查已注册能力包 | 运行 `node scripts/validate-feature-package.mjs --feature <id>` |
 | 运行冒烟测试 | 运行 `node evals/run-smoke-tests.mjs` |
 | 运行工具测试 | 运行 `node evals/run-tool-tests.mjs` |
+| 运行验证执行器测试 | 运行 `node evals/run-development-tests.mjs` |
 
 ## 完成标准
 

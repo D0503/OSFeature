@@ -2,7 +2,7 @@
 
 先按[兼容性与选型](../../compatibility.md)确定路线，并读取[共享回退策略](../../shared/fallback.md)。示例用于说明接口组合；修改真实工程时应复用项目现有组件、类型、主题资源和状态管理方式。
 
-悬浮导航Tab（底部悬浮胶囊页签）的完整页面模式、运行时门禁工具和"原生 Tabs / 自研悬浮导航栏 → HDS 悬浮页签"的迁移对照，优先复用[HDS 资产目录](assets.md)中已蒸馏的资产，不重复手写。
+悬浮导航Tab（底部悬浮胶囊页签）的工程迁移参考见[HDS 迁移证据](assets.md)。按本文短示例修改目标工程的实际组件和配置入口，保留既有页面结构与业务行为。
 
 ## HDS 沉浸光感材质路线：API 23+
 
@@ -16,6 +16,23 @@ systemMaterialEffect: {
   materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
 }
 ```
+
+`compatibleSdkVersion >= 23` 时无需增加 API 23 版本分支；低于 23 时，用低版本可用的 `deviceInfo.sdkApiVersion` 保护 HDS 材质配置和调用。普通 ArkTS 方法内的最小示例：
+
+```typescript
+import { deviceInfo } from '@kit.BasicServicesKit';
+import { hdsMaterial, SystemMaterialParams } from '@kit.UIDesignKit';
+
+if (deviceInfo.sdkApiVersion >= 23) {
+  const materialParams: SystemMaterialParams = {
+    materialType: hdsMaterial.MaterialType.ADAPTIVE,
+    materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+  };
+  // 在目标组件支持的配置入口使用 materialParams。
+}
+```
+
+版本判断只说明接口版本可用，不代表设备支持所有材质档位；不能用 API 26 才可用的 `deviceInfo.apiAvailable` 保护低版本。页面从原生组件迁移到 HDS 时，在受影响组件范围保留低版本原组件分支，继续复用原状态、控制器调用和业务内容；HDS 专属枚举、配置和对象构造不得提前在分支外求值。
 
 如果业务必须自定义档位，先查询设备支持类型：
 
@@ -104,7 +121,9 @@ HdsNavigation() {
 
 ## HDS 底部悬浮 Tab 迁移
 
-能力包内置的三组迁移对照快照显示，接入后版本都把手机、平板大断点和横屏主导航统一成底部悬浮 `HdsTabs`。共同核心如下；完整页面、低版本整树降级和自包含差异摘要见[HDS 资产与迁移证据](assets.md)。原始对照工程不随 Skill 分发，也不是执行依赖。
+先按[窗口沉浸状态规则](../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口。HDS 的 `barBottomMargin` 默认 0；本 Skill 接入时，已开启窗口沉浸式显式设置 28vp，未开启时显式设置 0vp，并为所有一级 Tab 页的真实滚动容器及全部父组件配置底部 `expandSafeArea`。状态不明时先查调用链，不自动开启全局窗口沉浸式。以下 `this.floatingBarBottomMargin` 表示按该规则确认后的工程配置值，不是通过静态扫描猜出的窗口状态。
+
+能力包内置的三组迁移对照快照显示，接入后版本都把手机、平板大断点和横屏主导航统一成底部悬浮 `HdsTabs`。共同核心如下；迁移差异摘要与适用边界见[HDS 迁移证据](assets.md)。原始对照工程不随 Skill 分发，也不是执行依赖。
 
 ```typescript
 HdsTabs({
@@ -119,6 +138,7 @@ HdsTabs({
 .barHeight(56)
 .barOverlap(true)
 .barFloatingStyle({
+  barBottomMargin: this.floatingBarBottomMargin,
   adaptToHandedness: true,
   systemMaterialEffect: {
     materialType: hdsMaterial.MaterialType.ADAPTIVE,
@@ -172,6 +192,7 @@ HdsTabs({
 .barHeight(56)
 .barOverlap(true)
 .barFloatingStyle({
+  barBottomMargin: this.floatingBarBottomMargin,
   adaptToHandedness: true,
   systemMaterialEffect: {
     materialType: hdsMaterial.MaterialType.ADAPTIVE,
@@ -197,52 +218,34 @@ MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等�
 - `BarPosition.End`、`scrollable(false)`、`barOverlap(true)`、`barFloatingStyle` 和 `ADAPTIVE + ADAPTIVE` 是三组迁移对照的共同模式。
 - 56vp 是显示态栏高基线；需要随滚动隐藏时可在 56 和 0 之间切换。
 - 不默认设置栏宽。三组迁移对照都移除了原生 `Tabs.barWidth`；如确需控制悬浮胶囊宽度，使用 `barFloatingStyle.barWidth` 的 small/medium/large 范围并做多窗口验证。
-- `barBottomMargin: 28` 是两对工程采用的常见值，不是固定规范。设置前必须扫描 `HdsTabs` 的父级/祖先容器是否已经通过 `.padding({ bottom: ... })`、安全区或导航指示区高度预留了同一段底部空间；底部间距只能由一处承担，不能把父容器 bottom padding 与正数 `barBottomMargin` 无条件叠加。
-- `animationDuration(0)`、透明 `gradientMask`、`TabContent.expandSafeArea(BOTTOM)` 和透明背景均不是三组迁移对照的统一必需项，只在对应交互或布局确有需要时保留。
+- 迁移快照中部分工程使用 `barBottomMargin: 28`，不能据此推断 HDS 默认值；当前接入按窗口沉浸状态显式选择 28vp 或 0vp，并检查祖先 padding 的用途与分支，避免重复避让。
+- `animationDuration(0)`、透明 `gradientMask` 和透明背景按工程实际交互选择；底部 `expandSafeArea` 按窗口沉浸状态规则处理，未开启窗口沉浸式时覆盖所有一级页及完整父组件链。
 - `HdsTabsController` 继承 `TabsController`，既有 `changeIndex` 通常可继续使用；仍需扫描所有类型声明、控制器注入、双击、隐藏和刷新回调。
 - API 23/24 模板将 `HdsTabs` 从 `@hms.hds.hdsBaseComponent` 导入，当前 SDK 也可见 `@kit.UIDesignKit` 聚合入口。生成代码时沿用目标 SDK 与工程已验证的导入方式，最终以真实构建为准。
 
 ### 底部间距归一化
 
-按实际布局所有权决定 `barBottomMargin`：
+按原有 padding 的用途和实际分支决定底部避让：
 
-1. 先定位 `HdsTabs` 的直接父级和影响其布局边界的祖先，记录 `padding.bottom`、安全区扩展、导航指示区高度及其他 bottom offset。
-2. 如果外层容器已经用动态 bottom padding 把整个 `HdsTabs` 区域上移，例如 `Column.padding({ bottom: windowBottomPadding })`，则 `barBottomMargin` 使用 `0`，避免再次叠加 28vp。用户给出的 `Column { HdsTabs(...) }.padding({ bottom: this.vm.windowModel.windowBottomPadding })` 结构属于这种情况。
-3. 如果影响 `HdsTabs` 布局边界的外层没有底部预留，而产品需要悬浮栏与屏幕底部保持间距，才考虑 `barBottomMargin: 28`；28vp 只是已核验迁移快照中的常见起点，必须经目标设备和窗口矩阵确认。
-4. 如果 bottom padding 只存在于某个 `TabContent` 的滚动内容内部、用途是避免末项被悬浮栏遮挡，它不一定会移动 `HdsTabs` 自身，不能仅凭关键词就把 `barBottomMargin` 清零；必须确认属性所在的组件层级。
-5. 动态安全区变化时选择一个唯一的间距来源：要么由外层 padding 统一承担、`barBottomMargin` 为 0，要么外层不承担并由 `barBottomMargin` 计算，不能两处同时加同一份高度。
+1. 定位 `HdsTabs` 的父级和祖先，追踪 `padding.bottom` 的来源、用途及普通/悬浮分支，区分导航条避让、其他布局间距和滚动内容补偿。
+2. 原 padding 若用于普通 Tab 避让导航条，仅保留在普通分支；悬浮分支由栏底部间距承担避让，页面与滚动视口继续延伸到栏下方。不要把普通分支的外层 padding 无条件施加给悬浮分支。
+3. `barBottomMargin` 显式配置或使用默认值时，都需要检查祖先 padding；不能只在源码出现正数 margin 时才核对，也不能仅因存在祖先 padding 就将 margin 清零。
+4. 如果 bottom padding 只存在于某个 `TabContent` 的滚动内容内部、用途是避免末项被悬浮栏遮挡，保留其独立职责。其他布局用途的外层 padding 按实际作用判断，不机械删除或改写。
+5. 断点、窗口模式和分支切换后，核对普通 Tab 的导航条避让仍保持原行为，悬浮 Tab 下方没有因共用 padding 形成固定空白或重复间距。
 
-外层已经承担底部间距时，HDS 分支应写成：
+若两个分支共用的外层容器原本通过 `windowBottomPadding` 为普通 Tab 避让导航条，可将该容器的属性按实际悬浮分支条件设置：
 
 ```typescript
-Column() {
-  HdsTabs({
-    barPosition: BarPosition.End,
-    index: this.vm.curIndex,
-    controller: this.hdsController
-  }) {
-    this.tabContents(false)
-  }
-  .width('100%')
-  .height('100%')
-  .scrollable(false)
-  .barHeight(56)
-  .barOverlap(true)
-  .barFloatingStyle({
-    barBottomMargin: 0,
-    adaptToHandedness: true,
-    systemMaterialEffect: HdsMaterialGuard.getSystemMaterialParams()
-  })
-}
-.width('100%')
 .padding({
-  bottom: this.vm.windowModel.windowBottomPadding
+  bottom: this.useFloatingTab ? 0 : this.vm.windowModel.windowBottomPadding
 })
 ```
 
-这里的 `0` 不是新的全局默认值，而是因为同一父级 bottom padding 已经拥有底部间距。实施报告要记录最终由哪一层承担间距，并分别在有/无导航指示区、横竖屏、分屏和自由窗口下检查悬浮栏位置与内容末项可点击性。
+`useFloatingTab` 应替换为工程实际决定悬浮布局的条件，不仅是材质开关；这里的 0 只针对普通 Tab 导航条避让用途的外层 padding。实施报告记录用途与分支归属，并在有/无导航指示区、横竖屏、分屏和自由窗口下验证。
 
 ### 滚动 Tab 页尾部避让
+
+先按[共享验证规则](../../shared/validation.md#悬浮-tab-的滚动尾部避让)追踪真实滚动容器。保持页面与滚动视口延伸到悬浮栏下方，补偿放在实际列表内容末尾；不得通过页面外层 bottom padding 缩短内容区。列表位于自定义子组件时继续深入该组件；下方 Scroll 示例仅用于 Scroll 实际负责内容滚动的情形。
 
 `barOverlap(true)` 会让悬浮栏覆盖在 Tab 内容上方。每个包含 `List`、`Scroll`、`WaterFlow`、可滚动 `Grid` 或自定义滚动容器的 Tab 页都必须单独检查：滚动到末尾时，最后一个可见项、按钮和手势热区应能完整移动到悬浮栏上方，不能停在材质胶囊下面。
 
@@ -250,7 +253,7 @@ Column() {
 
 - 对 `List`，优先使用 `contentEndOffset`，或按工程既有写法追加不可交互的尾部占位项；
 - 对 `Scroll + Column` 等容器，在真实内容的最后追加 bottom padding 或尾部 `Blank`；
-- 尾部空间以当前布局坐标中的实际遮挡为准，通常至少覆盖可见 `barHeight + barBottomMargin`，再结合必要的操作间隔；外层已经承担的系统安全区不要重复加入；
+- 尾部空间以当前布局坐标中的实际遮挡为准，通常至少覆盖可见 `barHeight + barBottomMargin`，使用最终实际配置的栏间距，HDS 未设置时默认 0，再结合必要的操作间隔；外层已经承担的系统安全区不要重复加入；
 - 有动态隐藏能力时，可按最大可见悬浮栏高度保留稳定滚动范围，或让尾部空间与栏高同步变化，但必须验证动画过程中没有跳动和不可点击区；
 - 无滚动能力的静态 Tab 页不机械增加尾部空白；所有 Tab 页逐页检查，不能只验证默认选中的第一页。
 

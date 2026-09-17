@@ -91,10 +91,16 @@ function parseScalar(content, key) {
 function parseApiLevel(value) {
   if (value === null || value === undefined) return null
   const text = String(value).trim()
+  const dotted = text.match(/^(\d+)\.(\d+)\.(\d+)(?:\((\d+)\))?$/)
+  if (dotted) {
+    const major = Number(dotted[1])
+    // API 26 起采用点分 API 版本；旧系统版本不能直接取首段作为 API。
+    if (major >= 26) return dotted[4] === undefined ? major : null
+    return dotted[4] === undefined ? null : Number(dotted[4])
+  }
   const parenthesized = text.match(/\((\d+)\)\s*$/)
   if (parenthesized) return Number(parenthesized[1])
   if (/^\d+$/.test(text)) return Number(text)
-  if (/^\d+\.\d+\.\d+$/.test(text)) return null
   const apiToken = text.match(/(?:api\s*)?(\d+)$/i)
   return apiToken ? Number(apiToken[1]) : null
 }
@@ -387,6 +393,10 @@ const SIGNALS = [
   { id: "barBackgroundConflict", regex: /\b(?:barBackgroundColor|barBackgroundBlurStyle)\s*\(/ },
   { id: "barHeight", regex: /\bbarHeight\s*\(/ },
   { id: "barBottomMarginPositive", regex: /\bbarBottomMargin\s*:\s*(?:[1-9]\d*(?:\.\d+)?|0\.\d*[1-9]\d*)\b/ },
+  { id: "windowLayoutFullScreenCall", regex: /\bsetWindowLayoutFullScreen\s*\(/ },
+  { id: "windowLayoutFullScreenTrue", regex: /\bsetWindowLayoutFullScreen\s*\(\s*true\s*[,)]/ },
+  { id: "windowLayoutFullScreenFalse", regex: /\bsetWindowLayoutFullScreen\s*\(\s*false\s*[,)]/ },
+  { id: "expandSystemBottom", regex: /\bexpandSafeArea\s*\(\s*\[\s*SafeAreaType\.SYSTEM\s*\]\s*,\s*\[\s*SafeAreaEdge\.BOTTOM\s*\]\s*\)/ },
   { id: "layoutBottomPadding", regex: /\bpadding\s*\(\s*\{[\s\S]{0,300}?\bbottom\s*:/ },
   { id: "scrollableContent", regex: /\b(?:List|Scroll|WaterFlow|Grid)\s*\(/ },
   { id: "contentEndOffset", regex: /\bcontentEndOffset\s*\(/ },
@@ -586,7 +596,7 @@ export function evaluateCompatibility(inspection, profile) {
         upgradeCompileApi: route.minApi,
         upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
         sdkStatus: sdkRoute?.status ?? "not_checked",
-        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path`
+        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path${route.minApi === 26 || requiredTargetApi === 26 ? '. When writing API 26 to build-profile.json5, use the string "26.0.0" without a parenthesized suffix; preserve the existing compatibleSdkVersion value and format' : ''}`
       })
     }
   }
@@ -754,16 +764,6 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       [...s.hdsTabs.evidence, ...s.barHeight.evidence],
       "Review the visible bar height; the migration snapshots use a 56vp baseline and one switches between 56 and 0 when hidden"
     ))
-    const mayStackBottomSpacing = s.hdsTabs.detected && s.barBottomMarginPositive.detected && s.layoutBottomPadding.detected
-    checks.push(check(
-      "floating-tabs-bottom-spacing",
-      "Floating tabs bottom spacing ownership",
-      mayStackBottomSpacing ? "warn" : "not_applicable",
-      [...s.barBottomMarginPositive.evidence, ...s.layoutBottomPadding.evidence],
-      mayStackBottomSpacing
-        ? "Positive barBottomMargin and bottom padding were both detected. Confirm component ancestry; if the parent/ancestor padding already moves the whole HdsTabs area, set barBottomMargin to 0. Content-only TabContent padding may serve a separate anti-occlusion purpose"
-        : "No obvious duplicate positive barBottomMargin and bottom padding were detected"
-    ))
     checks.push(check(
       "mini-bar-contract",
       "MiniBar contract",
@@ -866,11 +866,13 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     checks.push(check(
       "version-guard",
       "API 26 runtime version guard",
-      !needsVersionGuard ? "not_applicable" : s.sdkApiVersion26Guard.detected ? "pass" : "fail",
-      s.sdkApiVersion26Guard.evidence,
+      !needsVersionGuard ? "not_applicable" : "warn",
+      [...new Set([...s.sdkApiVersion26Guard.evidence, ...s.sdkApiVersion.evidence])],
       !needsVersionGuard
         ? "compatibleSdkVersion is API 26 or later"
-        : "Guard API 26 calls and configuration with deviceInfo.sdkApiVersion >= 26; use a component-tree branch for component, layout, or navigation changes. Static detection does not prove every new call is protected"
+        : s.sdkApiVersion26Guard.detected
+          ? "A literal API 26 version-check candidate was detected, not verified. Review its execution order and call chain to confirm that every API 26 call, enum and configuration is protected; an unrelated comparison does not prove coverage"
+          : "Static scanning could not confirm API 26 protection. Review constant values, equivalent comparisons, Guard wrappers and their call chains; do not rewrite equivalent source code merely to match a literal pattern. Confirm all API 26 calls, enums and configuration remain protected on lower versions"
     ))
     checks.push(check(
       "capability-guard",
@@ -1076,18 +1078,40 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     : route === "arkui"
       ? s.nativeTabsFloatingStyle.detected && s.barOverlapTrue.detected
       : false
+  const hasFloatingStyle = route === "hds"
+    ? s.hdsTabs.detected && s.barFloatingStyle.detected
+    : route === "arkui" && s.nativeTabsFloatingStyle.detected
+  const needsPaddingReview = hasFloatingStyle && s.layoutBottomPadding.detected
+  checks.push(check(
+    "floating-tabs-window-immersion",
+    "Floating Tabs window immersion and safe-area ancestry",
+    hasFloatingStyle ? "warn" : "not_applicable",
+    [s.windowLayoutFullScreenCall, s.windowLayoutFullScreenTrue, s.windowLayoutFullScreenFalse, s.expandSystemBottom].flatMap((signal) => signal?.evidence ?? []),
+    !hasFloatingStyle
+      ? "No floating Tabs detected"
+      : "Confirm the target window's effective setWindowLayoutFullScreen state through initialization, wrappers, parameters, conditions and later disabling calls; source candidates do not prove execution. HDS default barBottomMargin is 0; ArkUI default is 28vp. For integration, explicitly use 28vp when window immersion is enabled; otherwise use 0vp and expandSafeArea SYSTEM/BOTTOM on every first-level Tab page, actual scroll container and all its ancestors. Do not enable global window immersion automatically. Even a detected expansion cannot prove ancestor coverage; verify every page and preserve normal/standalone branches and top avoidance"
+  ))
+  checks.push(check(
+    "floating-tabs-bottom-spacing",
+    "Floating tabs bottom spacing ownership",
+    needsPaddingReview ? "warn" : "not_applicable",
+    [...s.barFloatingStyle.evidence, ...s.nativeTabsFloatingStyle.evidence, ...s.layoutBottomPadding.evidence],
+    needsPaddingReview
+      ? "Floating Tabs and bottom padding were detected with explicit or default bar spacing. Review padding purpose, component ancestry and branch ownership. Keep normal-Tab navigation-bar avoidance padding only in the normal branch; floating content should extend behind the bar. Preserve padding for other layout purposes and scrolling-tail clearance. Static coexistence does not prove a defect and must not trigger automatic margin zeroing or padding removal"
+      : "No floating-Tab and bottom-padding coexistence candidate was detected"
+  ))
   const hasScrollableTabRisk = hasFloatingTabs && s.scrollableContent.detected
   const tailClearanceEvidence = [...s.contentEndOffset.evidence, ...s.scrollTailSpacer.evidence]
   checks.push(check(
     "scrollable-tab-tail-clearance",
     "Scrollable Tab tail clearance",
-    !hasScrollableTabRisk ? "not_applicable" : tailClearanceEvidence.length ? "pass" : "warn",
+    !hasScrollableTabRisk ? "not_applicable" : "warn",
     [...s.scrollableContent.evidence, ...tailClearanceEvidence, ...s.layoutBottomPadding.evidence],
     !hasScrollableTabRisk
       ? "No overlapping HDS or ArkUI floating Tabs with scrollable content were detected"
       : tailClearanceEvidence.length
-        ? "A tail-clearance candidate was detected. Manually verify every scrollable Tab: the last actionable item and its interaction area must scroll above the floating bar, and non-floating source paths must keep their original scroll range"
-        : "Scrollable content was detected under overlapping floating Tabs. Add contentEndOffset, a spacer, content bottom padding, or an equivalent tail clearance after the last real item in every affected Tab; calculate it from actual occlusion and do not duplicate safe-area spacing"
+        ? "A tail-clearance candidate was detected, not verified. Trace each Tab into its actual scrolling child, confirm existing spacing and actual occlusion, and verify the last actionable item can scroll above the bar. Keep the viewport extending behind the bar; page-level bottom padding is not tail-clearance evidence"
+        : "Trace each Tab into its actual scrolling container, including nested children and scrollable/window conditions. Add tail clearance inside the scrolling content, not page-level bottom padding that shrinks the viewport and leaves fixed blank space behind the bar. Preserve existing spacing and apply compensation only where the host has actual floating-bar occlusion"
   ))
 
   checks.push(check("fallback-style", "Fallback style", s.fallbackStyle.detected ? "pass" : "fail", s.fallbackStyle.evidence, "Keep a standard background or border fallback"))

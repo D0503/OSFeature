@@ -2,6 +2,8 @@
 
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
+import { cp, mkdtemp, readFile, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { evaluateCompatibility, inspectProject, verifyInspection } from "../scripts/lib/project-tools.mjs"
@@ -36,6 +38,17 @@ const inspection23 = await inspectProject(fixture23, { sdkPath: sdk23 })
 equal(inspection23.model, "stage")
 equal(inspection23.api.compatible, 23)
 equal(inspection23.api.target, 23)
+
+const versionProject = await mkdtemp(resolve(tmpdir(), "os-feature-version-"))
+await cp(fixture26, versionProject, { recursive: true })
+const versionProfilePath = resolve(versionProject, "build-profile.json5")
+const versionProfile = await readFile(versionProfilePath, "utf8")
+for (const [configured, expected] of [["26.0.0", 26], ["26.0.1", 26], ["6.1.0(23)", 23], ["6.1.0", "unknown"], ["26.0.0(26)", "unknown"]]) {
+  await writeFile(versionProfilePath, versionProfile.replace('targetSdkVersion: "26.0.0"', `targetSdkVersion: "${configured}"`))
+  const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+  equal(inspected.api.target, expected)
+  if (configured === "26.0.0") ok(evaluateCompatibility(inspected, profile).availableRoutes.includes("arkui"))
+}
 equal(inspection23.api.compile, 23)
 equal(inspection23.localSdk.status, "valid")
 equal(inspection23.localSdk.apiVersion, 23)
@@ -59,9 +72,10 @@ equal(compatibility23.availableRoutes.join(","), "hds")
 equal(compatibility23.applicationLevel.eligible, false)
 equal(compatibility23.upgradeOptions.map((option) => option.route).join(","), "arkui")
 equal(compatibility23.upgradeOptions[0].upgradeTargetApi, 26)
+ok(compatibility23.upgradeOptions[0].note.includes('"26.0.0" without a parenthesized suffix'))
 equal(compatibility23.decisionRequired, true)
 const verification23 = verifyInspection(inspection23, compatibility23, "auto")
-equal(verification23.status, "passed")
+equal(verification23.status, "warnings")
 equal(verification23.counts.fail, 0)
 
 const missingFloatingLayout = structuredClone(inspection23)
@@ -85,9 +99,12 @@ const warnedBottomSpacing = verifyInspection(duplicateBottomSpacing, compatibili
 equal(warnedBottomSpacing.status, "warnings")
 ok(warnedBottomSpacing.checks.some((item) => item.id === "floating-tabs-bottom-spacing" && item.status === "warn"))
 duplicateBottomSpacing.signals.barBottomMarginPositive = { detected: false, evidence: [] }
-const normalizedBottomSpacing = verifyInspection(duplicateBottomSpacing, compatibility23, "hds")
-equal(normalizedBottomSpacing.status, "passed")
-ok(normalizedBottomSpacing.checks.some((item) => item.id === "floating-tabs-bottom-spacing" && item.status === "not_applicable"))
+const defaultBottomSpacing = verifyInspection(duplicateBottomSpacing, compatibility23, "hds")
+equal(defaultBottomSpacing.status, "warnings")
+ok(defaultBottomSpacing.checks.some((item) => item.id === "floating-tabs-bottom-spacing" && item.status === "warn"))
+const ordinaryTabsPadding = structuredClone(duplicateBottomSpacing)
+ordinaryTabsPadding.signals.barFloatingStyle = { detected: false, evidence: [] }
+ok(verifyInspection(ordinaryTabsPadding, compatibility23, "hds").checks.some((item) => item.id === "floating-tabs-bottom-spacing" && item.status === "not_applicable"))
 
 const missingScrollableTailClearance = structuredClone(inspection23)
 missingScrollableTailClearance.signals.scrollableContent = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:10"] }
@@ -97,8 +114,8 @@ equal(warnedScrollableTailClearance.status, "warnings")
 ok(warnedScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn"))
 missingScrollableTailClearance.signals.contentEndOffset = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:30"] }
 const detectedScrollableTailClearance = verifyInspection(missingScrollableTailClearance, compatibility23, "hds")
-equal(detectedScrollableTailClearance.status, "passed")
-ok(detectedScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "pass"))
+equal(detectedScrollableTailClearance.status, "warnings")
+ok(detectedScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn"))
 
 const missingMiniBarBuilder = structuredClone(inspection23)
 missingMiniBarBuilder.signals.miniBar = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
@@ -117,7 +134,7 @@ equal(failedMiniBarLayoutGuard.status, "failed")
 ok(failedMiniBarLayoutGuard.checks.some((item) => item.id === "mini-bar-layout-mode-version-guard" && item.status === "fail"))
 unguardedMiniBarLayout.signals.sdkApiVersion24Guard = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
 const guardedMiniBarLayout = verifyInspection(unguardedMiniBarLayout, compatibility23, "hds")
-equal(guardedMiniBarLayout.status, "passed")
+equal(guardedMiniBarLayout.status, "warnings")
 ok(guardedMiniBarLayout.checks.some((item) => item.id === "mini-bar-layout-mode-version-guard" && item.status === "pass"))
 
 const inspection26 = await inspectProject(fixture26, { sdkPath: sdk26 })
@@ -150,7 +167,7 @@ equal(compatibility26.applicationLevel.eligible, true)
 equal(compatibility26.upgradeOptions.length, 0)
 equal(compatibility26.decisionRequired, true)
 const verification26 = verifyInspection(inspection26, compatibility26, "auto")
-equal(verification26.status, "passed")
+equal(verification26.status, "warnings")
 equal(verification26.counts.fail, 0)
 ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass"))
 ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.message.includes("default THIN")))
@@ -162,7 +179,7 @@ const defaultNativeTabs = structuredClone(inspection26)
 defaultNativeTabs.modules[0].applicationMaterialState = null
 defaultNativeTabs.modules[0].effectiveApplicationMaterialState = "default"
 const passedDefaultNativeTabs = verifyInspection(defaultNativeTabs, compatibility26, "arkui")
-equal(passedDefaultNativeTabs.status, "passed")
+equal(passedDefaultNativeTabs.status, "warnings")
 ok(passedDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass" && item.message.includes("default THIN")))
 
 const explicitDefaultNativeTabs = structuredClone(defaultNativeTabs)
@@ -171,7 +188,7 @@ explicitDefaultNativeTabs.signals.systemMaterial = { detected: true, count: 1, e
 explicitDefaultNativeTabs.signals.nativeTabsFloatingMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:20"] }
 explicitDefaultNativeTabs.signals.materialSupported = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
 const passedExplicitDefaultNativeTabs = verifyInspection(explicitDefaultNativeTabs, compatibility26, "arkui")
-equal(passedExplicitDefaultNativeTabs.status, "passed")
+equal(passedExplicitDefaultNativeTabs.status, "warnings")
 ok(passedExplicitDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.message.includes("Explicit")))
 
 const disabledNativeTabs = structuredClone(explicitDefaultNativeTabs)
@@ -209,8 +226,14 @@ equal(warnedArkuiScrollableTailClearance.status, "warnings")
 ok(warnedArkuiScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn"))
 missingArkuiScrollableTailClearance.signals.scrollTailSpacer = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:30"] }
 const detectedArkuiScrollableTailClearance = verifyInspection(missingArkuiScrollableTailClearance, compatibility26, "arkui")
-equal(detectedArkuiScrollableTailClearance.status, "passed")
-ok(detectedArkuiScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "pass"))
+equal(detectedArkuiScrollableTailClearance.status, "warnings")
+ok(detectedArkuiScrollableTailClearance.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn"))
+
+const pagePaddingOnly = structuredClone(missingArkuiScrollableTailClearance)
+pagePaddingOnly.signals.scrollTailSpacer = { detected: false, evidence: [] }
+pagePaddingOnly.signals.layoutBottomPadding = { detected: true, evidence: ["entry/src/main/ets/pages/Home.ets:20"] }
+const pagePaddingResult = verifyInspection(pagePaddingOnly, compatibility26, "arkui")
+ok(pagePaddingResult.checks.some((item) => item.id === "scrollable-tab-tail-clearance" && item.status === "warn" && item.message.includes("not page-level bottom padding")))
 
 const hybridInspection26 = structuredClone(inspection26)
 hybridInspection26.componentSystem.hds = true
@@ -232,7 +255,7 @@ equal(hybridCompatibility26.recommendedRoute, "arkui")
 const hybridVerification26 = verifyInspection(hybridInspection26, hybridCompatibility26, "auto")
 equal(hybridVerification26.route, "composed")
 equal(hybridVerification26.routes.join(","), "hds,arkui")
-equal(hybridVerification26.status, "passed")
+equal(hybridVerification26.status, "warnings")
 
 const hdsOnlyInspection26 = structuredClone(hybridInspection26)
 hdsOnlyInspection26.componentSystem.arkuiMaterial = false
@@ -413,11 +436,14 @@ const lowCompatibleArkui = structuredClone(inspection26)
 lowCompatibleArkui.api.compatible = 22
 const lowCompatibleArkuiCompatibility = evaluateCompatibility(lowCompatibleArkui, profile)
 lowCompatibleArkui.signals.sdkApiVersion26Guard = { detected: false, evidence: [] }
-const failedArkuiCallGuard = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
-ok(failedArkuiCallGuard.checks.some((item) => item.id === "version-guard" && item.status === "fail"))
+const unconfirmedArkuiCallGuard = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
+ok(unconfirmedArkuiCallGuard.checks.some((item) => item.id === "version-guard" && item.status === "warn"))
+lowCompatibleArkui.signals.sdkApiVersion = { detected: true, evidence: ["commons/ImmersiveMaterialGuard.ets:40"] }
+const constantArkuiCallGuard = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
+ok(constantArkuiCallGuard.checks.some((item) => item.id === "version-guard" && item.status === "warn" && item.evidence.includes("commons/ImmersiveMaterialGuard.ets:40")))
 lowCompatibleArkui.signals.sdkApiVersion26Guard = { detected: true, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
 const guardedArkuiCalls = verifyInspection(lowCompatibleArkui, lowCompatibleArkuiCompatibility, "arkui")
-ok(guardedArkuiCalls.checks.some((item) => item.id === "version-guard" && item.status === "pass"))
+ok(guardedArkuiCalls.checks.some((item) => item.id === "version-guard" && item.status === "warn"))
 
 const missingSdkInspection = await inspectProject(fixture23, { sdkPath: resolve(evalDir, "fixtures", "missing-sdk") })
 equal(missingSdkInspection.localSdk.status, "invalid")
@@ -428,14 +454,64 @@ equal(autoSdkInspection.localSdk.status, "valid")
 equal(autoSdkInspection.localSdk.source, "local.properties:sdk.dir")
 
 const cliInspection = run("inspect-project.mjs", ["--project", fixture23, "--sdk", sdk23])
+await writeFile(versionProfilePath, versionProfile)
+const paddingSourcePath = resolve(versionProject, "entry", "src", "main", "ets", "pages", "Index.ets")
+for (const route of ["hds", "arkui"]) {
+  const tabs = route === "hds" ? "HdsTabs" : "Tabs"
+  for (const [scenario, source, expected] of [
+    ["explicit-margin", `Column() { ${tabs}() {}.barOverlap(true).barFloatingStyle({ barBottomMargin: 28 }) }.padding({ bottom: windowBottomPadding })`, "warn"],
+    ["default-margin", `Column() { ${tabs}() {}.barOverlap(true).barFloatingStyle({ adaptToHandedness: true }) }.padding({ bottom: windowBottomPadding })`, "warn"],
+    ["normal-branch-only", `Column() { if (useFloatingTab) { ${tabs}() {}.barOverlap(true).barFloatingStyle({}) } else { Tabs() {} } }.padding({ bottom: useFloatingTab ? 0 : windowBottomPadding })`, "warn"],
+    ["scroll-content", `${tabs}() { TabContent() { Scroll() { Column() { Text('content') }.padding({ bottom: tailClearance }) } } }.barOverlap(true).barFloatingStyle({})`, "warn"],
+    ["other-layout", `Column() { ${tabs}() {}.barOverlap(true).barFloatingStyle({}) }.padding({ bottom: businessPanelSpace })`, "warn"],
+    ["ordinary-tabs", "Tabs() {}.padding({ bottom: windowBottomPadding })", "not_applicable"],
+    ["floating-without-padding", `${tabs}() {}.barOverlap(true).barFloatingStyle({})`, "not_applicable"]
+  ]) {
+    await writeFile(paddingSourcePath, source)
+    const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+    const result = verifyInspection(inspected, evaluateCompatibility(inspected, profile), route)
+    const spacing = result.checks.find((item) => item.id === "floating-tabs-bottom-spacing")
+    equal(spacing.status, expected)
+    equal(await readFile(paddingSourcePath, "utf8"), source)
+    if (expected === "warn") ok(spacing.message.includes("Static coexistence does not prove a defect"))
+  }
+}
 equal(cliInspection.api.compatible, 23)
+const bottomExpansion = ".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])"
+for (const route of ["hds", "arkui"]) {
+  const tabs = route === "hds" ? "HdsTabs" : "Tabs"
+  for (const [windowSource, trueCount, falseCount, callCount] of [
+    ["await mainWindow.setWindowLayoutFullScreen(true);", 1, 0, 1],
+    ["", 0, 0, 0],
+    ["// windowClass.setWindowLayoutFullScreen(true);\n/* win.setWindowLayoutFullScreen(false); */", 0, 0, 0],
+    ["function setFull(isFull: boolean) { win.setWindowLayoutFullScreen(isFull); }", 0, 0, 1],
+    ["if (condition) { otherWindow.setWindowLayoutFullScreen(true); }", 1, 0, 1],
+    ["win.setWindowLayoutFullScreen(true); win.setWindowLayoutFullScreen(false);", 1, 1, 2]
+  ]) {
+    for (const expandAncestors of [false, true]) {
+      const source = `${windowSource}\nColumn() { ${tabs}() { TabContent() { Stack() { Scroll() { Text('content') }${bottomExpansion} }${expandAncestors ? bottomExpansion : ""} }${expandAncestors ? bottomExpansion : ""} }.barOverlap(true).barFloatingStyle({ barBottomMargin: 0 })${expandAncestors ? bottomExpansion : ""} }${expandAncestors ? bottomExpansion : ""}`
+      await writeFile(paddingSourcePath, source)
+      const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+      equal(inspected.signals.windowLayoutFullScreenTrue.count, trueCount)
+      equal(inspected.signals.windowLayoutFullScreenFalse.count, falseCount)
+      equal(inspected.signals.windowLayoutFullScreenCall.count, callCount)
+      equal(inspected.signals.expandSystemBottom.count, expandAncestors ? 5 : 1)
+      const result = verifyInspection(inspected, evaluateCompatibility(inspected, profile), route)
+      equal(result.checks.find((v) => v.id === "floating-tabs-window-immersion").status, "warn")
+      equal(await readFile(paddingSourcePath, "utf8"), source)
+    }
+  }
+  await writeFile(paddingSourcePath, `Tabs() { TabContent() { Scroll() {}${bottomExpansion} } }`)
+  const ordinary = await inspectProject(versionProject, { sdkPath: sdk26 })
+  equal(verifyInspection(ordinary, evaluateCompatibility(ordinary, profile), route).checks.find((v) => v.id === "floating-tabs-window-immersion").status, "not_applicable")
+}
 equal(cliInspection.localSdk.status, "valid")
 const cliCompatibility = run("check-compatibility.mjs", ["--project", fixture26, "--feature", "immersive-light", "--sdk", sdk26])
 equal(cliCompatibility.recommendedRoute, "arkui")
 equal(cliCompatibility.selectedRoutes.join(","), "arkui")
 equal(cliCompatibility.sdk.routes.arkui.status, "supported")
 const cliVerification = run("verify-integration.mjs", ["--project", fixture26, "--feature", "immersive-light", "--route", "auto", "--sdk", sdk26])
-equal(cliVerification.status, "passed")
+equal(cliVerification.status, "warnings")
 const unknownFeature = run("check-compatibility.mjs", ["--project", fixture26, "--feature", "touch-to-share", "--sdk", sdk26], 2)
 equal(unknownFeature.status, "error")
 

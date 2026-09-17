@@ -28,6 +28,8 @@
 
 原生 `Tabs` 的悬浮材质属于 ArkUI API 26 路线，不是 `HdsTabs`：
 
+先按[窗口沉浸状态规则](../../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口。ArkUI Tabs 的 `barBottomMargin` 默认 28vp；接入时已开启窗口沉浸式显式设置 28vp，未开启时显式设置 0vp，并为所有一级 Tab 页及滚动容器的完整父组件链配置底部 `expandSafeArea`。不自动开启全局窗口沉浸式，状态不明确时先核对调用链。以下 `this.floatingBarBottomMargin` 表示工程按已确认状态设置的值。
+
 ```typescript
 Tabs({ barPosition: BarPosition.End }) {
   // TabContent
@@ -36,6 +38,7 @@ Tabs({ barPosition: BarPosition.End }) {
 .barOverlap(true)
 .barWidth(328)
 .barFloatingStyle({
+  barBottomMargin: this.floatingBarBottomMargin,
   adaptToHandedness: true
 })
 ```
@@ -52,6 +55,7 @@ Tabs({ barPosition: BarPosition.End }) {
 
 ```typescript
 .barFloatingStyle({
+  barBottomMargin: this.floatingBarBottomMargin,
   systemMaterial: new uiMaterial.ImmersiveMaterial({
     style: uiMaterial.ImmersiveStyle.THIN
   })
@@ -80,14 +84,20 @@ Tabs({ barPosition: BarPosition.End }) {
 - 这里约束的是悬浮 TabBar 背板。`Tabs` 内容容器可以保持 `.width('100%')`，不要将整页 `TabContent` 一并缩窄。定位时复用工程已有水平边距，避免重复计入外层缩进，并检查窄窗口下的可用空间。
 - 该调整应用于悬浮分支；普通 Tabs 回退分支保留接入前的宽度和边距。
 
+### 普通与悬浮分支的外层 padding
+
+按[共享外层避让规则](../../../shared/validation.md#普通与悬浮-tab-的外层避让)追踪 padding 的用途。普通 Tab 用于避让导航条的 `windowBottomPadding` 只保留在普通分支；悬浮分支由栏底部间距负责，不能继续缩小整个 Tabs 的内容区域。两个分支共用父容器时，对这项 padding 使用工程实际悬浮布局条件，例如 `bottom: this.useFloatingTab ? 0 : this.vm.windowModel.windowBottomPadding`。其他用途的 padding 逐项判断；显式与默认 `barBottomMargin` 均需核对，不能因祖先存在 padding 就将 margin 清零。
+
 ### 可滚动 Tab 页尾部避让
+
+先按[共享验证规则](../../../shared/validation.md#悬浮-tab-的滚动尾部避让)追踪真实滚动容器。页面与滚动视口应延伸到悬浮栏下方；补偿放在实际列表内容末尾，不能在页面外层增加 bottom padding 来缩短内容区。子组件内的列表独立滚动时，进入该子组件处理；下方 `Scroll + Column` 示例仅适用于 Scroll 确实负责内容滚动的情形。
 
 `barOverlap(true)` 会让原生 ArkUI 悬浮 TabBar 覆盖在 Tab 内容上方。每个 Tab 页只要包含 `List`、`Scroll`、`WaterFlow`、可滚动 `Grid` 或自定义滚动容器，就要在最后一个真实滚动项之后增加尾部空间，使最后一个可操作项及其点击、拖拽或手势热区能够完整滚到悬浮栏上方。
 
 - `List` 可使用 `contentEndOffset`，或在最后追加不可交互的占位项；
 - `Scroll + Column` 可在真实内容末尾增加 `Blank`、bottom padding 或等价空间；
 - `WaterFlow`、`Grid` 和自定义滚动容器按各自布局方式增加末尾占位或内容 padding；
-- 尾部高度按当前窗口中的实际遮挡计算，通常包含可见栏高、栏底部间距和必要操作间隔，但不能重复加入外层已经承担的系统安全区；
+- 遮挡补偿默认使用 `barHeight + barBottomMargin`，使用最终实际配置的栏间距，ArkUI Tabs 未设置时默认 28vp，再结合必要的操作间隔；外层已经承担的系统安全区不要重复加入；
 - 有动态显隐时按最大可见遮挡保留稳定空间，或让尾部空间与栏高同步，并验证动画中没有跳动和不可点击区；
 - 无滚动内容的页面不机械增加空白，所有 Tab 页必须逐页检查，不能只处理默认页。
 

@@ -7,6 +7,7 @@
 - 本机 SDK、compile API、target API 均达到 26；target 低于 26 时路线不可用而不是仅禁用应用级 metadata；
 - `compatibleSdkVersion < 26` 时，验证 `sdkApiVersion >= 26` 的支持与低版本路径；仅材质变化时检查调用和配置保护，组件、布局或导航结构变化时检查组件树分支；
 - `isImmersiveMaterialSupported()` 返回 true/false；
+- 冷启动时追踪能力查询及其封装方法的调用链：模块加载、静态/成员字段初始化及启动加载页中均不调用；以工程启动完成且加载页退出的信号触发查询，不以固定延时判断就绪。查询前保留原样式和“未查询”状态，就绪后结果能更新目标组件；静态扫描发现接口名称不能证明调用时机正确，需结合启动流程与运行日志核对；
 - 高、中、低算力设备及系统“强、均衡、弱”档位；
 - 深色和浅色模式；
 - 应用级 `default`、`enable`、`disable`，包括 target 升级但不配置 metadata 的默认行为；
@@ -44,6 +45,8 @@
 | 低算力材质样式与参数不同 | `style`、`materialColor`、`colorInvert`、`lightEffect` | 低算力不区分 `style`，`materialColor` 作为背景色；反色与流光按设备能力降级 |
 
 ## ArkUI 验收
+
+- ArkUI Tabs 默认栏底部间距为 28vp；实际接入已开启窗口沉浸式时显式 28vp，未开启时显式 0vp，并逐个确认一级页、滚动容器及全部父组件的底部扩展。核对调用链与实际生效，验证顶部避让、底部内容延伸和普通/悬浮分支切换；
 
 - 悬浮 TabBar 默认 `.barWidth(328)`；验证 4 个和 5 个 Tab 的边界：数量大于 4 且工程已有一多断点时，`sm` 为 328vp，其他已识别断点为 360vp；无断点或断点尚未确定时为 328vp。页签数量和断点变化后栏宽同步更新，左右留白一致，且没有重复缩进或误缩窄 TabContent；
 - target/compile/本机 SDK 路线门禁均达到 API 26；compatible 低于 26 时按改动范围保护调用或组件树，确保新增 API 不在低版本求值；compatible 达到 26 时无需 API 26 版本分支；

@@ -20,6 +20,8 @@
 
 任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 `minApi` 的 SDK，再升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`），`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。
 
+门禁结果中的 API 数值表示版本等级，不是工程配置的序列化格式。写入 API 26 时使用字符串 `"26.0.0"`，无括号后缀；API 26 起的点分版本按首段归一化用于比较。旧系统版本如 `"6.1.0(23)"` 按括号中的 API 解析，不能把 `"6.1.0"` 的首段当作 API 6。最低兼容版本未调整时保留其原值和格式。
+
 - 本机 SDK/compile 门槛按 `routes[].minApi` 判定；运行设备范围由 compatible/target 上下文决定，但 `routes[].minTargetApi` 是独立硬门槛，不能被较高的 compatible API 或应用级条件替代；
 - `targetSdkVersion` 已达门槛而 `compatibleSdkVersion` 未达时，路线可用，但低版本设备必须使用能力包指定且在低版本可调用的 API 做运行时保护，并保留接入前的组件树、响应式布局和交互；仅增加材质的组件还应保留普通背景、边框等视觉样式；
 - 升级 `targetSdkVersion` 可能伴随系统行为差异，方案中应说明回归验证范围；

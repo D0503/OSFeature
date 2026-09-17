@@ -19,6 +19,8 @@
 
 ## 本机 SDK 举证
 
+工程配置中的 API 26 版本写为字符串 `"26.0.0"`，不添加括号后缀。升级到 API 26 时，`targetSdkVersion` 以及工程显式配置的 `compileSdkVersion` 使用此写法；仅在决定提高最低兼容版本到 API 26 时才将 `compatibleSdkVersion` 设置为 `"26.0.0"`，否则保留原值。工具内部将点分版本归一化为数值 API 26 用于门禁比较，不将归一化数值直接作为生成配置的格式。
+
 选路前必须验证实际参与构建的本机 SDK，不以工程 target API 代替：
 
 - HDS 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 23；
