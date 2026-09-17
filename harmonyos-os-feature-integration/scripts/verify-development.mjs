@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { evaluateCompatibility, inspectProject, loadFeature, verifyInspection } from "./lib/project-tools.mjs"
 import { runHvigorBuild } from "./lib/hvigor-build.mjs"
 import { navigate, runDeveco, validateNavigation } from "./lib/development-device.mjs"
-import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, saveReport, validateChanges } from "./lib/development-report.mjs"
+import { cacheDirectory, deriveVerdict, exists, fileHash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
@@ -69,7 +69,7 @@ export async function verifyDevelopment(request, options = {}) {
     const run = {
       runId, project: resolve(request.project), feature: request.feature, goal: request.goal, route: request.route,
       product: request.product ?? "default", buildMode: request.buildMode ?? "debug", module: request.module ?? null,
-      changes: request.changes, createdAt: new Date().toISOString(), device: request.device ?? null, evidence: [],
+      changes: structuredClone(request.changes), createdAt: new Date().toISOString(), device: request.device ?? null, evidence: [],
       checks: Object.fromEntries(["static", "sdk", "build", "install", "navigation", "runtime", "visual"].map((key) => [key, check("not_run", "尚未执行")]))
     }
     const record = async (type, content, extension = "log") => {
@@ -92,6 +92,7 @@ export async function verifyDevelopment(request, options = {}) {
     await record("static", JSON.stringify({ inspection, compatibility, staticResult }, null, 2), "json")
     run.checks.sdk = compatibility.availableRoutes?.includes(run.route) && inspection.localSdk.status === "valid" ? check("passed", `本机 SDK API ${run.after.sdk}，${run.route} 路线可用`) : check("failed", "本机 SDK 或工程版本不满足所选路线，需先完成版本门禁")
     run.checks.static = check(staticResult.counts.fail ? "failed" : staticResult.counts.warn ? "inconclusive" : "passed", staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status)).map((v) => `${v.id}: ${v.message}`).join("；") || "静态检查通过")
+    run.staticFindings = staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status))
     run.checks.build = check("not_run", "未请求构建")
     if (run.checks.sdk.status === "failed" || run.checks.static.status === "failed") run.checks.build.summary = "SDK 或静态门禁失败，未构建"
     else if (request.executeBuild) {
@@ -100,6 +101,7 @@ export async function verifyDevelopment(request, options = {}) {
       catch (error) { result = { exitCode: null, stderr: error.message } }
       await record("build_log", `${result.stdout ?? ""}\n${result.stderr ?? ""}`)
       run.checks.build = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "ohpm、Hvigor 同步与打包通过" : `构建失败：${result.failedStage ?? "工具或构建阶段"}；${(result.stderr || result.stdout || "无输出").slice(-1800)}`)
+      if (result.exitCode !== 0) run.checks.build.reportSummary = `构建失败，停止于${{ "ohpm install": "依赖安装", "hvigor sync": "工程同步", "hvigor build": "HAP 打包" }[result.failedStage] ?? "构建工具执行阶段"}；未继续安装，修复后需重验`
     }
     const launchArgs = ["run", "--skip-build", "--product", run.product, "--build-mode", run.buildMode, "--device", request.device ?? ""]
     if (run.module) launchArgs.push("--module", run.module)
@@ -137,8 +139,13 @@ export async function verifyDevelopment(request, options = {}) {
       run.checks.runtime.summary = `未完成目标页验证：${run.checks.navigation.summary}`
       run.checks.visual.summary = `未完成目标页视觉验证：${run.checks.build.status !== "passed" ? run.checks.build.summary : run.checks.install.status !== "passed" ? run.checks.install.summary : run.checks.navigation.summary}`
     }
-    const key = (r) => hash(JSON.stringify([r.feature, r.route, r.goal, r.product, r.buildMode, r.module]))
-    collection.runs = collection.runs.filter((r) => key(r) !== key(run))
+    const previous = collection.runs.find((r) => sameTarget(r, run))
+    if (previous) {
+      for (const key of ["sdk", "compile", "target", "compatible"]) {
+        if (Number.isInteger(previous.changes.before[key])) run.changes.before[key] = previous.changes.before[key]
+      }
+    }
+    collection.runs = collection.runs.filter((r) => !sameTarget(r, run))
     collection.runs.push(run)
     const report = await saveReport(output, directory, collection)
     return { runId, report, status: deriveVerdict(run), evidence: run.evidence }

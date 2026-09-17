@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url"
 import { verifyDevelopment, parseDevelopmentArgs, inspectVerification } from "../scripts/verify-development.mjs"
 import { buildStages, runHvigorBuild } from "../scripts/lib/hvigor-build.mjs"
 import { navigate, validateNavigation } from "../scripts/lib/development-device.mjs"
+import { cacheDirectory, loadCollection, validateChanges } from "../scripts/lib/development-report.mjs"
 
 const root = await mkdtemp(join(tmpdir(), "os-feature-tests-"))
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64")
@@ -75,7 +76,8 @@ for (const scenario of ["sdk", "static", "build", "install", "navigate", "screen
   await assert.rejects(verifyDevelopment({ project: root, output: req.output, resume: result.runId, judgment: { ...judgment, runId: result.runId } }, opts))
 }
 
-const second = await verifyDevelopment({ ...request("success"), goal: "弹窗材质" }, options)
+const popupChanges = { ...structuredClone(changes), component: "Popup", category: "弹窗", effect: "配置弹窗材质" }
+const second = await verifyDevelopment({ ...request("success"), goal: "弹窗材质", changes: popupChanges }, options)
 let content = await readFile(second.report, "utf8")
 assert.ok(content.includes("首页悬浮栏") && content.includes("弹窗材质"))
 const again = await verifyDevelopment({ ...request("success"), captureScreenshot: false }, options)
@@ -83,8 +85,54 @@ await assert.rejects(verifyDevelopment(resume, options), /不存在/)
 content = await readFile(again.report, "utf8")
 assert.equal((content.match(/### 首页悬浮栏/g) ?? []).length, 2)
 assert.equal((await readdir(join(request("success").output, "evidence"))).length, 1, "另一目标仍引用同图")
-await verifyDevelopment({ ...request("success"), goal: "弹窗材质", captureScreenshot: false }, options)
+await verifyDevelopment({ ...request("success"), goal: "弹窗材质", changes: popupChanges, captureScreenshot: false }, options)
 assert.equal((await readdir(join(request("success").output, "evidence"))).length, 0, "清理失去引用的截图")
+
+// A display-name change updates the same item, including a previous failure.
+const renamed = await verifyDevelopment({ ...request("success"), goal: "主页悬浮导航重验", captureScreenshot: false }, options)
+content = await readFile(renamed.report, "utf8")
+assert.ok(!content.includes("首页悬浮栏"))
+assert.ok(content.includes("弹窗材质") && content.includes("主页悬浮导航重验"))
+const stableRequest = { ...request("stable"), changes: { ...structuredClone(changes), id: "main-tabs", before: { ...changes.before, target: 22 } } }
+const failedStable = await verifyDevelopment(stableRequest, { ...options, buildRunner: async () => ({ exitCode: 1, failedStage: "hvigor build", stderr: "RAW_BUILD_ERROR" }) })
+const failedReport = await readFile(failedStable.report, "utf8")
+assert.ok(failedReport.includes("停止于HAP 打包"))
+assert.ok(!failedReport.includes("RAW_BUILD_ERROR"))
+const stable = await verifyDevelopment({ ...stableRequest, goal: "更新后的标题", changes: { ...structuredClone(changes), id: "main-tabs", page: "主入口" } }, options)
+content = await readFile(stable.report, "utf8")
+assert.ok(!content.includes("RAW_BUILD_ERROR") && !content.includes("首页悬浮栏"))
+assert.ok(content.includes("| target API | 22 | 26 |"), "重验保留改造前基线")
+assert.ok(content.includes("已实施配置") && content.includes("| 未确认 | 未确认 |"))
+await assert.rejects(verifyDevelopment({ project: root, output: stableRequest.output, resume: failedStable.runId, judgment: { ...judgment, runId: failedStable.runId } }, options), /不存在/)
+const sibling = await verifyDevelopment({ ...stableRequest, goal: "另一实例", changes: { ...stableRequest.changes, id: "other-tabs" } }, options)
+content = await readFile(sibling.report, "utf8")
+assert.ok(content.includes("更新后的标题") && content.includes("另一实例"), "同页同类的不同实例不能合并")
+assert.throws(() => validateChanges({ ...changes, id: " " }), /稳定标识/)
+
+// Legacy duplicate records collapse without fuzzy matching unrelated components.
+const cachedPath = join(cacheDirectory(request("success").output), "collection.json")
+const cached = JSON.parse(await readFile(cachedPath, "utf8"))
+cached.runs.unshift({ ...cached.runs.at(-1), runId: "stale-run", goal: "过期标题" })
+await writeFile(cachedPath, JSON.stringify(cached))
+const loaded = await loadCollection(request("success").output, root)
+assert.equal(loaded.collection.runs.length, 2)
+assert.ok(!loaded.collection.runs.some((r) => r.runId === "stale-run"))
+
+const readableOptions = { ...options,
+  inspector: async () => ({ ...(await options.inspector()), staticResult: { counts: { fail: 0, warn: 1 }, checks: [{ id: "scrollable-tab-tail-clearance", status: "warn", message: "RAW_ENGLISH_STATIC_DETAIL", evidence: [{ path: "Home.ets", line: 12 }] }] } }),
+  commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ name: "测试手机", serial: "RAW_SERIAL", osVersion: "API 26" }) } : options.commandRunner(args)
+}
+const readable = await verifyDevelopment(request("readable"), readableOptions)
+content = await readFile(readable.report, "utf8")
+assert.ok(content.includes("设备：测试手机；系统：API 26"))
+assert.ok(content.includes("逐页验证真实滚动容器") && content.includes("Home.ets:12"))
+assert.ok(!content.includes("RAW_ENGLISH_STATIC_DETAIL") && !content.includes("RAW_SERIAL"))
+assert.ok(content.includes("等待 AI 实际阅读"), "未判读的截图不能通过")
+assert.equal((content.match(/等待 AI 实际阅读/g) ?? []).length, 1, "不重复输出视觉结论")
+const incomplete = await verifyDevelopment(request("incomplete"), { ...options, inspector: async () => ({ ...(await options.inspector()), inspection: { ...inspection, api: { ...inspection.api, target: null } } }) })
+content = await readFile(incomplete.report, "utf8")
+assert.ok(content.includes("版本信息不完整，无法确认是否升级"))
+assert.ok(!content.includes("SDK/API 变更如上表"))
 await assert.rejects(verifyDevelopment({ ...request("success"), project: join(root, "other") }, options), /其他工程/)
 assert.throws(() => validateNavigation({ ...nav, steps: [{ stepId: "bad", action: "wait", timeoutMs: 1 }] }), /expectPage/)
 assert.throws(() => parseDevelopmentArgs(["--unknown"]), /未知/)
