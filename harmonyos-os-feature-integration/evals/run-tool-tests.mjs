@@ -494,6 +494,25 @@ for (const route of ["hds", "arkui"]) {
 }
 equal(cliInspection.api.compatible, 23)
 const bottomExpansion = ".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])"
+for (const [source, count, expected] of [
+  ["HdsTabs() {}.barHeight('auto')", 1, "warn"],
+  ['HdsTabs() {}.barHeight("auto")', 1, "warn"],
+  ["HdsTabs() {}.barHeight(56)", 0, "pass"],
+  ["HdsTabs() {}.barHeight(hidden ? 0 : 56)", 0, "pass"],
+  ["HdsTabs() {}", 0, "warn"],
+  ["HdsTabs() {}.barHeight(56) // .barHeight('auto')\n/* .barHeight(\"auto\") */", 0, "pass"],
+  ["if (apiReady) { HdsTabs() {}.barHeight(56) } else { Tabs() {}.barHeight('auto') }", 1, "warn"],
+  ["Tabs() {}.barHeight('auto')", 1, "not_applicable"]
+]) {
+  await writeFile(paddingSourcePath, source)
+  const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+  equal(inspected.signals.barHeightAuto.count, count)
+  const compatibility = evaluateCompatibility(inspected, profile)
+  const result = verifyInspection(inspected, compatibility, "hds")
+  equal(result.checks.find((v) => v.id === "floating-tabs-height").status, expected)
+  ok(!verifyInspection(inspected, compatibility, "arkui").checks.some((v) => v.id === "floating-tabs-height"))
+  equal(await readFile(paddingSourcePath, "utf8"), source)
+}
 for (const route of ["hds", "arkui"]) {
   const tabs = route === "hds" ? "HdsTabs" : "Tabs"
   const floating = `${tabs}({ barPosition: BarPosition.End }) {}.vertical( false ).barOverlap(true).barFloatingStyle({ barWidth: customWidth })`

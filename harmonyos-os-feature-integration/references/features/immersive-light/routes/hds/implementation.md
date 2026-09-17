@@ -217,6 +217,7 @@ MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等�
 
 - `BarPosition.End`、`scrollable(false)`、`barOverlap(true)`、`barFloatingStyle` 和 `ADAPTIVE + ADAPTIVE` 是三组迁移对照的共同模式。
 - 56vp 是显示态栏高基线；需要随滚动隐藏时可在 56 和 0 之间切换。
+- HDS 的 `barHeight` 不支持 `'auto'`。原工程若设置 `.barHeight('auto')`，在 HDS 分支移除整项配置，不将其替换为另一个固定高度；通过变量、条件或封装传入时也要追踪实际值，确保 HDS 分支不会得到 `'auto'`。已有合法数值和动态显隐高度保留，低版本普通 `Tabs` 分支保持原配置。
 - 接入分支删除外层 `.barWidth(...)`，由 `barFloatingStyle.barWidth` 的配置或默认行为自动生效，不额外添加固定宽度。
 - 迁移快照中部分工程使用 `barBottomMargin: 28`，不能据此推断 HDS 默认值；当前接入按窗口沉浸状态显式选择 28vp 或 0vp，并检查祖先 padding 的用途与分支，避免重复避让。
 - `animationDuration(0)`、透明 `gradientMask` 和透明背景按工程实际交互选择；底部 `expandSafeArea` 按窗口沉浸状态规则处理，未开启窗口沉浸式时覆盖所有一级页及完整父组件链。

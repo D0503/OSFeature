@@ -395,6 +395,7 @@ const SIGNALS = [
   { id: "barStyleStack", regex: /\bbarStyle\s*:\s*BarStyle\.STACK\b/ },
   { id: "barBackgroundConflict", regex: /\b(?:barBackgroundColor|barBackgroundBlurStyle)\s*\(/ },
   { id: "barHeight", regex: /\bbarHeight\s*\(/ },
+  { id: "barHeightAuto", regex: /\bbarHeight\s*\(\s*(['"])auto\1\s*\)/ },
   { id: "barBottomMarginPositive", regex: /\bbarBottomMargin\s*:\s*(?:[1-9]\d*(?:\.\d+)?|0\.\d*[1-9]\d*)\b/ },
   { id: "windowLayoutFullScreenCall", regex: /\bsetWindowLayoutFullScreen\s*\(/ },
   { id: "windowLayoutFullScreenTrue", regex: /\bsetWindowLayoutFullScreen\s*\(\s*true\s*[,)]/ },
@@ -751,7 +752,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       "Floating tabs bottom position",
       !s.hdsTabs.detected ? "not_applicable" : s.barPositionEnd.detected ? "pass" : "fail",
       [...s.hdsTabs.evidence, ...s.barPositionEnd.evidence],
-      "Bottom floating tabs require BarPosition.End; preserve a separate large-screen branch when side navigation is intentional"
+      "Floating integration branches require BarPosition.End at every breakpoint; preserve original side navigation only in the legacy API branch"
     ))
     checks.push(check(
       "floating-tabs-overlap",
@@ -763,9 +764,10 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     checks.push(check(
       "floating-tabs-height",
       "Floating tabs height",
-      !s.hdsTabs.detected ? "not_applicable" : s.barHeight.detected ? "pass" : "warn",
-      [...s.hdsTabs.evidence, ...s.barHeight.evidence],
-      "Review the visible bar height; the migration snapshots use a 56vp baseline and one switches between 56 and 0 when hidden"
+      !s.hdsTabs.detected ? "not_applicable" : s.barHeightAuto?.detected ? "warn" : s.barHeight.detected ? "pass" : "warn",
+      [...s.hdsTabs.evidence, ...s.barHeight.evidence, ...(s.barHeightAuto?.evidence ?? [])],
+      (s.barHeightAuto?.detected ? "A barHeight('auto') candidate was detected; verify component and version branch ownership. " : "Review the visible bar height and resolve variable, conditional or wrapper values. ") +
+      "HDS barHeight does not support auto: remove that configuration from the HDS branch without substituting a fixed height. Preserve valid numeric or dynamic heights and legacy ordinary Tabs configuration. Omitted barHeight is allowed; the migration snapshots use a 56vp baseline and one switches between 56 and 0 when hidden. Static scanning does not prove resolved values or branch coverage"
     ))
     checks.push(check(
       "mini-bar-contract",

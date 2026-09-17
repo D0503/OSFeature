@@ -10,6 +10,7 @@
 - 手机、平板/折叠展开态和大窗口；竖屏、横屏、分屏与自由窗口；
 - 接入分支所有断点均为底部横向 Tab，外层 `.barWidth(...)` 已移除，由 `barFloatingStyle.barWidth` 或默认行为控制栏宽；材质关闭或设备不支持仍保持底部布局；
 - 56vp 显示态及存在隐藏能力时的 0vp 状态，检查跳动和残留点击区域；
+- HDS 分支不得设置 `barHeight('auto')`；直接配置应移除，变量、条件和封装调用需核对实际值。静态发现 `auto` 时核对组件及版本分支，保留低版本普通 Tabs 原配置；
 - 有/无导航指示区时的 `barBottomMargin`、祖先 bottom padding 和安全区；普通 Tab 导航条避让 padding 只在普通分支生效，悬浮分支由栏底部间距负责，显式和默认 margin 均需验证；
 - `barOverlap(true)` 下首尾内容、透明背景、内容 padding 和 `expandSafeArea(BOTTOM)`；
 - 所有可滚动 Tab 的最后一项与完整点击热区能越过悬浮栏；检查 `contentEndOffset`、尾部占位或等价 padding；
