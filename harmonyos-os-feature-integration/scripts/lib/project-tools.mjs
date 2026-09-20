@@ -2,6 +2,7 @@ import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
 import { inspectEasyGo, evaluateEasyGo, verifyEasyGo } from "./easygo-tools.mjs"
+import { inspectMaterialInventory } from "./material-inventory.mjs"
 
 const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
 const TEXT_EXTENSIONS = new Set([".ets", ".ts", ".json", ".json5"])
@@ -503,6 +504,7 @@ export async function inspectProject(projectPath, options = {}) {
     },
     signals,
     easyGo: inspectEasyGo(files, maskComments),
+    materialInventory: await inspectMaterialInventory(files, maskComments),
     evidence: [compatible.evidence, target.evidence, compile.evidence, ...localSdk.evidence].filter(Boolean),
     unknown,
     scan: {

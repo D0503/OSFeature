@@ -494,6 +494,42 @@ for (const route of ["hds", "arkui"]) {
 }
 equal(cliInspection.api.compatible, 23)
 const bottomExpansion = ".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])"
+const inventorySource = `
+import { Chip as ProjectChip } from '@kit.ArkUI';
+Navigation() {} NavDestination() {} Tabs() {} AlphabetIndexer({})
+Button('ok') Select([]) Toggle({ type: ToggleType.Switch }) Slider({})
+Chip({}) ProjectChip({}) ChipGroup({}) ChipGroupV2({}) SegmentButton({}) SegmentButtonV2({})
+SelectionMenu({}) Text('copy').copyOption(CopyOptions.InApp)
+promptAction.showToast({ message: 'notice' })
+Text('popup').bindPopup(show, { message: 'help' })
+Text('tips').bindTips({ message: 'tip' })
+Column() {}.bindSheet(show, builder)
+Text('menu').bindMenu(items).bindContextMenu(builder, ResponseType.LongPress)
+AlertDialog.show({}) ActionSheet.show({}) CalendarPickerDialog.show({})
+DatePickerDialog.show({}) TimePickerDialog.show({}) TextPickerDialog.show({})
+new CustomDialogController({ builder: dialog })
+const popup: PopupOptions = {}; const tips: TipsOptions = {}; const sheet: SheetOptions = {};
+HdsTabs() {} HdsNavigation() {} HdsNavDestination() {}
+// Button('comment').bindPopup(true, {})
+/* Text('comment').bindSheet(true, builder) */
+const example = "Button('text').bindPopup(true, {})";
+`
+await writeFile(paddingSourcePath, inventorySource)
+const inventoried = (await inspectProject(versionProject, { sdkPath: sdk26 })).materialInventory
+for (const id of inventoried.matrixComponents) ok(inventoried.candidates.some((c) => c.componentId === id))
+equal(inventoried.candidates.filter((c) => c.componentId === "button").length, 1)
+equal(inventoried.candidates.filter((c) => c.componentId === "chip").length, 2)
+equal(inventoried.candidates.filter((c) => c.componentId === "popup").length, 2)
+ok(inventoried.candidates.some((c) => c.componentId === "dialog-sheet" && c.entry.includes("bindSheet")))
+ok(inventoried.candidates.some((c) => c.kind === "configuration-reference"))
+equal(inventoried.candidates.filter((c) => c.route === "hds").length, 3)
+ok(inventoried.unresolvedEntrypoints.length > 0)
+ok(inventoried.candidates.every((c) => c.status === "pending" && c.path && c.line > 0))
+await writeFile(paddingSourcePath, Array.from({ length: 27 }, (_, i) => `Text('${i}').bindPopup(show, { message: 'help' })`).join("\n"))
+const manyCandidates = (await inspectProject(versionProject, { sdkPath: sdk26 })).materialInventory.candidates
+equal(manyCandidates.filter((c) => c.componentId === "popup").length, 27)
+equal(new Set(manyCandidates.map((c) => c.id)).size, manyCandidates.length)
+ok(manyCandidates.some((c) => c.line === 27))
 for (const [source, count, expected] of [
   ["HdsTabs() {}.barHeight('auto')", 1, "warn"],
   ['HdsTabs() {}.barHeight("auto")', 1, "warn"],
