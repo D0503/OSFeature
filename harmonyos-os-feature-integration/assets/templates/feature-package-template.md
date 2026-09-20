@@ -1,6 +1,6 @@
 # [特性名称]能力包模板
 
-创建 `references/features/<id>/`。单路线能力可以保持扁平结构；存在两条以上可组合路线时使用：
+创建 `references/features/<id>/`。单路线能力可以保持扁平结构；存在两条以上路线时使用：
 
 ```text
 references/features/<id>/
@@ -28,7 +28,8 @@ references/features/<id>/
 - `compatibility.md`：兼容性、前置条件和不支持场景；
 - `implementation.md`：实现路由；单路线时也可直接承载实现；
 - `performance-validation.md`：验证路由或单路线验证；
-- 可组合路线的 `routes[].documents`：分别指向该路线实现、验证和资产索引；共享回退与验证只维护一份。
+- 多路线声明 `routeComposition.mode`：可组合为 composable，互斥为 exclusive；后者 selectedRoutes 最多一项。
+- 各路线的 `routes[].documents`：分别指向该路线实现、验证和资产索引；共享回退与验证只维护一份。
 - 路线包含大量专属组件行为时，可增加组件矩阵，至少记录组件 ID、应用级默认行为、组件级入口和限制；分类资料必须从路线 implementation 入口按目标可发现。
 
 完成工程与 SDK 夹具、结构校验、工具测试和行为评测后，才以 `ready` 状态加入注册表。

@@ -1,6 +1,8 @@
 import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
+import { inspectEasyGo, evaluateEasyGo, verifyEasyGo } from "./easygo-tools.mjs"
+
 const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
 const TEXT_EXTENSIONS = new Set([".ets", ".ts", ".json", ".json5"])
 
@@ -500,6 +502,7 @@ export async function inspectProject(projectPath, options = {}) {
       arkuiNativeNavigation: signals.nativeNavigation.detected || signals.nativeTabs.detected
     },
     signals,
+    easyGo: inspectEasyGo(files, maskComments),
     evidence: [compatible.evidence, target.evidence, compile.evidence, ...localSdk.evidence].filter(Boolean),
     unknown,
     scan: {
@@ -510,6 +513,7 @@ export async function inspectProject(projectPath, options = {}) {
 }
 
 export function evaluateCompatibility(inspection, profile) {
+  if (profile.featureId === "easygo-parallel") return evaluateEasyGo(inspection, profile)
   const compatible = Number.isInteger(inspection.api.compatible) ? inspection.api.compatible : null
   const target = Number.isInteger(inspection.api.target) ? inspection.api.target : null
   const compile = Number.isInteger(inspection.api.compile) ? inspection.api.compile : null
@@ -697,6 +701,7 @@ function effectiveArkuiMaterialState(inspection) {
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
+  if (compatibility.featureId === "easygo-parallel") return verifyEasyGo(inspection, compatibility, routeOption)
   if (routeOption === "auto" && (compatibility.selectedRoutes?.length ?? 0) > 1) {
     const routeResults = compatibility.selectedRoutes.map((route) => verifyInspection(inspection, compatibility, route))
     const checks = routeResults.flatMap((result) => result.checks.map((item) => ({

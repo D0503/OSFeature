@@ -90,7 +90,7 @@ try {
         issue(errors, new Set(values).size === values.length, `profile.fallbackPolicy.${key}`, "fallbackPolicy 数组项不能重复")
       }
       issue(errors, Array.isArray(profile.routes) && profile.routes.length > 0, "profile.routes", "routes 必须是非空数组")
-      issue(errors, profile.routeComposition?.mode === "composable", "profile.routeComposition.mode", "多路线能力包必须声明 composable")
+      issue(errors, ["composable", "exclusive"].includes(profile.routeComposition?.mode), "profile.routeComposition.mode", "能力包必须声明 composable 或 exclusive")
       issue(errors, profile.routeComposition?.selectionField === "selectedRoutes", "profile.routeComposition.selectionField", "组合路线输出字段必须是 selectedRoutes")
       const routeIds = new Set()
       for (const [index, route] of (profile.routes ?? []).entries()) {
@@ -173,6 +173,17 @@ try {
           "https://developer.huawei.com/consumer/cn/doc/design-guides/immersivelight-0000002612101053"
         ]) {
           issue(errors, profile.evidence?.sources?.includes(source), "profile.evidence.sources", `缺少官方证据: ${source}`)
+        }
+      }
+      if (feature.id === "easygo-parallel") {
+        issue(errors, profile.routeComposition?.mode === "exclusive", "profile.routeComposition.mode", "平行视界路线必须互斥")
+        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "不得推断平行视界的 target 门槛")
+        issue(errors, routeIds.size === 2 && routeIds.has("router") && routeIds.has("navigation"), "profile.routes", "需覆盖 Router 与 Navigation")
+        for (const route of profile.routes ?? []) {
+          issue(errors, route.minApi === 23 && route.moduleTypes?.length === 1 && route.moduleTypes[0] === "entry", `profile.routes.${route.id}`, "基础配置 API 23 且仅支持 entry")
+        }
+        for (const key of ["isEasySplit", "wideSplit", "squareSplit", "mode", "pagePairs", "transPages", "splitDividerColor", "drawableRectHook", "enableInSplitScreen"]) {
+          issue(errors, profile.capabilities?.[key]?.minApi === (key === "isEasySplit" ? 24 : 26), `profile.capabilities.${key}`, "缺少或错误的可选能力版本门槛")
         }
       }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")

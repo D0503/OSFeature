@@ -1,0 +1,11 @@
+{
+  "common": {
+    "displayModeOptions": {
+      "wideWindowMode": "navigationSplit",
+      "squareWindowMode": "navigationSplit",
+      "navigationSplitOptions": {
+        "homePage": "navBar"
+      }
+    }
+  }
+}

@@ -63,6 +63,10 @@ Tabs({ barPosition: BarPosition.End }) {
 
 无论采用默认还是显式材质，都不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡效果；`TabContent` 本身不支持沉浸光感。
 
+### 悬浮分支的页签切换动画
+
+接入沉浸光感悬浮分支时，删除接入前 Tabs 上的 `.animation(...)` 页签切换动效配置，例如 `.animation({ duration: 200, curve: Curve.EaseInOut })`。悬浮重叠布局与材质背板下不再保留切换动画，避免原有切换动效与悬浮材质渲染冲突或产生多余过渡。仅低版本兼容分支保留接入前的动画配置；材质关闭或设备不支持时仅回退材质，不恢复已删除的切换动画。
+
 ### 悬浮 TabBar 栏宽与断点
 
 接入时删除外层 `.barWidth(...)`，让 `barFloatingStyle.barWidth` 的配置或默认行为自动生效，不额外添加固定宽度。`Tabs` 内容容器可以保持 `.width('100%')`，不要将整页 `TabContent` 一并缩窄。

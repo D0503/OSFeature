@@ -16,6 +16,18 @@
       "status": "ready",
       "entry": "references/features/immersive-light/README.md",
       "profile": "references/features/immersive-light/profile.json"
+    },
+    {
+      "id": "easygo-parallel",
+      "displayName": "平行视界",
+      "aliases": [
+        "easyGo",
+        "easy_go.json",
+        "平行视界接入"
+      ],
+      "status": "ready",
+      "entry": "references/features/easygo-parallel/README.md",
+      "profile": "references/features/easygo-parallel/profile.json"
     }
   ]
 }

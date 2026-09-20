@@ -18,7 +18,7 @@
 
 ## 升级接入（对所有特性通用）
 
-任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 `minApi` 的 SDK，再升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`），`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。
+任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 `minApi` 的 SDK，再升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`），`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。能力包声明 `targetSdkPolicy: preserve-unless-declared` 时，未声明 minTargetApi 就保持原 target，不推断额外门槛。可选字段/API 的 requiredApi 高于路线 minApi 时，以 requiredApi 作为 SDK/compile 要求。
 
 门禁结果中的 API 数值表示版本等级，不是工程配置的序列化格式。写入 API 26 时使用字符串 `"26.0.0"`，无括号后缀；API 26 起的点分版本按首段归一化用于比较。旧系统版本如 `"6.1.0(23)"` 按括号中的 API 解析，不能把 `"6.1.0"` 的首段当作 API 6。最低兼容版本未调整时保留其原值和格式。
 

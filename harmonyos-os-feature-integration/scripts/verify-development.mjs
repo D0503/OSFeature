@@ -19,9 +19,37 @@ export async function inspectVerification(request) {
   return { inspection, compatibility, staticResult: verifyInspection(inspection, compatibility, request.route) }
 }
 
-async function applyJudgment(run, judgment) {
+export function recomputeStaticCheck(run) {
+  const findings = run.staticFindings ?? []
+  if (findings.some((f) => f.status === "fail" || f.review?.status === "failed")) run.checks.static = check("failed", "静态检查存在失败项或复核确认的问题，需修复后重验")
+  else if (findings.some((f) => f.status === "warn" && !f.review)) run.checks.static = check("inconclusive", findings.filter((v) => v.status === "fail" || (v.status === "warn" && !v.review)).map((v) => `${v.id}: ${v.message}`).join("；") || "静态检查存在待核对项")
+  else run.checks.static = check("passed", findings.some((f) => f.review) ? "静态检查通过，warn 项已全部复核" : "静态检查通过")
+}
+
+function applyStaticReview(runs, review) {
+  const results = review?.results
+  if (!Array.isArray(results) || !results.length) throw new Error("staticReview.results 必须是非空数组")
+  const warnIds = new Set(runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.status === "warn").map((f) => f.id)))
+  const byId = new Map()
+  for (const item of results) {
+    if (!item || typeof item.id !== "string" || !item.id.trim()) throw new Error("staticReview.results[].id 必填")
+    if (byId.has(item.id)) throw new Error(`staticReview 结果重复：${item.id}`)
+    if (!warnIds.has(item.id)) throw new Error(`staticReview 引用的检查项不存在或不是 warn：${item.id}`)
+    if (!["passed", "failed"].includes(item.status)) throw new Error(`staticReview.results 只允许 passed 或 failed：${item.id}`)
+    requiredText(item.note, `staticReview 结果 ${item.id} 的 note`)
+    byId.set(item.id, { status: item.status, note: item.note })
+  }
+  for (const run of runs) {
+    const findings = run.staticFindings ?? []
+    if (!findings.some((f) => f.status === "warn" && byId.has(f.id))) continue
+    for (const finding of findings) if (finding.status === "warn" && byId.has(finding.id)) finding.review = structuredClone(byId.get(finding.id))
+    recomputeStaticCheck(run)
+  }
+}
+
+export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment?.schemaVersion !== "1.0" || judgment.runId !== run.runId || judgment.goal !== run.goal) throw new Error("判定必须绑定本次 runId 与 goal")
-  for (const key of ["install", "navigation", "build"]) if (run.checks[key].status !== "passed") throw new Error("构建、安装或目标页导航未通过，不能补录效果判定")
+  if (judgment.visual || judgment.runtime) for (const key of ["install", "navigation", "build"]) if (run.checks[key].status !== "passed") throw new Error("构建、安装或目标页导航未通过，不能补录效果判定")
   for (const level of ["visual", "runtime"]) {
     const item = judgment[level]
     if (!item) continue
@@ -38,7 +66,8 @@ async function applyJudgment(run, judgment) {
     if (level === "runtime" && !evidence.some((v) => ["runtime_log", "component_tree"].includes(v.type))) throw new Error("运行判定需要日志或交互组件树证据")
     run.checks[level] = check(item.status, item.summary)
   }
-  if (!judgment.visual && !judgment.runtime) throw new Error("判定文件没有 visual 或 runtime 结论")
+  if (!judgment.visual && !judgment.runtime && !judgment.staticReview) throw new Error("判定文件没有 visual、runtime 或 staticReview 结论")
+  if (judgment.staticReview) applyStaticReview(runs, judgment.staticReview)
 }
 
 export async function verifyDevelopment(request, options = {}) {
@@ -54,12 +83,13 @@ export async function verifyDevelopment(request, options = {}) {
       if (!request.judgment || request.executeBuild || request.executeRun || request.navigate || request.captureScreenshot || request.captureLayout || request.changes) throw new Error("resume 仅允许补录 judgment，不执行构建或设备操作")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
-      await applyJudgment(run, request.judgment)
+      await applyJudgment(run, request.judgment, collection.runs)
       const report = await saveReport(output, directory, collection)
       return { runId: run.runId, report, status: deriveVerdict(run), evidence: run.evidence }
     }
     for (const key of ["feature", "goal", "route"]) requiredText(request[key], key)
-    if (!["arkui", "hds"].includes(request.route)) throw new Error("route 必须明确选择 arkui 或 hds；组合路线分别验证")
+    const { feature, profile } = await loadFeature(skillRoot, request.feature)
+    if (!profile.routes.some((r) => r.id === request.route)) throw new Error(`route 必须明确选择 ${profile.routes.map((r) => r.id).join(" 或 ")}；组合路线分别验证`)
     validateChanges(request.changes)
     if (request.navigate) validateNavigation(request.navigate)
     if (request.judgment) throw new Error("先执行验证，再用 --resume 与 --judgment 补录本次观察")
@@ -67,7 +97,7 @@ export async function verifyDevelopment(request, options = {}) {
     const runDirectory = join(directory, runId)
     await mkdir(runDirectory)
     const run = {
-      runId, project: resolve(request.project), feature: request.feature, goal: request.goal, route: request.route,
+      runId, project: resolve(request.project), feature: request.feature, featureName: feature.displayName, goal: request.goal, route: request.route,
       product: request.product ?? "default", buildMode: request.buildMode ?? "debug", module: request.module ?? null,
       changes: structuredClone(request.changes), createdAt: new Date().toISOString(), device: request.device ?? null, evidence: [],
       checks: Object.fromEntries(["static", "sdk", "build", "install", "navigation", "runtime", "visual"].map((key) => [key, check("not_run", "尚未执行")]))
@@ -91,8 +121,11 @@ export async function verifyDevelopment(request, options = {}) {
     run.after = { sdk: inspection.localSdk.apiVersion ?? "unknown", compile: inspection.api.compile, target: inspection.api.target, compatible: inspection.api.compatible }
     await record("static", JSON.stringify({ inspection, compatibility, staticResult }, null, 2), "json")
     run.checks.sdk = compatibility.availableRoutes?.includes(run.route) && inspection.localSdk.status === "valid" ? check("passed", `本机 SDK API ${run.after.sdk}，${run.route} 路线可用`) : check("failed", "本机 SDK 或工程版本不满足所选路线，需先完成版本门禁")
-    run.checks.static = check(staticResult.counts.fail ? "failed" : staticResult.counts.warn ? "inconclusive" : "passed", staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status)).map((v) => `${v.id}: ${v.message}`).join("；") || "静态检查通过")
     run.staticFindings = staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status))
+    const priorReviews = new Map(collection.runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.review).map((f) => [f.id, f.review])))
+    for (const finding of run.staticFindings) if (finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
+    recomputeStaticCheck(run)
+    if (staticResult.counts.fail && run.checks.static.status !== "failed") run.checks.static = check("failed", "静态门禁失败")
     run.checks.build = check("not_run", "未请求构建")
     if (run.checks.sdk.status === "failed" || run.checks.static.status === "failed") run.checks.build.summary = "SDK 或静态门禁失败，未构建"
     else if (request.executeBuild) {

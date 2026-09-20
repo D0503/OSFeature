@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "easygo-parallel",
+  "displayName": "平行视界",
+  "routeComposition": {
+    "mode": "exclusive",
+    "selectionField": "selectedRoutes",
+    "allowed": [
+      "router",
+      "navigation"
+    ]
+  },
+  "targetSdkPolicy": "preserve-unless-declared",
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": [
+      "runtime-version-unsupported",
+      "device-capability-unsupported",
+      "feature-disabled",
+      "permission-or-external-condition-unmet"
+    ],
+    "preserve": [
+      "component-tree-or-existing-code-path",
+      "responsive-layout-orientation-and-window-mode",
+      "state-data-controllers-events-and-lifecycle",
+      "existing-error-denial-and-unavailable-behavior",
+      "ordinary-visual-style"
+    ]
+  },
+  "routes": [
+    {
+      "id": "router",
+      "minApi": 23,
+      "minApiMeaning": "developer-easygo-configuration",
+      "maxApi": null,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry"
+      ],
+      "components": [
+        "Router"
+      ],
+      "documents": {
+        "implementation": "routes/router/implementation.md",
+        "validation": "routes/router/validation.md",
+        "assets": "routes/router/assets.md"
+      }
+    },
+    {
+      "id": "navigation",
+      "minApi": 23,
+      "minApiMeaning": "developer-easygo-configuration",
+      "maxApi": null,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry"
+      ],
+      "components": [
+        "Navigation",
+        "NavDestination"
+      ],
+      "documents": {
+        "implementation": "routes/navigation/implementation.md",
+        "validation": "routes/navigation/validation.md",
+        "assets": "routes/navigation/assets.md"
+      }
+    }
+  ],
+  "capabilities": {
+    "isEasySplit": {
+      "minApi": 24
+    },
+    "wideSplit": {
+      "minApi": 26
+    },
+    "squareSplit": {
+      "minApi": 26
+    },
+    "mode": {
+      "minApi": 26
+    },
+    "pagePairs": {
+      "minApi": 26
+    },
+    "transPages": {
+      "minApi": 26
+    },
+    "splitDividerColor": {
+      "minApi": 26
+    },
+    "drawableRectHook": {
+      "minApi": 26
+    },
+    "enableInSplitScreen": {
+      "minApi": 26
+    }
+  },
+  "constraints": [
+    {
+      "id": "entry-only",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "all",
+      "action": "configure-entry-module-only"
+    },
+    {
+      "id": "exclusive-routing",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "all",
+      "action": "do-not-combine-router-and-navigation-options"
+    },
+    {
+      "id": "device-window-support",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "runtime",
+      "action": "verify-window-thresholds-and-system-setting-no-freeform-support"
+    },
+    {
+      "id": "device-override",
+      "route": "all",
+      "minApi": 23,
+      "scenario": "device-config",
+      "action": "replace-common-do-not-deep-merge"
+    }
+  ],
+  "documents": {
+    "entry": "README.md",
+    "compatibility": "compatibility.md",
+    "implementation": "implementation.md",
+    "validation": "performance-validation.md",
+    "assets": "assets-catalog.md",
+    "fallback": "fallback.md",
+    "sharedValidation": "performance-validation.md",
+    "configuration": "configuration.md",
+    "troubleshooting": "troubleshooting.md",
+    "sources": "sources.md"
+  },
+  "evidence": {
+    "baselineDate": "2026-09-17",
+    "policy": "snapshot-first-verify-on-change-or-conflict",
+    "sources": [
+      "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-easygo-parallel",
+      "https://developer.huawei.com/consumer/cn/doc/design-guides/parallel_view-0000002588655180",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/module-configuration-file",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uicontext-uicontext",
+      "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uicontext-uiobserver",
+      "https://gitcode.com/HarmonyOS_Samples/easygo-parallel-shopping"
+    ]
+  }
+}

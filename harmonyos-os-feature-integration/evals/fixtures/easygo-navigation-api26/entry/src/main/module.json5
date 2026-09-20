@@ -1,0 +1,1 @@
+{ module: { name: 'entry', type: 'entry', pages: '$profile:main_pages', easyGo: '$profile:parallel_config', }, }

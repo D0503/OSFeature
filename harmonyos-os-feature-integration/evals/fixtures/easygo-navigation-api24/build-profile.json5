@@ -1,0 +1,18 @@
+{
+  "app": {
+    "products": [
+      {
+        "name": "default",
+        "compileSdkVersion": 24,
+        "targetSdkVersion": 24,
+        "compatibleSdkVersion": 23
+      }
+    ]
+  },
+  "modules": [
+    {
+      "name": "entry",
+      "srcPath": "./entry"
+    }
+  ]
+}

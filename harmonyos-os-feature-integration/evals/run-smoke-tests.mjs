@@ -13,10 +13,10 @@ const featureDir = resolve(skillRoot, "references", "features", "immersive-light
 
 const structure = await validateSkillStructure(skillRoot)
 assert.deepEqual(structure.errors, [])
-assert.deepEqual(structure.counts, { features: 1, ready: 1 })
+assert.deepEqual(structure.counts, { features: 2, ready: 2 })
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"))
-assert.equal(registry.features.length, 1)
+assert.equal(registry.features.length, 2)
 assert.deepEqual(registry.features[0], {
   id: "immersive-light",
   displayName: "沉浸光感",
@@ -40,6 +40,8 @@ assert.equal(matchFeature("请接入沉浸光感")?.id, "immersive-light")
 assert.equal(matchFeature("悬浮导航Tab怎么实现")?.id, "immersive-light")
 assert.equal(matchFeature("帮我接入 uiMaterial")?.id, "immersive-light")
 assert.equal(matchFeature("排查 SYSTEMMATERIAL 不生效")?.id, "immersive-light")
+for (const prompt of ["请接入平行视界", "EASYGO", "easy_go.json", "easygo-parallel"]) assert.equal(matchFeature(prompt)?.id, "easygo-parallel")
+for (const prompt of ["实现分栏布局", "实现自适应布局"]) assert.equal(matchFeature(prompt), null)
 assert.equal(matchFeature("请接入碰一碰"), null)
 assert.equal(matchFeature("帮我实现窗口沉浸式并处理安全区"), null)
 
@@ -61,7 +63,7 @@ assert.match(skill, /注册项的 `status` 必须为 `ready`/)
 assert.match(skill, /命中后完整读取注册项的 `entry`/)
 assert.match(skill, /未注册特性/)
 assert.match(skill, /窗口沉浸式.*不是.*沉浸光感/)
-assert.match(skill, /harmonyos-doc-review/)
+assert.match(skill, /官方文档质量审查/)
 assert.match(skill, /普通 ArkUI/)
 assert.match(skill, /悬浮导航Tab/)
 assert.match(skill, /验证本机 SDK/)
@@ -292,7 +294,8 @@ assert.match(designWorkflow, /只在增强分支引入新特性/)
 assert.match(implementationWorkflow, /不得为回退路径另造一套与源程序不同的简化实现/)
 assert.match(verificationWorkflow, /与实施前源程序状态基线逐项对照/)
 assert.match(planTemplate, /接入前源程序状态基线/)
-assert.match(reportTemplate, /源程序状态保留对照/)
+assert.match(reportTemplate, /按整个工程输出一份/)
+assert.match(reportTemplate, /汇总所有改造项的行为变化/)
 
 for (const path of [
   "scripts/inspect-project.mjs",
@@ -320,7 +323,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-os-feature-integration")
-assert.equal(evals.evals.length, 26)
+assert.equal(evals.evals.length, 31)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)
 assert.match(floatingTabEval?.prompt ?? "", /悬浮导航Tab/)

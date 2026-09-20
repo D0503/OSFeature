@@ -9,9 +9,9 @@ try {
   if (!args.project) throw new Error("Required option: --project <path>")
   if (!args.feature) throw new Error("Required option: --feature <id>")
   const route = args.route ?? "auto"
-  if (!["auto", "hds", "arkui"].includes(route)) throw new Error("--route must be auto, hds, or arkui")
   const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const { profile } = await loadFeature(skillRoot, args.feature)
+  if (route !== "auto" && !profile.routes.some((r) => r.id === route)) throw new Error(`--route must be auto or one of ${profile.routes.map((r) => r.id).join(", ")}`)
   const inspection = await inspectProject(args.project, { sdkPath: args.sdk })
   const compatibility = evaluateCompatibility(inspection, profile)
   const result = verifyInspection(inspection, compatibility, route)

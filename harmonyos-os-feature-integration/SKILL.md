@@ -1,6 +1,6 @@
 ---
 name: harmonyos-os-feature-integration
-description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial，都应使用本 Skill。当前已支持沉浸光感的 API 23 HDS 路线和 API 26 ArkUI 路线。工程 API 低于路线所需版本时，可提供升级 targetSdkVersion 并保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置。工程 API 低于路线所需版本时，可提供升级 targetSdkVersion 并保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -16,7 +16,6 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 以下任务不属于本 Skill：
 
 - 与系统新特性无关的普通 ArkUI 页面、组件或业务功能开发；
-- HarmonyOS 官方文档质量审查，此类任务应使用 `harmonyos-doc-review`；
 - 窗口沉浸式、状态栏、安全区或全屏布局适配；“窗口沉浸式”不是“沉浸光感”；
 - 未注册新特性的 API 选择、工程改造或代码实现。
 
@@ -37,10 +36,12 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 适用于所有已注册特性，规则细节见 [兼容性模型](references/shared/compatibility-model.md)：
 
-- 工程 API 或已验证的本机 SDK 低于特性路线所需版本时，兼容性门禁返回 `upgrade_available`，这不是终止结论：应提供“安装或切换到达到路线 `minApi` 的本机 SDK，升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`）、`compatibleSdkVersion` 保持不变”的接入选项。所有低版本、不支持、未授权或特性关闭路径都必须保留接入前的源程序状态；普通样式只是视觉维度之一，不能替代原布局、交互、数据和业务行为。
+- 工程 API 或已验证的本机 SDK 低于特性路线所需版本时，兼容性门禁返回 `upgrade_available`，这不是终止结论：应提供“安装或切换到达到路线 `minApi` 的本机 SDK，升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`；能力包声明 `targetSdkPolicy: preserve-unless-declared` 时保留 target）、`compatibleSdkVersion` 保持不变”的接入选项。所有低版本、不支持、未授权或特性关闭路径都必须保留接入前的源程序状态；普通样式只是视觉维度之一，不能替代原布局、交互、数据和业务行为。
 - 存在多条可用路线或任何升级选项（`decisionRequired` 为 true）时，必须把可选接入方式、建议路线和理由一并列给用户，由用户决定路线。
 - 仅一条可用路线且无需升级时，给出建议路线和理由即可继续。
 - 能力包声明 `routeComposition.mode: composable` 时，多条路线可以同时选中。使用 `selectedRoutes` 加载每条路线自己的实现、资产与验证资料；`recommendedRoute` 只表示主要建议，不得据此丢弃工程中仍在使用的补充路线。
+
+互斥能力包声明 `routeComposition.mode: exclusive`，`selectedRoutes` 最多一项。平行视界的配置字段与可选 API 还可能提高 `requiredApi`；按能力包评估计划新增字段，不只检查基础路线门槛。
 
 ### 未注册特性
 
@@ -72,7 +73,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 3. 修改范围保持在用户请求与已确认路线内，复用工程现有架构与类型；
 4. 按能力包 `fallbackPolicy` 为旧版本、不支持设备、未授权和特性关闭路径保留接入前的源程序状态；只在满足条件的增强分支接入新特性；
 5. 按[验证闭环](references/workflows/verification.md)运行 `verify-development.mjs`，自动执行具备条件的静态检查、SDK 检查和构建；明确设备后继续安装、导航和截图；
-6. AI 阅读本轮证据后补录运行与视觉判定；最终只交付一份 Markdown 汇总报告及其截图，包含实际改造、沉浸光感类别、视觉验证和升级兼容，未验证项明确列出。
+6. AI 阅读本轮证据后补录运行、视觉判定与静态 `warn` 项复核结论；最终只交付一份 Markdown 汇总报告及其截图，包含实际改造、特性类别或路由模式、视觉验证和升级兼容，未验证项明确列出。
 
 ### 故障排查
 
@@ -80,7 +81,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 ## 当前已注册能力
 
-当前注册表只包含沉浸光感能力。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感和平行视界能力。普通分栏或自适应布局不等于平行视界，不能据此自动命中。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
 ## 能力包扩展
 
@@ -100,6 +101,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 | 检查 Skill 结构 | 运行 `node scripts/validate-structure.mjs` |
 | 检查已注册能力包 | 运行 `node scripts/validate-feature-package.mjs --feature <id>` |
 | 运行冒烟测试 | 运行 `node evals/run-smoke-tests.mjs` |
+| 平行视界专项测试 | 运行 `node evals/run-easygo-tests.mjs` |
 | 运行工具测试 | 运行 `node evals/run-tool-tests.mjs` |
 | 运行验证执行器测试 | 运行 `node evals/run-development-tests.mjs` |
 

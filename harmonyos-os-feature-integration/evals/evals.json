@@ -338,6 +338,64 @@
         "说明 applyShadow 与自定义 shadow 的优先关系",
         "保留非材质交互反馈"
       ]
+    },
+    {
+      "id": 27,
+      "prompt": "给现有 Router 工程接入平行视界，本机 SDK 和 compile 是 API 23，保留手机体验。",
+      "expected_output": "选择 easygo-parallel，列出互斥路线并建议 Router，用户确认后使用 API 23 基础配置。",
+      "files": [],
+      "expectations": [
+        "核对 SDK 根清单、entry.easyGo 引用与 module.pages",
+        "保留原参数、返回栈和手机布局",
+        "不写入 mode、transPages 等 API 26 字段",
+        "不推断额外 target 门槛"
+      ]
+    },
+    {
+      "id": 28,
+      "prompt": "Navigation 平行视界要做购物模式，SDK 23，编辑地址页不能右推左。",
+      "expected_output": "提供 API 26 升级选项，用户确认后配置 mode=0 和 transPages，保留 compatible 与原状态。",
+      "files": [],
+      "expectations": [
+        "导航模式与 Router/Navigation 技术路线分开",
+        "不将购物示例直接当 API 23 配置",
+        "目的页使用真实 name",
+        "低版本处理必须有证据，不猜测 JSON 字段被忽略"
+      ]
+    },
+    {
+      "id": 29,
+      "prompt": "工程已有 easyGo，tablet 写了 original，为什么平板不开分栏？只诊断。",
+      "expected_output": "检查 tablet 完整替代 common、窗口和系统开关，给出证据，不修改文件。",
+      "files": [],
+      "expectations": [
+        "设备覆盖不是深合并",
+        "检查自由多窗限制",
+        "不因配置存在宣称处于分栏",
+        "isEasySplit 仅 API 24+"
+      ]
+    },
+    {
+      "id": 30,
+      "prompt": "只做普通 Navigation 分栏和自适应布局。",
+      "expected_output": "不因普通分栏请求自动命中平行视界。",
+      "files": [],
+      "expectations": [
+        "不添加 easyGo 配置",
+        "不把原生分栏等同系统兼容方案"
+      ]
+    },
+    {
+      "id": 31,
+      "prompt": "平行视界已编译通过，但动态页面名无法静态解析，能直接验收吗？",
+      "expected_output": "保留动态页面待核验，采集真实路由栈和目标页运行证据。",
+      "files": [],
+      "expectations": [
+        "编译不等于分栏通过",
+        "报告使用平行视界及导航/购物模式",
+        "验证开合、方向、全屏返回和关闭路径",
+        "未执行真机步骤保持未验证"
+      ]
     }
   ]
 }

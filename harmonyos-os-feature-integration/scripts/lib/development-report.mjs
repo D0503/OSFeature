@@ -71,7 +71,7 @@ function deviceLabel(run) {
 }
 
 function stageSummary(key, value) {
-  if (key === "static") return value.status === "passed" ? "静态检查通过" : "待处理项目见下方，扫描提示不等于已确认缺陷"
+  if (key === "static") return value.status === "passed" ? value.summary : "待处理项目见下方，扫描提示不等于已确认缺陷"
   if (value.status === "failed" && ["build", "install", "navigation"].includes(key)) {
     return value.reportSummary ?? { build: "构建失败，需解决构建错误后重验；未继续安装", install: "安装或启动失败，未完成目标页验证", navigation: "目标页导航或页面断言失败，不能据此验收目标效果" }[key]
   }
@@ -121,11 +121,14 @@ export async function saveReport(output, directory, collection) {
   await mkdir(output, { recursive: true })
   const reportPath = join(output, "integration-report.md")
   const previous = await exists(reportPath) ? await readFile(reportPath, "utf8") : ""
-  const previousImages = [...previous.matchAll(/!\[目标页面截图\]\(<evidence\/([a-f0-9]{64}\.png)>\)/g)].map((m) => m[1])
-  const lines = ["# 沉浸光感接入汇总报告", "", `工程：${escape(collection.project)}`, "", "## 沉浸光感改造汇总", "", "以下为已实施的代码配置；实际效果以逐项验证结果为准。", "", "| 改造项 | 页面 / 组件 | 已实施配置 | 修改文件 | 运行验证 | 视觉验证 |", "|---|---|---|---|---|---|"]
+  const previousImages = [...previous.matchAll(/<img src="evidence\/([a-f0-9]{64}\.png)" alt="目标页面截图" width="270" \/>/g), ...previous.matchAll(/!\[目标页面截图\]\(<evidence\/([a-f0-9]{64}\.png)>\)/g)].map((m) => m[1])
+  const featureNames = [...new Set(collection.runs.map((r) => r.featureName ?? ({ "immersive-light": "沉浸光感", "easygo-parallel": "平行视界" })[r.feature] ?? r.feature))]
+  const featureTitle = featureNames.join(" / ") || "系统特性"
+  const onlyMaterial = collection.runs.every((r) => r.feature === "immersive-light")
+  const lines = [`# ${escape(featureTitle)}接入汇总报告`, "", `工程：${escape(collection.project)}`, "", `## ${escape(featureTitle)}改造汇总`, "", "以下为已实施的代码配置；实际效果以逐项验证结果为准。", "", "| 改造项 | 页面 / 组件 | 已实施配置 | 修改文件 | 运行验证 | 视觉验证 |", "|---|---|---|---|---|---|"]
   for (const r of collection.runs) lines.push(`| ${escape(r.goal)} | ${escape(r.changes.page)} / ${escape(r.changes.component)} | ${escape(r.changes.effect)} | ${r.changes.files.map(escape).join("<br>")} | ${statusLabel(r.checks.runtime.status)} | ${statusLabel(r.checks.visual.status)} |`)
-  lines.push("", "## 沉浸光感类别", "", "| 目标 | 技术路线 | 类别 |", "|---|---|---|")
-  for (const r of collection.runs) lines.push(`| ${escape(r.goal)} | ${r.route === "arkui" ? "ArkUI" : "HDS"} | ${escape(r.changes.category)} |`)
+  lines.push("", onlyMaterial ? "## 沉浸光感类别" : "## 路线与模式", "", "| 目标 | 技术路线 | 类别 |", "|---|---|---|")
+  for (const r of collection.runs) lines.push(`| ${escape(r.goal)} | ${escape(({ arkui: "ArkUI", hds: "HDS", router: "Router", navigation: "Navigation" })[r.route] ?? r.route)} | ${escape(r.changes.category)} |`)
   lines.push("", "## 视觉验证结果", "")
   for (const r of collection.runs) {
     lines.push(`### ${escape(r.goal)}`, "", `页面 / 组件：${escape(r.changes.page)} / ${escape(r.changes.component)}。`, "", `视觉结果：**${statusLabel(r.checks.visual.status)}**。${escape(r.checks.visual.summary)}`, "", deviceLabel(r), "", `验证时间：${escape(r.createdAt)}；整体结果：${statusLabel(deriveVerdict(r))}。`, "", "| 验证阶段 | 结果 | 说明 |", "|---|---|---|")
@@ -133,11 +136,14 @@ export async function saveReport(output, directory, collection) {
     for (const [key, value] of Object.entries(r.checks).filter(([key]) => key !== "visual")) lines.push(`| ${names[key]} | ${statusLabel(value.status)} | ${escape(stageSummary(key, value))} |`)
     const findings = r.staticFindings ?? []
     if (findings.length || !["passed", "not_applicable"].includes(r.checks.static.status)) {
-      lines.push("", "待处理事项：", "")
+      lines.push("", findings.some((f) => !f.review) ? "待处理事项：" : "静态复核结论：", "")
       if (!findings.length) lines.push("- 静态检查尚未完成复核，需重新检查并明确具体问题。")
       for (const finding of findings) {
         const locations = (finding.evidence ?? []).map((e) => typeof e === "string" ? e : e.path ? `${e.path}${e.line ? `:${e.line}` : ""}` : "").filter(Boolean)
-        lines.push(`- ${finding.status === "fail" ? "检查失败" : "待核对"}：${escape(findingLabels[finding.id] ?? `需人工复核检查项（${finding.id}）`)}${locations.length ? `；位置：${[...new Set(locations)].slice(0, 3).map(escape).join("、")}` : ""}。`)
+        const label = escape(findingLabels[finding.id] ?? (finding.id.startsWith("easygo-") ? finding.message : `需人工复核检查项（${finding.id}）`))
+        const location = locations.length ? `；位置：${[...new Set(locations)].slice(0, 3).map(escape).join("、")}` : ""
+        if (finding.review) lines.push(`- ${finding.review.status === "passed" ? "已复核通过" : "复核确认问题"}：${label}${location}；${escape(finding.review.note)}。`)
+        else lines.push(`- ${finding.status === "fail" ? "检查失败" : "待核对"}：${label}${location}。`)
       }
     }
     for (const e of r.evidence.filter((v) => v.type === "screenshot")) {
@@ -147,16 +153,24 @@ export async function saveReport(output, directory, collection) {
       await mkdir(join(output, "evidence"), { recursive: true })
       if (resolve(e.path) !== resolve(dest)) await copyFile(e.path, dest)
       e.path = dest
-      lines.push("", `![目标页面截图](<evidence/${filename}>)`, "")
+      lines.push("", `<img src="evidence/${filename}" alt="目标页面截图" width="270" />`, "")
     }
   }
-  lines.push("", "## 升级与兼容", "")
-  for (const r of collection.runs) {
-    lines.push(`### ${escape(r.goal)}`, "", "| 项目 | 改造前 | 改造后 |", "|---|---|---|")
-    for (const key of ["sdk", "compile", "target", "compatible"]) lines.push(`| ${{ sdk: "本机 SDK API", compile: "compile API", target: "target API", compatible: "最低兼容 API" }[key]} | ${escape(r.changes.before[key])} | ${escape(r.after[key])} |`)
-    const known = [r.changes.before, r.after].every((versions) => ["sdk", "compile", "target", "compatible"].every((key) => Number.isInteger(versions[key])))
-    lines.push("", known && Object.keys(r.after).every((key) => r.after[key] === r.changes.before[key]) ? "SDK/API 未升级。" : known ? "SDK/API 变更如上表。" : "版本信息不完整，无法确认是否升级。", "", "| 回退条件 | 保留行为 | 验证结果 | 证据或限制 |", "|---|---|---|---|")
-    for (const f of r.changes.fallback) lines.push(`| ${escape({ "low-api": "低版本", unsupported: "设备不支持", disabled: "材质关闭" }[f.condition] ?? f.condition)} | ${escape(f.behavior)} | ${statusLabel(f.status)} | ${escape(f.evidence || "尚未实际验证")} |`)
+  lines.push("", "## 升级与兼容", "", "SDK 版本与回退行为按整个工程记录一份；保留行为覆盖所有改造项。", "")
+  const first = collection.runs[0]
+  const after = first.after ?? {}
+  lines.push("| 项目 | 改造前 | 改造后 |", "|---|---|---|")
+  for (const key of ["sdk", "compile", "target", "compatible"]) lines.push(`| ${{ sdk: "本机 SDK API", compile: "compile API", target: "target API", compatible: "最低兼容 API" }[key]} | ${escape(first.changes.before[key])} | ${escape(after[key])} |`)
+  const known = [first.changes.before, after].every((versions) => ["sdk", "compile", "target", "compatible"].every((key) => Number.isInteger(versions[key])))
+  lines.push("", known && Object.keys(after).every((key) => after[key] === first.changes.before[key]) ? "SDK/API 未升级。" : known ? "SDK/API 变更如上表。" : "版本信息不完整，无法确认是否升级。", "", "| 回退条件 | 保留行为 | 验证结果 | 证据或限制 |", "|---|---|---|---|")
+  for (const condition of ["low-api", "unsupported", "disabled"]) {
+    const entries = collection.runs.map((r) => ({ goal: r.goal, feature: r.feature, fallback: r.changes.fallback.find((v) => v.condition === condition) })).filter((v) => v.fallback)
+    if (!entries.length) continue
+    const labels = [...new Set(entries.map((v) => v.feature === "immersive-light" ? "材质关闭" : "特性关闭"))]
+    const behaviors = [...new Set(entries.map((v) => `${escape(v.goal)}：${escape(v.fallback.behavior)}`))]
+    const status = entries.some((v) => v.fallback.status === "failed") ? "失败" : entries.some((v) => v.fallback.status === "not_run") ? "未验证" : "通过"
+    const evidences = [...new Set(entries.filter((v) => v.fallback.evidence?.trim()).map((v) => `${escape(v.goal)}：${escape(v.fallback.evidence)}`))]
+    lines.push(`| ${escape(condition === "low-api" ? "低版本" : condition === "unsupported" ? "设备不支持" : labels.join(" / "))} | ${behaviors.join("<br>")} | ${status} | ${evidences.length ? evidences.join("<br>") : "尚未实际验证"} |`)
   }
   await mkdir(directory, { recursive: true })
   await writeFile(join(directory, "report.tmp"), `${lines.join("\n")}\n`, "utf8")

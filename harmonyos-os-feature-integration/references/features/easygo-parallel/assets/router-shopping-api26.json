@@ -1,0 +1,12 @@
+{
+  "common": {
+    "displayModeOptions": {
+      "wideWindowMode": "routerSplit",
+      "squareWindowMode": "routerSplit",
+      "routerSplitOptions": {
+        "homePage": "pages/Index",
+        "mode": 0
+      }
+    }
+  }
+}
