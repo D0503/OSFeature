@@ -4,7 +4,8 @@
       "wideWindowMode": "navigationSplit",
       "squareWindowMode": "navigationSplit",
       "navigationSplitOptions": {
-        "homePage": "navBar"
+        "homePage": "navBar",
+        "enableReducedContainerSize": true
       }
     }
   }

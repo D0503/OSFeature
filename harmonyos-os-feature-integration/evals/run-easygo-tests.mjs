@@ -84,6 +84,49 @@ for (const i of [router, navigation, query]) {
   assert.ok(verify(i, i === router ? "router" : "navigation").checks.every((c) => c.id.startsWith("easygo-")))
 }
 
+for (const route of ["router", "navigation"]) {
+  for (const api of [23, 26]) {
+    const name = `${route}-${api === 26 ? "shopping-api26" : "api23"}.json`
+    const config = JSON.parse(await readFile(join(root, "references/features/easygo-parallel/assets", name), "utf8"))
+    const o = config.common.displayModeOptions[`${route}SplitOptions`]
+    assert.equal(o.enableReducedContainerSize, true, `${name}: new integration default`)
+    if (api === 26) assert.equal(o.drawableRectHook, true, `${name}: API 26 default`)
+    else assert.equal(Object.hasOwn(o, "drawableRectHook"), false, `${name}: no API 26 field`)
+    const i = mutate((i) => {
+      i.api.compile = api; i.localSdk.apiVersion = api
+      i.easyGo.records[0].configs[0].value = config
+    }, route === "router" ? router : navigation)
+    assert.equal(compat(i).requiredApi, api)
+    assert.equal(verify(i, route).counts.fail, 0, `${name}: usable configuration`)
+    const explicitFalse = structuredClone(i)
+    const chosen = explicitFalse.easyGo.records[0].configs[0].value.common.displayModeOptions[`${route}SplitOptions`]
+    chosen.enableReducedContainerSize = false
+    if (api === 26) chosen.drawableRectHook = false
+    assert.equal(verify(explicitFalse, route).counts.fail, 0, `${name}: false is valid`)
+    assert.equal(chosen.enableReducedContainerSize, false, "Verification must not overwrite user choice")
+    if (api === 26) assert.equal(chosen.drawableRectHook, false)
+  }
+}
+// Isolate drawableRectHook from shopping mode so its version gate is tested independently.
+for (const value of [true, false]) {
+  const hook = mutate((i) => { options(i).drawableRectHook = value })
+  assert.equal(compat(hook).requiredApi, 26)
+  assert.equal(compat(hook).status, "upgrade_available")
+  assert.ok(has(verify(hook), "route", "fail"))
+  hook.api.compile = 26; hook.localSdk.apiVersion = 26
+  assert.equal(verify(hook).counts.fail, 0)
+  delete options(hook).drawableRectHook
+  hook.api.compile = 23; hook.localSdk.apiVersion = 23
+  assert.equal(compat(hook).requiredApi, 23)
+  assert.equal(verify(hook).counts.fail, 0, "Keeping API 23 remains supported")
+}
+for (const [i, route, hook] of [[router, "router", false], [query, "navigation", false], [navigation, "navigation", true]]) {
+  const o = i.easyGo.records[0].configs[0].value.common.displayModeOptions[`${route}SplitOptions`]
+  assert.equal(o.enableReducedContainerSize, true)
+  assert.equal(Object.hasOwn(o, "drawableRectHook"), hook)
+  if (hook) assert.equal(o.drawableRectHook, true)
+}
+
 assert.equal(readManifest("{module: { easyGo: '$profile:custom',}, // comment\n value: null}").value, null)
 assert.throws(() => readManifest("{module: {easyGo: 'a', easyGo: 'b'}}"), /Duplicate/)
 assert.throws(() => readManifest("{module: process.exit()}"), /Unsupported/)

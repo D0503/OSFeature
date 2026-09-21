@@ -5,7 +5,9 @@
       "squareWindowMode": "navigationSplit",
       "navigationSplitOptions": {
         "homePage": "navBar",
-        "mode": 0
+        "mode": 0,
+        "enableReducedContainerSize": true,
+        "drawableRectHook": true
       }
     }
   }

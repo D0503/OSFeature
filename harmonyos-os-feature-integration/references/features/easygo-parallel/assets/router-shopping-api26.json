@@ -5,7 +5,9 @@
       "squareWindowMode": "routerSplit",
       "routerSplitOptions": {
         "homePage": "pages/Index",
-        "mode": 0
+        "mode": 0,
+        "enableReducedContainerSize": true,
+        "drawableRectHook": true
       }
     }
   }

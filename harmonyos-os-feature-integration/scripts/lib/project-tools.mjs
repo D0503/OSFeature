@@ -387,6 +387,8 @@ const SIGNALS = [
   { id: "nativeTabs", regex: /\bTabs\s*\(/ },
   { id: "nativeTabsFloatingStyle", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(/ },
   { id: "nativeTabsFloatingMaterial", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(\s*\{[\s\S]{0,800}?\bsystemMaterial\s*:/ },
+  { id: "nativeTabsFloatingMaskColor", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(\s*\{[\s\S]{0,800}?\bmaskColor\s*:/ },
+  { id: "nativeTabsFloatingMaskTransparent", regex: /\bTabs\s*\([\s\S]{0,2500}?\.barFloatingStyle\s*\(\s*\{[\s\S]{0,800}?\bmaskColor\s*:\s*(?:Color\.Transparent\b|['"](?:transparent|#00000000)['"])/ },
   { id: "navigationTitleMaterial", regex: /\.title\s*\([\s\S]{0,1600}?\bsystemMaterial\s*:/ },
   { id: "allPageMaterialEntry", regex: /\b(?:ShowToastOptions|PopupOptions|TipsOptions|ContextMenuOptions|CustomDialogControllerOptions|AlertDialogParam|ActionSheetOptions|SheetOptions)\b[\s\S]{0,800}?\bsystemMaterial\s*:|\b(?:Select|Toggle|Slider)\s*\([\s\S]{0,1200}?\.systemMaterial\s*\(/ },
   { id: "ordinaryContentMaterialEntry", regex: /\b(?:Column|Row|Stack|Button|Chip)\s*\([^)]*\)[\s\S]{0,300}?\.systemMaterial\s*\(/ },
@@ -950,6 +952,24 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       s.barBackgroundConflict.detected
         ? "barBackgroundColor/barBackgroundBlurStyle may cover the native Tabs material"
         : "No native Tabs bar background conflict detected"
+    ))
+
+    checks.push(check(
+      "arkui-native-tabs-mask-color",
+      "Native Tabs floating mask color",
+      !nativeTabsCandidate
+        ? "not_applicable"
+        : s.nativeTabsFloatingMaskTransparent?.detected
+          ? "pass"
+          : "warn",
+      [...s.nativeTabsFloatingStyle.evidence, ...(s.nativeTabsFloatingMaskColor?.evidence ?? []), ...(s.nativeTabsFloatingMaskTransparent?.evidence ?? [])],
+      !nativeTabsCandidate
+        ? "No native Tabs floating style detected"
+        : s.nativeTabsFloatingMaskTransparent?.detected
+          ? "A transparent maskColor was detected on the floating style"
+          : s.nativeTabsFloatingMaskColor?.detected
+            ? "A non-transparent maskColor was detected. The integration default is maskColor: Color.Transparent; keep the custom color only when the design requires the gradient mask and verify scrolled-content visibility"
+            : "Explicitly set maskColor: Color.Transparent in barFloatingStyle by default. Keep a non-transparent mask only when the design requires it, optionally with maskHeight, and preserve the source mask and background behavior in the legacy branch"
     ))
 
     checks.push(check(

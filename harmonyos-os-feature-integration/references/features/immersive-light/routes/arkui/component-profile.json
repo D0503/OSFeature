@@ -42,7 +42,7 @@
           "defaultStyle": "THIN",
           "entries": ["FloatingTabBarStyle.systemMaterial"],
           "effectScopes": ["bottom-floating-tabbar"],
-          "constraints": ["explicit-systemMaterial-optional-for-customization", "TabContent-unsupported", "scrollable-tab-tail-clearance", "floating-tabs-width-and-breakpoints"]
+          "constraints": ["explicit-systemMaterial-optional-for-customization", "maskColor-transparent-by-default", "TabContent-unsupported", "scrollable-tab-tail-clearance", "floating-tabs-width-and-breakpoints"]
         },
         {
           "id": "alphabet-indexer",

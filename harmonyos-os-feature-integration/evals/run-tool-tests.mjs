@@ -575,6 +575,26 @@ for (const route of ["hds", "arkui"]) {
     equal(await readFile(paddingSourcePath, "utf8"), source)
   }
 }
+for (const [source, transparentCount, maskCount, status, fragment] of [
+  ["Tabs() {}.barOverlap(true).barFloatingStyle({ maskColor: Color.Transparent })", 1, 1, "pass", "transparent maskColor"],
+  [`Tabs() {}.barOverlap(true).barFloatingStyle({ maskColor: '#00000000' })`, 1, 1, "pass", "transparent maskColor"],
+  ["Tabs() {}.barOverlap(true).barFloatingStyle({ maskColor: Color.Gray })", 0, 1, "warn", "non-transparent maskColor"],
+  ["Tabs() {}.barOverlap(true).barFloatingStyle({ barBottomMargin: 0 })", 0, 0, "warn", "Explicitly set maskColor"],
+  ["Tabs() {}.barOverlap(true).barFloatingStyle({})", 0, 0, "warn", "Explicitly set maskColor"],
+  ["HdsTabs() {}.barOverlap(true).barFloatingStyle({})", 0, 0, "not_applicable", null]
+]) {
+  await writeFile(paddingSourcePath, source)
+  const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+  equal(inspected.signals.nativeTabsFloatingMaskTransparent.count, transparentCount)
+  equal(inspected.signals.nativeTabsFloatingMaskColor.count, maskCount)
+  const compatibility = evaluateCompatibility(inspected, profile)
+  const result = verifyInspection(inspected, compatibility, "arkui")
+  const mask = result.checks.find((v) => v.id === "arkui-native-tabs-mask-color")
+  equal(mask.status, status)
+  if (fragment) ok(mask.message.includes(fragment))
+  ok(!verifyInspection(inspected, compatibility, "hds").checks.some((v) => v.id === "arkui-native-tabs-mask-color"))
+  equal(await readFile(paddingSourcePath, "utf8"), source)
+}
 for (const route of ["hds", "arkui"]) {
   const tabs = route === "hds" ? "HdsTabs" : "Tabs"
   for (const [windowSource, trueCount, falseCount, callCount] of [

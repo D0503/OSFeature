@@ -53,7 +53,7 @@ uiMaterial.isImmersiveMaterialSupported()
 
 使用 `uiMaterial.getMaterialInfo()` 读取实际状态，不根据 metadata 文件单独推测最终运行状态。
 
-原生底部 Tabs 必须由工程显式配置 `barFloatingStyle`，并同时满足 `barOverlap(true)`、`vertical(false)` 和 `BarPosition.End`；悬浮样式生效后系统默认使用 `THIN` 材质，不强制显式设置 `FloatingTabBarStyle.systemMaterial`。应用级 `DISABLE` 仍会统一禁止材质。
+原生底部 Tabs 必须由工程显式配置 `barFloatingStyle`，并同时满足 `barOverlap(true)`、`vertical(false)` 和 `BarPosition.End`；悬浮样式生效后系统默认使用 `THIN` 材质，不强制显式设置 `FloatingTabBarStyle.systemMaterial`。接入分支默认显式设置 `maskColor: Color.Transparent`，仅在设计明确需要渐变遮罩时改用非透明值。应用级 `DISABLE` 仍会统一禁止材质。
 
 ## 组件级优先关系
 

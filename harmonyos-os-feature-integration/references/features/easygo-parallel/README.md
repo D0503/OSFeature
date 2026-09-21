@@ -11,12 +11,14 @@
 | 任务 | 读取资料 |
 |---|---|
 | 任意平行视界请求 | [profile.json](profile.json)、[兼容性](compatibility.md) |
-| 设计或实施 | [实施入口](implementation.md)、[配置规则](configuration.md)，再读取选中路线 |
+| 设计或实施 | [实施入口](implementation.md)、[配置确认](configuration-confirmation.md)、[配置规则](configuration.md)，再读取选中路线 |
 | 取用配置 | [资产目录](assets-catalog.md) |
 | 验证和性能检查 | [验证](performance-validation.md)、[回退](fallback.md) |
 | 排障 | [故障排查](troubleshooting.md) |
 
 `router` 与 `navigation` 是互斥技术路线；导航模式和购物模式是路线内部的交互方式。识别工程后列出路线、建议及依据；多条路线可选或需要升级时由用户确认，不能把路由框架迁移当作默认配套改动。`selectedRoutes` 只包含一项。
+
+需求模糊时，扫描后先展示适用配置清单和真实页面候选，集中确认未明确的业务选择，再写入配置。新接入默认 enableReducedContainerSize=true，API 26 同时默认 drawableRectHook=true；低版本优先提出升级选项，用户选择保持版本时省略后者。已有明确选择和显式 false 不静默覆盖，具体执行 [配置确认](configuration-confirmation.md)。
 
 ## 前置与交付
 

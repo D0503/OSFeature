@@ -4,7 +4,8 @@
       "wideWindowMode": "routerSplit",
       "squareWindowMode": "routerSplit",
       "routerSplitOptions": {
-        "homePage": "pages/Index"
+        "homePage": "pages/Index",
+        "enableReducedContainerSize": true
       }
     }
   }

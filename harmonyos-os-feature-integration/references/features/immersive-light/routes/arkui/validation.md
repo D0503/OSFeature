@@ -12,7 +12,7 @@
 - 深色和浅色模式；
 - 应用级 `default`、`enable`、`disable`，包括 target 升级但不配置 metadata 的默认行为；
 - `DISABLE`、显式材质、`Material.empty`、`undefined` 四类优先关系；
-- 原生 Navigation 标题栏与原生 Tabs；Tabs 同时满足 `barFloatingStyle`、`barOverlap(true)`、`vertical(false)`、`BarPosition.End` 后应呈现系统默认 `THIN`，不强制显式材质；逐页验证所有可滚动 Tab 的末项和操作热区能滚到悬浮栏上方；
+- 原生 Navigation 标题栏与原生 Tabs；Tabs 同时满足 `barFloatingStyle`、`barOverlap(true)`、`vertical(false)`、`BarPosition.End` 后应呈现系统默认 `THIN`，不强制显式材质；接入分支默认显式 `maskColor: Color.Transparent`，保留非透明遮罩的分支须有设计依据并验证滚动内容可视性；逐页验证所有可滚动 Tab 的末项和操作热区能滚到悬浮栏上方；
 - AlphabetIndexer、Toast、Popup、Tips、Menu、Dialog/Sheet、SelectionMenu 和文本选择菜单的 `DEFAULT`/`ENABLE` 默认状态、Options 类型和背景冲突；
 - Button、Select、Toggle、Slider、Chip、ChipGroup/ChipGroupV2、SegmentButton/SegmentButtonV2 的专属入口、默认状态、生效域和预设视觉限制；
 - CalendarPickerDialog、DatePickerDialog、TextPickerDialog、TimePickerDialog 按 CustomDialog 验证；CalendarPicker 自带弹出框仍不支持；
@@ -29,6 +29,7 @@
 |---|---|---|
 | 材质完全不生效 | API、Stage、module、应用状态、能力判断 | 对齐前置条件并保留普通样式 |
 | 原生 Tabs 材质不生效 | 应用状态、`barFloatingStyle`、`barOverlap`、`vertical`、`barPosition` | 满足完整悬浮条件后使用系统默认 `THIN`，不强制显式设置 `FloatingTabBarStyle.systemMaterial`；`DISABLE` 下不生效 |
+| 悬浮栏周围内容被染色或压暗 | `barFloatingStyle.maskColor`、`maskHeight` | 接入分支默认显式 `maskColor: Color.Transparent`；设计明确需要渐变遮罩时才配置非透明值，并逐页验证滚动内容可视性 |
 | 接口存在但材质不生效 | 组件是否位于官方支持的生效域，运行日志是否出现 `Material inactive: out of scope...` | 将目标放到合法的标题栏、底部悬浮 TabBar 或全页面组件入口；静态层级不明确时人工核对 |
 | 原生 Tabs 最后一个列表项被遮挡 | 是否逐页检查真实滚动容器，尾部空间是否位于最后一个滚动项之后 | 使用 `contentEndOffset`、末尾 `Blank`、内容 bottom padding 或等价实现；按实际遮挡高度计算且不重复加入安全区 |
 | Navigation 标题栏层次不足 | `NavigationTitleOptions.barStyle` | 在符合原设计时使用 `BarStyle.STACK` |
@@ -49,6 +50,7 @@
 - ArkUI Tabs 默认栏底部间距为 28vp；实际接入已开启窗口沉浸式时显式 28vp，未开启时显式 0vp，并逐个确认一级页、滚动容器及全部父组件的底部扩展。核对调用链与实际生效，验证顶部避让、底部内容延伸和普通/悬浮分支切换；
 
 - 接入分支删除外层 `.barWidth(...)`，由 `barFloatingStyle.barWidth` 的配置或默认行为生效；所有断点、横竖屏和窗口尺寸保持底部横向 Tab，不误缩窄 TabContent。仅低版本保留原有响应式布局；材质关闭或设备不支持不恢复侧边 Tab；
+- 接入分支默认显式设置 `maskColor: Color.Transparent`；保留非透明遮罩的分支有设计依据并逐页验证滚动内容可视性，低版本兼容分支保留接入前遮罩与背景行为；
 - 接入分支删除原有 `.animation(...)` 页签切换动效配置；低版本兼容分支保留原动画，材质关闭或设备不支持的回退不恢复切换动画；
 - target/compile/本机 SDK 路线门禁均达到 API 26；compatible 低于 26 时按改动范围保护调用或组件树，确保新增 API 不在低版本求值；compatible 达到 26 时无需 API 26 版本分支；
 - 不支持、禁用和旧版本路径保持接入前组件状态与普通样式；

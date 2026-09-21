@@ -224,12 +224,13 @@
     {
       "id": 18,
       "prompt": "这是原生 ArkUI Tabs，不是 HdsTabs。我想给底部 TabBar 做沉浸光感悬浮效果，应该选哪条路线？",
-      "expected_output": "选择 ArkUI 路线。必须显式配置 barFloatingStyle，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End。上述悬浮条件生效后系统默认启用 THIN 材质，不要求显式设置 FloatingTabBarStyle.systemMaterial；显式入口只用于自定义样式、赋色、反色、交互或流光。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
+      "expected_output": "选择 ArkUI 路线。必须显式配置 barFloatingStyle，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End；接入分支默认在 barFloatingStyle 中显式设置 maskColor: Color.Transparent，仅设计明确需要渐变遮罩时改用非透明值。上述悬浮条件生效后系统默认启用 THIN 材质，不要求显式设置 FloatingTabBarStyle.systemMaterial；显式入口只用于自定义样式、赋色、反色、交互或流光。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
       "files": [],
       "expectations": [
         "原生 Tabs 路由到 ArkUI 而不是 HDS",
         "说明 ENABLE 下先显式配置 barFloatingStyle，完整悬浮条件生效后默认使用 THIN",
         "同时要求 barOverlap(true)、vertical(false) 和 BarPosition.End",
+        "默认显式设置 maskColor: Color.Transparent，非透明遮罩仅保留在设计明确的分支",
         "不按 DEFAULT 与 ENABLE 拆分 Tabs 接入路径，且不强制显式设置 FloatingTabBarStyle.systemMaterial",
         "说明背景冲突、TabContent 限制及组合路线条件"
       ]
@@ -278,11 +279,12 @@
     {
       "id": 22,
       "prompt": "ArkUI 应用分别配置 default、enable、disable 时，Navigation 标题栏、底部悬浮 Tabs、Dialog 和 Menu 的沉浸光感默认行为有什么不同？",
-      "expected_output": "按 MaterialState 矩阵逐项回答，但 Tabs 不拆成两条接入路径：无论 DEFAULT 还是 ENABLE，都必须先让 barFloatingStyle、barOverlap(true)、vertical(false)、BarPosition.End 完整生效，随后使用系统默认 THIN，不强制显式设置 systemMaterial。Navigation、Dialog 和 Menu 仍按各自 DEFAULT/ENABLE 规则处理；DISABLE 覆盖应用默认与组件显式设置，所有材质均不生效。",
+      "expected_output": "按 MaterialState 矩阵逐项回答，但 Tabs 不拆成两条接入路径：无论 DEFAULT 还是 ENABLE，都必须先让 barFloatingStyle、barOverlap(true)、vertical(false)、BarPosition.End 完整生效，接入分支默认显式设置 maskColor: Color.Transparent，随后使用系统默认 THIN，不强制显式设置 systemMaterial。Navigation、Dialog 和 Menu 仍按各自 DEFAULT/ENABLE 规则处理；DISABLE 覆盖应用默认与组件显式设置，所有材质均不生效。",
       "files": [],
       "expectations": [
         "区分 DEFAULT、ENABLE、DISABLE",
         "说明 Tabs 在 DEFAULT 与 ENABLE 下采用同一组完整悬浮条件与默认 THIN 规则",
+        "说明接入分支默认显式 maskColor: Color.Transparent",
         "说明 DEFAULT 下 Dialog 的背景条件和 Menu 默认关闭",
         "说明 DISABLE 覆盖显式设置"
       ]
@@ -395,6 +397,86 @@
         "报告使用平行视界及导航/购物模式",
         "验证开合、方向、全屏返回和关闭路径",
         "未执行真机步骤保持未验证"
+      ]
+    },
+    {
+      "id": 32,
+      "prompt": "给这个工程接入平行视界。",
+      "expected_output": "先扫描工程，展示适用配置的当前值、建议值、版本及真实页面候选，集中确认业务项后写入。",
+      "files": [],
+      "expectations": [
+        "候选包含页面用途、实际路由标识和证据，不凭名称替用户决定",
+        "询问 fullScreenPages；仅购物模式询问 transPages",
+        "列出其他适用配置，允许整体接受建议值",
+        "未回复不视为接受，未决定列表不擅自填为空"
+      ]
+    },
+    {
+      "id": 33,
+      "prompt": "使用 Navigation 导航模式，主页 navBar，平板启用；先给我看看可选配置。",
+      "expected_output": "展示已知选择，读取真实页面作为全屏/关联页候选，集中确认剩余项，不修改工程。",
+      "files": [],
+      "expectations": [
+        "不重复询问已明确路线、模式、主页或设备",
+        "不询问购物模式专属 transPages",
+        "API 26 默认两个字段为 true，标明与官方默认值不同"
+      ]
+    },
+    {
+      "id": 34,
+      "prompt": "给 API 23 工程接入平行视界，暂时不要升级 SDK。",
+      "expected_output": "遵循保持版本的决定，默认 enableReducedContainerSize=true，省略 drawableRectHook，确认页面行为后实施。",
+      "files": [],
+      "expectations": [
+        "不再次请求已被明确拒绝的升级",
+        "不写入 mode、drawableRectHook 等 API 26 字段",
+        "compatible 与 target 保持原值"
+      ]
+    },
+    {
+      "id": 35,
+      "prompt": "接入平行视界，本机 SDK 和 compile 是 API 24，还没有选择是否升级。",
+      "expected_output": "优先提出 SDK/compile 升级到 26 以开启两个默认字段，并提供保持原版本的选择。",
+      "files": [],
+      "expectations": [
+        "用户决定升级前不修改工程版本",
+        "扫描 requiredApi 24 不掩盖计划新增 drawableRectHook 所需的 26",
+        "选择保持版本时只默认开启 enableReducedContainerSize"
+      ]
+    },
+    {
+      "id": 36,
+      "prompt": "API 26 的平行视界已有 enableReducedContainerSize=false，我也明确希望 drawableRectHook=false；全屏页和额外过渡页都不需要。",
+      "expected_output": "保留合法 false，清单说明与接入默认值的差异；页面无需已明确，不重复询问。",
+      "files": [],
+      "expectations": [
+        "不使用模板 true 静默覆盖已有 false",
+        "false 不作为静态校验失败",
+        "可省略已明确无需的页面列表；其他未决定项仍须确认"
+      ]
+    },
+    {
+      "id": 37,
+      "prompt": "给应用接入平行视界，启动链路包含独立路由的开屏广告、启动页和隐私协议页。",
+      "expected_output": "扫描实际路由与用途后，将这些页面合并加入 fullScreenPages，清单说明依据，不逐页重复确认已明确规则。",
+      "files": [],
+      "expectations": [
+        "Router 使用实际 pages 路径，Navigation 使用实际目的页 name",
+        "合并去重并检查启用设备的覆盖配置",
+        "不把已确定的启动全屏页留作未决定列表",
+        "冷启动验证广告结束/跳过、协议同意/拒绝及业务页分栏"
+      ]
+    },
+    {
+      "id": 38,
+      "prompt": "启动只有系统启动图，隐私协议是首页弹窗；另一个独立广告页已经配置为 homePage。请接入平行视界。",
+      "expected_output": "不将启动图和弹窗标识填入 fullScreenPages；对独立广告页与 homePage 的冲突说明并确认调整。",
+      "files": [],
+      "expectations": [
+        "不为了配置而新建页面或改造启动流程",
+        "不自动将承载弹窗的整个业务首页设为全屏",
+        "不同时将同一页写入 fullScreenPages 与 homePage/relatedPage/transPages",
+        "动态名称需核实，用户明确例外优先"
       ]
     }
   ]

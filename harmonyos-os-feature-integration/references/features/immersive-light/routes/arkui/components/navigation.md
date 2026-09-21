@@ -38,6 +38,7 @@ Tabs({ barPosition: BarPosition.End }) {
 .barOverlap(true)
 .barFloatingStyle({
   barBottomMargin: this.floatingBarBottomMargin,
+  maskColor: Color.Transparent,
   adaptToHandedness: true
 })
 ```
@@ -50,11 +51,14 @@ Tabs({ barPosition: BarPosition.End }) {
 
 必须由工程显式配置 `barFloatingStyle` 并满足上述三个布局条件。悬浮样式生效后，系统默认启用 `THIN` 材质，不要求显式设置 `FloatingTabBarStyle.systemMaterial`。
 
+接入分支默认在 `barFloatingStyle` 中显式设置 `maskColor: Color.Transparent`，不使用系统默认遮罩色，避免悬浮栏周围的内容被默认渐变遮罩染色或压暗。只有设计明确需要渐变遮罩时才配置非透明 `maskColor`，并可配合 `maskHeight` 控制遮罩高度；此时在方案中记录设计依据，并逐页验证滚动内容在遮罩区域的可视性。透明与其他遮罩配置只进入沉浸光感接入分支，低版本兼容分支保留接入前的遮罩与背景行为。
+
 需要覆盖系统默认样式、赋色、反色、交互或点光源时，再显式配置：
 
 ```typescript
 .barFloatingStyle({
   barBottomMargin: this.floatingBarBottomMargin,
+  maskColor: Color.Transparent,
   systemMaterial: new uiMaterial.ImmersiveMaterial({
     style: uiMaterial.ImmersiveStyle.THIN
   })

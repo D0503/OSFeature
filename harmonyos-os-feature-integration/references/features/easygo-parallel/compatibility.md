@@ -8,6 +8,10 @@
 
 基础路线 `minApi: 23`；已配置增强字段或状态查询时，扫描输出的 `requiredApi` 上调到 24/26。计划新增但尚未写入的字段也必须按此表先判门槛。`targetSdkPolicy: preserve-unless-declared` 表示本资料未声明额外 target 要求：保留已有 target，不把 SDK/compile 门槛冒充 target 门槛。compatible 保留原值；低版本实际行为需回归，尤其旧系统如何处理高版本 JSON 字段不能仅凭编译通过推断。
 
+## 新接入版本建议
+
+为默认开启 enableReducedContainerSize 和 drawableRectHook，API 23～25 工程优先建议升级本机 SDK 与 compile 到 26，升级需用户选择；选择保持旧版本时仅开启前者，省略后者。compatible 保持原值，target 无独立要求时保持。工具计算的 requiredApi 描述已有配置/调用，计划新增字段由 AI 按 [配置确认](configuration-confirmation.md) 提前纳入方案。显式 false 不是非法值；API 26 字段即便填 false 也不能写入低版本配置。
+
 ## 设备与窗口
 
 - `common` 是默认设备配置；`phone`、`tablet` 一旦存在，分别完全替代 common，不做字段继承。

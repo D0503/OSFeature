@@ -50,7 +50,7 @@ API 26 起，达到 target API 26 的工程可为支持的组件显式设置材�
 | 场景 | 接口 |
 |---|---|
 | Navigation/NavDestination 标题栏 | `NavigationTitleOptions.systemMaterial`；推荐同时使用 `BarStyle.STACK` |
-| 原生 Tabs 底部悬浮栏 | 有效 `barFloatingStyle` 默认使用 `THIN`；组件级自定义可用 `FloatingTabBarStyle.systemMaterial`；要求 `barOverlap(true)`、`vertical(false)`、`BarPosition.End` |
+| 原生 Tabs 底部悬浮栏 | 有效 `barFloatingStyle` 默认使用 `THIN`；组件级自定义可用 `FloatingTabBarStyle.systemMaterial`；要求 `barOverlap(true)`、`vertical(false)`、`BarPosition.End`；`maskColor` 接入时默认显式透明 |
 | AlphabetIndexer 提示弹窗 | `popupBackground`、`popupBackgroundBlurStyle` 均未设置或为 `undefined` 时默认开启；主动设置背景属性与材质互斥 |
 | Toast | `ShowToastOptions.systemMaterial` |
 | Popup | `PopupOptions.systemMaterial` |

@@ -16,6 +16,7 @@ struct Index {
       .vertical(false)
       .barOverlap(true)
       .barFloatingStyle({
+        maskColor: Color.Transparent,
         adaptToHandedness: true
       })
     }
