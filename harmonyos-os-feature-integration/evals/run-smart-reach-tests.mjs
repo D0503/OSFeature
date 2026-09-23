@@ -49,7 +49,8 @@ assert.ok(has(verify(mutate((i) => { i.smartReach.usages = i.smartReach.usages.f
 assert.ok(has(verify(mutate((i) => { i.smartReach.usages.find((u) => u.operation === "off").callback = null }), "holding-hand"), "off-all", "warn"))
 const native = verify(base, "native-component")
 assert.equal(native.counts.fail, 0)
-assert.ok(!native.checks.some((c) => /unsubscribe|permission-/.test(c.id)), "Native property does not require manual motion subscription")
+assert.ok(!native.checks.some((c) => /unsubscribe|permission-/.test(c.id)), "Native property does not require manual motion subscription or permission declaration")
+assert.equal(verify(mutate((i) => { i.smartReach.records[0].permissions = [] }), "native-component").counts.fail, 0)
 const noGuardNeeded = verify(mutate((i) => { i.api.compatible = 23 }), "holding-hand")
 assert.ok(!has(noGuardNeeded, "version-guard", "warn"))
 
@@ -68,10 +69,29 @@ let inspected = await scan()
 assert.deepEqual(compat(inspected).selectedRoutes, ["operating-hand"])
 assert.equal(inspected.smartReach.usages.length, 3)
 assert.ok(has(verify(inspected), "permission-api-", "warn"), "Gesture alone does not cover API 15–19")
-await writeFile(manifest, `{module:{name:'entry',type:'entry',requestPermissions:[{name:'ohos.permission.ACTIVITY_MOTION'}]}}`)
+await writeFile(manifest, `{module:{name:'entry',type:'entry',requestPermissions:[{name:'ohos.permission.ACTIVITY_MOTION',reason:'$string:gesture_reason',usedScene:{abilities:['EntryAbility'],when:'inuse'}}]}}`)
 inspected = await scan()
-assert.ok(has(verify(inspected), "authorization", "warn"))
+assert.ok(has(verify(inspected), "permission-", "pass"))
+assert.ok(!has(verify(inspected), "authorization", "warn"))
 assert.ok(!has(verify(inspected), "permission-api-", "warn"))
+assert.ok(has(verify(inspected), "permission-fields-", "pass"))
+for (const route of ["operating-hand", "holding-hand"]) {
+  const original = structuredClone(route === "operating-hand" ? inspected : base)
+  for (const change of [
+    (p) => { delete p.reason },
+    (p) => { p.reason = "literal reason" },
+    (p) => { delete p.usedScene },
+    (p) => { p.usedScene.abilities = [] },
+    (p) => { p.usedScene.abilities = [""] },
+    (p) => { delete p.usedScene.when },
+    (p) => { p.usedScene.when = "foreground" }
+  ]) {
+    const invalid = structuredClone(original)
+    change(invalid.smartReach.records[0].permissionDeclarations[0])
+    assert.ok(has(verify(invalid, route), "permission-fields-", "fail"))
+  }
+}
+
 await writeFile(page, `import motion from '@ohos.multimodalAwareness.motion'; motion.getRecentOperatingHandStatus();`)
 inspected = await scan()
 assert.equal(inspected.smartReach.usages[0].operation, "query")
@@ -79,7 +99,7 @@ assert.ok(!verify(inspected).checks.some((c) => /unsubscribe/.test(c.id)))
 
 await writeFile(manifest, `{module:{name:'entry',type:'entry'}}`)
 await mkdir(join(project, "other/src/main"), { recursive: true })
-await writeFile(join(project, "other/src/main/module.json5"), `{module:{name:'other',type:'feature',requestPermissions:[{name:'ohos.permission.ACTIVITY_MOTION'}]}}`)
+await writeFile(join(project, "other/src/main/module.json5"), `{module:{name:'other',type:'feature',requestPermissions:[{name:'ohos.permission.ACTIVITY_MOTION',reason:'$string:gesture_reason',usedScene:{abilities:['EntryAbility'],when:'inuse'}}]}}`)
 assert.ok(has(verify(await scan()), "permission-", "fail"), "Another HAP permission cannot satisfy the calling HAP")
 
 await writeFile(page, `HdsTabs() {} // adaptToHandedness: true\n/* motion.on('holdingHandChanged', cb); */`)

@@ -10,7 +10,7 @@
   "targetSdkPolicy": "preserve-unless-declared",
   "fallbackPolicy": {
     "baseline": "pre-integration-source-state",
-    "appliesWhen": ["runtime-version-unsupported", "device-capability-unsupported", "permission-denied", "feature-disabled", "service-or-subscription-failed"],
+    "appliesWhen": ["runtime-version-unsupported", "device-capability-unsupported", "permission-error", "feature-disabled", "service-or-subscription-failed"],
     "preserve": ["component-tree-or-existing-code-path", "responsive-layout-orientation-and-window-mode", "state-data-controllers-events-and-lifecycle", "existing-error-denial-and-unavailable-behavior", "ordinary-visual-style", "ongoing-interaction-and-original-position"]
   },
   "routes": [

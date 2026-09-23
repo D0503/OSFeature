@@ -11,12 +11,13 @@ const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 export function inspectSmartReach(files, maskComments) {
   const source = files.filter((f) => PRODUCTION_SOURCE.test(f.path) && !NON_PRODUCTION.test(f.path))
   const records = files.filter((f) => MAIN_MANIFEST.test(f.path)).map((f) => {
-    const record = { modulePath: f.path, moduleType: "unknown", permissions: [], error: null }
+    const record = { modulePath: f.path, moduleType: "unknown", permissions: [], permissionDeclarations: [], error: null }
     try {
       const m = readManifest(f.content).module
       if (!m || typeof m !== "object") throw new Error("module object missing")
       record.moduleType = m.type ?? "unknown"
       if (m.requestPermissions !== undefined && !Array.isArray(m.requestPermissions)) throw new Error("requestPermissions must be an array")
+      record.permissionDeclarations = (m.requestPermissions ?? []).filter((p) => p && [ACTIVITY, GESTURE].includes(p.name))
       record.permissions = (m.requestPermissions ?? []).map((p) => p.name).filter((p) => typeof p === "string")
     } catch (error) { record.error = error.message }
     return record
@@ -111,7 +112,7 @@ export function verifySmartReach(inspection, compatibility, routeOption = "auto"
         if (![u.hdsTabsCandidate, u.floatingStyleCandidate, u.overlapCandidate, u.horizontalCandidate, u.bottomCandidate].every(Boolean)) check(`floating-${u.path}-${u.line}`, "warn", "未完整识别 HdsTabs 底部悬浮配置，核对组件归属、barOverlap(true)、vertical(false)、BarPosition.End 及 barFloatingStyle", [u])
         if (u.enabled === "unknown") check(`enabled-${u.path}-${u.line}`, "warn", "跟手开关为表达式，需确认实际启用条件和关闭路径", [u])
       }
-      check("native-contract", "warn", "确认组件自身的权限/硬件约束与关闭行为；不强加 motion 订阅或沉浸光感材质", active)
+      check("native-contract", "warn", "确认组件自身的硬件约束与关闭行为；不强加 motion 订阅或沉浸光感材质", active)
     } else {
       const owners = new Set(active.map((u) => u.modulePath))
       for (const owner of owners) {
@@ -120,8 +121,15 @@ export function verifySmartReach(inspection, compatibility, routeOption = "auto"
         if (!record || record.error) { check(`permission-owner-${owner}`, "warn", "无法解析承载 HAP 权限；库/封装调用须沿依赖追踪，其他模块的权限不能作为已满足证据", ev); continue }
         const activity = record.permissions.includes(ACTIVITY), gesture = record.permissions.includes(GESTURE)
         check(`permission-${owner}`, (route === "holding-hand" ? gesture : activity || gesture) ? "pass" : "fail", route === "holding-hand" ? "所属模块必须声明 DETECT_GESTURE" : "所属模块必须声明操作手权限（API 15–19: ACTIVITY_MOTION；20+: 两者择一）", [{ path: owner }])
-        if (route === "operating-hand" && gesture && !activity && inspection.api.compatible < 20) check(`permission-api-${owner}`, "warn", "仅 DETECT_GESTURE 无法覆盖 API 15–19；补 ACTIVITY_MOTION 授权流程或将操作手增强限制到 API 20+", ev)
-        if (route === "operating-hand" && activity) check(`authorization-${owner}`, "warn", "核对 ACTIVITY_MOTION 用户授权及拒绝路径；声明权限不等于用户已授权", ev)
+        for (const permission of record.permissionDeclarations ?? []) {
+          if (!record.permissions.includes(permission.name)) continue
+          const reasonValid = typeof permission.reason === "string" && /^\$string:[A-Za-z_][A-Za-z0-9_]*$/.test(permission.reason)
+          const scene = permission.usedScene
+          const sceneValid = Array.isArray(scene?.abilities) && scene.abilities.length > 0 && scene.abilities.every((name) => typeof name === "string" && name.trim()) && ["inuse", "always"].includes(scene.when)
+          check(`permission-fields-${owner}-${permission.name}`, reasonValid && sceneValid ? "pass" : "fail", `${permission.name} 的 user_grant 声明必须包含 reason 字符串资源引用及 usedScene.abilities/when`, [{ path: owner }])
+          if (reasonValid && sceneValid) check(`permission-resources-${owner}-${permission.name}`, "warn", "核对 reason 资源可解析且用途准确，usedScene.abilities 属于实际使用能力的模块 Ability，页面可见期感知使用 inuse", [{ path: owner }])
+        }
+        if (route === "operating-hand" && gesture && !activity && inspection.api.compatible < 20) check(`permission-api-${owner}`, "warn", "仅 DETECT_GESTURE 无法覆盖 API 15–19；补充 ACTIVITY_MOTION 声明或将操作手增强限制到 API 20+", ev)
       }
       for (const u of active.filter((u) => u.operation === "on")) {
         const off = usages.filter((v) => v.operation === "off" && v.modulePath === u.modulePath)

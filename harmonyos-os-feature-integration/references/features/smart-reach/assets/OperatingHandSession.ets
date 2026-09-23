@@ -26,7 +26,7 @@ export class OperatingHandSession {
     if (deviceInfo.sdkApiVersion < 15 || !canIUse('SystemCapability.MultimodalAwareness.Motion')) {
       return false;
     }
-    // The caller completes ACTIVITY_MOTION authorization when that permission is used.
+    // Declare the route permission in the owning HAP module.json5.
     this.active = true;
     try {
       motion.on('operatingHandChanged', this.callback);

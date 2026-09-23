@@ -486,7 +486,7 @@
       "files": [],
       "expectations": [
         "路由 smart-reach，selectedRoutes 包含 native-component 和 holding-hand",
-        "导航栏用 adaptToHandedness，侧边按钮用 holdingHandChanged，不由两种信号争抢同一位置",
+        "导航栏用 adaptToHandedness，侧边按钮用 holdingHandChanged，原生路线无需声明权限，握持手路线在所属 HAP 声明 DETECT_GESTURE，不由两种信号争抢同一位置",
         "不强制新增沉浸光感材质、新闻页或引导弹窗"
       ]
     },
@@ -496,7 +496,7 @@
       "expected_output": "遵循已选择的操作手路径与版本保护。",
       "files": [],
       "expectations": [
-        "ACTIVITY_MOTION 需要声明与用户授权",
+        "在所属 HAP 声明 ACTIVITY_MOTION",
         "API 14 保留源程序，不使用 API 20 HoldingHandStatus",
         "已明确不升级，不重复确认；不强制升级 target"
       ]
@@ -508,8 +508,8 @@
       "files": [],
       "expectations": [
         "15–19 需 ACTIVITY_MOTION；20+ 才能二选一",
-        "提供正确的分段权限/授权方案，不凭社区文章对 DETECT_GESTURE 无条件动态申请",
-        "权限拒绝保留接入前状态"
+        "提供按 API 分段的 module.requestPermissions 声明，每项 user_grant 权限配置 reason 字符串资源及 usedScene 的实际 Ability 和使用时机",
+        "权限缺失或不匹配时保留接入前状态"
       ]
     },
     {

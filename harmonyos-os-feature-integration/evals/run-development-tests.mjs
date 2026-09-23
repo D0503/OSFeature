@@ -195,4 +195,40 @@ const tamper = await verifyDevelopment(request("tamper"), options)
 const tamperShot = tamper.evidence.find((e) => e.type === "screenshot")
 await writeFile(tamperShot.path, "modified")
 await assert.rejects(verifyDevelopment({ project: root, output: request("tamper").output, resume: tamper.runId, judgment: { ...judgment, runId: tamper.runId, visual: { ...judgment.visual, evidence: refs(tamperShot) } } }, options), /哈希/)
+
+// Smart-reach visual verification is real-device only; developer real-device screenshots import as visual evidence.
+const devShot = join(root, "dev-shot.png")
+await writeFile(devShot, png)
+assert.deepEqual(parseDevelopmentArgs(["--import-screenshot", "a.png", "--import-screenshot", "b.png"]).importScreenshot, ["a.png", "b.png"])
+assert.throws(() => parseDevelopmentArgs(["--device", "a", "--device", "b"]), /重复参数/)
+const smartBase = { project: root, feature: "smart-reach", route: "holding-hand", goal: "侧边悬浮按钮握持手", changes: structuredClone(changes) }
+const smartInspection = { ...inspection, api: { compile: 23, target: 23, compatible: 20 } }
+const emulatorOptions = {
+  ...options,
+  inspector: async () => ({ inspection: smartInspection, compatibility: { availableRoutes: ["holding-hand"] }, staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
+  commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ device: { name: "emulator", osVersion: "API 23" } }), stderr: "" } : options.commandRunner(args)
+}
+const emulatorRun = await verifyDevelopment({ ...smartBase, output: join(root, "sr-emulator"), executeBuild: true, executeRun: true, device: "emulator-1", navigate: nav, captureScreenshot: true }, emulatorOptions)
+assert.equal(emulatorRun.status, "inconclusive")
+assert.ok(emulatorRun.evidence.every((e) => e.type !== "screenshot"), "模拟器不采集智感握姿截图")
+let smartReport = await readFile(emulatorRun.report, "utf8")
+assert.ok(smartReport.includes("只能使用真机"))
+assert.ok(smartReport.includes("（模拟器）"))
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, importScreenshot: [devShot] }, emulatorOptions), /真机/)
+const physicalOptions = { ...emulatorOptions, commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ device: { name: "Mate 真机", osVersion: "API 23" } }), stderr: "" } : options.commandRunner(args) }
+const manualRun = await verifyDevelopment({ ...smartBase, output: join(root, "sr-manual"), executeBuild: true, importScreenshot: [devShot, devShot] }, physicalOptions)
+const manualShots = manualRun.evidence.filter((e) => e.type === "screenshot")
+assert.equal(manualShots.length, 2, "可重复导入开发者真机截图")
+assert.ok(manualShots.every((e) => e.origin === "developer"))
+const manualRefs = manualShots.map((e) => ({ id: e.id, sha256: e.sha256 }))
+const manualJudgment = { schemaVersion: "1.0", runId: manualRun.runId, goal: smartBase.goal, visual: { status: "passed", summary: "真机左右握姿均观察到按钮换边", evidence: manualRefs } }
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualRun.runId, judgment: { ...manualJudgment, runtime: { status: "passed", summary: "测试交互通过", evidence: manualRefs } } }, physicalOptions), /安装或目标页导航/)
+const manualDone = await verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualRun.runId, judgment: manualJudgment }, physicalOptions)
+assert.equal(manualDone.status, "inconclusive", "安装导航未执行时整体保持未确认")
+smartReport = await readFile(manualDone.report, "utf8")
+assert.ok(smartReport.includes("截图来源：开发者按引导在真机采集并导入"))
+assert.ok(smartReport.includes("真机左右握姿均观察到按钮换边"))
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualRun.runId, importScreenshot: [join(root, "missing.png")] }, physicalOptions), /不存在/)
+await writeFile(join(root, "not-png.txt"), "text")
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualRun.runId, importScreenshot: [join(root, "not-png.txt")] }, physicalOptions), /PNG/)
 console.log(JSON.stringify({ status: "passed" }))

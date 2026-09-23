@@ -6,11 +6,36 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { evaluateCompatibility, inspectProject, loadFeature, verifyInspection } from "./lib/project-tools.mjs"
 import { runHvigorBuild } from "./lib/hvigor-build.mjs"
 import { navigate, runDeveco, validateNavigation } from "./lib/development-device.mjs"
-import { cacheDirectory, deriveVerdict, exists, fileHash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
+import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
 const requiredText = (v, name) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${name} 必填`) }
+const PNG_MAGIC = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+
+function detectDeviceKind(deviceInfo, target) {
+  let info = deviceInfo
+  if (typeof info === "string") { try { info = JSON.parse(info) } catch { info = null } }
+  const candidate = info?.device ?? info?.data ?? info
+  const fields = [target, candidate?.name, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.connectType]
+  return fields.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v.trim()))) ? "emulator" : "physical"
+}
+
+async function importDeveloperScreenshots(run, runDirectory, paths) {
+  if (!Array.isArray(paths) || !paths.length) return
+  if (run.feature === "smart-reach" && run.deviceKind === "emulator") throw new Error("智感握姿视觉验证只能使用真机，不能在模拟器运行中导入截图")
+  for (const item of paths) {
+    const source = resolve(item)
+    if (!await exists(source)) throw new Error(`导入截图不存在：${item}`)
+    const content = await readFile(source)
+    if (!content.subarray(0, 8).equals(PNG_MAGIC)) throw new Error(`导入截图不是有效 PNG：${item}`)
+    const id = `E${run.evidence.length + 1}`
+    const path = join(runDirectory, `${id}.png`)
+    await writeFile(path, content)
+    run.evidence.push({ id, type: "screenshot", origin: "developer", path, sha256: hash(content) })
+  }
+  run.checks.visual = check("inconclusive", `已导入开发者提供的真机截图 ${paths.length} 张，等待 AI 实际阅读并补录判定`)
+}
 
 export async function inspectVerification(request) {
   const { profile } = await loadFeature(skillRoot, request.feature)
@@ -47,9 +72,18 @@ function applyStaticReview(runs, review) {
   }
 }
 
+function developerOnlyVisual(judgment, run) {
+  const refs = judgment.visual?.evidence
+  if (!Array.isArray(refs) || !refs.length) return false
+  return refs.every((ref) => run.evidence.find((v) => v.id === ref.id && v.sha256 === ref.sha256)?.origin === "developer")
+}
+
 export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment?.schemaVersion !== "1.0" || judgment.runId !== run.runId || judgment.goal !== run.goal) throw new Error("判定必须绑定本次 runId 与 goal")
-  if (judgment.visual || judgment.runtime) for (const key of ["install", "navigation", "build"]) if (run.checks[key].status !== "passed") throw new Error("构建、安装或目标页导航未通过，不能补录效果判定")
+  if (judgment.visual || judgment.runtime) {
+    if (run.checks.build.status !== "passed") throw new Error("构建未通过，不能补录效果判定")
+    if (judgment.runtime || !developerOnlyVisual(judgment, run)) for (const key of ["install", "navigation"]) if (run.checks[key].status !== "passed") throw new Error("安装或目标页导航未通过，不能补录效果判定；视觉判定仅可豁免全部引用开发者真机截图的设备阶段")
+  }
   for (const level of ["visual", "runtime"]) {
     const item = judgment[level]
     if (!item) continue
@@ -80,10 +114,12 @@ export async function verifyDevelopment(request, options = {}) {
   try {
     const { collection } = await loadCollection(output, request.project)
     if (request.resume) {
-      if (!request.judgment || request.executeBuild || request.executeRun || request.navigate || request.captureScreenshot || request.captureLayout || request.changes) throw new Error("resume 仅允许补录 judgment，不执行构建或设备操作")
+      if (request.executeBuild || request.executeRun || request.navigate || request.captureScreenshot || request.captureLayout || request.changes) throw new Error("resume 仅允许补录 judgment 或导入开发者截图，不执行构建或设备操作")
+      if (!request.judgment && !request.importScreenshot?.length) throw new Error("resume 需要提供 judgment 或导入开发者截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
-      await applyJudgment(run, request.judgment, collection.runs)
+      await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot)
+      if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
       const report = await saveReport(output, directory, collection)
       return { runId: run.runId, report, status: deriveVerdict(run), evidence: run.evidence }
     }
@@ -143,6 +179,7 @@ export async function verifyDevelopment(request, options = {}) {
     if (request.executeRun && request.device && run.checks.build.status === "passed") {
       const info = await call(["device", "view", "--target", request.device, "--format", "json"])
       run.deviceInfo = info.exitCode === 0 ? info.stdout.trim() : "系统信息采集失败"
+      if (info.exitCode === 0) run.deviceKind = detectDeviceKind(run.deviceInfo, request.device)
       const result = await call(launchArgs)
       run.checks.install = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "应用已安装并启动" : `安装或启动失败：${(result.stderr || result.stdout || "无输出").slice(-1200)}`)
     }
@@ -160,10 +197,12 @@ export async function verifyDevelopment(request, options = {}) {
       await call(logArgs, "runtime_log")
       if (request.captureLayout) await call(["ui", "layout", "--device", request.device, "--format", "json", "--mode", "full", "--depth", "0"], "component_tree")
       run.checks.visual = check("not_run", "尚未采集截图或提供视觉判定")
-      if (request.captureScreenshot) {
+      if (profile.featureId === "smart-reach" && run.deviceKind === "emulator") {
+        run.checks.visual = check("not_run", "智感握姿视觉验证只能使用真机；检测到目标设备为模拟器，未采集截图")
+      } else if (request.captureScreenshot) {
         const path = join(runDirectory, "target.png")
         const result = await call(["ui", "screenshot", "--device", request.device, "--path", path])
-        if (result.exitCode === 0 && await exists(path) && (await readFile(path)).subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+        if (result.exitCode === 0 && await exists(path) && (await readFile(path)).subarray(0, 8).equals(PNG_MAGIC)) {
           run.evidence.push({ id: `E${run.evidence.length + 1}`, type: "screenshot", path, sha256: await fileHash(path) })
           run.checks.visual = check("inconclusive", "已采集目标页截图，等待 AI 实际阅读并补录判定")
         } else run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证")
@@ -172,6 +211,7 @@ export async function verifyDevelopment(request, options = {}) {
       run.checks.runtime.summary = `未完成目标页验证：${run.checks.navigation.summary}`
       run.checks.visual.summary = `未完成目标页视觉验证：${run.checks.build.status !== "passed" ? run.checks.build.summary : run.checks.install.status !== "passed" ? run.checks.install.summary : run.checks.navigation.summary}`
     }
+    await importDeveloperScreenshots(run, runDirectory, request.importScreenshot)
     const previous = collection.runs.find((r) => sameTarget(r, run))
     if (previous) {
       for (const key of ["sdk", "compile", "target", "compatible"]) {
@@ -187,14 +227,19 @@ export async function verifyDevelopment(request, options = {}) {
 
 export function parseDevelopmentArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment"])
+  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot"])
+  const repeatable = new Set(["import-screenshot"])
   const args = {}
   for (let i = 0; i < argv.length; i++) {
     const name = argv[i].replace(/^--/, "")
     if (!argv[i].startsWith("--") || (!flags.has(name) && !values.has(name))) throw new Error(`未知参数 ${argv[i]}`)
-    if (name in args) throw new Error(`重复参数 ${name}`)
+    if (name in args && !repeatable.has(name)) throw new Error(`重复参数 ${name}`)
     if (flags.has(name)) args[name] = true
-    else { if (!argv[i + 1] || argv[i + 1].startsWith("--")) throw new Error(`缺少 ${name} 值`); args[name] = argv[++i] }
+    else {
+      if (!argv[i + 1] || argv[i + 1].startsWith("--")) throw new Error(`缺少 ${name} 值`)
+      const value = argv[++i]
+      if (repeatable.has(name)) { if (!args[name]) args[name] = []; args[name].push(value) } else args[name] = value
+    }
   }
   return Object.fromEntries(Object.entries(args).map(([key, value]) => [key.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), value]))
 }

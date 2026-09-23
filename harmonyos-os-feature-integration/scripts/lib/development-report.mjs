@@ -60,14 +60,15 @@ const findingLabels = {
 }
 
 function deviceLabel(run) {
+  const kind = run.deviceKind === "emulator" ? "（模拟器）" : ""
   let info = run.deviceInfo
   if (typeof info === "string") {
     try { info = JSON.parse(info) } catch {
-      return `设备：${escape(run.device || "未指定")}；系统：${escape(info && !/^[\s]*[\[{]/.test(info) ? info : "未采集")}。`
+      return `设备：${escape(run.device || "未指定")}${kind}；系统：${escape(info && !/^[\s]*[\[{]/.test(info) ? info : "未采集")}。`
     }
   }
   const device = info?.device ?? info?.data ?? info
-  return `设备：${escape(device?.name || run.device || "未指定")}；系统：${escape(device?.osVersion || "未采集")}。`
+  return `设备：${escape(device?.name || run.device || "未指定")}${kind}；系统：${escape(device?.osVersion || "未采集")}。`
 }
 
 function stageSummary(key, value) {
@@ -154,6 +155,7 @@ export async function saveReport(output, directory, collection) {
       if (resolve(e.path) !== resolve(dest)) await copyFile(e.path, dest)
       e.path = dest
       lines.push("", `<img src="evidence/${filename}" alt="目标页面截图" width="270" />`, "")
+      if (e.origin === "developer") lines.push("", `截图来源：开发者按引导在真机采集并导入。`)
     }
   }
   lines.push("", "## 升级与兼容", "", "SDK 版本与回退行为按整个工程记录一份；保留行为覆盖所有改造项。", "")
