@@ -2,6 +2,7 @@ import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
 import { inspectEasyGo, evaluateEasyGo, verifyEasyGo } from "./easygo-tools.mjs"
+import { inspectSmartReach, evaluateSmartReach, verifySmartReach } from "./smart-reach-tools.mjs"
 import { inspectMaterialInventory } from "./material-inventory.mjs"
 
 const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
@@ -506,6 +507,7 @@ export async function inspectProject(projectPath, options = {}) {
     },
     signals,
     easyGo: inspectEasyGo(files, maskComments),
+    smartReach: inspectSmartReach(files, maskComments),
     materialInventory: await inspectMaterialInventory(files, maskComments),
     evidence: [compatible.evidence, target.evidence, compile.evidence, ...localSdk.evidence].filter(Boolean),
     unknown,
@@ -517,6 +519,7 @@ export async function inspectProject(projectPath, options = {}) {
 }
 
 export function evaluateCompatibility(inspection, profile) {
+  if (profile.featureId === "smart-reach") return evaluateSmartReach(inspection, profile)
   if (profile.featureId === "easygo-parallel") return evaluateEasyGo(inspection, profile)
   const compatible = Number.isInteger(inspection.api.compatible) ? inspection.api.compatible : null
   const target = Number.isInteger(inspection.api.target) ? inspection.api.target : null
@@ -705,6 +708,7 @@ function effectiveArkuiMaterialState(inspection) {
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
+  if (compatibility.featureId === "smart-reach") return verifySmartReach(inspection, compatibility, routeOption)
   if (compatibility.featureId === "easygo-parallel") return verifyEasyGo(inspection, compatibility, routeOption)
   if (routeOption === "auto" && (compatibility.selectedRoutes?.length ?? 0) > 1) {
     const routeResults = compatibility.selectedRoutes.map((route) => verifyInspection(inspection, compatibility, route))

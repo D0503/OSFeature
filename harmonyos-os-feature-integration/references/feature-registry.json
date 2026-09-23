@@ -28,6 +28,20 @@
       "status": "ready",
       "entry": "references/features/easygo-parallel/README.md",
       "profile": "references/features/easygo-parallel/profile.json"
+    },
+    {
+      "id": "smart-reach",
+      "displayName": "智感握姿",
+      "aliases": [
+        "Smart Reach",
+        "SmartReach",
+        "智感握姿接入",
+        "左右跟手",
+        "adaptToHandedness"
+      ],
+      "status": "ready",
+      "entry": "references/features/smart-reach/README.md",
+      "profile": "references/features/smart-reach/profile.json"
     }
   ]
 }

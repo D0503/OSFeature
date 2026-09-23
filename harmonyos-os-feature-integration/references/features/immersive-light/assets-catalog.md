@@ -4,7 +4,7 @@
 
 | 路线 | 接入参考 |
 |---|---|
-| `hds` | [HDS 迁移证据](routes/hds/assets.md)，代码短示例见[接入实现](routes/hds/implementation.md) |
+| `hds` | [HDS 迁移参考](routes/hds/assets.md)，代码短示例见[接入实现](routes/hds/implementation.md) |
 | `arkui` | [ArkUI 资产](routes/arkui/assets.md) |
 | `hds + arkui` | 同时读取两条路线的参考，只提取各自目标组件需要的最小改动 |
 

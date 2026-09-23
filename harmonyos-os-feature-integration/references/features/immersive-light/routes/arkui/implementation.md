@@ -33,8 +33,3 @@ ArkUI 路线覆盖 API 26+ 的原生 ArkUI `Navigation`、`Tabs`、弹窗和交�
 4. 对 API 26 以下、不支持设备、系统关闭和业务关闭路径保留接入前状态。
 5. 按目标分类实施；组件专属接口优先于把通用 `systemMaterial` 生搬到所有组件。
 6. 运行静态验证和真实工程构建，再在目标设备上检查系统材质档位、深浅色和交互反馈。
-
-## 来源
-
-- [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)
-- [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)

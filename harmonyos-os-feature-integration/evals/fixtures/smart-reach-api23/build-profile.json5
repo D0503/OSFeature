@@ -1,0 +1,6 @@
+{
+  app: {
+    products: [{ name: 'default', compileSdkVersion: 23, targetSdkVersion: 20, compatibleSdkVersion: 14 }]
+  },
+  modules: [{ name: 'entry', srcPath: './entry' }]
+}

@@ -111,9 +111,3 @@ Tabs({ barPosition: BarPosition.End }) {
 - 扫描到 `HdsTabs`：选择 HDS；
 - 扫描到原生 `Tabs` 的有效悬浮形态、`FloatingTabBarStyle.systemMaterial` 或 ArkUI `uiMaterial`：选择 ArkUI；
 - 同一工程两类组件都需要改造：同时选择 HDS 与 ArkUI。
-
-## 来源
-
-- [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
-- [Navigation 示例20](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-basic-components-navigation#示例20设置systemmaterial开启标题栏材质效果)
-- [Tabs 示例24](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-container-tabs#示例24tabbar悬浮样式)

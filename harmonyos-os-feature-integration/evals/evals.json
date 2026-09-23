@@ -478,6 +478,94 @@
         "不同时将同一页写入 fullScreenPages 与 homePage/relatedPage/transPages",
         "动态名称需核实，用户明确例外优先"
       ]
+    },
+    {
+      "id": 39,
+      "prompt": "给 API 23 的 HdsTabs 接入智感握姿，并让侧边按钮跟随握持手。",
+      "expected_output": "组合系统组件原生适配与握持手感知，分别验证。",
+      "files": [],
+      "expectations": [
+        "路由 smart-reach，selectedRoutes 包含 native-component 和 holding-hand",
+        "导航栏用 adaptToHandedness，侧边按钮用 holdingHandChanged，不由两种信号争抢同一位置",
+        "不强制新增沉浸光感材质、新闻页或引导弹窗"
+      ]
+    },
+    {
+      "id": 40,
+      "prompt": "智感握姿：SDK 和 compile 为 API 15，compatible 14，只想让按钮跟随操作手，不升级。",
+      "expected_output": "遵循已选择的操作手路径与版本保护。",
+      "files": [],
+      "expectations": [
+        "ACTIVITY_MOTION 需要声明与用户授权",
+        "API 14 保留源程序，不使用 API 20 HoldingHandStatus",
+        "已明确不升级，不重复确认；不强制升级 target"
+      ]
+    },
+    {
+      "id": 41,
+      "prompt": "智感握姿已经只声明 DETECT_GESTURE，compatible 为 API 15，想覆盖 API 15 到 23 的操作手。",
+      "expected_output": "指出 API 15–19 的权限覆盖缺口。",
+      "files": [],
+      "expectations": [
+        "15–19 需 ACTIVITY_MOTION；20+ 才能二选一",
+        "提供正确的分段权限/授权方案，不凭社区文章对 DETECT_GESTURE 无条件动态申请",
+        "权限拒绝保留接入前状态"
+      ]
+    },
+    {
+      "id": 42,
+      "prompt": "接入握持手后按钮抖动；收到 0、3、16 都设为右侧，用户按住按钮时也会换边。",
+      "expected_output": "区分五种握持状态，保护进行中的操作。",
+      "files": [],
+      "expectations": [
+        "只有 LEFT_HAND_HELD/RIGHT_HAND_HELD 驱动方向，UNKNOWN_STATUS=16",
+        "未握持、双手、未知不强制换边；初始位置取源基线",
+        "去重并在按压/拖动结束后应用最新有效方向，功能和状态保持"
+      ]
+    },
+    {
+      "id": 43,
+      "prompt": "智感握姿 SysCap 为 true，但 holdingHandChanged 返回 801；帮我诊断。",
+      "expected_output": "按硬件/设置/姿态与接口版本定位，不直接修改工程。",
+      "files": [],
+      "expectations": [
+        "canIUse 不能证明具体硬件支持，也不能替代 API 20 门禁",
+        "核对系统开关、亮屏解锁、壳厚、手套、方向与接触条件",
+        "801 恢复原路径，模拟器或示例截图不能证明真机识别成功"
+      ]
+    },
+    {
+      "id": 44,
+      "prompt": "智感握姿页面反复进出会重复回调；退出时调用 off(holdingHandChanged) 不传 callback。",
+      "expected_output": "核对实例归属与真实可见期生命周期。",
+      "files": [],
+      "expectations": [
+        "同一稳定 callback 成对 on/off，只有订阅成功后退订",
+        "隐藏/后台停止，迟到回调忽略；off 失败保留记录防止再 on",
+        "不使用无 callback 的全事件退订误清其他监听"
+      ]
+    },
+    {
+      "id": 45,
+      "prompt": "智感握姿关闭以后悬浮栏还在，API 19 用户原来的侧边布局也变了。",
+      "expected_output": "对照基线检查完整回退路径，不把关闭跟手布尔值等同于恢复源布局。",
+      "files": [],
+      "expectations": [
+        "保留 pre-integration-source-state 的原组件树、断点、状态与业务",
+        "新增 HdsTabs 属性调用链需 API 23 保护",
+        "系统开关无公开查询证据时不编造 API，不把无回调当作关闭判据"
+      ]
+    },
+    {
+      "id": 46,
+      "prompt": "给普通 HdsTabs 做单手布局；以后所有系统组件都用 adaptToHandedness，可以吗？",
+      "expected_output": "区分普通布局与注册特性，以及原生路线名称与已核实实例。",
+      "files": [],
+      "expectations": [
+        "普通 HdsTabs/单手布局不自动命中智感握姿",
+        "系统组件原生适配（如 HDS）当前只为有证据的 HdsTabs 实例提供实现",
+        "不能将属性、版本或权限外推到所有组件"
+      ]
     }
   ]
 }

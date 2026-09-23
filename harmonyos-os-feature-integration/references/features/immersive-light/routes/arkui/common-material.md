@@ -53,8 +53,3 @@ Column() {
 - 原生标题栏与悬浮页签的配置组合见[导航类组件](components/navigation.md)。
 
 资产是可复制骨架，不替代目标工程真实构建与真机验证。
-
-## 来源
-
-- [沉浸式系统材质视效](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability)
-- [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)

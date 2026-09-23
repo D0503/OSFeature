@@ -1,0 +1,6 @@
+{
+  module: {
+    name: 'entry', type: 'entry', deviceTypes: ['phone', 'tablet'],
+    requestPermissions: [{ name: 'ohos.permission.DETECT_GESTURE' }]
+  }
+}

@@ -79,8 +79,3 @@ Select 的按钮和下拉菜单是两个独立入口，必须分别决定 `syste
 - 原按压态、悬浮态是否会被 `lightEffect` 替代；
 - 是否有业务上必须保持普通样式的组件，需要显式设置 `Material.empty`；
 - API 26 以下设备是否仍保持接入前状态。
-
-## 来源
-
-- [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)
-- [沉浸光感兼容性适配](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-compatibility)

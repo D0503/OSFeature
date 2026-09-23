@@ -27,8 +27,3 @@ Button、Chip/ChipGroup/ChipGroupV2、SegmentButton 等普通交互组件不能�
 - Slider 的 `undefined` 是官方声明的恢复原样式方式；
 - Toggle Switch、Slider 等预设组件不要根据传入的 `style`、`interactive` 值推断最终视觉参数；
 - 应用级 `DISABLE` 时所有显式材质均不生效。
-
-## 来源
-
-- [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
-- [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)

@@ -2,7 +2,7 @@
 
 先按[兼容性与选型](../../compatibility.md)确定路线，并读取[共享回退策略](../../shared/fallback.md)。示例用于说明接口组合；修改真实工程时应复用项目现有组件、类型、主题资源和状态管理方式。
 
-悬浮导航Tab（底部悬浮胶囊页签）的工程迁移参考见[HDS 迁移证据](assets.md)。按本文短示例修改目标工程的实际组件和配置入口，保留既有页面结构与业务行为。
+悬浮导航Tab（底部悬浮胶囊页签）的工程迁移参考见[HDS 迁移参考](assets.md)。按本文短示例修改目标工程的实际组件和配置入口，保留既有页面结构与业务行为。
 
 ## HDS 沉浸光感材质路线：API 23+
 
@@ -123,7 +123,7 @@ HdsNavigation() {
 
 先按[窗口沉浸状态规则](../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口。HDS 的 `barBottomMargin` 默认 0；本 Skill 接入时，已开启窗口沉浸式显式设置 28vp，未开启时显式设置 0vp，并为所有一级 Tab 页的真实滚动容器及全部父组件配置底部 `expandSafeArea`。状态不明时先查调用链，不自动开启全局窗口沉浸式。以下 `this.floatingBarBottomMargin` 表示按该规则确认后的工程配置值，不是通过静态扫描猜出的窗口状态。
 
-能力包内置的三组迁移对照快照显示，接入后版本都把手机、平板大断点和横屏主导航统一成底部悬浮 `HdsTabs`。共同核心如下；迁移差异摘要与适用边界见[HDS 迁移证据](assets.md)。原始对照工程不随 Skill 分发，也不是执行依赖。
+接入分支把手机、平板大断点和横屏主导航统一成底部悬浮 `HdsTabs`。核心配置如下；迁移规则与适用边界见[HDS 迁移参考](assets.md)。
 
 ```typescript
 HdsTabs({
@@ -213,13 +213,13 @@ HdsTabs({
 
 MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等于设备横竖屏；切换排列时仍要保留源程序已有的断点、方向、窗口模式、控制器、状态和操作。电视设备上 MiniBar 不生效，应按能力包的通用回退策略保留接入前组件树与交互。
 
-迁移时按下面的证据层级处理：
+迁移时按下面的规则处理：
 
-- `BarPosition.End`、`scrollable(false)`、`barOverlap(true)`、`barFloatingStyle` 和 `ADAPTIVE + ADAPTIVE` 是三组迁移对照的共同模式。
+- `BarPosition.End`、`scrollable(false)`、`barOverlap(true)`、`barFloatingStyle` 和 `ADAPTIVE + ADAPTIVE` 是悬浮底部导航的核心配置。
 - 56vp 是显示态栏高基线；需要随滚动隐藏时可在 56 和 0 之间切换。
 - HDS 的 `barHeight` 不支持 `'auto'`。原工程若设置 `.barHeight('auto')`，在 HDS 分支移除整项配置，不将其替换为另一个固定高度；通过变量、条件或封装传入时也要追踪实际值，确保 HDS 分支不会得到 `'auto'`。已有合法数值和动态显隐高度保留，低版本普通 `Tabs` 分支保持原配置。
 - 接入分支删除外层 `.barWidth(...)`，由 `barFloatingStyle.barWidth` 的配置或默认行为自动生效，不额外添加固定宽度。
-- 迁移快照中部分工程使用 `barBottomMargin: 28`，不能据此推断 HDS 默认值；当前接入按窗口沉浸状态显式选择 28vp 或 0vp，并检查祖先 padding 的用途与分支，避免重复避让。
+- HDS 的 `barBottomMargin` 默认值为 0；接入时按窗口沉浸状态显式选择 28vp 或 0vp，并检查祖先 padding 的用途与分支，避免重复避让。
 - `animationDuration(0)`、透明 `gradientMask` 和透明背景按工程实际交互选择；底部 `expandSafeArea` 按窗口沉浸状态规则处理，未开启窗口沉浸式时覆盖所有一级页及完整父组件链。
 - `HdsTabsController` 继承 `TabsController`，既有 `changeIndex` 通常可继续使用；仍需扫描所有类型声明、控制器注入、双击、隐藏和刷新回调。
 - API 23/24 模板将 `HdsTabs` 从 `@hms.hds.hdsBaseComponent` 导入，当前 SDK 也可见 `@kit.UIDesignKit` 聚合入口。生成代码时沿用目标 SDK 与工程已验证的导入方式，最终以真实构建为准。

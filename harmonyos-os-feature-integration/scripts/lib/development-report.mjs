@@ -122,7 +122,7 @@ export async function saveReport(output, directory, collection) {
   const reportPath = join(output, "integration-report.md")
   const previous = await exists(reportPath) ? await readFile(reportPath, "utf8") : ""
   const previousImages = [...previous.matchAll(/<img src="evidence\/([a-f0-9]{64}\.png)" alt="目标页面截图" width="270" \/>/g), ...previous.matchAll(/!\[目标页面截图\]\(<evidence\/([a-f0-9]{64}\.png)>\)/g)].map((m) => m[1])
-  const featureNames = [...new Set(collection.runs.map((r) => r.featureName ?? ({ "immersive-light": "沉浸光感", "easygo-parallel": "平行视界" })[r.feature] ?? r.feature))]
+  const featureNames = [...new Set(collection.runs.map((r) => r.featureName ?? ({ "immersive-light": "沉浸光感", "easygo-parallel": "平行视界", "smart-reach": "智感握姿" })[r.feature] ?? r.feature))]
   const featureTitle = featureNames.join(" / ") || "系统特性"
   const onlyMaterial = collection.runs.every((r) => r.feature === "immersive-light")
   const lines = [`# ${escape(featureTitle)}接入汇总报告`, "", `工程：${escape(collection.project)}`, "", `## ${escape(featureTitle)}改造汇总`, "", "以下为已实施的代码配置；实际效果以逐项验证结果为准。", "", "| 改造项 | 页面 / 组件 | 已实施配置 | 修改文件 | 运行验证 | 视觉验证 |", "|---|---|---|---|---|---|"]
@@ -140,7 +140,7 @@ export async function saveReport(output, directory, collection) {
       if (!findings.length) lines.push("- 静态检查尚未完成复核，需重新检查并明确具体问题。")
       for (const finding of findings) {
         const locations = (finding.evidence ?? []).map((e) => typeof e === "string" ? e : e.path ? `${e.path}${e.line ? `:${e.line}` : ""}` : "").filter(Boolean)
-        const label = escape(findingLabels[finding.id] ?? (finding.id.startsWith("easygo-") ? finding.message : `需人工复核检查项（${finding.id}）`))
+        const label = escape(findingLabels[finding.id] ?? (/^(easygo|smart-reach)-/.test(finding.id) ? finding.message : `需人工复核检查项（${finding.id}）`))
         const location = locations.length ? `；位置：${[...new Set(locations)].slice(0, 3).map(escape).join("、")}` : ""
         if (finding.review) lines.push(`- ${finding.review.status === "passed" ? "已复核通过" : "复核确认问题"}：${label}${location}；${escape(finding.review.note)}。`)
         else lines.push(`- ${finding.status === "fail" ? "检查失败" : "待核对"}：${label}${location}。`)

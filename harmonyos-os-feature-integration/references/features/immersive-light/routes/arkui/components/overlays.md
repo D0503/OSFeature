@@ -22,8 +22,3 @@ CalendarPickerDialog、DatePickerDialog、TextPickerDialog、TimePickerDialog �
 4. 弹窗已有背景色、背景模糊、自定义阴影或大尺寸时，先决定保留原视觉还是采用材质，不叠加碰运气。
 5. 大面积 Dialog/Sheet 的 GPU 和动效开销单独评估；关键内容不能依赖透明背景才能辨识。
 6. SelectionMenu、文本选择菜单和 PickerDialog 的系统默认行为按[组件矩阵](../component-profile.json)逐项核对，不用一个泛化 Dialog/Menu 类型代替。
-
-## 来源
-
-- [组件适配沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation)
-- [开启沉浸光感](https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable)

@@ -135,19 +135,9 @@
     "sharedValidation": "performance-validation.md",
     "configuration": "configuration.md",
     "troubleshooting": "troubleshooting.md",
-    "sources": "sources.md",
     "configurationConfirmation": "configuration-confirmation.md"
   },
   "evidence": {
-    "baselineDate": "2026-09-17",
-    "policy": "snapshot-first-verify-on-change-or-conflict",
-    "sources": [
-      "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-easygo-parallel",
-      "https://developer.huawei.com/consumer/cn/doc/design-guides/parallel_view-0000002588655180",
-      "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/module-configuration-file",
-      "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uicontext-uicontext",
-      "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uicontext-uiobserver",
-      "https://gitcode.com/HarmonyOS_Samples/easygo-parallel-shopping"
-    ]
+    "policy": "snapshot-first-verify-on-change-or-conflict"
   }
 }

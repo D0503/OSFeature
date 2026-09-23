@@ -163,17 +163,6 @@ try {
           }
         }
 
-        for (const source of [
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-overview",
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-enable",
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-component-adaptation",
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-common-capability",
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-constraints",
-          "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-immersive-light-sense-faq",
-          "https://developer.huawei.com/consumer/cn/doc/design-guides/immersivelight-0000002612101053"
-        ]) {
-          issue(errors, profile.evidence?.sources?.includes(source), "profile.evidence.sources", `缺少官方证据: ${source}`)
-        }
       }
       if (feature.id === "easygo-parallel") {
         issue(errors, profile.routeComposition?.mode === "exclusive", "profile.routeComposition.mode", "平行视界路线必须互斥")
@@ -185,6 +174,17 @@ try {
         for (const key of ["isEasySplit", "wideSplit", "squareSplit", "mode", "pagePairs", "transPages", "splitDividerColor", "drawableRectHook", "enableInSplitScreen"]) {
           issue(errors, profile.capabilities?.[key]?.minApi === (key === "isEasySplit" ? 24 : 26), `profile.capabilities.${key}`, "缺少或错误的可选能力版本门槛")
         }
+      }
+      if (feature.id === "smart-reach") {
+        issue(errors, profile.routeComposition?.mode === "composable", "profile.routeComposition.mode", "智感握姿支持按不同目标组合路线")
+        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "智感握姿不推断独立 target 门槛")
+        const expected = { "native-component": 23, "operating-hand": 15, "holding-hand": 20 }
+        issue(errors, routeIds.size === 3 && Object.keys(expected).every((id) => routeIds.has(id)), "profile.routes", "智感握姿必须包含三条路径")
+        for (const route of profile.routes ?? []) {
+          issue(errors, route.minApi === expected[route.id], `profile.routes.${route.id}.minApi`, "智感握姿路径版本门槛错误")
+          issue(errors, route.minTargetApi === undefined, `profile.routes.${route.id}.minTargetApi`, "没有独立 target 门槛证据")
+        }
+        issue(errors, typeof profile.documents?.troubleshooting === "string", "profile.documents.troubleshooting", "缺少智感握姿排障资料")
       }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")
 
