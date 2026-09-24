@@ -8,6 +8,6 @@ SDK/compile API 15+，导入 `motion`，在调用前检查运行 API 与 `System
 
 `OperatingHandStatus`：UNKNOWN_STATUS=0、LEFT_HAND_OPERATED=1、RIGHT_HAND_OPERATED=2。只有后两者驱动左右位置，不把未知值当右手。需要首次状态时可在启用后使用最近状态，但它不是握持手状态，也不能保证是本次最新动作。
 
-按 [共同生命周期规则](../../implementation.md) 连接页面实际可见期。示例 [OperatingHandSession](../../assets/OperatingHandSession.ets) 仅负责感知生命周期；在所属 HAP 声明对应权限后启动，返回 false 或错误回调时恢复原路径。
+按 [共同生命周期规则](../../implementation.md) 连接页面实际可见期，在所属 HAP 声明对应权限，并处理调用异常。
 
 初次或换手后的多次触控才可能上报；排除边缘 8mm、窗口旋转、多指、指关节。不可把这一路线作为握持手 API 20 的自动低版本替代。读 [资产](assets.md) 和 [验证](validation.md)。

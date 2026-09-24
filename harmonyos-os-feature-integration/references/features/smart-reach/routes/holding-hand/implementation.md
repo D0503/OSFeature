@@ -1,11 +1,65 @@
 # 握持手感知
 
-SDK/compile API 20+，运行时 API 20+ 与 Motion SysCap 都满足后，调用 `motion.on('holdingHandChanged', callback)`；在所属 HAP 声明 DETECT_GESTURE。权限与目标发行版要求见 [兼容性](../../compatibility.md)。
+在承载目标组件的页面中接入：监听握持手事件，更新页面的位置状态，由原组件布局和转场动画呈现变化。只改用户指定的高频、难触达操作，保留业务事件、数据、控制器和响应式布局。
 
-`HoldingHandStatus`：NOT_HELD=0、LEFT_HAND_HELD=1、RIGHT_HAND_HELD=2、BOTH_HANDS_HELD=3、UNKNOWN_STATUS=16。此枚举的未知值不是操作手的 0。只将 LEFT_HAND_HELD/RIGHT_HAND_HELD 映射为左右位移，其他值不强制换边；关闭和失败则回到源基线。
+先按 [跟手模式](../../implementation.md#跟手模式) 确定移动原组件，还是保留原组件并新增同步入口。新增模式只调整新增组件的位置，原组件不动；两组共享页面已有业务状态和操作方法，由页面统一订阅握持手事件。
 
-使用稳定 callback，在订阅成功后通过 `motion.off('holdingHandChanged', callback)` 清理。首次订阅可返回当前握持状态，不编造 getRecentHoldingHandStatus。按 [共同规则](../../implementation.md) 控制可见期、重复订阅、迟到回调、交互期间暂缓位移与错误处理。
+## 1. 权限与版本
 
-侧边 FAB 可采用左右条件分支和 TransitionEffect.move(START/END)；适配时保留业务状态，屏外绕行、垂直高度不变、左右间距一致。初始位置沿用用户原始布局，不为此增加新闻页、弹窗或附加操作按钮。
+在所属 HAP 的 `module.json5` 声明 `ohos.permission.DETECT_GESTURE`，同时配置 `reason` 字符串资源、`usedScene.abilities` 的实际 Ability 名称和 `when: 'inuse'`。完整声明见 [兼容性](../../compatibility.md)。
 
-设备需支持对应硬件、亮屏解锁且正常握持，SysCap 通过仍可能返回 801；系统开关及壳厚等条件见兼容性。读 [资产](assets.md) 和 [验证](validation.md)。
+SDK/compile 至少 API 20。通过 `@kit.MultimodalAwarenessKit` 导入 `motion`；运行时 API 20+ 和 `canIUse('SystemCapability.MultimodalAwareness.Motion')` 都满足后才进入新接口路径。compatible 低于 20 时保护整个新调用路径；SysCap 不能代替版本检查，也不能保证具体硬件支持。
+
+## 2. 页面状态与事件回调
+
+沿用页面现有状态管理方式：V1 页面使用 `@State`，V2 页面使用 `@Local`，不为接入特性迁移整个页面。状态按职责区分：
+
+| 状态 | 用途 |
+|---|---|
+| 原位置 | 接入前布局在当前断点、方向和窗口尺寸下的位置，关闭时据此恢复 |
+| 当前侧 | 跟手目标实际呈现的左右位置；原组件位移时初值取原布局，新增模式收到首个有效方向前不展示新增入口 |
+| 订阅成功标志 | 避免重复监听，判断是否需要退订 |
+| 页面可见与功能启用状态 | 决定是否接受事件；隐藏或关闭后忽略迟到回调 |
+| 交互状态与待应用方向 | 按压、长按、拖动期间暂缓移动，结束后再应用有效方向 |
+
+在页面定义稳定的 `handleHoldingHandChange: Callback<motion.HoldingHandStatus>` 回调，用同一函数实例订阅和退订。回调先检查页面是否可见、功能是否启用，再处理状态：
+
+| HoldingHandStatus | 处理 |
+|---|---|
+| `LEFT_HAND_HELD = 1` | 目标方向为左；与当前侧相同则不重复动画 |
+| `RIGHT_HAND_HELD = 2` | 目标方向为右；与当前侧相同则不重复动画 |
+| `NOT_HELD = 0`、`BOTH_HANDS_HELD = 3`、`UNKNOWN_STATUS = 16` | 保持当前侧；首次无有效方向时原组件保持初始位置，新增入口保持未展示 |
+
+此枚举的未知值是 16，不是操作手枚举中的 0。暂时无回调也保持当前侧，不能通过超时归位或推断系统关闭。首次订阅可返回当前握持状态，不添加不存在的 `getRecentHoldingHandStatus()`。
+
+目标正在操作时不立即移动，暂存最后一个有效方向；交互结束后仅在页面可见、功能仍启用时应用。关闭或错误时清空待应用方向。回调只更新必要状态，不重建业务数据。
+
+## 3. 订阅与页面生命周期
+
+1. 页面出现且满足启用条件时，在 `try/catch` 内调用 `motion.on('holdingHandChanged', this.handleHoldingHandChange)`；仅调用成功后设置订阅标志。已有有效订阅时不重复调用。
+2. 页面消失时，用 `motion.off('holdingHandChanged', this.handleHoldingHandChange)` 清理成功建立的订阅。不要调用不带回调的全事件退订。
+3. `aboutToAppear` / `aboutToDisappear` 适用于组件出现和消失；缓存页面、Tab 切换、前后台场景须结合工程实际可见性处理，不能假设切换页面一定触发组件销毁。
+4. 页面隐藏或进入后台时停止感知、忽略迟到回调，不更新隐藏页面。缓存页面保留位置状态，重新可见且功能启用后恢复监听；新建页面以原布局初始化。
+5. `on` / `off` 分别捕获异常并记录 code。退订失败时保留订阅记录，阻止再次 `on` 叠加监听，后续明确的生命周期清理可以重试；不循环重试。
+
+## 4. 左右布局与转场
+
+侧边悬浮按钮在现有容器中设置左右对齐；容器适合时，可采用 `RelativeContainer` 内的左右条件分支，分别设置 `HorizontalAlign.Start/End`，底部对齐保持一致。
+
+侧边切换使用 `TransitionEffect.move(TransitionEdge.START/END)` 从对应屏外进出，避免按钮横穿内容区域。动画曲线优先使用官方推荐值：组件出场位移动画使用 `curves.interpolatingSpring(0, 1, 200, 17)`（stiffness=200，出场更利落）；从屏幕外移入/移出使用 `curves.interpolatingSpring(0, 1, 170, 17)`（stiffness=170，侧边绕行更自然）。不得使用未经验证的参数组合。首次出场标志放在页面状态中，不因条件分支重建而重复触发首次动画。
+
+通过 `if/else` 切换左右分支时，退出分支中的组件沿当前侧滑出，进入分支中的组件从对侧滑入。分别为分支配置 `TransitionEffect.move(...).animation({ curve: ... })`，两个过渡由框架同步执行，无需手动编排先后时序。不要用定时器串联“隐藏、等待、再显示”，也不要在两段动画之间插入空白状态。这里的退出/进入组件是同一跟手目标的左右呈现，不是新增模式中持续保留的原入口；原入口不参加这次换侧动画。
+
+沿用原按钮尺寸、安全区、垂直高度及断点边距，左右边距保持一致，不直接复制固定底部间距。条件分支共享原业务状态和事件，避免切换时重置输入、选中态或控制器。底部成组组件则整体平移，保持组内顺序和间距。
+
+## 5. 关闭、暂时无结果与失败
+
+明确关闭时停止感知、屏蔽迟到回调、清空待应用方向。原组件位移模式恢复当前布局下的接入前位置；新增模式撤去新增入口，保留原组件与共享业务状态。若目标正在操作，安排在不打断操作的安全时机恢复或移除。暂时识别不到时保持当前侧。
+
+低版本、不支持、首次订阅失败保留原布局和功能；201、801 及服务错误按 [回退规则](../../fallback.md) 处理。没有系统关闭通知的可靠依据时，不编造查询或监听接口。
+
+## 6. 组合与验证
+
+自定义按钮由 `holdingHandChanged` 控制；如同时接入 HdsTabs，其位置交给 `adaptToHandedness`，不得用两种信号争抢同一组件。单独接入握持手感知不要求引入 HdsTabs、沉浸材质、新闻页面、引导弹窗或持久化逻辑。
+
+按 [握持手验证](validation.md) 检查声明、构建、生命周期、交互保护和退化行为，并引导开发者在支持真机上完成实际握姿操作与取证。静态检查、模拟事件或构建通过均不能替代真实识别效果。

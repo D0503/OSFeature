@@ -487,7 +487,8 @@
       "expectations": [
         "路由 smart-reach，selectedRoutes 包含 native-component 和 holding-hand",
         "导航栏用 adaptToHandedness，侧边按钮用 holdingHandChanged，原生路线无需声明权限，握持手路线在所属 HAP 声明 DETECT_GESTURE，不由两种信号争抢同一位置",
-        "不强制新增沉浸光感材质、新闻页或引导弹窗"
+        "自定义按钮在已有页面组织稳定回调、位置状态和对应屏外转场，保留业务事件与断点边距",
+        "不强制新增沉浸光感材质、新闻页、引导弹窗或持久化逻辑"
       ]
     },
     {
@@ -519,7 +520,7 @@
       "files": [],
       "expectations": [
         "只有 LEFT_HAND_HELD/RIGHT_HAND_HELD 驱动方向，UNKNOWN_STATUS=16",
-        "未握持、双手、未知不强制换边；初始位置取源基线",
+        "未握持、双手、未知或暂时无回调保持当前侧；首次无结果保持初始位置；明确关闭时恢复当前布局下的接入前位置",
         "去重并在按压/拖动结束后应用最新有效方向，功能和状态保持"
       ]
     },
@@ -541,7 +542,8 @@
       "files": [],
       "expectations": [
         "同一稳定 callback 成对 on/off，只有订阅成功后退订",
-        "隐藏/后台停止，迟到回调忽略；off 失败保留记录防止再 on",
+        "缓存页面、Tab 切换与前后台按实际可见性处理，不能仅依赖 aboutToDisappear",
+        "隐藏/后台停止，迟到回调忽略；缓存页面保留位置状态；off 失败保留记录防止再 on",
         "不使用无 callback 的全事件退订误清其他监听"
       ]
     },
