@@ -32,6 +32,10 @@
 
 ## 原生底部 Tabs
 
+`Tabs` 及链上的 `TabContent` 本身也要按[共享安全区规则](../../../shared/validation.md#窗口沉浸状态与栏间距)配置 `.expandSafeArea([SafeAreaType.SYSTEM], [...])`，按需选择 BOTTOM、TOP 或一次合并两者，不能只扩展外围容器和内部页面。
+
+未开启窗口沉浸式时，底部安全区扩展必须覆盖每个 Tab 页，包括非默认页和懒加载页；不能只改首页或公共 Tabs。**必须沿扩展链逐个父布局组件配置 `expandSafeArea`，从真实滚动容器一直覆盖到页面宿主，不能跳过中间层级。**自定义组件和 Builder 必须进入内部检查实际布局节点，并切换所有 Tab 验证。
+
 原生 `Tabs` 的悬浮材质属于 ArkUI API 26 路线，不是 `HdsTabs`：
 
 若用户决定 Tab 页面同时延伸顶部和底部系统安全区，按[共享规则](../../../shared/validation.md#窗口沉浸状态与栏间距)提醒使用 HDS 底部 Tab，并说明 ArkUI 在 `barBottomMargin: 0` 与 TOP、BOTTOM 同时扩展时仍额外抬高 28vp 的已反馈现象，由用户确认路线。

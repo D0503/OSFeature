@@ -123,6 +123,10 @@ HdsNavigation() {
 
 ## HDS 底部悬浮 Tab 迁移
 
+`HdsTabs` 及链上的 `TabContent` 本身也要按[共享安全区规则](../../shared/validation.md#窗口沉浸状态与栏间距)配置 `.expandSafeArea([SafeAreaType.SYSTEM], [...])`，按需选择 BOTTOM、TOP 或一次合并两者，不能只扩展外围容器和内部页面。
+
+未开启窗口沉浸式时，底部安全区扩展必须覆盖每个 Tab 页，包括非默认页和懒加载页；不能只改首页或公共 HdsTabs。**必须沿扩展链逐个父布局组件配置 `expandSafeArea`，从真实滚动容器一直覆盖到页面宿主，不能跳过中间层级。**自定义组件和 Builder 必须进入内部检查实际布局节点，并切换所有 Tab 验证。
+
 先按[窗口沉浸状态规则](../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口。HDS 的 `barBottomMargin` 默认 0；本 Skill 接入时，已开启窗口沉浸式显式设置 28vp，未开启时显式设置 0vp，并为所有一级 Tab 页的真实滚动容器及全部父组件配置底部 `expandSafeArea`；同一组件同时处于标题栏沉浸光感的顶部扩展链时，按共享规则一次调用同时传入 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]`，不拆成两次调用。状态不明时先查调用链，不自动开启全局窗口沉浸式。以下 `this.floatingBarBottomMargin` 表示按该规则确认后的工程配置值，不是通过静态扫描猜出的窗口状态。
 
 接入分支把手机、平板大断点和横屏主导航统一成底部悬浮 `HdsTabs`。核心配置如下；迁移规则与适用边界见[HDS 迁移参考](assets.md)。
