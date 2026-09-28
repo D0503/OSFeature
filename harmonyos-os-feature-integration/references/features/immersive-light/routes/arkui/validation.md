@@ -12,6 +12,7 @@
 - 深色和浅色模式；
 - 应用级 `default`、`enable`、`disable`，包括 target 升级但不配置 metadata 的默认行为；
 - `DISABLE`、显式材质、`Material.empty`、`undefined` 四类优先关系；
+- 标题栏接入默认配置 `scrollEffectOptions.scrollEffectType: ScrollEffectType.GRADUAL_BLUR`，运行时验证滚动渐变模糊效果；
 - 原生 Navigation 标题栏与原生 Tabs；Tabs 同时满足 `barFloatingStyle`、`barOverlap(true)`、`vertical(false)`、`BarPosition.End` 后应呈现系统默认 `THIN`，不强制显式材质；接入分支默认显式 `maskColor: Color.Transparent`，保留非透明遮罩的分支须有设计依据并验证滚动内容可视性；逐页验证所有可滚动 Tab 的末项和操作热区能滚到悬浮栏上方；
 - AlphabetIndexer、Toast、Popup、Tips、Menu、Dialog/Sheet、SelectionMenu 和文本选择菜单的 `DEFAULT`/`ENABLE` 默认状态、Options 类型和背景冲突；
 - Button、Select、Toggle、Slider、Chip、ChipGroup/ChipGroupV2、SegmentButton/SegmentButtonV2 的专属入口、默认状态、生效域和预设视觉限制；
@@ -47,7 +48,7 @@
 
 ## ArkUI 验收
 
-- ArkUI Tabs 默认栏底部间距为 28vp；实际接入已开启窗口沉浸式时显式 28vp，未开启时显式 0vp，并逐个确认一级页、滚动容器及全部父组件的底部扩展。核对调用链与实际生效，验证顶部避让、底部内容延伸和普通/悬浮分支切换；
+- ArkUI Tabs 默认栏底部间距为 28vp；实际接入已开启窗口沉浸式时显式 28vp，未开启时显式 0vp，并逐个确认一级页、滚动容器及全部父组件的底部扩展。接入 Navigation 标题栏沉浸光感的页面同样核对 TOP 扩展的完整父组件链、标题栏材质对状态栏区域的覆盖及内容避让；两场景共用组件时一次传入 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]`，不拆成两次调用。核对调用链与实际生效，验证顶部避让、底部内容延伸和普通/悬浮分支切换；
 
 - 接入分支删除外层 `.barWidth(...)`，由 `barFloatingStyle.barWidth` 的配置或默认行为生效；所有断点、横竖屏和窗口尺寸保持底部横向 Tab，不误缩窄 TabContent。仅低版本保留原有响应式布局；材质关闭或设备不支持不恢复侧边 Tab；
 - 接入分支默认显式设置 `maskColor: Color.Transparent`；保留非透明遮罩的分支有设计依据并逐页验证滚动内容可视性，低版本兼容分支保留接入前遮罩与背景行为；

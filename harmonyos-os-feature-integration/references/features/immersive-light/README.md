@@ -35,6 +35,8 @@
 
 ## 路线选择
 
+用户决定 Tab 页面同时延伸顶部和底部系统安全区时，提醒用户使用 HDS 接入底部 Tab。已反馈的 ArkUI 场景中，`barBottomMargin: 0` 配合 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP])`，栏仍会在底部系统导航区之上额外抬高 28vp。说明此现象后由用户确认路线；具体布局与验证见[窗口沉浸状态与栏间距](shared/validation.md#窗口沉浸状态与栏间距)。
+
 | 工程范围 | 选择 |
 |---|---|
 | API 18～19 | `HdsNavigation`/`HdsNavDestination` 组件可以存在，但尚无沉浸光感材质接口；按通用升级接入处理至 API 23 |

@@ -24,7 +24,7 @@
 
 - `.animationDuration(0)` 用于关闭内容切换动画，应按原工程交互决定，不属于悬浮材质必需属性。
 - `gradientMask: { maskColor: Color.Transparent }` 按深色视频和自定义页签视觉需要选择，不默认配置。
-- `TabContent.expandSafeArea(...BOTTOM)` 按窗口状态判断。未开启窗口沉浸式时，按[共享规则](../../shared/validation.md#窗口沉浸状态与栏间距)覆盖所有一级页、真实滚动容器及全部父组件；透明背景按实际需求处理。
+- `TabContent.expandSafeArea(...)` 按窗口状态判断。未开启窗口沉浸式时，按[共享规则](../../shared/validation.md#窗口沉浸状态与栏间距)覆盖所有一级页、真实滚动容器及全部父组件：仅悬浮 Tab 配置 `BOTTOM`，页面同时接入标题栏沉浸光感时为链上共用组件一次传入 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]`；透明背景按实际需求处理。
 - 不要仅因设置 `adaptToHandedness` 就自动添加 `DETECT_GESTURE`；只有工程直接调用手势感知能力且接口要求时才声明权限。
 
 ## 组合能力

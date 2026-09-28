@@ -6,6 +6,7 @@
 
 - 应用级 `ENABLE` 时默认使用 `ULTRA_THIN`；非 `ENABLE` 状态下不自动生效；
 - 组件级入口是 `NavigationTitleOptions.systemMaterial`；
+- 接入标题栏沉浸光感时，默认在标题栏选项中配置 `scrollEffectOptions: { scrollEffectType: ScrollEffectType.GRADUAL_BLUR }`，启用滚动渐变模糊；
 - 材质范围是返回键和非自定义 Menu，自定义标题或自定义菜单要分别处理自身背景；
 - `barStyle: BarStyle.STACK` 与材质没有硬依赖，但可让内容延伸到标题栏区域，是推荐组合；
 - `undefined` 会恢复当前 MaterialState 下的标题栏默认行为；明确关闭使用 `Material.empty`。
@@ -20,15 +21,22 @@
     interactive: true,
     lightEffect: {}
   }),
-  barStyle: BarStyle.STACK
+  barStyle: BarStyle.STACK,
+  scrollEffectOptions: {
+    scrollEffectType: ScrollEffectType.GRADUAL_BLUR
+  }
 })
 ```
+
+未开启窗口沉浸式时，标题栏沉浸光感需要布局延伸到状态栏下方。先按[窗口沉浸状态规则](../../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口，再沿 Navigation → 页面根容器 → 真实滚动容器逐组件配置 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])`，仅给滚动容器设置不足以完成整条链的扩展。同一组件同时服务标题栏与底部悬浮 Tabs 时，一次调用 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP])`，不拆成两次调用。已开启窗口沉浸式的窗口复用现有方案，不因本次接入重复添加安全区扩展。
 
 ## 原生底部 Tabs
 
 原生 `Tabs` 的悬浮材质属于 ArkUI API 26 路线，不是 `HdsTabs`：
 
-先按[窗口沉浸状态规则](../../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口。ArkUI Tabs 的 `barBottomMargin` 默认 28vp；接入时已开启窗口沉浸式显式设置 28vp，未开启时显式设置 0vp，并为所有一级 Tab 页及滚动容器的完整父组件链配置底部 `expandSafeArea`。不自动开启全局窗口沉浸式，状态不明确时先核对调用链。以下 `this.floatingBarBottomMargin` 表示工程按已确认状态设置的值。
+若用户决定 Tab 页面同时延伸顶部和底部系统安全区，按[共享规则](../../../shared/validation.md#窗口沉浸状态与栏间距)提醒使用 HDS 底部 Tab，并说明 ArkUI 在 `barBottomMargin: 0` 与 TOP、BOTTOM 同时扩展时仍额外抬高 28vp 的已反馈现象，由用户确认路线。
+
+先按[窗口沉浸状态规则](../../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口。ArkUI Tabs 的 `barBottomMargin` 默认 28vp；接入时已开启窗口沉浸式显式设置 28vp，未开启时显式设置 0vp，并为所有一级 Tab 页及滚动容器的完整父组件链配置底部 `expandSafeArea`。同一组件同时处于标题栏沉浸光感的顶部扩展链时，按共享规则一次调用同时传入 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]`，不拆成两次调用。不自动开启全局窗口沉浸式，状态不明确时先核对调用链。以下 `this.floatingBarBottomMargin` 表示工程按已确认状态设置的值。
 
 ```typescript
 Tabs({ barPosition: BarPosition.End }) {

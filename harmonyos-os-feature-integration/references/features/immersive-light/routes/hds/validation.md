@@ -5,14 +5,14 @@
 ## 悬浮 Tab 与导航矩阵
 
 - HDS 默认栏底部间距为 0；实际接入已开启窗口沉浸式时显式 28vp，未开启时显式 0vp 并逐个确认一级 Tab 页、真实滚动容器及所有父组件的底部扩展；窗口封装、条件和后续关闭调用均需核对；
-- 验证每个一级页的底部内容延伸和顶部避让，普通/悬浮分支及独立复用页面之间切换时，扩展不泄漏到普通布局；
+- 验证每个一级页的底部内容延伸和顶部避让；接入标题栏沉浸光感的页面核对 TOP 扩展覆盖完整父组件链、标题栏材质覆盖状态栏区域且内容不被遮挡，与悬浮 Tab 共存的链路使用 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]` 合并写法。普通/悬浮分支及独立复用页面之间切换时，TOP 与 BOTTOM 扩展均不泄漏到普通布局；
 
 - 手机、平板/折叠展开态和大窗口；竖屏、横屏、分屏与自由窗口；
 - 接入分支所有断点均为底部横向 Tab，外层 `.barWidth(...)` 已移除，由 `barFloatingStyle.barWidth` 或默认行为控制栏宽；材质关闭或设备不支持仍保持底部布局；
 - 56vp 显示态及存在隐藏能力时的 0vp 状态，检查跳动和残留点击区域；
 - HDS 分支不得设置 `barHeight('auto')`；直接配置应移除，变量、条件和封装调用需核对实际值。静态发现 `auto` 时核对组件及版本分支，保留低版本普通 Tabs 原配置；
 - 有/无导航指示区时的 `barBottomMargin`、祖先 bottom padding 和安全区；普通 Tab 导航条避让 padding 只在普通分支生效，悬浮分支由栏底部间距负责，显式和默认 margin 均需验证；
-- `barOverlap(true)` 下首尾内容、透明背景、内容 padding 和 `expandSafeArea(BOTTOM)`；
+- `barOverlap(true)` 下首尾内容、透明背景、内容 padding 和 `expandSafeArea(BOTTOM)`；标题栏沉浸光感页面的 `expandSafeArea(TOP)` 及与 BOTTOM 的组合写法；
 - 所有可滚动 Tab 的最后一项与完整点击热区能越过悬浮栏；检查 `contentEndOffset`、尾部占位或等价 padding；
 - 默认栏宽及自定义 small/medium/large 宽度下的多语言、字体放大和页签数量；
 - `adaptToHandedness` 的左右偏移、回中和不支持设备表现；

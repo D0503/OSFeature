@@ -494,6 +494,28 @@ for (const route of ["hds", "arkui"]) {
 }
 equal(cliInspection.api.compatible, 23)
 const bottomExpansion = ".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM])"
+for (const route of ["hds", "arkui"]) {
+  for (const [extension, top, bottom] of [
+    [".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])", 1, 0],
+    [bottomExpansion, 0, 1],
+    [".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP])", 1, 1],
+    [".expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])", 1, 1],
+    [".expandSafeArea([SafeAreaType.CUTOUT, SafeAreaType.SYSTEM], [SafeAreaEdge.START, SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])", 1, 1],
+    [".expandSafeArea([SafeAreaType.CUTOUT], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])", 0, 0],
+    [".expandSafeArea(types, edges)", 0, 0],
+    ["// .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])", 0, 0],
+    ["/* .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM]) */", 0, 0]
+  ]) {
+    const source = `${route === "hds" ? "HdsTabs" : "Tabs"}() {}.barFloatingStyle({})${extension}`
+    await writeFile(paddingSourcePath, source)
+    const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+    equal(inspected.signals.expandSystemTop.count, top)
+    equal(inspected.signals.expandSystemBottom.count, bottom)
+    const result = verifyInspection(inspected, evaluateCompatibility(inspected, profile), route)
+    equal(result.checks.find((v) => v.id === "floating-tabs-window-immersion").status, "warn")
+    equal(await readFile(paddingSourcePath, "utf8"), source)
+  }
+}
 const inventorySource = `
 import { Chip as ProjectChip } from '@kit.ArkUI';
 Navigation() {} NavDestination() {} Tabs() {} AlphabetIndexer({})

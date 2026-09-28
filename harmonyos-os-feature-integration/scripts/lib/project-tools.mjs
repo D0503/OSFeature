@@ -406,7 +406,8 @@ const SIGNALS = [
   { id: "windowLayoutFullScreenCall", regex: /\bsetWindowLayoutFullScreen\s*\(/ },
   { id: "windowLayoutFullScreenTrue", regex: /\bsetWindowLayoutFullScreen\s*\(\s*true\s*[,)]/ },
   { id: "windowLayoutFullScreenFalse", regex: /\bsetWindowLayoutFullScreen\s*\(\s*false\s*[,)]/ },
-  { id: "expandSystemBottom", regex: /\bexpandSafeArea\s*\(\s*\[\s*SafeAreaType\.SYSTEM\s*\]\s*,\s*\[\s*SafeAreaEdge\.BOTTOM\s*\]\s*\)/ },
+  { id: "expandSystemBottom", regex: /\bexpandSafeArea\s*\(\s*\[[^\]]*\bSafeAreaType\.SYSTEM\b[^\]]*\]\s*,\s*\[[^\]]*\bSafeAreaEdge\.BOTTOM\b[^\]]*\]\s*\)/ },
+  { id: "expandSystemTop", regex: /\bexpandSafeArea\s*\(\s*\[[^\]]*\bSafeAreaType\.SYSTEM\b[^\]]*\]\s*,\s*\[[^\]]*\bSafeAreaEdge\.TOP\b[^\]]*\]\s*\)/ },
   { id: "layoutBottomPadding", regex: /\bpadding\s*\(\s*\{[\s\S]{0,300}?\bbottom\s*:/ },
   { id: "scrollableContent", regex: /\b(?:List|Scroll|WaterFlow|Grid)\s*\(/ },
   { id: "contentEndOffset", regex: /\bcontentEndOffset\s*\(/ },
@@ -1133,7 +1134,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     "floating-tabs-window-immersion",
     "Floating Tabs window immersion and safe-area ancestry",
     hasFloatingStyle ? "warn" : "not_applicable",
-    [s.windowLayoutFullScreenCall, s.windowLayoutFullScreenTrue, s.windowLayoutFullScreenFalse, s.expandSystemBottom].flatMap((signal) => signal?.evidence ?? []),
+    [s.windowLayoutFullScreenCall, s.windowLayoutFullScreenTrue, s.windowLayoutFullScreenFalse, s.expandSystemBottom, s.expandSystemTop].flatMap((signal) => signal?.evidence ?? []),
     !hasFloatingStyle
       ? "No floating Tabs detected"
       : "Confirm the target window's effective setWindowLayoutFullScreen state through initialization, wrappers, parameters, conditions and later disabling calls; source candidates do not prove execution. HDS default barBottomMargin is 0; ArkUI default is 28vp. For integration, explicitly use 28vp when window immersion is enabled; otherwise use 0vp and expandSafeArea SYSTEM/BOTTOM on every first-level Tab page, actual scroll container and all its ancestors. Do not enable global window immersion automatically. Even a detected expansion cannot prove ancestor coverage; verify every page and preserve normal/standalone branches and top avoidance"
