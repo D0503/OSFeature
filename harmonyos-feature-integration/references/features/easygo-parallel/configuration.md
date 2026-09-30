@@ -18,7 +18,7 @@ displayModeOptions 的 wideWindowMode 必填，squareWindowMode 可选；值为 
 |---|---|
 | homePage | 可选。不配置由系统识别；Router 使用 pages 列表中的路径如 pages/Index，Navigation 首页用 navBar，目的页用 NavDestination 的名称 |
 | relatedPage | 可选，必须同时有 homePage；不支持传递参数，选择可独立初始化的静态页面 |
-| fullScreenPages | 字符串数组，官方默认空；进入后退出分栏；不能与主页/关联页重复。Skill 默认纳入已核实为独立路由页面的开屏广告页、启动页、隐私协议页，其他页面按需求确认；非路由弹窗和冲突处理见 [配置确认](configuration-confirmation.md) |
+| fullScreenPages | 字符串数组，官方默认空；进入后退出分栏；不能与主页/关联页重复。Skill 必须自动纳入已核实为独立路由页面的开屏广告页、启动页、隐私协议页，无需逐页询问，其他页面按需求确认；非路由弹窗和冲突处理见 [配置确认](configuration-confirmation.md) |
 | enableReducedContainerSize | 布尔值，官方默认 false，Skill 新接入默认 true；true 时分栏期间应用内 lpx、横向断点和窗口/屏幕宽按右页尺寸换算，退出分栏失效；窗口分屏场景的屏幕宽保持原始尺寸 |
 | supportLandscapeFullscreen | 默认 true；应用主动请求横屏时退出分栏；false 保持平行视界 |
 | dialogSupportSplit | 默认 true，弹窗在右半屏；false 居中 |

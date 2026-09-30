@@ -1,15 +1,37 @@
 import assert from "node:assert/strict"
-import { mkdtemp, readFile, readdir, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { verifyDevelopment, parseDevelopmentArgs, inspectVerification } from "../scripts/verify-development.mjs"
 import { buildStages, runHvigorBuild } from "../scripts/lib/hvigor-build.mjs"
-import { navigate, validateNavigation } from "../scripts/lib/development-device.mjs"
+import { navigate, resolveDevecoNodeEntry, validateNavigation } from "../scripts/lib/development-device.mjs"
 import { cacheDirectory, loadCollection, validateChanges } from "../scripts/lib/development-report.mjs"
 
 const root = await mkdtemp(join(tmpdir(), "os-feature-tests-"))
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64")
+
+async function devecoFixture(name, { manifest, entries }) {
+  const wrapperDirectory = join(root, "devecocli", name)
+  const packageRoot = join(wrapperDirectory, "node_modules", "@deveco", "deveco-cli")
+  await mkdir(packageRoot, { recursive: true })
+  if (manifest !== undefined) await writeFile(join(packageRoot, "package.json"), JSON.stringify(manifest))
+  for (const entry of entries) {
+    const path = join(packageRoot, entry)
+    await mkdir(dirname(path), { recursive: true })
+    await writeFile(path, "")
+  }
+  return { wrapper: join(wrapperDirectory, "devecocli.cmd"), packageRoot }
+}
+
+const manifestEntry = await devecoFixture("manifest", { manifest: { bin: { devecocli: "bin/main.js" } }, entries: ["bin/main.js", "cli.js"] })
+assert.equal(await resolveDevecoNodeEntry(manifestEntry.wrapper), join(manifestEntry.packageRoot, "bin", "main.js"))
+const rootEntry = await devecoFixture("root", { manifest: { bin: "missing.js" }, entries: ["cli.js"] })
+assert.equal(await resolveDevecoNodeEntry(rootEntry.wrapper), join(rootEntry.packageRoot, "cli.js"))
+const legacyEntry = await devecoFixture("legacy", { entries: ["dist/cli.js"] })
+assert.equal(await resolveDevecoNodeEntry(legacyEntry.wrapper), join(legacyEntry.packageRoot, "dist", "cli.js"))
+const invalidEntry = await devecoFixture("invalid", { manifest: { bin: "../../outside.js" }, entries: [] })
+await assert.rejects(resolveDevecoNodeEntry(invalidEntry.wrapper), /package\.json bin、cli\.js、dist\/cli\.js/)
 const changes = {
   schemaVersion: "1.0", page: "首页", component: "Tabs", category: "悬浮 Tab", effect: "底部悬浮材质", files: ["entry/src/main/ets/pages/Home.ets"],
   before: { sdk: 26, compile: 26, target: 26, compatible: 23 },

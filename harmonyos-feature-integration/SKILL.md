@@ -1,5 +1,5 @@
 ---
-name: harmonyos-os-feature-integration
+name: harmonyos-feature-integration
 description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、智感握姿、Smart Reach、adaptToHandedness，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）。工程 API 低于路线所需版本时，可提供升级本机 SDK、compileSdkVersion 并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
 ---
 

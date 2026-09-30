@@ -14,7 +14,11 @@
 
 `router` 与 `navigation` 是互斥技术路线；导航模式和购物模式是路线内部的交互方式。识别工程后列出路线、建议及依据；多条路线可选或需要升级时由用户确认，不能把路由框架迁移当作默认配套改动。`selectedRoutes` 只包含一项。
 
-需求模糊时，扫描后先展示适用配置清单和真实页面候选，集中确认未明确的业务选择，再写入配置。新接入默认 enableReducedContainerSize=true，API 26 同时默认 drawableRectHook=true；低版本优先提出升级选项，用户选择保持版本时省略后者。已有明确选择和显式 false 不静默覆盖，具体执行 [配置确认](configuration-confirmation.md)。
+**用户仅说“接入平行视界”等模糊需求时，必须先扫描工程、列出适用配置项及真实页面候选，主动询问用户如何配置，再根据回答实施。必须明确询问 fullScreenPages 还需要哪些全屏页，以及购物模式的 transPages 配置哪些过渡页；不能只展示建议值后直接写入，不能把“接入”视为用户接受全部默认配置。** 已按启动流程规则确定自动全屏的页面列为已确定项，其余未明确选择等待用户决定，具体执行 [配置确认](configuration-confirmation.md)。
+
+新接入默认 enableReducedContainerSize=true，API 26 同时默认 drawableRectHook=true；低版本优先提出升级选项，用户选择保持版本时省略后者。已有明确选择和显式 false 不静默覆盖。
+
+**启动流程全屏规则：接入时必须主动扫描开屏广告页、启动页和隐私协议页；核实为独立路由页面后，必须自动加入 `fullScreenPages`，无需逐页询问是否全屏。不得仅列为待选建议或因用户未单独点名而漏配。非路由内容、明确例外及配置冲突按 [配置确认](configuration-confirmation.md) 处理。**
 
 ## 前置与交付
 

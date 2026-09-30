@@ -4,7 +4,7 @@ import { access, readFile } from "node:fs/promises"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
-const EXPECTED_SKILL_NAME = "harmonyos-os-feature-integration"
+const EXPECTED_SKILL_NAME = "harmonyos-feature-integration"
 const REGISTRY_VERSION = "1.0"
 const ROOT_FIELDS = ["features", "registryVersion"]
 const FEATURE_FIELDS = ["aliases", "displayName", "entry", "id", "profile", "status"]

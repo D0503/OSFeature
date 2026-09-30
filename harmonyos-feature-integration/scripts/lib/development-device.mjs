@@ -1,18 +1,46 @@
 import { execFile } from "node:child_process"
+import { readFile, stat } from "node:fs/promises"
 import { promisify } from "node:util"
-import { dirname, resolve } from "node:path"
+import { dirname, isAbsolute, relative, resolve } from "node:path"
 import { executeBuildStage } from "./hvigor-build.mjs"
-import { exists } from "./development-report.mjs"
+
+async function isFile(path) {
+  try { return (await stat(path)).isFile() } catch { return false }
+}
+
+export async function resolveDevecoNodeEntry(wrapper) {
+  const packageRoot = resolve(dirname(wrapper), "node_modules", "@deveco", "deveco-cli")
+  const candidates = []
+  try {
+    const manifest = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8"))
+    const bin = typeof manifest.bin === "string"
+      ? [manifest.bin]
+      : manifest.bin && typeof manifest.bin === "object"
+        ? [manifest.bin.devecocli, ...Object.values(manifest.bin)]
+        : []
+    for (const value of bin) if (typeof value === "string" && value.trim()) candidates.push(resolve(packageRoot, value))
+  } catch {}
+  candidates.push(resolve(packageRoot, "cli.js"), resolve(packageRoot, "dist", "cli.js"))
+  for (const candidate of [...new Set(candidates)]) {
+    const rel = relative(packageRoot, candidate)
+    if (!rel || rel.startsWith("..") || isAbsolute(rel)) continue
+    if (await isFile(candidate)) return candidate
+  }
+  throw new Error("未找到 devecocli Node 入口（已检查 package.json bin、cli.js、dist/cli.js）")
+}
 
 export async function runDeveco(args, cwd) {
   if (args.some((v) => typeof v !== "string" || /[\0\r\n]/.test(v))) throw new Error("设备命令参数无效")
   let command = "devecocli", prefix = []
   if (process.platform === "win32") {
     const { stdout } = await promisify(execFile)("where.exe", ["devecocli.cmd"], { windowsHide: true })
-    const wrapper = stdout.split(/\r?\n/).map((v) => v.trim()).find((v) => v.endsWith(".cmd"))
-    if (!wrapper) throw new Error("未找到 devecocli.cmd")
-    const entry = resolve(dirname(wrapper), "node_modules", "@deveco", "deveco-cli", "dist", "cli.js")
-    if (!await exists(entry)) throw new Error("未找到 devecocli Node 入口")
+    const wrappers = stdout.split(/\r?\n/).map((v) => v.trim()).filter((v) => v.toLowerCase().endsWith("devecocli.cmd"))
+    if (!wrappers.length) throw new Error("未找到 devecocli.cmd")
+    let entry
+    for (const wrapper of wrappers) {
+      try { entry = await resolveDevecoNodeEntry(wrapper); break } catch {}
+    }
+    if (!entry) throw new Error("未找到 devecocli Node 入口（已检查 package.json bin、cli.js、dist/cli.js）")
     command = process.execPath
     prefix = [entry]
   }

@@ -50,7 +50,7 @@ metadata:
 ## code-development-validation 工作流
 
 1. 完整阅读 [能力包契约](references/capabilities/package-contract.md) 和 [代码开发验证流程](references/development/workflow.md)。使用 `scripts/validate-capability-package.mjs` 核验锁文件，再用 `scripts/resolve-capability.mjs` 根据特性名和自然语言目标解析唯一场景。
-2. 无法唯一匹配时列出候选场景并要求用户选择；在场景唯一前不得修改工程。运行时只读取 `references/capabilities/` 中已发布包，禁止读取 Markdown/URL 输入、审查报告、验证清单或旧 `harmonyos-os-feature-integration`。
+2. 无法唯一匹配时列出候选场景并要求用户选择；在场景唯一前不得修改工程。运行时只读取 `references/capabilities/` 中已发布包，禁止读取 Markdown/URL 输入、审查报告、验证清单或旧 `harmonyos-feature-integration`。
 3. 对沉浸光感完整阅读能力包 [入口](references/capabilities/immersive-light/entry.md)、[实施规则](references/capabilities/immersive-light/implementation.md)、[验证规则](references/capabilities/immersive-light/validation.md)，以及所选场景引用的最小资产。构建或运行验证前必须完成 Web-first 事实对勘，由程序强制：先运行 `scripts/verify-capability-sources.mjs crosscheck --scenario <场景ID>` 实时抓取官网现网页——哈希与锁不符（drifted，官网已更新需重审换锁）、官网不可达（unreachable，网页唯一真值即阻塞）或锚点未命中任一情况都会失败；通过后逐条判定材料包（statement vs 现网原文，`faithful/unfaithful/cannot_determine`），写入 `faithfulness-judgment.json` 并经 `scripts/verify-development.mjs --faithfulness <文件>` 注入——任一事实 `unfaithful` 或 `cannot_determine` 都会拒绝构建，必须先修正能力包事实并重新审查。官网来源页下线时对应事实与场景删除（见迁移报告），不得保留无官网证据的事实。
 4. 使用 `scripts/inspect-development-project.mjs` 扫描绝对工程路径、Stage 模型、module 类型、product、target/compatible API、本机 SDK、目标组件、能力信号和现有未提交修改。ArkUI 路线要求 API 26，且应用级 metadata 只能位于 entry module；HDS 路线要求 6.1.0(23)，使用 `@kit.UIDesignKit`，当前只验证 compatible/target/compile API 23 或以上。
 5. 所选路线的 API、SDK、target 或 compatible 门槛不满足时停止实施并输出升级要求。修改 SDK、compatible、target 或 compile 配置前必须单独获得用户授权；未知值不得猜测为兼容。
