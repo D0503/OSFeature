@@ -121,7 +121,7 @@ HdsNavigation() {
 
 未开启窗口沉浸式时，标题栏沉浸光感需要布局延伸到状态栏下方，`dynamicHideTitleBar` 隐藏状态栏时同样依赖该延伸。先按[窗口沉浸状态规则](../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口，再沿 HdsNavigation/HdsNavDestination → 页面根容器 → 真实滚动容器逐组件配置 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])`，仅给滚动容器设置不足以完成整条链的扩展。同一组件同时处于悬浮 Tab 的底部扩展链时，一次调用 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP])`，不拆成两次调用。已开启窗口沉浸式的窗口复用现有方案，不因本次接入重复添加安全区扩展。
 
-自定义标题按[共享标题栏规则](../../shared/validation.md#标题栏内容避让与自定义标题)明确占用高度，检查首项是否需要内容起始偏移或内部顶部 padding，避免重复避让。默认为标题栏内受支持的按钮等组件配置相应材质，不直接给整个自定义 Builder 根容器铺设材质；系统返回键和菜单继续使用 HDS 对应标题栏入口。
+自定义标题按[共享标题栏规则](../../shared/validation.md#标题栏内容避让与自定义标题)明确占用高度，检查首项是否需要内容起始偏移或内部顶部 padding，避免重复避让。**标题栏中的按钮默认接入沉浸光感**：系统返回键和菜单使用 HDS 对应标题栏入口；自定义 Builder 须进入内部，逐个为受支持的实际按钮配置相应材质，不能用整个 Builder 根容器的材质代替按钮接入。
 
 ## HDS 底部悬浮 Tab 迁移
 

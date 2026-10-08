@@ -7,7 +7,7 @@
 - 应用级 `ENABLE` 时默认使用 `ULTRA_THIN`；非 `ENABLE` 状态下不自动生效；
 - 组件级入口是 `NavigationTitleOptions.systemMaterial`；
 - 接入标题栏沉浸光感时，默认在标题栏选项中配置 `scrollEffectOptions: { scrollEffectType: ScrollEffectType.GRADUAL_BLUR }`，启用滚动渐变模糊；
-- 标题栏选项的材质范围是返回键和非自定义 Menu；自定义标题或菜单默认为其中受支持的按钮、Search、选择类等组件配置各自材质入口，不直接给整个 `titleBuilder` 根容器添加材质；
+- **标题栏中的按钮默认接入沉浸光感**：返回键和非自定义 Menu 使用标题栏选项的材质入口；自定义标题或菜单须进入 Builder 内，逐个为受支持的实际按钮配置材质，不能用整个 `titleBuilder` 根容器的材质代替按钮接入；Search、选择类等其他组件按各自规则处理；
 - `barStyle: BarStyle.STACK` 与材质没有硬依赖，但可让内容延伸到标题栏区域，是推荐组合；
 - `undefined` 会恢复当前 MaterialState 下的标题栏默认行为；明确关闭使用 `Material.empty`。
 
