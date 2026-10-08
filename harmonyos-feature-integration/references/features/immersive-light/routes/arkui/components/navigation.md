@@ -32,7 +32,7 @@
 
 ### 自定义标题高度与内容避让
 
-按[共享标题栏避让规则](../../../shared/validation.md#标题栏内容避让与自定义标题)检查首项遮挡。需要避让时，在真实滚动内容上设置起始偏移或内部顶部 padding；自定义标题同时声明高度，并使 Builder 根容器 `.height(this.titleHeight)` 与之匹配。例如：
+按[共享标题栏避让规则](../../../shared/validation.md#标题栏内容避让与自定义标题)检查首项遮挡。需要避让时，优先在真实滚动容器上设置 `contentStartOffset`，也允许随内容滚动的内部顶部占位，两者不重复补偿；不得用滚动容器自身或外层顶部 padding 缩短、下移滚动视口。保持内容上滑时可以滚入标题栏下方。自定义标题同时声明高度，并使 Builder 根容器 `.height(this.titleHeight)` 与之匹配。例如：
 
 ```typescript
 NavDestination() {
@@ -50,6 +50,40 @@ NavDestination() {
 ```
 
 `totalTitleHeight` 是工程确认的初始避让高度，`titleHeight` 是当前标题高度；已有避让时不重复添加。
+
+### 可选：滚动内容切换到标题栏
+
+仅在用户需要内容标题或分类栏滚入标题栏后接替显示时采用，不作为沉浸光感标题栏的默认行为。内容区与标题栏各保留一个展示位置，以页面共享状态切换；内容区隐藏时使用 `Visibility.Hidden` 保留占位，标题栏使用固定承接容器，避免切换改变测量位置和滚动范围。
+
+在页面组件中维护切换状态，使用同一布局帧、同一窗口坐标系测得的内容占位顶部与标题栏承接位置比较，统一转换为 vp。以下方法接收已完成测量的坐标；`switchTolerance` 是可按工程调整的回切容差，避免临界位置反复切换：
+
+```typescript
+@Local showTitle: boolean = false
+@Local selectedIndexes: number[] = [0]
+private switchTolerance: number = 2
+
+private updateTitlePlacement(contentTopVp: number, titleSlotTopVp: number): void {
+  if (!Number.isFinite(contentTopVp) || !Number.isFinite(titleSlotTopVp)) {
+    return
+  }
+  if (!this.showTitle && contentTopVp <= titleSlotTopVp) {
+    this.showTitle = true
+  } else if (this.showTitle && contentTopVp > titleSlotTopVp + this.switchTolerance) {
+    this.showTitle = false
+  }
+}
+```
+
+实施时配套处理：
+
+- 为内容占位和始终存在的标题栏承接容器设置页面实例内唯一的 ID；布局就绪后，用 `getUIContext().getComponentUtils().getRectangleById(id).windowOffset.y` 读取两者坐标，再通过 `px2vp` 转换。不要用标题文字的高度代替窗口坐标，也不要测量切换后已移除的标题文字节点。节点未就绪或测量失败时保留当前状态，等待有效布局后重测。
+- 真实滚动容器的 `onDidScroll` 触发位置更新，读取滚动布局完成后的几何位置；不累计 `yOffset` 后再从当前窗口坐标中重复扣减。嵌套滚动时，实际影响该内容位置的滚动容器都要触发更新。
+- 内容区使用 `.visibility(this.showTitle ? Visibility.Hidden : Visibility.Visible)`；标题 Builder 内按 `showTitle` 显示原标题或对应内容。隐藏副本不应继续响应操作或被无障碍重复读取，切换时核对焦点。
+- 分类等可交互内容的选中值、筛选条件和回调由页面统一持有，两处展示绑定同一状态。例如将 `ClassifyComponent` 改为接收页面的 `selectedIndexes` 和更新回调，不能让两个实例各自保留独立 `@Local` 选中值。原有业务回调只执行一次。
+- 保持 `.title({ builder, height })` 与 Builder 根容器高度一致，内容起始偏移按前述避让规则设置；该切换逻辑不修改标题高度。切勿在阈值相等时将位置比例写入 `titleHeight`。
+- 页面重新显示、数据或图片改变布局、窗口尺寸和字体变化后重新测量；标题栏按钮继续按各自入口配置沉浸光感，内容切换本身不赋予普通内容区按钮标题栏材质生效域。
+
+验证上滑接替、下滑恢复、阈值相等及附近往返、快速滚动与回弹：占位不塌陷、标题高度不跳变、选择状态不丢失、点击和无障碍不重复；同时检查旋转、字体放大和返回页面后的切换位置。示例需结合目标工程的组件参数、布局回调和版本分支接入，不能以静态代码存在代替运行验证。
 
 ## 原生底部 Tabs
 

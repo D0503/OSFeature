@@ -18,6 +18,7 @@ ArkUI 路线覆盖 API 26+ 的原生 ArkUI `Navigation`、`Tabs`、弹窗和交�
 |---|---|
 | `systemMaterial` 参数、颜色、反色、阴影、覆盖关系 | [通用材质](common-material.md) |
 | 原生 Navigation 标题栏、原生悬浮 Tabs、AlphabetIndexer | [导航类组件](components/navigation.md) |
+| 内容标题随滚动固定到标题栏、分类栏滚入标题栏、沉浸光感标题栏滚动吸顶 | [滚动内容切换到标题栏](components/navigation.md#可选滚动内容切换到标题栏)；按需实施，不用于普通列表内部吸顶 |
 | Toast、Popup、Tips、Menu、Dialog、Sheet | [弹窗类组件](components/overlays.md) |
 | Button、Select、Toggle、Slider、ChipGroup、SegmentButton | [按钮与选择类组件](components/controls.md) |
 | 复制门禁、降级或原生导航页签代码 | [ArkUI 资产](assets.md) |

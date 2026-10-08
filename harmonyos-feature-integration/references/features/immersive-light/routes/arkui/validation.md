@@ -13,6 +13,7 @@
 - 应用级 `default`、`enable`、`disable`，包括 target 升级但不配置 metadata 的默认行为；
 - `DISABLE`、显式材质、`Material.empty`、`undefined` 四类优先关系；
 - 标题栏接入默认配置 `scrollEffectOptions.scrollEffectType: ScrollEffectType.GRADUAL_BLUR`，运行时验证滚动渐变模糊效果；
+- 采用[滚动内容切换到标题栏](components/navigation.md#可选滚动内容切换到标题栏)时，验证同坐标系测量、上滑接替与下滑恢复、临界防抖、隐藏占位及共享选择状态；快速滚动、回弹、窗口和字体变化、返回页面后不出现高度跳变、重复交互或失效测量；
 - 原生 Navigation 标题栏与原生 Tabs；Tabs 同时满足 `barFloatingStyle`、`barOverlap(true)`、`vertical(false)`、`BarPosition.End` 后应呈现系统默认 `THIN`，不强制显式材质；接入分支默认显式 `maskColor: Color.Transparent`，保留非透明遮罩的分支须有设计依据并验证滚动内容可视性；逐页验证所有可滚动 Tab 的末项和操作热区能滚到悬浮栏上方；
 - AlphabetIndexer、Toast、Popup、Tips、Menu、Dialog/Sheet、SelectionMenu 和文本选择菜单的 `DEFAULT`/`ENABLE` 默认状态、Options 类型和背景冲突；
 - Button、Select、Toggle、Slider、Chip、ChipGroup/ChipGroupV2、SegmentButton/SegmentButtonV2 的专属入口、默认状态、生效域和预设视觉限制；

@@ -20,7 +20,7 @@ assert.equal(registry.features.length, 3)
 assert.deepEqual(registry.features[0], {
   id: "immersive-light",
   displayName: "沉浸光感",
-  aliases: ["沉浸光感实现", "悬浮导航Tab", "悬浮导航 Tab", "Immersive Light", "HDS 沉浸材质", "uiMaterial", "systemMaterial"],
+  aliases: ["沉浸光感实现", "内容区标题固定到标题栏", "内容标题固定到标题栏", "分类栏滚入标题栏", "沉浸光感标题栏滚动吸顶", "悬浮导航Tab", "悬浮导航 Tab", "Immersive Light", "HDS 沉浸材质", "uiMaterial", "systemMaterial"],
   status: "ready",
   entry: "references/features/immersive-light/README.md",
   profile: "references/features/immersive-light/profile.json"
@@ -37,6 +37,8 @@ function matchFeature(prompt) {
 }
 
 assert.equal(matchFeature("请接入沉浸光感")?.id, "immersive-light")
+for (const prompt of ["修改工程内容区滚动时，内容区标题固定到标题栏", "内容标题固定到标题栏", "分类栏滚入标题栏", "沉浸光感标题栏滚动吸顶"]) assert.equal(matchFeature(prompt)?.id, "immersive-light")
+for (const prompt of ["普通列表吸顶", "sticky 分组", "滚动吸顶"]) assert.equal(matchFeature(prompt), null)
 assert.equal(matchFeature("悬浮导航Tab怎么实现")?.id, "immersive-light")
 assert.equal(matchFeature("帮我接入 uiMaterial")?.id, "immersive-light")
 assert.equal(matchFeature("排查 SYSTEMMATERIAL 不生效")?.id, "immersive-light")

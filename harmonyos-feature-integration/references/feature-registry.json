@@ -11,7 +11,10 @@
         "Immersive Light",
         "HDS 沉浸材质",
         "uiMaterial",
-        "systemMaterial"
+        "systemMaterial",
+        "内容区标题固定到标题栏",
+        "分类栏滚入标题栏",
+        "沉浸光感标题栏滚动吸顶"
       ],
       "status": "ready",
       "entry": "references/features/immersive-light/README.md",

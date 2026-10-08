@@ -58,6 +58,7 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 |---|---|
 | 版本判断、路线选择、前置检查 | [compatibility.md](compatibility.md) |
 | 所有实现与回退 | [implementation.md](implementation.md)、[shared/fallback.md](shared/fallback.md) |
+| 内容区滚动时标题固定到标题栏、分类栏滚入标题栏、沉浸光感标题栏滚动吸顶 | [ArkUI 接入入口](routes/arkui/implementation.md)及[滚动内容切换到标题栏](routes/arkui/components/navigation.md#可选滚动内容切换到标题栏)；仅按用户要求实施该交互，普通列表内部吸顶不适用 |
 | HDS 导航、悬浮 Tab、MiniBar | [routes/hds/implementation.md](routes/hds/implementation.md)、[routes/hds/assets.md](routes/hds/assets.md) |
 | ArkUI 开启策略、原生 Navigation/Tabs、普通组件、菜单、弹窗 | [routes/arkui/implementation.md](routes/arkui/implementation.md)，再按目标加载该入口列出的分类资料 |
 | 示例资产选择入口 | [assets-catalog.md](assets-catalog.md)，再按 `selectedRoutes` 加载对应路线资产 |
