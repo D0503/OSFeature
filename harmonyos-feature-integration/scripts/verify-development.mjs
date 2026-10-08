@@ -13,6 +13,22 @@ const check = (status, summary) => ({ status, summary })
 const requiredText = (v, name) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${name} 必填`) }
 const PNG_MAGIC = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 
+function nextEvidenceId(run) {
+  return `E${Math.max(0, ...run.evidence.map((e) => Number(/^E(\d+)$/.exec(e.id)?.[1] ?? 0))) + 1}`
+}
+
+async function captureDeviceScreenshot(run, runDirectory, scenario, call) {
+  const path = join(runDirectory, `target-${randomUUID()}.png`)
+  const result = await call(["ui", "screenshot", "--device", run.device, "--path", path])
+  if (result.exitCode !== 0 || !await exists(path) || !(await readFile(path)).subarray(0, 8).equals(PNG_MAGIC)) {
+    throw new Error("截图采集失败或文件不是有效 PNG")
+  }
+  if (scenario) run.evidence = run.evidence.filter((e) => e.type !== "screenshot" || e.scenario !== scenario)
+  run.evidence.push({ id: nextEvidenceId(run), type: "screenshot", path, sha256: await fileHash(path), ...(scenario ? { scenario } : {}) })
+  const count = run.evidence.filter((e) => e.type === "screenshot").length
+  run.checks.visual = check("inconclusive", `已采集目标页截图 ${count} 张，等待 AI 实际阅读并补录判定`)
+}
+
 function detectDeviceKind(deviceInfo, target) {
   let info = deviceInfo
   if (typeof info === "string") { try { info = JSON.parse(info) } catch { info = null } }
@@ -113,11 +129,23 @@ export async function verifyDevelopment(request, options = {}) {
   try { await mkdir(lock) } catch { throw new Error("同一报告已有验证正在执行，请等待其结束") }
   try {
     const { collection } = await loadCollection(output, request.project)
+    if (request.screenshotScenario !== undefined && (typeof request.screenshotScenario !== "string" || !request.screenshotScenario.trim() || request.screenshotScenario.length > 80 || /[\r\n]/.test(request.screenshotScenario))) throw new Error("screenshot-scenario 必须是 1–80 字的单行场景名")
+    if (request.screenshotScenario && !request.captureScreenshot) throw new Error("screenshot-scenario 需要同时使用 capture-screenshot")
     if (request.resume) {
-      if (request.executeBuild || request.executeRun || request.navigate || request.captureScreenshot || request.captureLayout || request.changes) throw new Error("resume 仅允许补录 judgment 或导入开发者截图，不执行构建或设备操作")
-      if (!request.judgment && !request.importScreenshot?.length) throw new Error("resume 需要提供 judgment 或导入开发者截图")
+      if (request.executeBuild || request.executeRun || request.navigate || request.captureLayout || request.changes) throw new Error("resume 不执行构建、安装或导航")
+      if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot) throw new Error("resume 需要提供 judgment、导入截图或采集截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
+      if (request.captureScreenshot) {
+        requiredText(request.screenshotScenario, "screenshot-scenario")
+        if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
+        if (!run.device || run.checks.install.status !== "passed" || run.checks.navigation.status !== "passed") throw new Error("补采截图需要本轮安装和目标页导航已通过")
+        if (run.feature === "smart-reach") {
+          const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
+          if (info.exitCode !== 0 || detectDeviceKind(info.stdout, run.device) !== "physical") throw new Error("智感握姿补采截图只能使用已确认的真机")
+        }
+        await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project))
+      }
       await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot)
       if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
       const report = await saveReport(output, directory, collection)
@@ -200,12 +228,8 @@ export async function verifyDevelopment(request, options = {}) {
       if (profile.featureId === "smart-reach" && run.deviceKind === "emulator") {
         run.checks.visual = check("not_run", "智感握姿视觉验证只能使用真机；检测到目标设备为模拟器，未采集截图")
       } else if (request.captureScreenshot) {
-        const path = join(runDirectory, "target.png")
-        const result = await call(["ui", "screenshot", "--device", request.device, "--path", path])
-        if (result.exitCode === 0 && await exists(path) && (await readFile(path)).subarray(0, 8).equals(PNG_MAGIC)) {
-          run.evidence.push({ id: `E${run.evidence.length + 1}`, type: "screenshot", path, sha256: await fileHash(path) })
-          run.checks.visual = check("inconclusive", "已采集目标页截图，等待 AI 实际阅读并补录判定")
-        } else run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证")
+        try { await captureDeviceScreenshot(run, runDirectory, request.screenshotScenario, call) }
+        catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
       }
     } else {
       run.checks.runtime.summary = `未完成目标页验证：${run.checks.navigation.summary}`
@@ -227,7 +251,7 @@ export async function verifyDevelopment(request, options = {}) {
 
 export function parseDevelopmentArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot"])
+  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-scenario"])
   const repeatable = new Set(["import-screenshot"])
   const args = {}
   for (let i = 0; i < argv.length; i++) {

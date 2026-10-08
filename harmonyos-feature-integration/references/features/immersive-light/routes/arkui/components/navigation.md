@@ -7,7 +7,7 @@
 - 应用级 `ENABLE` 时默认使用 `ULTRA_THIN`；非 `ENABLE` 状态下不自动生效；
 - 组件级入口是 `NavigationTitleOptions.systemMaterial`；
 - 接入标题栏沉浸光感时，默认在标题栏选项中配置 `scrollEffectOptions: { scrollEffectType: ScrollEffectType.GRADUAL_BLUR }`，启用滚动渐变模糊；
-- 材质范围是返回键和非自定义 Menu，自定义标题或自定义菜单要分别处理自身背景；
+- 标题栏选项的材质范围是返回键和非自定义 Menu；自定义标题或菜单默认为其中受支持的按钮、Search、选择类等组件配置各自材质入口，不直接给整个 `titleBuilder` 根容器添加材质；
 - `barStyle: BarStyle.STACK` 与材质没有硬依赖，但可让内容延伸到标题栏区域，是推荐组合；
 - `undefined` 会恢复当前 MaterialState 下的标题栏默认行为；明确关闭使用 `Material.empty`。
 
@@ -29,6 +29,27 @@
 ```
 
 未开启窗口沉浸式时，标题栏沉浸光感需要布局延伸到状态栏下方。先按[窗口沉浸状态规则](../../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口，再沿 Navigation → 页面根容器 → 真实滚动容器逐组件配置 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])`，仅给滚动容器设置不足以完成整条链的扩展。同一组件同时服务标题栏与底部悬浮 Tabs 时，一次调用 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP])`，不拆成两次调用。已开启窗口沉浸式的窗口复用现有方案，不因本次接入重复添加安全区扩展。
+
+### 自定义标题高度与内容避让
+
+按[共享标题栏避让规则](../../../shared/validation.md#标题栏内容避让与自定义标题)检查首项遮挡。需要避让时，在真实滚动内容上设置起始偏移或内部顶部 padding；自定义标题同时声明高度，并使 Builder 根容器 `.height(this.titleHeight)` 与之匹配。例如：
+
+```typescript
+NavDestination() {
+  Scroll() {
+    // 页面内容
+  }
+  .contentStartOffset(this.totalTitleHeight)
+}
+.title({ builder: this.titleBuilder, height: this.titleHeight }, {
+  barStyle: BarStyle.STACK,
+  scrollEffectOptions: {
+    scrollEffectType: ScrollEffectType.GRADUAL_BLUR
+  }
+})
+```
+
+`totalTitleHeight` 是工程确认的初始避让高度，`titleHeight` 是当前标题高度；已有避让时不重复添加。
 
 ## 原生底部 Tabs
 

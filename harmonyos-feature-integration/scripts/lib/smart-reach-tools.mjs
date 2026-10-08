@@ -134,7 +134,7 @@ export function verifySmartReach(inspection, compatibility, routeOption = "auto"
       for (const u of active.filter((u) => u.operation === "on")) {
         const off = usages.filter((v) => v.operation === "off" && v.modulePath === u.modulePath)
         const paired = u.callbackResolved && off.some((v) => v.callbackResolved && v.callback === u.callback)
-        check(`unsubscribe-${u.path}-${u.line}`, "warn", paired ? "发现同名回调退订候选；核对同一实例、订阅成功标志、可见期生命周期与幂等性" : "未识别同一回调退订；检查封装调用链，避免重复监听或 off(event) 清除其他监听", [u, ...off])
+        check(`unsubscribe-${u.path}-${u.line}`, "warn", paired ? "发现同名回调退订候选；核对回调归属、订阅标志、API/SysCap 守卫和失败处理" : "未识别同一回调退订；核对封装调用链与退订守卫", [u, ...off])
       }
       if (usages.some((u) => u.operation === "off" && !u.callback)) check("off-all", "warn", "off(event) 会取消该事件全部回调；仅退订本组件拥有的同一回调", usages.filter((u) => u.operation === "off" && !u.callback))
       check("capability-errors", "warn", "核对 SysCap、201/801/服务异常、停止后迟到回调与原路径恢复；不能靠关键字证明分支有效", active)

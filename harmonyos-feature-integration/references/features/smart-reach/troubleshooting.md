@@ -6,7 +6,7 @@
 |---|---|
 | HdsTabs 存在但不跟手 | `barFloatingStyle.adaptToHandedness` 是否启用且属于目标实例，API 23 与底部悬浮条件、硬件、系统设置；组件本身存在不代表启用 |
 | 原生路线提示缺 systemMaterialEffect | 使用 `--feature smart-reach`；材质是沉浸光感检查，不是智感握姿必要条件 |
-| 201 | 所属 HAP 是否声明正确权限并配置 reason、usedScene，API 15–19 不接受仅 DETECT_GESTURE；握持手路线必须声明 DETECT_GESTURE |
+| 201 | 所属 HAP 是否声明所选权限；ACTIVITY_MOTION 是否配置 reason、usedScene 并已获用户授权；API 15–19 不接受仅 DETECT_GESTURE，握持手路线只需声明 DETECT_GESTURE |
 | 801 | 设备是否具备对应能力、握持手系统设置是否存在；SysCap 为 true 仍不保证具体硬件；恢复原路径 |
 | 401 | 操作手事件字符串、参数、回调是否正确，按当前接口文档定位 |
 | 31500001/31500002/31500003 | 分别检查服务、订阅、退订异常；记录调用时机，不循环重试；off 失败时不重复 on |

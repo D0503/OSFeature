@@ -48,6 +48,7 @@
   "constraints": [
     { "id": "signal-ownership", "route": "all", "action": "one-position-owner-per-target" },
     { "id": "permission-version", "route": "operating-hand", "action": "activity-motion-api15-19-either-permission-api20-plus" },
+    { "id": "permission-authorization", "route": "operating-hand", "action": "activity-motion-requires-runtime-user-grant-detect-gesture-declaration-only" },
     { "id": "holding-permission", "route": "holding-hand", "action": "detect-gesture-required" },
     { "id": "runtime-capability", "route": "all", "action": "sdk-and-syscap-do-not-prove-device-support" },
     { "id": "callback-lifecycle", "route": "all", "action": "custom-subscriptions-use-owned-callback-visible-lifecycle-and-success-flag" },

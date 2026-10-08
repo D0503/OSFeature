@@ -132,6 +132,14 @@ await assert.rejects(verifyDevelopment({ project: root, output: stableRequest.ou
 const sibling = await verifyDevelopment({ ...stableRequest, goal: "另一实例", changes: { ...stableRequest.changes, id: "other-tabs" } }, options)
 content = await readFile(sibling.report, "utf8")
 assert.ok(content.includes("更新后的标题") && content.includes("另一实例"), "同页同类的不同实例不能合并")
+const duplicateOutput = join(root, "duplicate-ids")
+const duplicateFirst = await verifyDevelopment({ ...request("duplicate-ids"), output: duplicateOutput, changes: { ...structuredClone(changes), id: "old-id", before: { ...changes.before, compile: 23 } } }, options)
+const duplicateLatest = await verifyDevelopment({ ...request("duplicate-ids"), output: duplicateOutput, changes: { ...structuredClone(changes), id: "new-id" }, captureScreenshot: false }, options)
+content = await readFile(duplicateLatest.report, "utf8")
+assert.equal((content.match(/### 首页悬浮栏/g) ?? []).length, 1, "同名同配置改造项的历史 ID 不应产生重复报告")
+assert.equal((await loadCollection(duplicateOutput, root)).collection.runs.length, 1)
+assert.equal((await loadCollection(duplicateOutput, root)).collection.runs[0].changes.before.compile, 23, "合并重复项时保留首次已知改造前版本")
+await assert.rejects(verifyDevelopment({ project: root, output: duplicateOutput, resume: duplicateFirst.runId, judgment }, options), /不存在/)
 assert.throws(() => validateChanges({ ...changes, id: " " }), /稳定标识/)
 
 // Legacy duplicate records collapse without fuzzy matching unrelated components.
@@ -238,6 +246,31 @@ assert.ok(smartReport.includes("只能使用真机"))
 assert.ok(smartReport.includes("（模拟器）"))
 await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, importScreenshot: [devShot] }, emulatorOptions), /真机/)
 const physicalOptions = { ...emulatorOptions, commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ device: { name: "Mate 真机", osVersion: "API 23" } }), stderr: "" } : options.commandRunner(args) }
+assert.equal(parseDevelopmentArgs(["--screenshot-scenario", "左手"]).screenshotScenario, "左手")
+let scenarioShot = 0
+const scenarioOptions = { ...physicalOptions, commandRunner: async (args) => {
+  if (args[1] === "screenshot") {
+    await writeFile(args[args.indexOf("--path") + 1], Buffer.concat([png, Buffer.from([++scenarioShot])]))
+    return { exitCode: 0, stdout: "", stderr: "" }
+  }
+  return physicalOptions.commandRunner(args)
+} }
+const scenarioOutput = join(root, "sr-scenarios")
+const scenarioRun = await verifyDevelopment({ ...smartBase, output: scenarioOutput, executeBuild: true, executeRun: true, device: "phone-1", navigate: nav, captureScreenshot: true, screenshotScenario: "基线" }, scenarioOptions)
+for (const scenario of ["左手", "右手"]) await verifyDevelopment({ project: root, output: scenarioOutput, resume: scenarioRun.runId, captureScreenshot: true, screenshotScenario: scenario }, scenarioOptions)
+let scenarioCollection = (await loadCollection(scenarioOutput, root)).collection
+assert.equal(scenarioCollection.runs[0].evidence.filter((e) => e.type === "screenshot").length, 3)
+assert.equal((await readdir(join(scenarioOutput, "evidence"))).length, 3, "报告引用的三个场景截图均保留")
+smartReport = await readFile(join(scenarioOutput, "integration-report.md"), "utf8")
+for (const scenario of ["基线", "左手", "右手"]) assert.ok(smartReport.includes(`截图场景：${scenario}。`))
+const oldLeft = scenarioCollection.runs[0].evidence.find((e) => e.scenario === "左手").sha256
+await verifyDevelopment({ project: root, output: scenarioOutput, resume: scenarioRun.runId, captureScreenshot: true, screenshotScenario: "左手" }, scenarioOptions)
+scenarioCollection = (await loadCollection(scenarioOutput, root)).collection
+assert.equal(scenarioCollection.runs[0].evidence.filter((e) => e.type === "screenshot").length, 3)
+assert.equal((await readdir(join(scenarioOutput, "evidence"))).length, 3)
+assert.ok(!(await readdir(join(scenarioOutput, "evidence"))).includes(`${oldLeft}.png`), "同场景重采清理旧截图")
+await assert.rejects(verifyDevelopment({ project: root, output: scenarioOutput, resume: scenarioRun.runId, captureScreenshot: true, screenshotScenario: "左手", device: "other-phone" }, scenarioOptions), /设备必须/)
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, captureScreenshot: true, screenshotScenario: "左手" }, emulatorOptions), /安装和目标页导航|真机/)
 const manualRun = await verifyDevelopment({ ...smartBase, output: join(root, "sr-manual"), executeBuild: true, importScreenshot: [devShot, devShot] }, physicalOptions)
 const manualShots = manualRun.evidence.filter((e) => e.type === "screenshot")
 assert.equal(manualShots.length, 2, "可重复导入开发者真机截图")

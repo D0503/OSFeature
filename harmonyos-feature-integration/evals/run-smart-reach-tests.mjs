@@ -27,6 +27,7 @@ assert.equal(verify(base).counts.fail, 0)
 assert.ok(has(verify(base), "composition", "warn"))
 assert.ok(has(verify(base), "version-guard", "warn"))
 assert.ok(has(verify(base), "source-state", "warn"))
+assert.match(verify(base, "holding-hand").checks.find((c) => c.id.includes("unsubscribe-")).message, /订阅标志、API\/SysCap 守卫/)
 assert.doesNotMatch(JSON.stringify(verify(base).checks.map((c) => c.id)), /hds-material|easygo-|arkui-/)
 
 for (const [api, expected] of [[14, []], [15, ["operating-hand"]], [19, ["operating-hand"]], [20, ["operating-hand", "holding-hand"]], [22, ["operating-hand", "holding-hand"]], [23, ["native-component", "operating-hand", "holding-hand"]]]) {

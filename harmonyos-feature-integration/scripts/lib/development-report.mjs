@@ -11,7 +11,11 @@ const escape = (value) => String(value ?? "未记录").replace(/[&<>|\[\]`*_]/g,
 
 export function sameTarget(a, b) {
   if (!["feature", "route", "product", "buildMode", "module"].every((key) => a[key] === b[key])) return false
-  if (a.changes.id && b.changes.id) return a.changes.id === b.changes.id
+  if (a.changes.id && b.changes.id) {
+    if (a.changes.id === b.changes.id) return true
+    return a.goal === b.goal && ["page", "component", "category", "effect"].every((key) => a.changes[key].trim() === b.changes[key].trim()) &&
+      JSON.stringify([...a.changes.files].sort()) === JSON.stringify([...b.changes.files].sort())
+  }
   return ["page", "component"].every((key) => a.changes[key].trim() === b.changes[key].trim())
 }
 
@@ -114,7 +118,18 @@ export async function loadCollection(output, project) {
   }
   const collection = JSON.parse(await readFile(path, "utf8"))
   if (collection.project !== resolve(project)) throw new Error("输出目录已属于其他工程")
-  collection.runs = collection.runs.filter((run, i, runs) => !runs.slice(i + 1).some((later) => sameTarget(run, later)))
+  const runs = []
+  for (const run of collection.runs) {
+    const previous = runs.find((item) => sameTarget(item, run))
+    if (previous) {
+      for (const key of ["sdk", "compile", "target", "compatible"]) {
+        if (Number.isInteger(previous.changes.before[key])) run.changes.before[key] = previous.changes.before[key]
+      }
+    }
+    for (let i = runs.length - 1; i >= 0; i--) if (sameTarget(runs[i], run)) runs.splice(i, 1)
+    runs.push(run)
+  }
+  collection.runs = runs
   return { directory, collection }
 }
 
@@ -154,6 +169,7 @@ export async function saveReport(output, directory, collection) {
       await mkdir(join(output, "evidence"), { recursive: true })
       if (resolve(e.path) !== resolve(dest)) await copyFile(e.path, dest)
       e.path = dest
+      if (e.scenario) lines.push("", `截图场景：${escape(e.scenario)}。`)
       lines.push("", `<img src="evidence/${filename}" alt="目标页面截图" width="270" />`, "")
       if (e.origin === "developer") lines.push("", `截图来源：开发者按引导在真机采集并导入。`)
     }

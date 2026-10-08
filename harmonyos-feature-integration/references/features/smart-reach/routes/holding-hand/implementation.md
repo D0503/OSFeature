@@ -6,7 +6,7 @@
 
 ## 1. 权限与版本
 
-在所属 HAP 的 `module.json5` 声明 `ohos.permission.DETECT_GESTURE`，同时配置 `reason` 字符串资源、`usedScene.abilities` 的实际 Ability 名称和 `when: 'inuse'`。完整声明见 [兼容性](../../compatibility.md)。
+在所属 HAP 的 `module.json5` 声明 `ohos.permission.DETECT_GESTURE`；此权限不需要运行时请求授权。声明示例见 [兼容性](../../compatibility.md)。
 
 SDK/compile 至少 API 20。通过 `@kit.MultimodalAwarenessKit` 导入 `motion`；运行时 API 20+ 和 `canIUse('SystemCapability.MultimodalAwareness.Motion')` 都满足后才进入新接口路径。compatible 低于 20 时保护整个新调用路径；SysCap 不能代替版本检查，也不能保证具体硬件支持。
 
@@ -37,10 +37,9 @@ SDK/compile 至少 API 20。通过 `@kit.MultimodalAwarenessKit` 导入 `motion`
 ## 3. 订阅与页面生命周期
 
 1. 页面出现且满足启用条件时，在 `try/catch` 内调用 `motion.on('holdingHandChanged', this.handleHoldingHandChange)`；仅调用成功后设置订阅标志。已有有效订阅时不重复调用。
-2. 页面消失时，用 `motion.off('holdingHandChanged', this.handleHoldingHandChange)` 清理成功建立的订阅。不要调用不带回调的全事件退订。
+2. 页面消失时按[共同约束](../../implementation.md#自定义路径的共同约束)清理 `holdingHandChanged` 订阅；此路线的 off 门槛为 API 20+。
 3. `aboutToAppear` / `aboutToDisappear` 适用于组件出现和消失；缓存页面、Tab 切换、前后台场景须结合工程实际可见性处理，不能假设切换页面一定触发组件销毁。
 4. 页面隐藏或进入后台时停止感知、忽略迟到回调，不更新隐藏页面。缓存页面保留位置状态，重新可见且功能启用后恢复监听；新建页面以原布局初始化。
-5. `on` / `off` 分别捕获异常并记录 code。退订失败时保留订阅记录，阻止再次 `on` 叠加监听，后续明确的生命周期清理可以重试；不循环重试。
 
 ## 4. 左右布局与转场
 

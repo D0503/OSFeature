@@ -16,13 +16,21 @@
 
 操作手与握持手路线须在实际承载功能的 HAP 模块 `src/main/module.json5` 的 `module.requestPermissions` 中声明对应权限。API 15–19 不因声明 DETECT_GESTURE 就获得操作手权限；若仅使用该权限，增强分支需限定 API 20+，更低系统继续原路径。
 
-自定义感知路线声明的权限属于 `user_grant`，每项须配置 `reason` 和 `usedScene`。`user_grant` 是权限类型，不写入 `requestPermissions` 对象。握持手路线的声明示例，合并到模块现有配置：
+`DETECT_GESTURE` 只需在所属 HAP 声明，无需运行时请求授权；原生组件路线无需声明感知权限。握持手路线的声明示例，合并到模块现有配置：
+
+```json5
+requestPermissions: [
+  { name: 'ohos.permission.DETECT_GESTURE' }
+]
+```
+
+操作手覆盖 API 15–19 时声明 `ohos.permission.ACTIVITY_MOTION`；API 20+ 若选择该权限也使用相同规则。它属于 `user_grant`：声明需配置 `reason` 和 `usedScene`，并在访问操作手接口前获得用户授权。`user_grant` 是权限类型，不写入 `requestPermissions` 对象：
 
 ```json5
 requestPermissions: [
   {
-    name: 'ohos.permission.DETECT_GESTURE',
-    reason: '$string:gesture_reason',
+    name: 'ohos.permission.ACTIVITY_MOTION',
+    reason: '$string:activity_motion_reason',
     usedScene: {
       abilities: ['EntryAbility'],
       when: 'inuse'
@@ -35,14 +43,14 @@ requestPermissions: [
 
 ```json
 {
-  "name": "gesture_reason",
-  "value": "用于感知握持手，使操作按钮随左右手调整位置"
+  "name": "activity_motion_reason",
+  "value": "用于感知操作手，使操作按钮随左右手调整位置"
 }
 ```
 
 `usedScene.abilities` 替换为实际使用感知能力的 Ability 名称，与当前模块声明一致；不能直接照搬示例名称。页面可见期感知使用 `when: 'inuse'`。权限用途文案按实际功能填写，并按工程现有多语言资源维护。
 
-操作手覆盖 API 15–19 时声明 `ohos.permission.ACTIVITY_MOTION`；同样配置对应用途的 `reason` 和 `usedScene`。多路线组合合并所需权限并去重。
+操作手路线如选择 `DETECT_GESTURE`（仅 API 20+），只声明该权限，不执行 `ACTIVITY_MOTION` 的授权流程。多路线组合合并所需权限并去重。
 
 ## 设备与环境
 
