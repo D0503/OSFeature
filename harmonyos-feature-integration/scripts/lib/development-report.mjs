@@ -14,7 +14,7 @@ export function sameTarget(a, b) {
   if (a.changes.id && b.changes.id) {
     if (a.changes.id === b.changes.id) return true
     return a.goal === b.goal && ["page", "component", "category", "effect"].every((key) => a.changes[key].trim() === b.changes[key].trim()) &&
-      JSON.stringify([...a.changes.files].sort()) === JSON.stringify([...b.changes.files].sort())
+      JSON.stringify([...new Set(a.changes.files)].sort()) === JSON.stringify([...new Set(b.changes.files)].sort())
   }
   return ["page", "component"].every((key) => a.changes[key].trim() === b.changes[key].trim())
 }

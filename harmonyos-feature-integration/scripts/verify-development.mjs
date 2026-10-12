@@ -132,7 +132,7 @@ export async function verifyDevelopment(request, options = {}) {
     if (request.screenshotScenario !== undefined && (typeof request.screenshotScenario !== "string" || !request.screenshotScenario.trim() || request.screenshotScenario.length > 80 || /[\r\n]/.test(request.screenshotScenario))) throw new Error("screenshot-scenario 必须是 1–80 字的单行场景名")
     if (request.screenshotScenario && !request.captureScreenshot) throw new Error("screenshot-scenario 需要同时使用 capture-screenshot")
     if (request.resume) {
-      if (request.executeBuild || request.executeRun || request.navigate || request.captureLayout || request.changes) throw new Error("resume 不执行构建、安装或导航")
+      if (request.executeBuild || request.executeRun || request.navigate || request.captureLayout || request.changes) throw new Error("resume 仅允许补录 judgment、导入截图或采集截图，不执行构建、安装或导航")
       if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot) throw new Error("resume 需要提供 judgment、导入截图或采集截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
@@ -144,7 +144,8 @@ export async function verifyDevelopment(request, options = {}) {
           const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
           if (info.exitCode !== 0 || detectDeviceKind(info.stdout, run.device) !== "physical") throw new Error("智感握姿补采截图只能使用已确认的真机")
         }
-        await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project))
+        try { Screenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
+        catch { run.checks.visual = check("not run", "截图采集失败或文件不是有效PNG，未完成视觉验证")}
       }
       await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot)
       if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
