@@ -56,6 +56,104 @@ if (deviceInfo.sdkApiVersion >= 23) {
 - `dynamicHideTitleBar` 控制标题栏和状态栏随滚动显隐；
 - `bindToScrollable` 把效果与内容滚动组件关联。
 
+### 滚动绑定与过渡配置
+
+单层滚动使用 `bindToScrollable`；真实嵌套滚动使用 `bindToNestedScrollable`，`child` 必须是 `parent` 的后代且参与嵌套滚动，不能仅因文件中同时出现 Scroll、List 就绑定。多个容器绑定同一导航组件时，任一个滚动均可能触发标题栏显隐，到顶或到底也可能触发显示；避免同时驱动多个容器，验证滚动交接。
+
+以下为页面组件内的接入片段：`scroller`、`listScroller` 分别是页面持有的 `Scroller`、`ListScroller` 实例，`headerContent` 为工程已有 Builder，`listViewportHeight` 为实际列表视口高度。不要为套用示例而新增嵌套滚动。
+
+```typescript
+HdsNavigation() {
+  Scroll(this.scroller) {
+    Column() {
+      this.headerContent()
+      List({ scroller: this.listScroller }) {
+        // 保留业务 ListItem
+      }
+      .height(this.listViewportHeight)
+      .nestedScroll({
+        scrollForward: NestedScrollMode.PARENT_FIRST,
+        scrollBackward: NestedScrollMode.SELF_FIRST
+      })
+    }
+  }
+  .height('100%')
+}
+.bindToNestedScrollable([{ parent: this.scroller, child: this.listScroller }])
+```
+
+`scrollEffectOpts.enableScrollEffect: true` 表示按滚动总偏移从 `originalStyle` 过渡到 `scrollEffectStyle`；为 false 时仅使用 `originalStyle`。需要调整区间时配置 `blurEffectiveStartOffset`、`blurEffectiveEndOffset`，两者均非负且终点不小于起点。两端样式的可配置范围须结合模糊类型、材质配置和目标 SDK 核对。
+
+| HDS ScrollEffectType | 起始 API | 用途 |
+|---|---|---|
+| `COMMON_BLUR` | 18 | 通用均匀模糊，适用于非沉浸式列表 |
+| `GRADUAL_BLUR` | 20 | 过渡模糊，标题栏内容颜色或状态随滚动线性变化 |
+| `GRADIENT_BLUR` | 20 | 空间渐变模糊，适用于列表型非沉浸式场景 |
+| `IMMERSIVE_GRADIENT_BLUR` | 23 | 沉浸式渐变模糊，适用于沉浸式图文场景 |
+
+模糊枚举的起始版本不降低本路线材质的 API 23 门槛。下例使用 `GRADUAL_BLUR`，不作为 HDS 全路线默认值；从 `@kit.ArkUI` 导入 `LengthMetrics`，从 `@kit.UIDesignKit` 导入 `ScrollEffectType`、`hdsMaterial`，将片段合并到已有 `titleBar.style`：
+
+```typescript
+style: {
+  scrollEffectOpts: {
+    enableScrollEffect: true,
+    scrollEffectType: ScrollEffectType.GRADUAL_BLUR,
+    blurEffectiveStartOffset: LengthMetrics.vp(0),
+    blurEffectiveEndOffset: LengthMetrics.vp(56)
+  },
+  originalStyle: {
+    contentStyle: {
+      titleStyle: { mainTitleColor: $r('sys.color.font_on_primary') }
+    }
+  },
+  scrollEffectStyle: {
+    contentStyle: {
+      titleStyle: { mainTitleColor: $r('sys.color.font_primary') }
+    }
+  },
+  systemMaterialEffect: {
+    materialType: hdsMaterial.MaterialType.ADAPTIVE,
+    materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
+  }
+}
+```
+
+需配合真实滚动绑定；距离和前景色按页面背景及主题选择，不固定套用示例值。菜单、返回按钮颜色如需联动，在对应 `contentStyle` 中补齐，验证两端可读性。滚动模糊不替代材质配置，不重复调用 `titleBar` 覆盖原有菜单和样式。
+
+### 自定义区域、组件级安全区与显隐
+
+- `titleBar.content.stackBuilder` 设置标题栏顶部自定义区域；`bottomBuilder` 设置底部自定义区域，`height` 应与真实内容一致（默认 56vp，不支持百分比）。`showType` 可选 `BottomBuilderShowType.DIRECTLY_SHOW` 或 `OVERDRAG_SHOW`，仅在 `HideMode.SCROLL_UP_TO` 下生效。
+- `titleBar.enableComponentSafeArea` 从 API 20 起可用，默认 false；为 true 时将标题栏设为组件级安全区。它不是向系统安全区延伸的 `expandSafeArea`，不作为沉浸光感默认开启项。按需启用时，与 `contentStartOffset` 或内部占位只补偿一次，验证内容仍能滚入标题栏下方。
+- `dynamicHideTitleBar.hideStatusBar` 仅在 `hideTitleArea: true` 时生效；`hideBottomBuilder` 单独控制底部自定义区域。`HdsNavigationTitleMode.MODAL` 下动态显隐无效，显隐过程中不动态切换配置，不因接入材质而自动隐藏状态栏。
+
+从 `@kit.UIDesignKit` 导入 `BottomBuilderShowType`、`HideMode`。下面的 `headerOverlay`、`filterBar` 复用工程已有 Builder，`filterBarHeight` 与实际高度一致；无对应区域时省略字段，不创建空区域：
+
+```typescript
+HdsNavigation() {
+  // 保留已绑定 this.scroller 的滚动内容
+}
+.titleBar({
+  content: {
+    title: { mainTitle: '列表' },
+    stackBuilder: (): void => this.headerOverlay(),
+    bottomBuilder: {
+      builder: (): void => this.filterBar(),
+      height: this.filterBarHeight,
+      showType: BottomBuilderShowType.DIRECTLY_SHOW
+    }
+  }
+})
+.dynamicHideTitleBar({
+  hideTitleArea: true,
+  hideBottomBuilder: true,
+  hideStatusBar: false,
+  mode: HideMode.SCROLL_UP_TO
+})
+.bindToScrollable([this.scroller])
+```
+
+仅在工程确需组件级安全区时，在 `titleBar` 对象中加入 `enableComponentSafeArea: true`。自定义区域中的按钮按各自入口配置材质，不给整个 Builder 根容器统一铺设材质。以上片段按需合并到工程，保留原有菜单、业务内容、版本保护及安全区扩展规则。
+
 标题栏包含菜单按钮时，菜单对象必须使用 HDS 的明确类型 `HdsNavigationMenuContentOptions`，并传给 `titleBar.content.menu`。不要把它声明成无类型对象、`object` 或动态类型；没有菜单时无需创建空对象。导入和声明示例：
 
 ```typescript

@@ -4,6 +4,10 @@
 
 ## 悬浮 Tab 与导航矩阵
 
+- 标题栏单层或嵌套滚动绑定对应真实控制器与父子关系；验证内外容器交接、到顶到底及回弹时的模糊和显隐，不因多容器同时滚动产生异常切换；
+- 自定义滚动模糊区间时验证起点、过渡中段、终点和回滚，核对 `originalStyle`、`scrollEffectStyle` 与 `enableScrollEffect` 开关行为，文字和按钮在两端均清晰可见；
+- 使用 `stackBuilder`、`bottomBuilder` 时核对位置、实际占用高度及 `showType` 的模式条件；使用 `enableComponentSafeArea` 时确认与内容起始偏移或内部占位不重复避让，首项可见且上滑可进入标题栏下方；
+- 动态显隐核对 `hideStatusBar` 对 `hideTitleArea` 的依赖、`hideBottomBuilder` 行为及 MODAL 模式限制，显隐过程中不动态修改配置；
 - HDS 默认栏底部间距为 0；实际接入已开启窗口沉浸式时显式 28vp，未开启时显式 0vp 并逐个确认一级 Tab 页、真实滚动容器及所有父组件的底部扩展；窗口封装、条件和后续关闭调用均需核对；
 - 验证每个一级页的底部内容延伸和顶部避让；接入标题栏沉浸光感的页面核对 TOP 扩展覆盖完整父组件链、标题栏材质覆盖状态栏区域且内容不被遮挡，与悬浮 Tab 共存的链路使用 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]` 合并写法。普通/悬浮分支及独立复用页面之间切换时，TOP 与 BOTTOM 扩展均不泄漏到普通布局；
 
