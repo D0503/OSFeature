@@ -1,18 +1,9 @@
-import { createHash } from "node:crypto"
-import { access, readFile } from "node:fs/promises"
-import { dirname, isAbsolute, join, resolve, relative } from "node:path"
+import { readFile } from "node:fs/promises"
+import { dirname, join, resolve } from "node:path"
 
 export const CHECK_LEVELS = new Set(["static", "sdk", "build", "install", "runtime", "visual"])
 export const LAYER_STATUSES = new Set(["passed", "failed", "blocked", "not_run", "inconclusive"])
 export const VERDICTS = new Set(["passed", "passed_with_spec_conflict", "build_passed_runtime_pending", "inconclusive", "failed", "blocked"])
-
-async function exists(path) {
-  try { await access(path); return true } catch { return false }
-}
-
-async function sha256File(path) {
-  return createHash("sha256").update(await readFile(path)).digest("hex")
-}
 
 async function readJson(path, label) {
   try {
@@ -24,16 +15,6 @@ async function readJson(path, label) {
 
 function nonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0
-}
-
-function safeChild(root, value, label = "path") {
-  if (typeof value !== "string" || !value || isAbsolute(value) || value.includes("..")) {
-    throw new Error(`${label} 必须是能力包内的安全相对路径: ${value}`)
-  }
-  const absolute = resolve(root, value)
-  const rel = relative(root, absolute)
-  if (!rel || rel.startsWith("..") || isAbsolute(rel)) throw new Error(`${label} 越出能力包根目录: ${value}`)
-  return absolute
 }
 
 function validateOfficialUrl(value, label, errors) {
@@ -70,7 +51,7 @@ function validateScenariosDocument(scenariosData, errors) {
   const scenarioIds = new Set()
   for (const [index, scenario] of (scenariosData?.scenarios ?? []).entries()) {
     const label = `scenarios[${index}]`
-    if (!/^IL-S\d{3,}$/.test(scenario?.id ?? "")) errors.push(`${label}.id 格式无效`)
+    if (!/^[A-Z][A-Z0-9]*-S\d{3,}$/.test(scenario?.id ?? "")) errors.push(`${label}.id 格式无效`)
     else if (scenarioIds.has(scenario.id)) errors.push(`${label}.id 重复`)
     else scenarioIds.add(scenario.id)
     if (!nonEmptyString(scenario?.displayName)) errors.push(`${label}.displayName 必填`)
@@ -95,41 +76,78 @@ function validateScenariosDocument(scenariosData, errors) {
     if (!Array.isArray(scenario?.requiredChecks) || !scenario.requiredChecks.includes("static") || !scenario.requiredChecks.includes("build")) errors.push(`${label} 必须包含 static 与 build`)
     else for (const level of scenario.requiredChecks) if (!CHECK_LEVELS.has(level)) errors.push(`${label}.requiredChecks 包含无效层 ${level}`)
     if (!Array.isArray(scenario?.expectedOutcomeTemplates) || !scenario.expectedOutcomeTemplates.length) errors.push(`${label}.expectedOutcomeTemplates 必须是非空数组`)
+    if (scenario.demoValidation !== undefined) {
+      const plan = scenario.demoValidation
+      if (!['single_page_preferred'].includes(plan?.layoutPolicy)) errors.push(`${label}.demoValidation.layoutPolicy 无效`)
+      if (plan?.backgroundResource !== undefined && !nonEmptyString(plan.backgroundResource)) errors.push(`${label}.demoValidation.backgroundResource 必须是非空字符串`)
+      if (plan?.scopePolicy !== undefined) {
+        const policy = plan.scopePolicy
+        if (policy?.selection !== 'prompt_strong_relevance_only') errors.push(`${label}.demoValidation.scopePolicy.selection 无效`)
+        if (policy?.prerequisiteHandling !== 'setup_or_static_only') errors.push(`${label}.demoValidation.scopePolicy.prerequisiteHandling 无效`)
+        if (!Array.isArray(policy?.excludedByDefault) || policy.excludedByDefault.some((item) => !nonEmptyString(item))) errors.push(`${label}.demoValidation.scopePolicy.excludedByDefault 必须是字符串数组`)
+        if (!Array.isArray(policy?.excludedCriterionTypes) || policy.excludedCriterionTypes.some((item) => !nonEmptyString(item))) errors.push(`${label}.demoValidation.scopePolicy.excludedCriterionTypes 必须是字符串数组`)
+        if (!policy?.includeExcludedTypeWhenPromptContains || typeof policy.includeExcludedTypeWhenPromptContains !== 'object' || Array.isArray(policy.includeExcludedTypeWhenPromptContains)) errors.push(`${label}.demoValidation.scopePolicy.includeExcludedTypeWhenPromptContains 必须是对象`)
+        else for (const [type, keywords] of Object.entries(policy.includeExcludedTypeWhenPromptContains)) {
+          if (!policy.excludedCriterionTypes.includes(type) || !Array.isArray(keywords) || !keywords.length || keywords.some((item) => !nonEmptyString(item))) errors.push(`${label}.demoValidation.scopePolicy.includeExcludedTypeWhenPromptContains.${type} 无效`)
+        }
+      }
+      if (!Array.isArray(plan?.points) || !plan.points.length) errors.push(`${label}.demoValidation.points 必须是非空数组`)
+      const pointIds = new Set()
+      for (const [pointIndex, point] of (plan?.points ?? []).entries()) {
+        const pointLabel = `${label}.demoValidation.points[${pointIndex}]`
+        if (!/^D\d{2}-\d{2}$/.test(point?.id ?? '')) errors.push(`${pointLabel}.id 格式无效`)
+        else if (pointIds.has(point.id)) errors.push(`${pointLabel}.id 重复`)
+        else pointIds.add(point.id)
+        if (!nonEmptyString(point?.title)) errors.push(`${pointLabel}.title 必填`)
+        if (!['single_page', 'rebuild_per_variant'].includes(point?.execution)) errors.push(`${pointLabel}.execution 无效`)
+        if (!Array.isArray(point?.criteriaTopics) || !point.criteriaTopics.length || point.criteriaTopics.some((topic) => !nonEmptyString(topic))) errors.push(`${pointLabel}.criteriaTopics 必须是非空数组`)
+        if (!Array.isArray(point?.variants) || !point.variants.length) errors.push(`${pointLabel}.variants 必须是非空数组`)
+        if (point?.demoSetupRequirements !== undefined) {
+          if (!Array.isArray(point.demoSetupRequirements) || !point.demoSetupRequirements.length) errors.push(`${pointLabel}.demoSetupRequirements 必须是非空数组`)
+          const setupIds = new Set()
+          for (const [setupIndex, setup] of (point.demoSetupRequirements ?? []).entries()) {
+            const setupLabel = `${pointLabel}.demoSetupRequirements[${setupIndex}]`
+            if (!nonEmptyString(setup?.id)) errors.push(`${setupLabel}.id 必填`)
+            else if (setupIds.has(setup.id)) errors.push(`${setupLabel}.id 重复`)
+            else setupIds.add(setup.id)
+            if (!nonEmptyString(setup?.description)) errors.push(`${setupLabel}.description 必填`)
+            if (setup?.enforcement !== 'implementation_and_static_gate') errors.push(`${setupLabel}.enforcement 无效`)
+            if (setup?.countsAsFeatureValidation !== false) errors.push(`${setupLabel}.countsAsFeatureValidation 必须为 false`)
+          }
+        }
+        if (point?.interactionRequirements !== undefined) {
+          if (!Array.isArray(point.interactionRequirements) || !point.interactionRequirements.length) errors.push(`${pointLabel}.interactionRequirements 必须是非空数组`)
+          const interactionIds = new Set()
+          for (const [interactionIndex, interaction] of (point.interactionRequirements ?? []).entries()) {
+            const interactionLabel = `${pointLabel}.interactionRequirements[${interactionIndex}]`
+            if (!nonEmptyString(interaction?.id)) errors.push(`${interactionLabel}.id 必填`)
+            else if (interactionIds.has(interaction.id)) errors.push(`${interactionLabel}.id 重复`)
+            else interactionIds.add(interaction.id)
+            if (!nonEmptyString(interaction?.description)) errors.push(`${interactionLabel}.description 必填`)
+            if (!nonEmptyString(interaction?.expected)) errors.push(`${interactionLabel}.expected 必填`)
+          }
+        }
+        const variantIds = new Set()
+        for (const [variantIndex, variant] of (point?.variants ?? []).entries()) {
+          const variantLabel = `${pointLabel}.variants[${variantIndex}]`
+          if (!nonEmptyString(variant?.id)) errors.push(`${variantLabel}.id 必填`)
+          else if (variantIds.has(variant.id)) errors.push(`${variantLabel}.id 重复`)
+          else variantIds.add(variant.id)
+          if (!nonEmptyString(variant?.label)) errors.push(`${variantLabel}.label 必填`)
+          if (!variant?.parameters || typeof variant.parameters !== 'object' || Array.isArray(variant.parameters)) errors.push(`${variantLabel}.parameters 必须是对象`)
+        }
+        if (point?.defaultEquivalence !== undefined) {
+          const equivalence = point.defaultEquivalence
+          if (!nonEmptyString(equivalence?.defaultVariantId) || !variantIds.has(equivalence.defaultVariantId)) errors.push(`${pointLabel}.defaultEquivalence.defaultVariantId 必须引用已有变体`)
+          if (!nonEmptyString(equivalence?.explicitVariantId) || !variantIds.has(equivalence.explicitVariantId)) errors.push(`${pointLabel}.defaultEquivalence.explicitVariantId 必须引用已有变体`)
+          if (equivalence?.defaultVariantId === equivalence?.explicitVariantId) errors.push(`${pointLabel}.defaultEquivalence 两个变体必须不同`)
+          if (equivalence?.expected !== 'visual_equivalent') errors.push(`${pointLabel}.defaultEquivalence.expected 必须为 visual_equivalent`)
+          if (!nonEmptyString(equivalence?.basis)) errors.push(`${pointLabel}.defaultEquivalence.basis 必填`)
+        }
+      }
+    }
   }
   return { routeIds, entryIds, probeIds }
-}
-
-async function validateSessionDocument(session, packageRoot, entryIds, errors) {
-  const sessionPath = "sessions/latest/session.json"
-  if (!Array.isArray(session?.snapshots) || !session.snapshots.length) { errors.push(`${sessionPath}.snapshots 必须是非空数组`); return }
-  for (const [index, snapshot] of session.snapshots.entries()) {
-    const label = `${sessionPath}.snapshots[${index}]`
-    if (!nonEmptyString(snapshot?.snapshotId) || !entryIds.has(snapshot.snapshotId)) { errors.push(`${label}.snapshotId 无效`); continue }
-    if (!nonEmptyString(snapshot?.officialUrl)) errors.push(`${label}.officialUrl 必填`)
-    if (!/^[a-f0-9]{64}$/i.test(snapshot?.contentSha256 ?? "")) errors.push(`${label}.contentSha256 必须是 SHA-256`)
-    const bodyPath = safeChild(packageRoot, `sessions/latest/snapshots/${snapshot.snapshotId}.md`, `${label} 正文`)
-    if (!(await exists(bodyPath))) errors.push(`${label} 缺少快照正文文件`)
-    else if ((await sha256File(bodyPath)).toLowerCase() !== String(snapshot.contentSha256).toLowerCase()) errors.push(`${label} 快照正文哈希与登记不一致`)
-  }
-  const knownSnapshots = new Set(session.snapshots.map((item) => item.snapshotId))
-  const criteriaIds = new Set()
-  for (const [index, criterion] of (session?.criteria ?? []).entries()) {
-    const label = `${sessionPath}.criteria[${index}]`
-    if (!nonEmptyString(criterion?.id)) { errors.push(`${label}.id 必填`); continue }
-    if (criteriaIds.has(criterion.id)) errors.push(`${label}.id 重复`)
-    criteriaIds.add(criterion.id)
-    if (!nonEmptyString(criterion?.type)) errors.push(`${label}.type 必填`)
-    if (!nonEmptyString(criterion?.statement)) errors.push(`${label}.statement 必填`)
-    if (!knownSnapshots.has(criterion?.snapshotId)) errors.push(`${label}.snapshotId 不在上次快照集内`)
-    if (!nonEmptyString(criterion?.anchor)) errors.push(`${label}.anchor 必填`)
-    if (!["fresh", "reused"].includes(criterion?.status)) errors.push(`${label}.status 必须是 fresh 或 reused`)
-  }
-  for (const [index, resolution] of (session?.conflictResolutions ?? []).entries()) {
-    const label = `${sessionPath}.conflictResolutions[${index}]`
-    if (!nonEmptyString(resolution?.probeId)) errors.push(`${label}.probeId 必填`)
-    if (!["persists", "resolved", "changed"].includes(resolution?.verdict)) errors.push(`${label}.verdict 必须是 persists/resolved/changed`)
-    if (!nonEmptyString(resolution?.basis)) errors.push(`${label}.basis 必填`)
-  }
 }
 
 export async function loadCapability(skillRoot, featureQuery = "immersive-light") {
@@ -148,15 +166,26 @@ export async function loadCapability(skillRoot, featureQuery = "immersive-light"
   const packageRoot = dirname(resolve(root, feature.scenarios))
   const scenariosData = await readJson(resolve(root, feature.scenarios), "scenarios")
   const errors = []
-  const { entryIds } = validateScenariosDocument(scenariosData, errors)
-  if (await exists(join(packageRoot, "sessions", "latest", "session.json"))) {
-    const session = await readJson(join(packageRoot, "sessions", "latest", "session.json"), "sessions/latest")
-    await validateSessionDocument(session, packageRoot, entryIds, errors)
-    if (errors.length) throw new Error(errors.join("; "))
-    return { root, feature, packageRoot, scenariosData, session }
-  }
+  validateScenariosDocument(scenariosData, errors)
   if (errors.length) throw new Error(errors.join("; "))
-  return { root, feature, packageRoot, scenariosData, session: null }
+  return { root, feature, packageRoot, scenariosData }
+}
+
+// 明确选择可包含多个场景；自动路由按独立目标逐项执行，歧义不丢弃已命中的其他目标。
+export function resolveScenarios(capability, goals = [], selectedIds = []) {
+  if (!Array.isArray(goals) || !Array.isArray(selectedIds)) throw new Error("goals 与 selectedIds 必须是数组")
+  if (selectedIds.length) {
+    const selected = [...new Set(selectedIds)].map((id) => {
+      const scenario = capability.scenariosData.scenarios.find((item) => item.id === id)
+      if (!scenario) throw new Error(`未注册场景: ${id}`)
+      return scenario
+    })
+    return { status: "resolved", selected, resolutions: [], reason: "采用明确选择的全部场景" }
+  }
+  if (!goals.length) return { status: "needs_input", selected: [], resolutions: [], reason: "缺少开发目标或场景选择" }
+  const resolutions = goals.map((goal) => ({ goal, ...resolveScenario(capability, goal) }))
+  const selected = [...new Map(resolutions.filter((item) => item.status === "resolved").map((item) => [item.selected.id, item.selected])).values()]
+  return { status: resolutions.every((item) => item.status === "resolved") ? "resolved" : "needs_selection", selected, resolutions, reason: "逐项目标解析；未确定的目标允许选择一个或多个候选" }
 }
 
 export function resolveScenario(capability, goal, target = "") {

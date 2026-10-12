@@ -4,12 +4,12 @@
 
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { dirname, join, resolve } from "node:path"
-import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
-import { fetchOfficialDocument, writeFrozenSnapshot } from "./lib/fetch-official.mjs"
+import { loadCapability } from "./lib/capability-tools.mjs"
+import { fetchOfficialBatch, writeFrozenSnapshot } from "./lib/fetch-official.mjs"
 import { resolveArtifactsRoot } from "./lib/artifacts-dir.mjs"
 
 function parseArgs(argv) {
-  const valued = new Set(["scenario", "sources", "skill-root", "output", "project"])
+  const valued = new Set(["scenario", "sources", "feature", "skill-root", "output", "project", "work-dir", "concurrency"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -26,16 +26,17 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
-  if (!args.scenario && !args.sources) throw new Error("用法: node freeze-snapshot.mjs --scenario IL-SXXX（或 --sources enable,overview） --project <目标工程绝对路径> [--output <目录>]")
+  if (!args.scenario && !args.sources) throw new Error("用法: node freeze-snapshot.mjs --feature <特性ID> --scenario <场景ID>（或 --sources <入口ID列表>） --project <目标工程绝对路径> [--output <目录>]")
   const scriptRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-  const capability = await loadCapability(args["skill-root"] ?? scriptRoot)
+  const capability = await loadCapability(args["skill-root"] ?? scriptRoot, args.feature ?? "immersive-light")
 
   let snapshotIds
   if (args.scenario) {
-    const resolution = resolveScenario(capability, args.scenario === "all" ? "" : "")
-    const scenario = capability.scenariosData.scenarios.find((item) => item.id === args.scenario)
-    if (!scenario) throw new Error(`场景不存在: ${args.scenario}`)
-    snapshotIds = scenario.sources
+    snapshotIds = [...new Set(args.scenario.split(',').flatMap(id => {
+      const scenario = capability.scenariosData.scenarios.find(item => item.id === id.trim())
+      if (!scenario) throw new Error(`场景不存在: ${id}`)
+      return scenario.sources
+    }))]
   } else {
     snapshotIds = args.sources.split(",").map((item) => item.trim()).filter(Boolean)
     const entryIds = new Set(capability.scenariosData.entryPoints.map((item) => item.snapshotId))
@@ -45,14 +46,17 @@ async function main() {
   const entryById = new Map(capability.scenariosData.entryPoints.map((item) => [item.snapshotId, item]))
   const pages = []
   const failures = []
-  for (const snapshotId of snapshotIds) {
+  const fetchedPages = await fetchOfficialBatch([...new Set(snapshotIds)].map(id => entryById.get(id)), {
+    concurrency: Number(args.concurrency ?? 4), workDirectory: args['work-dir'] ? resolve(args['work-dir']) : undefined,
+  })
+  for (const fetched of fetchedPages) {
+    const snapshotId = fetched.snapshotId
     const entry = entryById.get(snapshotId)
-    const fetched = await fetchOfficialDocument(entry.officialUrl)
     if (!fetched.ok || !fetched.contentSha256) {
       failures.push({ snapshotId, officialUrl: entry.officialUrl, detail: fetched.detail ?? "正文哈希缺失" })
       continue
     }
-    pages.push({ snapshotId, officialUrl: entry.officialUrl, contentSha256: fetched.contentSha256, contentMarkdown: fetched.contentMarkdown, title: fetched.title ?? entry.title, updatedDate: fetched.updatedDate })
+    pages.push({ snapshotId, officialUrl: entry.officialUrl, contentSha256: fetched.contentSha256, contentMarkdown: fetched.contentMarkdown, title: fetched.title ?? entry.title, updatedDate: fetched.updatedDate, fetchedAt: fetched.fetchedAt })
   }
   if (failures.length) {
     process.stdout.write(`${JSON.stringify({ status: "failed", failures }, null, 2)}\n`)

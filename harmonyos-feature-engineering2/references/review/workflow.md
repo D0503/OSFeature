@@ -1,6 +1,6 @@
 # 文档审查流程
 
-> 与开发链路的衔接：除本地文件、目录与官网 URL 外，开发链路 `freeze-snapshot.mjs` 的产物目录（`evidence/frozen/snapshots/`，仅含 .md 正文）可直接作为审阅输入——用于在 derive-criteria 现提判据前发现新增冲突、歧义或高危变化。审阅产物（findings/门禁）不进入能力包，也不直接作为开发判据。
+> 与开发链路的衔接：除本地文件、目录与官网 URL 外，开发链路 `freeze-snapshot.mjs --output <本轮临时目录>/<featureId>/frozen` 的产物目录也可作为审阅输入，用于现提判据前检查冲突或歧义。审阅产物（findings/门禁）不进入能力包，也不直接作为开发判据。
 
 ## 1. 确认边界
 
@@ -20,11 +20,13 @@
 node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--max-evidence-pages 12]
 ```
 
-输入为 URL 时先按 [URL 快照](url-snapshot.md) 生成 Markdown 资料目录，再对该目录运行预检。快照位于 `<报告输出根目录>/evidence/source-snapshot/`。
+输入为 URL 时先按 [URL 快照](url-snapshot.md) 在本轮临时目录生成 Markdown 资料目录，再对返回的 `outputDirectory` 运行预检。预检 JSON 同样保存于临时目录。
 
 检查标题、章节、代码围栏、代码格式、链接、媒体、版本声明、来源字段和跨文档索引。代码格式预检关注抓取或编辑引入的异常空格等可复制性问题，但必须排除字符串、注释和有意对齐。预检候选项必须经过语义复核，不能直接成为 finding。
 
 ## 3. 建立主张清单
+
+先按 [文档类型检查表](document-types.md) 选择适用类别，只检查文档承诺覆盖的范围。
 
 优先识别会影响开发决策的主张：
 
@@ -76,10 +78,10 @@ node <skill>/scripts/prepare-review.mjs <input> [--output <temporary-json>] [--m
 ## 8. 输出与反向校验
 
 1. 先构造规范 JSON。
-2. 运行 `validate-report.mjs`，修复所有契约错误。
-3. 从通过校验的 JSON 渲染 Markdown，不手工维护两份事实。
+2. 运行 `render-report.mjs`，由渲染器自动校验契约并生成 Markdown；校验失败时修正 JSON 后重试。`validate-report.mjs` 仅用于单独诊断。
+3. JSON 是两份报告的共同事实来源，不手工维护两份事实。
 4. 从每个 `confirmed` 结论反查证据，确保来源、版本和定位都真实存在。
 5. 对每个 `confirmed/internal_consistency` 反查 `internalConflict`：两侧陈述必须等于所引内部证据的原子主张，作用域逐项一致，结果互斥，finding 不得添加原文没有的范围。
 6. 从 `integrationGate` 反查阻断项和证据充分性，确保映射唯一。
 7. 反查严重度和排序：高严重度必须有完整工程失败路径，所有 finding 均保留且按严重度降序排列。
-8. 在报告输出根目录写入固定名称的 JSON 和 Markdown；重复运行只覆盖固定报告和内部索引登记的证据文件。
+8. 在报告输出根目录写入固定名称的 JSON 和 Markdown；重复运行只覆盖固定报告。URL 审阅以官网 URL 标识输入与证据来源，将摘录、定位、抓取时间与哈希写入报告；报告不引用临时附件。完成或受阻时按 [保留规则](../development/delivery-policy.md) 清理本次临时快照与预检文件，保留用户提供的原始资料。

@@ -1,0 +1,1499 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "easygo-parallel",
+  "displayName": "平行视界",
+  "defaultRoute": "easygo-api23",
+  "routes": [
+    {
+      "id": "easygo-api23",
+      "displayName": "EasyGo 平行视界基础配置（API 23）",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 23,
+        "minTargetApi": 23,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "按本次冻结官网核对配置项起始版本；不得因基础能力从 API 23 支持而擅自提高工程 compatibleSdkVersion。"
+      },
+      "sdk": {
+        "preferredApi": 23,
+        "validatedLocalVersion": "26.0.0.105",
+        "requiredDeclarationGlobs": [
+          "openharmony/ets/api/@ohos.arkui.UIContext.d.ts"
+        ],
+        "requiredSymbols": []
+      },
+      "supportedTargets": {
+        "routing": [
+          "Navigation",
+          "NavDestination"
+        ],
+        "configuration": [
+          "easyGo"
+        ]
+      },
+      "intentPatterns": [
+        "API 23",
+        "基础平行视界"
+      ]
+    },
+    {
+      "id": "easygo-api24-runtime",
+      "displayName": "EasyGo 平行视界运行态查询（API 24）",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 24,
+        "minTargetApi": 24,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "isEasySplit 的实际版本与调用条件以本次冻结 UIContext 文档为准。"
+      },
+      "sdk": {
+        "preferredApi": 24,
+        "validatedLocalVersion": null,
+        "requiredDeclarationGlobs": [
+          "openharmony/ets/api/@ohos.arkui.UIContext.d.ts"
+        ],
+        "requiredSymbols": [
+          "isEasySplit"
+        ]
+      },
+      "supportedTargets": {
+        "runtime": [
+          "UIContext"
+        ]
+      },
+      "intentPatterns": [
+        "isEasySplit",
+        "运行态查询",
+        "是否处于平行视界"
+      ]
+    },
+    {
+      "id": "easygo-api26",
+      "displayName": "EasyGo 平行视界增强配置（API 26）",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 26,
+        "minTargetApi": 26,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "pagePairs、wideSplit、squareSplit、splitDividerColor、drawableRectHook、enableInSplitScreen 等增强字段须按本次冻结官网核对版本。"
+      },
+      "sdk": {
+        "preferredApi": 26,
+        "validatedLocalVersion": null,
+        "requiredDeclarationGlobs": [
+          "openharmony/ets/api/@ohos.window.d.ts"
+        ],
+        "requiredSymbols": []
+      },
+      "supportedTargets": {
+        "routing": [
+          "Navigation",
+          "NavDestination"
+        ],
+        "configuration": [
+          "easyGo"
+        ],
+        "runtime": [
+          "UIContext"
+        ]
+      },
+      "intentPatterns": [
+        "API 26",
+        "增强平行视界"
+      ]
+    }
+  ],
+  "projectSignals": [
+    {
+      "id": "easygo-module-entry",
+      "extensions": [
+        ".json5"
+      ],
+      "pattern": "\\beasyGo\\s*:"
+    },
+    {
+      "id": "easygo-profile",
+      "extensions": [
+        ".json",
+        ".json5"
+      ],
+      "pattern": "displayModeOptions|navigationSplitOptions|routerSplitOptions"
+    },
+    {
+      "id": "easygo-navigation",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "\\bNavigation\\s*\\(|\\bNavDestination\\s*\\("
+    },
+    {
+      "id": "easygo-runtime",
+      "route": "easygo-api24-runtime",
+      "extensions": [
+        ".ets",
+        ".ts"
+      ],
+      "pattern": "isEasySplit\\s*\\("
+    }
+  ],
+  "safety": {
+    "modifyMinimumScope": true,
+    "preserveDirtyFiles": true,
+    "keepFailedChanges": true,
+    "automaticRollback": false,
+    "automaticSdkUpgrade": false,
+    "automaticEmulatorDownload": false,
+    "automaticUninstall": false,
+    "maxDirectedRepairRounds": 2
+  },
+  "verification": {
+    "layerStatuses": [
+      "passed",
+      "failed",
+      "blocked",
+      "not_run",
+      "inconclusive"
+    ],
+    "verdicts": [
+      "passed",
+      "passed_with_spec_conflict",
+      "build_passed_runtime_pending",
+      "inconclusive",
+      "failed",
+      "blocked"
+    ],
+    "visualSuccessRequiresObservation": true,
+    "buildCommand": "devecocli build",
+    "runCommand": "devecocli run",
+    "devicePolicy": "run-only-when-requested-and-exactly-one-device-selected"
+  },
+  "entryPoints": [
+    {
+      "snapshotId": "easygo-guide",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-easygo-parallel",
+      "title": "平行视界开发实践"
+    },
+    {
+      "snapshotId": "parallel-design",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/design-guides/parallel_view-0000002588655180",
+      "title": "平行视界设计指南"
+    },
+    {
+      "snapshotId": "module-config",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/module-configuration-file",
+      "title": "module.json5 配置文件"
+    },
+    {
+      "snapshotId": "navigation-routing",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-set-navigation-routing",
+      "title": "设置组件导航和页面路由"
+    },
+    {
+      "snapshotId": "navigation-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-basic-components-navigation",
+      "title": "Navigation"
+    },
+    {
+      "snapshotId": "navdestination-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-basic-components-navdestination",
+      "title": "NavDestination"
+    },
+    {
+      "snapshotId": "uicontext-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uicontext-uicontext",
+      "title": "Class (UIContext)"
+    },
+    {
+      "snapshotId": "uiobserver-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-uicontext-uiobserver",
+      "title": "Class (UIObserver)"
+    },
+    {
+      "snapshotId": "window-enums",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-window-e",
+      "title": "Window Enums"
+    },
+    {
+      "snapshotId": "window-interfaces",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-window-i",
+      "title": "Window Interfaces"
+    },
+    {
+      "snapshotId": "window-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/arkts-apis-window-window",
+      "title": "Interface (Window)"
+    },
+    {
+      "snapshotId": "app-service-context",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-inner-application-appserviceextensioncontext",
+      "title": "AppServiceExtensionContext"
+    },
+    {
+      "snapshotId": "component-reuse",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-component_reuse",
+      "title": "自定义组件复用开发实践"
+    },
+    {
+      "snapshotId": "node-container",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-basic-components-nodecontainer",
+      "title": "NodeContainer"
+    },
+    {
+      "snapshotId": "component-id",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-universal-attributes-component-id",
+      "title": "组件标识"
+    },
+    {
+      "snapshotId": "transition-design",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/design-guides/transition-animation-0000001750078488",
+      "title": "转场动效"
+    },
+    {
+      "snapshotId": "adaptive-layout",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-multi-device-adaptive-layout",
+      "title": "自适应布局"
+    },
+    {
+      "snapshotId": "page-layout",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-multi-device-page-layout",
+      "title": "页面布局场景"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "EP-S001",
+      "displayName": "平行视界基础接入与路由框架选择",
+      "route": "easygo-api23",
+      "intentPatterns": [
+        "接入平行视界",
+        "开启平行视界",
+        "easy_go.json",
+        "easyGo",
+        "navigationSplit",
+        "routerSplit",
+        "Navigation分栏",
+        "Router分栏"
+      ],
+      "targets": [
+        "Navigation"
+      ],
+      "sources": [
+        "easygo-guide",
+        "module-config",
+        "navigation-routing",
+        "parallel-design"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "entry 模块配置入口",
+            "hint": "核对 easyGo 对 profile 配置的引用位置、作用域和文件结构。",
+            "mustResolve": true
+          },
+          {
+            "topic": "设备与显示模式",
+            "hint": "核对 common/phone/tablet、wideWindowMode/squareWindowMode 及 original/navigationSplit/routerSplit。",
+            "mustResolve": true
+          },
+          {
+            "topic": "路由框架一致性",
+            "hint": "按工程实际路由框架选择对应 splitOptions，并核对混用限制。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "目标宽屏窗口按所选路由框架进入平行视界，窄屏与关闭模式保持原布局。",
+          "criteriaTopics": [
+            "entry 模块配置入口",
+            "设备与显示模式",
+            "路由框架一致性"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "未点名的设备矩阵",
+            "未点名的高级配置",
+            "性能专项"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "SDK",
+              "版本",
+              "兼容"
+            ],
+            "capability": [
+              "设备",
+              "窗口形态",
+              "折叠屏",
+              "平板"
+            ],
+            "performance": [
+              "性能",
+              "功耗",
+              "帧率"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D01-01",
+            "title": "基础平行视界分栏效果",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "设备与显示模式",
+              "路由框架一致性"
+            ],
+            "demoSetupRequirements": [
+              {
+                "id": "two-routable-pages",
+                "description": "提供可从主页进入详情页的最小路由与稳定测试数据。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              }
+            ],
+            "variants": [
+              {
+                "id": "parallel-enabled",
+                "label": "所选路由框架分栏",
+                "parameters": {
+                  "wideWindowMode": "match_project_router",
+                  "splitOptions": "match_project_router"
+                }
+              },
+              {
+                "id": "parallel-original",
+                "label": "original 基线",
+                "parameters": {
+                  "wideWindowMode": "original"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "只在 entry 模块登记 easyGo profile。",
+          "按工程真实路由框架配置 navigationSplitOptions 或 routerSplitOptions，不同时配置两者。",
+          "Demo 可参考输入工程的通用 Navigation 路由结构，但只保留目标场景需要的页面与交互。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "easygo-entry",
+          "kind": "require_any",
+          "patterns": [
+            "['\"]?easyGo['\"]?\\s*:\\s*['\"]\\$profile:"
+          ],
+          "onMissing": "failed",
+          "message": "entry module.json5 缺少 easyGo profile 引用。"
+        },
+        {
+          "id": "easygo-display-mode",
+          "kind": "require_any",
+          "patterns": [
+            "displayModeOptions"
+          ],
+          "onMissing": "failed",
+          "message": "缺少平行视界显示模式配置。"
+        },
+        {
+          "id": "easygo-options",
+          "kind": "require_any",
+          "patterns": [
+            "navigationSplitOptions",
+            "routerSplitOptions"
+          ],
+          "onMissing": "failed",
+          "message": "缺少与路由框架匹配的 splitOptions。"
+        }
+      ],
+      "negativeCases": [
+        "非 entry 模块配置",
+        "Navigation 与 Router 配置混用",
+        "缺少 profile 资源",
+        "窄屏或不满足窗口条件"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S002",
+      "displayName": "主页与关联页分栏",
+      "route": "easygo-api23",
+      "intentPatterns": [
+        "主页与关联页",
+        "配置主页",
+        "关联页",
+        "homePage",
+        "relatedPage",
+        "主页固定"
+      ],
+      "targets": [
+        "Navigation",
+        "NavDestination"
+      ],
+      "sources": [
+        "easygo-guide",
+        "navigation-api",
+        "navdestination-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "主页标识",
+            "hint": "按 Navigation 或 Router 的页面标识格式核对 homePage。",
+            "mustResolve": true
+          },
+          {
+            "topic": "关联页约束",
+            "hint": "核对 relatedPage 的前置条件、格式与参数限制。",
+            "mustResolve": true
+          },
+          {
+            "topic": "首次分栏结果",
+            "hint": "核对同时配置与只配置主页时的页面组合。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "应用进入目标路由后，主页与关联页按本次配置显示，后续目标页面在正确分栏更新。",
+          "criteriaTopics": [
+            "主页标识",
+            "关联页约束",
+            "首次分栏结果"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "路由模式对比",
+            "全屏与分屏专项"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "版本"
+            ],
+            "capability": [
+              "设备",
+              "窗口"
+            ],
+            "performance": [
+              "性能",
+              "功耗"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D02-01",
+            "title": "主页与关联页初始分栏效果",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "主页标识",
+              "关联页约束",
+              "首次分栏结果"
+            ],
+            "variants": [
+              {
+                "id": "home-related",
+                "label": "同时配置主页与关联页",
+                "parameters": {
+                  "homePage": "configured",
+                  "relatedPage": "configured"
+                }
+              },
+              {
+                "id": "home-only",
+                "label": "只配置主页",
+                "parameters": {
+                  "homePage": "configured",
+                  "relatedPage": "omitted"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "从实际路由结构确定主页标识。",
+          "仅在需求包含关联页时配置 relatedPage，并使用稳定静态页面。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "home-page",
+          "kind": "require_any",
+          "patterns": [
+            "\"homePage\"\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "未发现 homePage 配置。"
+        },
+        {
+          "id": "related-page",
+          "kind": "require_any",
+          "patterns": [
+            "\"relatedPage\"\\s*:"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现 relatedPage；若目标要求关联页则失败。"
+        }
+      ],
+      "negativeCases": [
+        "relatedPage 缺少 homePage",
+        "页面名格式与路由框架不一致",
+        "关联页依赖动态参数"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S005",
+      "displayName": "路由全屏页与恢复分栏",
+      "route": "easygo-api23",
+      "intentPatterns": [
+        "全屏页",
+        "fullScreenPages",
+        "路由全屏",
+        "退出分栏",
+        "恢复分栏",
+        "全屏图片"
+      ],
+      "targets": [
+        "NavDestination"
+      ],
+      "sources": [
+        "easygo-guide",
+        "navdestination-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "全屏页配置",
+            "hint": "核对 fullScreenPages 的页面格式、默认值和互斥集合。",
+            "mustResolve": true
+          },
+          {
+            "topic": "进入与退出全屏",
+            "hint": "核对目标页面显示和隐藏时分栏状态变化。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "进入配置页时退出分栏并全屏显示，返回后恢复原平行视界分栏与路由状态。",
+          "criteriaTopics": [
+            "全屏页配置",
+            "进入与退出全屏"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "横屏与分屏专项"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "版本"
+            ],
+            "capability": [
+              "设备",
+              "窗口"
+            ],
+            "performance": [
+              "性能",
+              "功耗"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D05-01",
+            "title": "全屏页进入 / 返回恢复效果",
+            "execution": "single_page",
+            "criteriaTopics": [
+              "进入与退出全屏"
+            ],
+            "interactionRequirements": [
+              {
+                "id": "open-fullscreen",
+                "description": "从分栏详情页进入配置的全屏页。",
+                "expected": "目标页全屏显示。"
+              },
+              {
+                "id": "back-to-split",
+                "description": "从全屏页返回。",
+                "expected": "恢复进入前的平行视界分栏。"
+              }
+            ],
+            "variants": [
+              {
+                "id": "configured-fullscreen-page",
+                "label": "fullScreenPages 目标页",
+                "parameters": {
+                  "fullScreenPages": [
+                    "FullScreenImagePage"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "参考输入工程的全屏图片页面交互骨架，仅复用本场景所需结构。",
+          "保持进入前分栏状态可复现，验证进入与返回两个时刻。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "fullscreen-pages",
+          "kind": "require_any",
+          "patterns": [
+            "\"fullScreenPages\"\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "未发现 fullScreenPages 配置。"
+        }
+      ],
+      "negativeCases": [
+        "目标页同时配置为主页或关联页",
+        "只截图全屏不验证返回恢复",
+        "用普通窗口全屏替代配置效果"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S006",
+      "displayName": "主动横屏时全屏策略",
+      "route": "easygo-api23",
+      "intentPatterns": [
+        "横屏全屏",
+        "请求横屏",
+        "supportLandscapeFullscreen",
+        "横屏保持分栏",
+        "页面方向"
+      ],
+      "targets": [
+        "NavDestination"
+      ],
+      "sources": [
+        "easygo-guide",
+        "window-api",
+        "window-enums",
+        "navdestination-api"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "横屏全屏开关",
+            "hint": "核对 supportLandscapeFullscreen 默认值及 true/false 行为。",
+            "mustResolve": true
+          },
+          {
+            "topic": "窗口级方向请求",
+            "hint": "核对平行视界下页面级与窗口级方向策略。",
+            "mustResolve": true
+          },
+          {
+            "topic": "方向恢复",
+            "hint": "核对退出目标页后的方向与分栏恢复。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "相同方向请求在开关 true/false 下分别呈现全屏或保持分栏，退出后恢复稳定。",
+          "criteriaTopics": [
+            "横屏全屏开关",
+            "窗口级方向请求",
+            "方向恢复"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "其他全屏与路由模式专项"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "版本"
+            ],
+            "capability": [
+              "设备",
+              "窗口"
+            ],
+            "performance": [
+              "性能",
+              "功耗"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D06-01",
+            "title": "横屏请求下全屏 / 保持分栏对比",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "横屏全屏开关",
+              "窗口级方向请求"
+            ],
+            "demoSetupRequirements": [
+              {
+                "id": "orientation-action",
+                "description": "提供同一页面上的主动横屏操作，并在离开时恢复方向。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              }
+            ],
+            "variants": [
+              {
+                "id": "landscape-fullscreen",
+                "label": "supportLandscapeFullscreen=true",
+                "parameters": {
+                  "supportLandscapeFullscreen": true
+                }
+              },
+              {
+                "id": "landscape-split",
+                "label": "supportLandscapeFullscreen=false",
+                "parameters": {
+                  "supportLandscapeFullscreen": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "按冻结文档采用窗口级方向接口。",
+          "两个变体复用同一页面、方向请求和初始分栏状态。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "landscape-policy",
+          "kind": "require_any",
+          "patterns": [
+            "\"supportLandscapeFullscreen\"\\s*:\\s*(?:true|false)"
+          ],
+          "onMissing": "failed",
+          "message": "未发现 supportLandscapeFullscreen 配置。"
+        },
+        {
+          "id": "window-orientation",
+          "kind": "require_any",
+          "patterns": [
+            "setPreferredOrientation\\s*\\("
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现窗口级方向请求；需核对目标交互。"
+        }
+      ],
+      "negativeCases": [
+        "使用页面级方向策略并宣称通过",
+        "两变体方向请求不同",
+        "未恢复设备方向"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S007",
+      "displayName": "虚拟容器与页面尺寸适配",
+      "route": "easygo-api23",
+      "intentPatterns": [
+        "虚拟容器",
+        "enableReducedContainerSize",
+        "页面被截断",
+        "元素超出页面",
+        "lpx",
+        "断点尺寸"
+      ],
+      "targets": [
+        "Navigation",
+        "NavDestination"
+      ],
+      "sources": [
+        "easygo-guide",
+        "adaptive-layout",
+        "page-layout",
+        "uiobserver-api",
+        "window-interfaces"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "虚拟容器尺寸语义",
+            "hint": "核对开关前后 lpx、横向断点、窗口宽度和屏幕宽度的计算方式。",
+            "mustResolve": true
+          },
+          {
+            "topic": "生效与失效范围",
+            "hint": "核对分栏、退出分栏与窗口分屏时的作用域。",
+            "mustResolve": true
+          },
+          {
+            "topic": "页面截断结果",
+            "hint": "用同一宽内容验证目标元素是否在分栏内完整布局。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "开启虚拟容器后，目标宽内容按分栏容器尺寸布局且不越界；关闭时保留可对照基线。",
+          "criteriaTopics": [
+            "虚拟容器尺寸语义",
+            "生效与失效范围",
+            "页面截断结果"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "通用多设备适配全集"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "版本"
+            ],
+            "capability": [
+              "设备",
+              "窗口",
+              "断点"
+            ],
+            "performance": [
+              "性能",
+              "功耗"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D07-01",
+            "title": "虚拟容器关闭 / 开启布局对比",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "虚拟容器尺寸语义",
+              "页面截断结果"
+            ],
+            "demoSetupRequirements": [
+              {
+                "id": "stable-wide-content",
+                "description": "使用固定宽内容和可见边界标尺，确保两变体仅改变虚拟容器开关。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              }
+            ],
+            "variants": [
+              {
+                "id": "reduced-container-off",
+                "label": "enableReducedContainerSize=false",
+                "parameters": {
+                  "enableReducedContainerSize": false
+                }
+              },
+              {
+                "id": "reduced-container-on",
+                "label": "enableReducedContainerSize=true",
+                "parameters": {
+                  "enableReducedContainerSize": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "优先保留自适应布局，只将虚拟容器作为本场景控制变量。",
+          "用相同窗口、相同内容和相同路由位置截图。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "reduced-container",
+          "kind": "require_any",
+          "patterns": [
+            "\"enableReducedContainerSize\"\\s*:\\s*(?:true|false)"
+          ],
+          "onMissing": "failed",
+          "message": "未发现 enableReducedContainerSize 配置。"
+        }
+      ],
+      "negativeCases": [
+        "同时修改内容宽度",
+        "只验证配置存在不观察布局",
+        "把一般自适应问题都归因于平行视界"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S008",
+      "displayName": "窗口分屏中继续保持平行视界",
+      "route": "easygo-api26",
+      "intentPatterns": [
+        "应用内分屏",
+        "窗口分屏",
+        "enableInSplitScreen",
+        "分屏保持平行视界",
+        "主窗口分屏",
+        "比价"
+      ],
+      "targets": [
+        "UIContext"
+      ],
+      "sources": [
+        "easygo-guide",
+        "uicontext-api",
+        "window-enums",
+        "app-service-context"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "窗口分屏开关",
+            "hint": "核对 enableInSplitScreen 默认值、版本和窗口条件。",
+            "mustResolve": true
+          },
+          {
+            "topic": "分栏态与分屏态判断",
+            "hint": "核对 isEasySplit 与 windowStatusType 的使用条件。",
+            "mustResolve": true
+          },
+          {
+            "topic": "进入系统分屏",
+            "hint": "核对 startAbility 的窗口模式和主窗口占比参数。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "从平行视界进入系统窗口分屏后，在窗口条件满足时按开关结果保持或退出平行视界。",
+          "criteriaTopics": [
+            "窗口分屏开关",
+            "分栏态与分屏态判断",
+            "进入系统分屏"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "其他窗口模式"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "版本"
+            ],
+            "capability": [
+              "设备",
+              "窗口",
+              "分屏能力"
+            ],
+            "performance": [
+              "性能",
+              "功耗"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D08-01",
+            "title": "系统窗口分屏中平行视界关闭 / 开启对比",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "窗口分屏开关",
+              "分栏态与分屏态判断",
+              "进入系统分屏"
+            ],
+            "demoSetupRequirements": [
+              {
+                "id": "split-entry",
+                "description": "仅在当前为平行视界且尚未进入系统分屏时显示并启用分屏入口。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              }
+            ],
+            "variants": [
+              {
+                "id": "split-easygo-off",
+                "label": "enableInSplitScreen=false",
+                "parameters": {
+                  "enableInSplitScreen": false
+                }
+              },
+              {
+                "id": "split-easygo-on",
+                "label": "enableInSplitScreen=true",
+                "parameters": {
+                  "enableInSplitScreen": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "参考输入工程的状态判断与 startAbility 调用骨架，仅复用本场景所需结构。",
+          "配置变体逐次重建，在同一设备窗口形态执行。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "enable-in-split",
+          "kind": "require_any",
+          "patterns": [
+            "\"enableInSplitScreen\"\\s*:\\s*(?:true|false)"
+          ],
+          "onMissing": "failed",
+          "message": "未发现 enableInSplitScreen 配置。"
+        },
+        {
+          "id": "easy-split-query",
+          "kind": "require_any",
+          "patterns": [
+            "isEasySplit\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "缺少平行视界运行态判断。"
+        },
+        {
+          "id": "split-start",
+          "kind": "require_any",
+          "patterns": [
+            "WINDOW_MODE_SPLIT_PRIMARY",
+            "startAbility\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "缺少进入系统分屏的实现。"
+        }
+      ],
+      "negativeCases": [
+        "未判断当前状态重复进入分屏",
+        "设备窗口条件不同仍直接比较",
+        "仅配置开关不执行分屏"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S009",
+      "displayName": "分栏比例、拖拽与分割线",
+      "route": "easygo-api26",
+      "intentPatterns": [
+        "分栏比例",
+        "左右比例",
+        "wideSplit",
+        "squareSplit",
+        "ratio",
+        "isDraggable",
+        "拖拽分栏",
+        "分割线颜色",
+        "splitDividerColor"
+      ],
+      "targets": [
+        "Navigation"
+      ],
+      "sources": [
+        "easygo-guide",
+        "parallel-design"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "窗口形态与比例配置",
+            "hint": "核对 wideSplit/squareSplit、ratio 范围与默认/边界行为。",
+            "mustResolve": true
+          },
+          {
+            "topic": "拖拽与比例关系",
+            "hint": "核对 isDraggable 开启后的初始比例、吸附档位及 ratio 是否生效。",
+            "mustResolve": true
+          },
+          {
+            "topic": "分割线样式",
+            "hint": "核对颜色格式、深浅色和隐藏分割线相关配置。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "目标窗口形态显示配置比例；拖拽开启时可在规定档位变化，分割线样式符合配置。",
+          "criteriaTopics": [
+            "窗口形态与比例配置",
+            "拖拽与比例关系",
+            "分割线样式"
+          ]
+        }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "其他路由行为"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "版本"
+            ],
+            "capability": [
+              "设备",
+              "窗口形态"
+            ],
+            "performance": [
+              "性能",
+              "功耗"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D09-01",
+            "title": "1:1 / 1:2 分栏比例对比",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "窗口形态与比例配置"
+            ],
+            "variants": [
+              {
+                "id": "ratio-1-1",
+                "label": "ratio 1|1",
+                "parameters": {
+                  "ratio": "1|1",
+                  "isDraggable": false
+                }
+              },
+              {
+                "id": "ratio-1-2",
+                "label": "ratio 1|2",
+                "parameters": {
+                  "ratio": "1|2",
+                  "isDraggable": false
+                }
+              }
+            ]
+          },
+          {
+            "id": "D09-02",
+            "title": "固定比例 / 可拖拽分栏对比",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "拖拽与比例关系"
+            ],
+            "variants": [
+              {
+                "id": "drag-off",
+                "label": "isDraggable=false",
+                "parameters": {
+                  "isDraggable": false,
+                  "ratio": "1|2"
+                }
+              },
+              {
+                "id": "drag-on",
+                "label": "isDraggable=true",
+                "parameters": {
+                  "isDraggable": true,
+                  "ratio": "control_only_verify_effective_behavior"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "implementation": {
+        "steps": [
+          "按当前宽屏窗口形态选择 wideSplit 或 squareSplit。",
+          "比例与拖拽分别控制变量，不把配置存在当作视觉通过。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "split-size",
+          "kind": "require_any",
+          "patterns": [
+            "\"wideSplit\"\\s*:",
+            "\"squareSplit\"\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "未发现宽屏或方形窗口的分栏参数。"
+        },
+        {
+          "id": "ratio-or-drag",
+          "kind": "require_any",
+          "patterns": [
+            "\"ratio\"\\s*:",
+            "\"isDraggable\"\\s*:"
+          ],
+          "onMissing": "failed",
+          "message": "缺少比例或拖拽配置。"
+        }
+      ],
+      "negativeCases": [
+        "用不同窗口形态对比比例",
+        "拖拽开启时仍按 ratio 断言",
+        "超范围比例未记录系统处理结果"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    },
+    {
+      "id": "EP-S010",
+      "displayName": "平行视界运行态判断与常见问题排查",
+      "route": "easygo-api24-runtime",
+      "intentPatterns": [
+        "平行视界不生效",
+        "页面被截断",
+        "资源只显示一边",
+        "页面级方向不生效",
+        "转场不生效",
+        "判断平行视界",
+        "是否处于平行视界",
+        "运行时判断",
+        "运行时查询",
+        "isEasySplit"
+      ],
+      "intentGroups": [
+        [
+          "平行视界",
+          "不生效"
+        ],
+        [
+          "资源",
+          "只显示",
+          "页面"
+        ],
+        [
+          "转场",
+          "不生效"
+        ],
+        [
+          "页面级",
+          "方向",
+          "不生效"
+        ]
+      ],
+      "intentPriority": 3,
+      "targets": [
+        "UIContext",
+        "NodeContainer",
+        "NavDestination"
+      ],
+      "sources": [
+        "easygo-guide",
+        "uicontext-api",
+        "uiobserver-api",
+        "component-reuse",
+        "node-container",
+        "window-api",
+        "transition-design"
+      ],
+      "criteriaSpec": {
+        "required": [
+          {
+            "topic": "运行态分栏判断",
+            "hint": "核对为什么不能只凭静态配置判断，以及 isEasySplit 的版本和语义。",
+            "mustResolve": true
+          },
+          {
+            "topic": "问题类型与官方方案",
+            "hint": "只提取用户问题对应的截断、资源复用、方向或转场章节，不扩展到其他 FAQ。",
+            "mustResolve": true
+          },
+          {
+            "topic": "修复后回归边界",
+            "hint": "保留原路由、资源生命周期与窗口行为，只验证目标问题。",
+            "mustResolve": true
+          }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        {
+          "assertion": "按用户明确的问题类型应用对应官方方案，目标问题消失且原页面路由与交互不回归。",
+          "criteriaTopics": [
+            "运行态分栏判断",
+            "问题类型与官方方案",
+            "修复后回归边界"
+          ]
+        }
+      ],
+      "implementation": {
+        "steps": [
+          "先唯一定位问题类型，只冻结对应 FAQ 与直接接口页。",
+          "运行态判断使用 isEasySplit，不从配置文件静态推断。",
+          "资源复用、方向和转场问题分别按对应章节最小修改，不组合无关修复。"
+        ]
+      },
+      "staticRules": [
+        {
+          "id": "runtime-or-targeted-fix",
+          "kind": "require_any",
+          "patterns": [
+            "isEasySplit\\s*\\(",
+            "setPreferredOrientation\\s*\\(",
+            "NodeContainer",
+            "enableReducedContainerSize"
+          ],
+          "onMissing": "inconclusive",
+          "message": "未发现已登记的运行态判断或目标问题修复入口，需对照本次问题判据检查。"
+        }
+      ],
+      "negativeCases": [
+        "把所有 FAQ 同时加入一个 Demo",
+        "仅凭 easy_go.json 推断当前运行态",
+        "为修复转场问题替换整个路由框架",
+        "共享同一个不可复用 UI 资源"
+      ],
+      "requiredChecks": [
+        "static",
+        "sdk",
+        "build",
+        "install",
+        "runtime",
+        "visual"
+      ]
+    }
+  ]
+}

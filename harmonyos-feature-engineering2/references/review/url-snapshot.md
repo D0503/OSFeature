@@ -4,16 +4,16 @@ URL 输入必须先转换为标准资料目录，再进入 `document-review`。�
 
 ## 命令
 
-默认使用当前打开工作区：
+默认创建独立临时快照目录，返回 `outputDirectory` 和 `temporary=true`：
 
 ```text
 node <skill>/scripts/snapshot-url.mjs "<developer.huawei.com URL>" --max-pages 12
 ```
 
-快照写入 `<当前工作目录>/evidence/source-snapshot/`。用户明确指定报告输出目录时：
+需要共用本轮临时工作目录时：
 
 ```text
-node <skill>/scripts/snapshot-url.mjs "<developer.huawei.com URL>" --output-dir "<报告输出目录>/evidence/source-snapshot" --max-pages 12
+node <skill>/scripts/snapshot-url.mjs "<developer.huawei.com URL>" --output-dir "<本轮临时目录>/source-snapshot" --max-pages 12
 ```
 
 如果用户明确只审查入口页面，增加 `--single-page`。
@@ -48,4 +48,4 @@ source-snapshot/
 
 ## 进入审查
 
-转换完成后，将返回的 `outputDirectory` 作为 `prepare-review.mjs` 的输入。报告中的 `input` 和 `sourceIntegrity` 应引用该快照及其清单，不再直接把实时 URL 当作已稳定的审查对象。
+转换完成后，将返回的 `outputDirectory` 作为 `prepare-review.mjs` 的输入。审查依据是本次快照，最终报告以官网 URL 标识 `input` 与证据来源，`sourceIntegrity` 保存实际核验的正文哈希、抓取元数据和完整性结论，不链接临时快照或清单。必要原文摘录直接写入报告；完成或受阻后按 [保留规则](../development/delivery-policy.md) 清理本次临时快照。显式输出目录只清理本次登记的生成文件，不删除未知或用户已有文件。

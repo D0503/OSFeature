@@ -1,0 +1,435 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "live-form",
+  "displayName": "互动卡片",
+  "defaultRoute": "live-form-stage",
+  "routes": [
+    {
+      "id": "live-form-stage",
+      "displayName": "ArkTS 互动卡片与服务卡片",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 20,
+        "minTargetApi": 20,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "所有接口、配置字段和行为的起始版本以本次冻结官网为准；涉及后续版本新增字段时不得仅按能力基线推断。"
+      },
+      "sdk": {
+        "preferredApi": 20,
+        "validatedLocalVersion": null,
+        "requiredDeclarationGlobs": [
+          "openharmony/ets/api/@ohos.app.form.formProvider.d.ts",
+          "openharmony/ets/api/@ohos.app.form.formInfo.d.ts",
+          "openharmony/ets/api/@ohos.app.form.LiveFormExtensionAbility.d.ts",
+          "openharmony/ets/api/application/LiveFormExtensionContext.d.ts"
+        ],
+        "requiredSymbols": [
+          "requestOverflow",
+          "cancelOverflow",
+          "getFormRect",
+          "OverflowInfo",
+          "onLiveFormCreate",
+          "onLiveFormDestroy",
+          "startAbilityByLiveForm"
+        ]
+      },
+      "supportedTargets": {
+        "extensions": ["FormExtensionAbility", "LiveFormExtensionAbility"],
+        "configuration": ["form_config.json", "module.json5"],
+        "runtime": ["formProvider", "LiveFormExtensionContext"]
+      },
+      "intentPatterns": ["互动卡片", "LiveForm", "场景动效卡片", "服务卡片"]
+    }
+  ],
+  "projectSignals": [
+    { "id": "live-form-extension", "extensions": [".ets", ".ts"], "pattern": "LiveFormExtensionAbility|onLiveFormCreate|onLiveFormDestroy" },
+    { "id": "live-form-scene-config", "extensions": [".json", ".json5"], "pattern": "sceneAnimationParams|funInteractionParams" },
+    { "id": "live-form-overflow", "extensions": [".ets", ".ts"], "pattern": "requestOverflow\\s*\\(|cancelOverflow\\s*\\(|getFormRect\\s*\\(" },
+    { "id": "service-form", "extensions": [".ets", ".ts", ".json", ".json5"], "pattern": "FormExtensionAbility|postCardAction|ohos.extension.form" }
+  ],
+  "safety": {
+    "modifyMinimumScope": true,
+    "preserveDirtyFiles": true,
+    "keepFailedChanges": true,
+    "automaticRollback": false,
+    "automaticSdkUpgrade": false,
+    "automaticEmulatorDownload": false,
+    "automaticUninstall": false,
+    "maxDirectedRepairRounds": 2
+  },
+  "verification": {
+    "layerStatuses": ["passed", "failed", "blocked", "not_run", "inconclusive"],
+    "verdicts": ["passed", "passed_with_spec_conflict", "build_passed_runtime_pending", "inconclusive", "failed", "blocked"],
+    "visualSuccessRequiresObservation": true,
+    "buildCommand": "devecocli build",
+    "runCommand": "devecocli run",
+    "devicePolicy": "run-only-when-requested-and-exactly-one-device-selected"
+  },
+  "entryPoints": [
+    { "snapshotId": "live-form-practice", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-live-form-development-practice", "title": "互动卡片开发实践" },
+    { "snapshotId": "live-form-overview", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-liveform-overview", "title": "互动卡片概述" },
+    { "snapshotId": "scene-animation-guide", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-liveform-sceneanimation-development", "title": "场景动效类型互动卡片开发指导" },
+    { "snapshotId": "fun-interaction-guide", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-liveform-funinteraction-development", "title": "趣味交互类型互动卡片开发指导" },
+    { "snapshotId": "widget-config", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-widget-configuration", "title": "配置 ArkTS 卡片的配置文件" },
+    { "snapshotId": "module-config", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/module-configuration-file", "title": "module.json5 配置文件" },
+    { "snapshotId": "live-form-ability", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-form-liveformextensionability", "title": "LiveFormExtensionAbility" },
+    { "snapshotId": "live-form-context", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-application-liveformextensioncontext", "title": "LiveFormExtensionContext" },
+    { "snapshotId": "form-provider", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-form-formprovider", "title": "formProvider" },
+    { "snapshotId": "form-info", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-form-forminfo", "title": "formInfo" },
+    { "snapshotId": "form-extension", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-form-formextensionability", "title": "FormExtensionAbility" },
+    { "snapshotId": "form-binding-data", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-form-formbindingdata", "title": "formBindingData" },
+    { "snapshotId": "ui-extension-session", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-app-ability-uiextensioncontentsession", "title": "UIExtensionContentSession" },
+    { "snapshotId": "local-storage", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-localstorage", "title": "LocalStorage" },
+    { "snapshotId": "form-refresh-data", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/form-refresh-and-data-interaction", "title": "卡片更新与数据交互" },
+    { "snapshotId": "widget-events", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-widget-event-overview", "title": "ArkTS 卡片页面交互概述" },
+    { "snapshotId": "music-service-form", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-music-service-form", "title": "音乐服务卡片" },
+    { "snapshotId": "service-widget-design", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/design-guides/system-features-service-widget-0000002087671904", "title": "服务卡片设计指南" },
+    { "snapshotId": "thermal-api", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-thermal", "title": "热管理" },
+    { "snapshotId": "universal-errors", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/errorcode-universal", "title": "通用错误码" }
+  ],
+  "scenarios": [
+    {
+      "id": "LF-S001",
+      "displayName": "场景动效互动卡片基础接入",
+      "route": "live-form-stage",
+      "intentPatterns": ["接入互动卡片", "创建互动卡片", "场景动效类型", "sceneAnimationParams", "互动卡片配置", "LiveForm扩展"],
+      "intentGroups": [["互动卡片", "基础接入"], ["互动卡片", "配置"]],
+      "targets": ["LiveFormExtensionAbility"],
+      "sources": ["live-form-overview", "scene-animation-guide", "widget-config", "module-config", "live-form-ability"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "场景类型与能力边界", "hint": "核对场景动效类型与趣味交互类型的选择条件及业务降级要求。", "mustResolve": true },
+          { "topic": "扩展能力声明", "hint": "核对模块中的扩展能力类型、入口和必要元信息。", "mustResolve": true },
+          { "topic": "卡片配置关联", "hint": "核对普通卡片配置与场景动效配置的名称关联和字段版本。", "mustResolve": true },
+          { "topic": "激活态与非激活态分工", "hint": "核对两个状态的 UI 承载者和切换职责。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "目标卡片可按配置进入场景动效激活态，并在动效结束或取消后恢复非激活态。", "criteriaTopics": ["场景类型与能力边界", "扩展能力声明", "卡片配置关联", "激活态与非激活态分工"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["未点名的触发方式", "功耗专项", "音乐业务"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "SDK", "版本", "兼容"],
+            "capability": ["设备", "机型", "桌面", "支持范围"],
+            "performance": ["性能", "功耗", "热档位"]
+          }
+        },
+        "points": [
+          {
+            "id": "D01-01",
+            "title": "激活态与非激活态切换",
+            "execution": "single_page",
+            "criteriaTopics": ["卡片配置关联", "激活态与非激活态分工"],
+            "demoSetupRequirements": [
+              { "id": "installed-desktop-form", "description": "安装应用并把目标卡片添加到可观察的系统位置。", "enforcement": "implementation_and_static_gate", "countsAsFeatureValidation": false }
+            ],
+            "variants": [
+              { "id": "inactive", "label": "非激活态基线", "parameters": { "state": "inactive" } },
+              { "id": "active", "label": "场景动效激活态", "parameters": { "state": "active" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["保留普通卡片非激活态实现。", "新增与卡片配置一致的 LiveForm 扩展声明和激活态页面。", "只实现用户点名的动效和触发入口。"] },
+      "staticRules": [
+        { "id": "live-form-extension", "kind": "require_any", "patterns": ["LiveFormExtensionAbility", "type\\s*:\\s*['\"]liveForm['\"]"], "onMissing": "failed", "message": "缺少 LiveForm 扩展能力实现或声明。" },
+        { "id": "scene-animation-config", "kind": "require_any", "patterns": ["sceneAnimationParams"], "onMissing": "failed", "message": "缺少场景动效类型卡片配置。" }
+      ],
+      "negativeCases": ["把趣味交互快游戏按 ArkTS 场景动效实现", "只实现激活态而缺少普通卡片非激活态", "扩展名称与卡片配置不一致"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "LF-S002",
+      "displayName": "激活态生命周期与 UI 数据绑定",
+      "route": "live-form-stage",
+      "intentPatterns": ["onLiveFormCreate", "onLiveFormDestroy", "loadContent", "激活态页面", "互动卡片生命周期", "互动卡片资源清理", "互动卡片数据绑定"],
+      "targets": ["LiveFormExtensionAbility", "UIExtensionContentSession", "LocalStorage"],
+      "sources": ["scene-animation-guide", "live-form-ability", "ui-extension-session", "local-storage", "form-binding-data"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "创建回调与页面加载", "hint": "核对创建回调参数、激活态页面加载和初始化时机。", "mustResolve": true },
+          { "topic": "跨页面状态传递", "hint": "核对激活态页面可用的数据传递与状态读取方式。", "mustResolve": true },
+          { "topic": "销毁回调与资源释放", "hint": "核对退出激活态后的资源、监听和任务清理。", "mustResolve": true },
+          { "topic": "受限模块与运行上下文", "hint": "核对 LiveForm 扩展上下文可用能力和引用限制。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "激活态创建时加载目标 UI 并完成数据初始化，销毁时释放本轮创建的资源。", "criteriaTopics": ["创建回调与页面加载", "跨页面状态传递", "销毁回调与资源释放", "受限模块与运行上下文"] }
+      ],
+      "implementation": { "steps": ["在创建回调内建立本轮激活态所需状态并加载页面。", "页面只读取明确传入的共享状态。", "在销毁回调中对称释放监听、定时器和业务资源。"] },
+      "staticRules": [
+        { "id": "live-form-create", "kind": "require_any", "patterns": ["onLiveFormCreate\\s*\\("], "onMissing": "failed", "message": "缺少 onLiveFormCreate 生命周期实现。" },
+        { "id": "live-form-load-content", "kind": "require_any", "patterns": ["loadContent\\s*\\("], "onMissing": "failed", "message": "创建回调未加载激活态页面。" },
+        { "id": "live-form-destroy", "kind": "require_any", "patterns": ["onLiveFormDestroy\\s*\\("], "onMissing": "inconclusive", "message": "未发现销毁回调；需根据资源占用判据确认是否必须实现。" }
+      ],
+      "negativeCases": ["在扩展销毁后继续持有会话资源", "用普通卡片上下文替代激活态上下文", "创建资源但无对应清理"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime"]
+    },
+    {
+      "id": "LF-S003",
+      "displayName": "破框动效区域申请与取消",
+      "route": "live-form-stage",
+      "intentPatterns": ["破框动效", "requestOverflow", "cancelOverflow", "getFormRect", "动效区域", "OverflowInfo", "取消互动卡片动效"],
+      "targets": ["formProvider"],
+      "sources": ["scene-animation-guide", "live-form-practice", "form-provider", "form-info", "universal-errors"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "卡片位置与尺寸获取", "hint": "核对请求前获取目标卡片矩形信息的接口、坐标和异常处理。", "mustResolve": true },
+          { "topic": "动效申请区域", "hint": "核对申请区域与卡片区域、系统允许区域之间的几何约束。", "mustResolve": true },
+          { "topic": "动效时长与切换参数", "hint": "核对持续时间和系统默认切换动效参数。", "mustResolve": true },
+          { "topic": "取消与状态恢复", "hint": "核对主动取消接口、调用条件和非激活态恢复结果。", "mustResolve": true },
+          { "topic": "请求失败处理", "hint": "核对设备不支持、配置错误和卡片标识异常等失败路径。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "目标卡片在合法区域内显示破框动效，取消或到期后恢复非激活态，失败路径保留可诊断错误。", "criteriaTopics": ["卡片位置与尺寸获取", "动效申请区域", "动效时长与切换参数", "取消与状态恢复", "请求失败处理"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["全部卡片尺寸矩阵", "定时刷新", "音乐业务"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "版本"],
+            "capability": ["设备", "机型", "尺寸", "桌面"],
+            "performance": ["功耗", "性能", "热档位"]
+          }
+        },
+        "points": [
+          {
+            "id": "D03-01",
+            "title": "破框区域与取消恢复",
+            "execution": "single_page",
+            "criteriaTopics": ["动效申请区域", "动效时长与切换参数", "取消与状态恢复"],
+            "interactionRequirements": [
+              { "id": "trigger-overflow", "description": "从用户点名的入口发起破框动效。", "expected": "合法请求进入激活态并显示本次判据允许的破框区域。" },
+              { "id": "cancel-overflow", "description": "在动效执行期间触发取消。", "expected": "动效停止并恢复到本次判据定义的非激活态。" }
+            ],
+            "variants": [
+              { "id": "inside-card", "label": "卡片区域基线", "parameters": { "overflow": "none" } },
+              { "id": "valid-overflow", "label": "合法破框区域", "parameters": { "overflow": "criteria_derived" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["用目标卡片真实标识查询矩形信息。", "按本次判据计算并校验请求区域和持续时间。", "分别处理申请、取消和错误返回。"] },
+      "staticRules": [
+        { "id": "overflow-request", "kind": "require_any", "patterns": ["requestOverflow\\s*\\("], "onMissing": "failed", "message": "缺少破框动效申请。" },
+        { "id": "form-rect-query", "kind": "require_any", "patterns": ["getFormRect\\s*\\("], "onMissing": "inconclusive", "message": "未发现卡片矩形查询；需核对区域是否来自可靠运行时数据。" },
+        { "id": "overflow-cancel", "kind": "require_any", "patterns": ["cancelOverflow\\s*\\("], "onMissing": "inconclusive", "message": "未发现取消入口；仅在目标要求取消时判失败。" }
+      ],
+      "negativeCases": ["使用固定设备坐标代替目标卡片矩形", "请求区域未覆盖卡片自身区域", "忽略 Promise 拒绝和同步异常", "取消后仍保持激活态资源"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "LF-S004",
+      "displayName": "动效触发策略与运行约束",
+      "route": "live-form-stage",
+      "intentPatterns": ["点击触发动效", "定时触发动效", "定点触发动效", "摇一摇触发", "triggerTypes", "省电模式互动卡片", "热档位互动卡片", "互动卡片触发次数", "设备不支持互动卡片"],
+      "intentGroups": [["互动卡片", "触发方式"], ["互动卡片", "热档位"]],
+      "intentPriority": 2,
+      "targets": ["formProvider", "thermal"],
+      "sources": ["scene-animation-guide", "live-form-practice", "widget-config", "form-refresh-data", "form-provider", "thermal-api", "universal-errors"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "触发来源与调用链", "hint": "核对点击、刷新、传感器等用户点名触发方式对应的调用位置和前置条件。", "mustResolve": true },
+          { "topic": "配置字段与版本", "hint": "核对触发配置字段、取值和起始版本。", "mustResolve": true },
+          { "topic": "频次与并发策略", "hint": "核对单卡片触发频次、全局竞争和用户主动触发优先级。", "mustResolve": true },
+          { "topic": "功耗与热状态限制", "hint": "核对省电模式和不同热档位下的响应策略。", "mustResolve": true },
+          { "topic": "设备能力与降级", "hint": "核对支持位置、机型范围、错误码和普通卡片降级。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "目标触发方式在满足运行约束时发起动效，不满足设备、功耗或竞争条件时安全降级并保留错误证据。", "criteriaTopics": ["触发来源与调用链", "配置字段与版本", "频次与并发策略", "功耗与热状态限制", "设备能力与降级"] }
+      ],
+      "implementation": { "steps": ["只接入用户点名的触发来源。", "触发前核对必要状态并为请求失败提供降级路径。", "不通过高频重试规避系统频次、功耗或并发限制。"] },
+      "staticRules": [
+        { "id": "triggered-overflow", "kind": "require_any", "patterns": ["requestOverflow\\s*\\("], "onMissing": "failed", "message": "未发现触发动效请求。" },
+        { "id": "shake-config", "kind": "require_any", "patterns": ["triggerTypes", "shake"], "onMissing": "inconclusive", "message": "未发现摇一摇配置；仅在目标要求摇一摇时判失败。" },
+        { "id": "request-error-handling", "kind": "require_any", "patterns": ["catch\\s*\\(", "\\.catch\\s*\\("], "onMissing": "failed", "message": "动效请求缺少失败处理。" }
+      ],
+      "negativeCases": ["把系统拒绝当作成功", "后台循环重试动效请求", "未点名却同时接入多种触发方式", "设备不支持时移除普通卡片能力"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "LF-S005",
+      "displayName": "互动卡片点击跳转应用页面",
+      "route": "live-form-stage",
+      "intentPatterns": ["startAbilityByLiveForm", "互动卡片跳转", "激活态跳转", "点击进入应用", "互动卡片拉起页面", "显式Want"],
+      "intentPriority": 2,
+      "targets": ["LiveFormExtensionContext"],
+      "sources": ["live-form-context", "live-form-ability", "scene-animation-guide"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "上下文传递", "hint": "核对扩展上下文如何安全传入激活态页面并在页面获取。", "mustResolve": true },
+          { "topic": "点击回调时序", "hint": "核对接口允许的调用事件、直接调用要求和延迟限制。", "mustResolve": true },
+          { "topic": "显式目标范围", "hint": "核对 Want 必填字段和允许拉起的应用范围。", "mustResolve": true },
+          { "topic": "跳转失败处理", "hint": "核对 Promise 和异常错误码处理。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "用户在激活态直接点击目标入口后拉起当前提供方的明确页面，非法或失败请求不会导致卡片状态失控。", "criteriaTopics": ["上下文传递", "点击回调时序", "显式目标范围", "跳转失败处理"] }
+      ],
+      "implementation": { "steps": ["从 LiveForm 扩展把所需上下文传入激活态页面。", "在用户点击回调中直接使用显式目标发起跳转。", "处理接口拒绝并保持卡片可恢复。"] },
+      "staticRules": [
+        { "id": "live-form-start-ability", "kind": "require_any", "patterns": ["startAbilityByLiveForm\\s*\\("], "onMissing": "failed", "message": "缺少互动卡片专用跳转接口。" },
+        { "id": "explicit-want-bundle", "kind": "require_any", "patterns": ["bundleName\\s*:"], "onMissing": "failed", "message": "跳转目标缺少显式 bundleName。" },
+        { "id": "explicit-want-ability", "kind": "require_any", "patterns": ["abilityName\\s*:"], "onMissing": "failed", "message": "跳转目标缺少显式 abilityName。" },
+        { "id": "click-callback", "kind": "require_any", "patterns": ["onClick\\s*\\("], "onMissing": "failed", "message": "跳转未绑定到直接点击回调。" }
+      ],
+      "negativeCases": ["延迟任务中调用跳转接口", "拉起其他应用", "使用隐式 Want", "把普通 UIAbility 上下文当作 LiveFormExtensionContext"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime"]
+    },
+    {
+      "id": "LF-S006",
+      "displayName": "趣味交互类型卡片小游戏",
+      "route": "live-form-stage",
+      "intentPatterns": ["趣味交互类型", "卡片小游戏", "快游戏互动卡片", "funInteractionParams", "暂停态", "继续游戏", "停止游戏"],
+      "intentPriority": 3,
+      "targets": ["funInteractionParams"],
+      "sources": ["live-form-overview", "fun-interaction-guide", "widget-config"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "快游戏实现边界", "hint": "核对趣味交互类型的承载技术、工程输入和不可替代部分。", "mustResolve": true },
+          { "topic": "三态模型", "hint": "核对激活、暂停和非激活状态的 UI 承载与转换入口。", "mustResolve": true },
+          { "topic": "趣味交互配置", "hint": "核对配置字段、目标包、可选分包和状态保持参数。", "mustResolve": true },
+          { "topic": "材料完整性", "hint": "核对快游戏开发正文是否可冻结；缺失时明确阻塞而非猜测实现。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "卡片按官方快游戏路线在非激活、激活和暂停状态间转换，配置与目标包一致。", "criteriaTopics": ["快游戏实现边界", "三态模型", "趣味交互配置", "材料完整性"] }
+      ],
+      "implementation": { "steps": ["确认用户提供的是快游戏工程或可实施目标。", "仅在官方快游戏材料完整时实现激活态游戏。", "普通卡片页面只承担本次判据指定的非激活态和暂停态。"] },
+      "staticRules": [
+        { "id": "fun-interaction-config", "kind": "require_any", "patterns": ["funInteractionParams"], "onMissing": "failed", "message": "缺少趣味交互类型配置。" },
+        { "id": "fun-target-bundle", "kind": "require_any", "patterns": ["targetBundleName\\s*:"], "onMissing": "failed", "message": "缺少趣味交互目标包配置。" }
+      ],
+      "negativeCases": ["把快游戏替换成 ArkTS 场景动效页面", "缺失官方快游戏正文仍猜测实现", "未提供暂停或停止路径"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "LF-S007",
+      "displayName": "音乐服务卡片",
+      "route": "live-form-stage",
+      "intentPatterns": ["音乐服务卡片", "音乐播控卡片", "动态歌词卡片", "心动歌词", "歌单推荐卡片", "音乐互动卡片", "卡片切歌", "卡片播放暂停"],
+      "intentGroups": [["服务卡片", "音乐"], ["卡片", "歌词"]],
+      "intentPriority": 2,
+      "targets": ["FormExtensionAbility", "postCardAction"],
+      "sources": ["music-service-form", "service-widget-design", "form-refresh-data", "widget-events", "form-extension", "form-binding-data", "scene-animation-guide"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "目标音乐场景", "hint": "保留用户选择的全部音乐效果，支持播控、歌词、歌单、收藏多选或全部验证；按每项效果分别现提判据。全部效果以本次冻结正文的适用范围为准，涉及互动动效时组合对应互动卡片场景。", "mustResolve": true },
+          { "topic": "卡片与应用通信", "hint": "核对目标场景使用的事件类型、接收位置和数据返回通道。", "mustResolve": true },
+          { "topic": "数据初始化与刷新", "hint": "核对兜底数据、持久化、主动或被动刷新及图片交付。", "mustResolve": true },
+          { "topic": "音乐状态一致性", "hint": "核对卡片展示、应用播放状态和会话状态之间的同步边界。", "mustResolve": true },
+          { "topic": "卡片视觉与交互", "hint": "核对目标尺寸下的信息层级、热区、文本、按钮和快照要求。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "用户选择的各项音乐效果均在卡片中分别验证，卡片状态与应用音乐状态保持本次判据要求的一致性；单项、组合与全部验证均按各效果记录结果。", "criteriaTopics": ["目标音乐场景", "卡片与应用通信", "数据初始化与刷新", "音乐状态一致性", "卡片视觉与交互"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["未点名的音乐卡片类型", "完整播放器", "后台播放专项", "互动破框动效"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "版本"],
+            "capability": ["设备", "尺寸", "桌面", "锁屏"],
+            "performance": ["性能", "功耗", "刷新频率"]
+          }
+        },
+        "points": [
+          {
+            "id": "D07-01",
+            "title": "音乐播控",
+            "execution": "single_page",
+            "criteriaTopics": ["目标音乐场景", "卡片与应用通信", "音乐状态一致性", "卡片视觉与交互"],
+            "demoSetupRequirements": [
+              { "id": "deterministic-media-state", "description": "提供可重复的本地测试曲目、封面和播放状态。", "enforcement": "implementation_and_static_gate", "countsAsFeatureValidation": false }
+            ],
+            "interactionRequirements": [
+              { "id": "music-action", "description": "执行本次选择的播放、暂停或切歌操作。", "expected": "播控操作与卡片、应用及会话状态符合本次冻结判据。" }
+            ],
+            "variants": [
+              { "id": "initial", "label": "初始音乐状态", "parameters": { "state": "fixture_initial" } },
+              { "id": "after-action", "label": "交互后音乐状态", "parameters": { "state": "fixture_after_action" } }
+            ]
+          },
+          {
+            "id": "D07-02",
+            "title": "动态歌词与心动歌词",
+            "execution": "single_page",
+            "criteriaTopics": ["目标音乐场景", "数据初始化与刷新", "音乐状态一致性", "卡片视觉与交互"],
+            "demoSetupRequirements": [
+              { "id": "deterministic-lyrics", "description": "提供与测试曲目对应的可重复歌词数据和播放进度。", "enforcement": "implementation_and_static_gate", "countsAsFeatureValidation": false }
+            ],
+            "interactionRequirements": [
+              { "id": "lyrics-update", "description": "切换播放进度或曲目，观察本次选择的歌词形式。", "expected": "歌词显示与状态变化符合本次冻结判据。" }
+            ],
+            "variants": [
+              { "id": "initial", "label": "初始歌词状态", "parameters": { "state": "fixture_initial" } },
+              { "id": "after-action", "label": "进度或曲目变化后", "parameters": { "state": "fixture_after_action" } }
+            ]
+          },
+          {
+            "id": "D07-03",
+            "title": "歌单推荐",
+            "execution": "single_page",
+            "criteriaTopics": ["目标音乐场景", "卡片与应用通信", "数据初始化与刷新", "卡片视觉与交互"],
+            "demoSetupRequirements": [
+              { "id": "deterministic-playlist", "description": "提供可重复的推荐歌单数据与封面。", "enforcement": "implementation_and_static_gate", "countsAsFeatureValidation": false }
+            ],
+            "interactionRequirements": [
+              { "id": "playlist-action", "description": "展示推荐歌单并执行本次要求的刷新或点击操作。", "expected": "展示与所选交互符合本次冻结判据。" }
+            ],
+            "variants": [
+              { "id": "initial", "label": "初始推荐数据", "parameters": { "state": "fixture_initial" } },
+              { "id": "after-action", "label": "刷新或点击后", "parameters": { "state": "fixture_after_action" } }
+            ]
+          },
+          {
+            "id": "D07-04",
+            "title": "歌曲收藏",
+            "execution": "single_page",
+            "criteriaTopics": ["目标音乐场景", "卡片与应用通信", "音乐状态一致性", "卡片视觉与交互"],
+            "interactionRequirements": [
+              { "id": "favorite-action", "description": "执行本次要求的收藏或取消收藏操作。", "expected": "收藏状态及卡片显示符合本次冻结判据。" }
+            ],
+            "variants": [
+              { "id": "initial", "label": "初始收藏状态", "parameters": { "state": "fixture_initial" } },
+              { "id": "after-action", "label": "收藏操作后", "parameters": { "state": "fixture_after_action" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["实现用户选择的所有音乐效果，支持单项、多项或全部；逐项登记操作与结果，能共存时复用同一 Demo。", "先建立确定性测试状态，再接入卡片事件和数据更新。", "需要互动动效时明确组合 LF-S001～LF-S004 并分别校验，不隐式加入。"] },
+      "staticRules": [
+        { "id": "music-form-provider", "kind": "require_any", "patterns": ["FormExtensionAbility", "onAddForm\\s*\\(", "onUpdateForm\\s*\\("], "onMissing": "failed", "message": "缺少音乐服务卡片提供方实现。" },
+        { "id": "music-form-action", "kind": "require_any", "patterns": ["postCardAction\\s*\\(", "FormLink\\s*\\("], "onMissing": "failed", "message": "缺少音乐卡片交互入口。" },
+        { "id": "music-form-update", "kind": "require_any", "patterns": ["updateForm\\s*\\(", "createFormBindingData\\s*\\("], "onMissing": "inconclusive", "message": "未发现卡片数据更新；需按目标场景判据确认。" }
+      ],
+      "negativeCases": ["用户选择多个或全部效果时强制单选或丢弃目标", "未要求全部效果却自动扩展全部音乐示例", "把多项效果合成一条笼统通过结论", "卡片状态与播放状态各自维护且无同步源", "依赖临时目录跨进程共享", "用网络数据作为唯一可运行测试输入"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    }
+  ]
+}

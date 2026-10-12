@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
 import { createHash } from "node:crypto"
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -12,8 +12,7 @@ function digest(value) {
 // 子进程调用 fetch-doc.mjs 抓取官网页面；fetch-doc 对内容过短等场景以非零退出码输出
 // review_required——只要输出文件可解析且正文完整，仍视为页面可达。
 export async function fetchOfficialDocument(url) {
-  const workDirectory = join(tmpdir(), `cap-fetch-${digest(url).slice(0, 12)}`)
-  await mkdir(workDirectory, { recursive: true })
+  const workDirectory = await mkdtemp(join(tmpdir(), 'cap-fetch-'))
   const outputFile = join(workDirectory, "fetch.json")
   const script = resolve(dirname(fileURLToPath(import.meta.url)), "..", "fetch-doc.mjs")
   try {
@@ -39,6 +38,36 @@ export async function fetchOfficialDocument(url) {
   }
 }
 
+// workDirectory 必须是本轮专用临时目录；失败不缓存，缓存损坏重新抓取。
+export async function fetchOfficialBatch(entries, { concurrency = 4, workDirectory, fetcher = fetchOfficialDocument } = {}) {
+  if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8) throw new Error('concurrency 必须为 1 到 8')
+  const urls = [...new Set(entries.map(e => e.officialUrl))]
+  const results = new Map()
+  let cursor = 0
+  await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, async () => {
+    while (cursor < urls.length) {
+      const url = urls[cursor++]
+      const cache = workDirectory ? join(workDirectory, 'pages', `${digest(url)}.json`) : null
+      let result
+      if (cache) {
+        try {
+          const saved = JSON.parse(await readFile(cache, 'utf8'))
+          if (saved.url === url && saved.ok && typeof saved.contentMarkdown === 'string' && digest(saved.contentMarkdown) === saved.contentSha256) result = saved
+        } catch { /* cache miss */ }
+      }
+      if (!result) {
+        try { result = await fetcher(url) } catch (error) { result = { ok: false, detail: error.message } }
+        if (result.ok && typeof result.contentMarkdown === 'string' && digest(result.contentMarkdown) === result.contentSha256) {
+          result = { ...result, url, fetchedAt: new Date().toISOString() }
+          if (cache) { await mkdir(dirname(cache), { recursive: true }); await writeFile(cache, JSON.stringify(result)) }
+        } else result = { ok: false, detail: result.detail ?? '正文或哈希无效' }
+      }
+      results.set(url, result)
+    }
+  }))
+  return entries.map(entry => ({ ...entry, ...results.get(entry.officialUrl) }))
+}
+
 export async function writeFrozenSnapshot(outputDirectory, pages) {
   const snapshotsDirectory = join(outputDirectory, "snapshots")
   await mkdir(snapshotsDirectory, { recursive: true })
@@ -52,6 +81,7 @@ export async function writeFrozenSnapshot(outputDirectory, pages) {
       contentSha256: page.contentSha256,
       title: page.title,
       updatedDate: page.updatedDate,
+      fetchedAt: page.fetchedAt ?? null,
     })
   }
   const frozen = { frozenAt: new Date().toISOString(), snapshots }

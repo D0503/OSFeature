@@ -2,9 +2,9 @@
 
 ## 模式与实现范围
 
-先依据用户意图记录 `developmentMode`。要求 Demo、示例工程或效果复现用 `demo`；已有业务工程接入能力用 `existing_project`。目录存在或模板为空不能决定模式；意图不明确且影响实现时询问一次。
+先依据用户意图记录 `developmentMode`。要求 Demo、示例工程或效果复现用 `demo`；已有业务工程接入能力用 `existing_project`。目录是否存在或是否为空不能决定模式；意图不明确且影响实现时询问一次。
 
-两种模式均完整阅读本次冻结的相关接口、说明、限制及示例上下文。`criteriaStrategy=reuse` 也不能跳过阅读。区分强制约束、建议与示例选择，不把建议提升为强制要求。
+两种模式均完整阅读本次冻结的相关接口、说明、限制及示例上下文。区分强制约束、建议与示例选择，不把建议提升为强制要求。
 
 - Demo 有适用示例：以示例为基础做最小适配，保留目标相关组件关系、关键属性、调用顺序、状态计算。只替换必要资源、命名和接入位置，不带入无关业务数据、装饰或页面。
 - Demo 无示例或示例不完整：直接依据官方接口、说明和契约设计、补齐实现；缺少示例不是失败或额外确认的理由。普通实现细节在需求范围内自行决定。
@@ -24,11 +24,11 @@ HDS 接口起始版本不等于工程最低兼容版本。不得仅因接口从 
 5. 运行 applied 校验。构建入口自动重复该门禁；它检查来源与覆盖，AI 负责语义对照，运行和视觉验证负责实际效果，三者不能替代。
 
 ```text
-node scripts/validate-implementation.mjs --project <工程绝对路径> --criteria <判据文件> --implementation <实施记录> --phase plan [--frozen <冻结目录>]
-node scripts/validate-implementation.mjs --project <工程绝对路径> --criteria <判据文件> --implementation <实施记录> --baseline <基线文件> --phase applied [--frozen <冻结目录>]
+node scripts/validate-implementation.mjs --project <工程绝对路径> --criteria <判据文件> --implementation <实施记录> --phase plan --frozen <本轮临时目录>/<featureId>/frozen
+node scripts/validate-implementation.mjs --project <工程绝对路径> --criteria <判据文件> --implementation <实施记录> --baseline <基线文件> --phase applied --frozen <本轮临时目录>/<featureId>/frozen
 ```
 
-冻结目录默认 `<工程>/ohos-feature-engineering/frozen`；`verify-development.mjs` 也接受 `--frozen`。构建/运行必须提供 baseline 和完整 implementation；历史报告仍可读取，历史记录用于新构建时补齐新增字段。
+本流程显式传入本轮临时冻结目录，`verify-development.mjs` 使用同一 `--frozen` 路径。构建/运行必须提供本轮 baseline 和完整 implementation；历史报告可供查看，但不替代本轮冻结、判据或实施依据。
 
 ## 实施记录契约
 

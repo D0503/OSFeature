@@ -78,7 +78,6 @@ try {
     fileRecord.steps[0].locations = [{ path, version: kind === "added" ? "after" : "before", lineStart: 1, lineEnd: 1 }]
     check((await validate(fileRecord, { baseline: fileBaseline })).valid, `${kind} files do not require nonexistent code positions`)
   }
-  check((await validate(record, { criteria: { ...criteria, strategy: "reuse" } })).valid, "Reused criteria retains source validation")
   await writeFile(join(frozenDirectory, "snapshots", "api.md"), "tampered")
   check(!(await validate(record)).valid, "Tampered full snapshot rejected")
   await writeFile(join(frozenDirectory, "snapshots", "api.md"), body)
