@@ -85,8 +85,8 @@ export function developmentReportMarkdown(report, outputDirectory) {
     const d = report.buildDiagnosis
     const labels = { unknown: "原因待确认", implementation_error: "AI 实现错误", environment_issue: "工程或环境问题", official_documentation: "官网文档问题" }
     const decisions = { investigate_only: "只读排查，不猜测修改", repair_according_to_official: "按官网修复，更新实施记录并重新验证", resolve_prerequisites: "在授权范围内处理工程前提，无法处理则报告阻塞", stop_repair: "停止修改和重试，保留失败现场" }
-    lines.push("", "## 构建失败归因", "", `- 原因：${labels[d.category]}`, `- 结论：${d.summary}`, `- 处理：${decisions[d.decision]}`, `- 构建日志：[查看日志](<${d.buildLog.path.replaceAll("\\", "/")}>) · SHA-256：\`${d.buildLog.sha256}\``)
-    for (const ref of d.evidence) lines.push(`- ${ref.type}：[${ref.lineStart}–${ref.lineEnd} 行](<${ref.path.replaceAll("\\", "/")}>) · SHA-256：\`${ref.sha256}\``)
+    lines.push("", "## 构建失败归因", "", `- 原因：${labels[d.category]}`, `- 结论：${d.summary}`, `- 处理：${decisions[d.decision]}`, `- 构建日志 SHA-256：\`${d.buildLog.sha256}\`（过程文件不随报告交付）`)
+    for (const ref of d.evidence) lines.push(`- ${ref.type}：${ref.lineStart}–${ref.lineEnd} 行 · SHA-256：\`${ref.sha256}\``)
     if (d.premises?.basis) lines.push(`- 前提核对：${d.premises.basis}`)
     lines.push("", "程序校验了记录结构；归因由 AI 对照证据分析，不代表程序自动证明官网错误。")
   }
@@ -103,7 +103,7 @@ export function developmentReportMarkdown(report, outputDirectory) {
   lines.push("", "## 证据", "")
   if (!report.evidence.length) lines.push("无。")
   else for (const item of report.evidence) {
-    lines.push(`- ${item.id} [${item.type}] ${item.summary}${item.path ? ` — ${item.path}` : ""}`)
+    lines.push(`- ${item.id} [${item.type}] ${item.summary}${item.type !== "screenshot" && item.sha256 ? ` · SHA-256：\`${item.sha256}\`` : ""}`)
     if (item.type === "screenshot") {
       if (item.previewMissing || !item.path) lines.push("", "截图文件缺失，无法预览。", "")
       else {

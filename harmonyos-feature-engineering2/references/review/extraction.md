@@ -38,7 +38,7 @@ node <skill>/scripts/prepare-review.mjs "<file|directory>" [--output "<temporary
 - 正文 SHA-256。
 - 抓取方式和内容类型。
 
-URL 快照写入报告输出根目录的 `evidence/source-snapshot/`。默认报告输出根目录是本次执行开始时的当前工作目录；用户明确指定目录时使用指定目录。
+URL 快照默认写入脚本创建的独立临时目录；需要与本轮工作目录共用时，显式传 `--output-dir <本轮临时目录>/source-snapshot`。报告输出目录独立于快照目录，默认是本次执行开始时的当前工作目录，用户指定时采用指定位置。报告保留官网 URL、原文摘录、定位与哈希，交付前清理本次快照。
 
 ## 结构化预检
 

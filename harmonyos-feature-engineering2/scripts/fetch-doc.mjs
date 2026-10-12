@@ -20,12 +20,19 @@ const SERVICE_HOSTS = {
   kr: "svc-dra.developer.huawei.com",
 }
 const SAFE_SEGMENT = /^[A-Za-z0-9._~-]+$/
-const MAX_CHARACTERS = 1024 * 1024
+const MAX_CHARACTERS = 8 * 1024 * 1024
 const TIMEOUT_MS = 30_000
 
 function fail(code, error, extra = {}) {
   process.stderr.write(`${JSON.stringify({ status: "error", code, error, ...extra }, null, 2)}\n`)
   process.exit(2)
+}
+
+class LiveDocNotFoundError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "LiveDocNotFoundError"
+  }
 }
 
 function parseArgs(argv) {
@@ -69,13 +76,30 @@ function parseDocumentRoute(value) {
 }
 
 async function responseText(response, code) {
-  let raw
+  if (!response.body?.getReader) {
+    let raw
+    try {
+      raw = await response.text()
+    } catch (error) {
+      fail(code, `读取响应失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    if (raw.length > MAX_CHARACTERS) fail(code, `响应超过 ${MAX_CHARACTERS} 字符上限`)
+    return raw
+  }
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let raw = ""
   try {
-    raw = await response.text()
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      raw += decoder.decode(value, { stream: true })
+      if (raw.length > MAX_CHARACTERS) fail(code, `响应超过 ${MAX_CHARACTERS} 字符上限（分段抓取）`)
+    }
+    raw += decoder.decode()
   } catch (error) {
     fail(code, `读取响应失败: ${error instanceof Error ? error.message : String(error)}`)
   }
-  if (raw.length > MAX_CHARACTERS) fail(code, `响应超过 ${MAX_CHARACTERS} 字符上限`)
   return raw
 }
 
@@ -120,6 +144,9 @@ async function fetchLiveDoc(route) {
     fail("live_doc_fetch_failed", "正文接口未返回有效 JSON")
   }
   if (typeof payload !== "object" || payload === null || String(payload.code) !== "0") {
+    if (String(payload?.code) === "92531031") {
+      throw new LiveDocNotFoundError(`正文接口拒绝请求: code=${payload?.code}, message=${String(payload?.message ?? payload?.msg ?? "").slice(0, 300)}`)
+    }
     fail("live_doc_fetch_failed", `正文接口拒绝请求: code=${payload?.code}, message=${String(payload?.message ?? payload?.msg ?? "").slice(0, 300)}`)
   }
   const value = payload.value
@@ -150,6 +177,30 @@ async function fetchStatic(pageUrl) {
   return { html: await responseText(response, "static_fetch_failed"), finalUrl, contentType }
 }
 
+async function fetchMarkdownAlternate(pageUrl) {
+  const markdownUrl = `${pageUrl.replace(/\/+$/, "")}.md`
+  let response
+  try {
+    response = await fetch(markdownUrl, {
+      headers: { Accept: "text/markdown,text/plain;q=0.9,*/*;q=0.5", "User-Agent": "HarmonyOS-Doc-Review/1.0" },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    })
+  } catch (error) {
+    fail("live_doc_fetch_failed", `无法抓取 Markdown 备用正文: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (!response.ok) fail("live_doc_fetch_failed", `Markdown 备用正文 HTTP ${response.status}`)
+  try {
+    validateOfficialFinalUrl(response.url)
+  } catch (error) {
+    fail("official_url_rejected", error instanceof Error ? error.message : "Markdown 备用正文重定向离开了官方域名")
+  }
+  const contentType = (response.headers.get("content-type") || "").split(";")[0].trim().toLowerCase()
+  if (!["text/markdown", "text/plain"].includes(contentType)) fail("live_doc_fetch_failed", `Markdown 备用正文返回了不支持的类型: ${contentType}`)
+  const markdown = await responseText(response, "live_doc_fetch_failed")
+  if (!markdown.trim()) fail("live_doc_fetch_failed", "Markdown 备用正文为空")
+  return markdown
+}
+
 async function emit(result, output, exitCode) {
   const json = `${JSON.stringify(result, null, 2)}\n`
   if (output) {
@@ -173,7 +224,38 @@ async function main() {
   const route = parseDocumentRoute(url)
   let result
   if (route) {
-    const { value, documentHtml } = await fetchLiveDoc(route)
+    let liveResult = null
+    try {
+      liveResult = await fetchLiveDoc(route)
+    } catch (error) {
+      if (!(error instanceof LiveDocNotFoundError)) throw error
+    }
+    if (!liveResult) {
+      const contentMarkdown = await fetchMarkdownAlternate(route.pageUrl)
+      const titleMatch = contentMarkdown.match(/^#\s+(.+)$/m)
+      if (contentMarkdown.length < 500) warnings.push("content_too_short")
+      result = {
+        status: warnings.length ? "review_required" : "fetched",
+        retrievalMethod: "huawei_markdown_alternate",
+        pageUrl: route.pageUrl,
+        canonicalUrl: route.pageUrl,
+        retrievedAt,
+        contentType: "text/markdown",
+        documentId: route.documentId,
+        language: route.language,
+        catalogName: route.catalogName,
+        title: titleMatch ? titleMatch[1].trim() : null,
+        documentStatus: null,
+        updatedDate: null,
+        displayUpdateTime: null,
+        textCharacters: contentMarkdown.length,
+        warnings,
+        contentText: contentMarkdown,
+        contentMarkdown,
+        contentSha256: createHash("sha256").update(contentMarkdown, "utf8").digest("hex"),
+      }
+    } else {
+      const { value, documentHtml } = liveResult
     const parsed = parseHtml(documentHtml, { baseUrl: route.pageUrl, title: typeof value.title === "string" ? value.title : null })
     if (String(value.status) !== "4") warnings.push("document_not_published")
     if (parsed.contentText.length < 500) warnings.push("content_too_short")
@@ -195,6 +277,7 @@ async function main() {
       warnings,
       ...parsed,
       contentSha256: createHash("sha256").update(parsed.contentMarkdown, "utf8").digest("hex"),
+    }
     }
   } else {
     const pageUrl = validatePageUrl(url)

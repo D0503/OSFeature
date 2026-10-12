@@ -68,7 +68,7 @@ export function validateDevelopmentReport(report) {
   if (!object(report.capabilityPackage)) errors.push("capabilityPackage 必须是对象")
   else {
     for (const field of ["featureId", "scenarioId", "route"]) if (!string(report.capabilityPackage[field])) errors.push(`capabilityPackage.${field} 必须是非空字符串`)
-    if (!["fresh", "reuse"].includes(report.capabilityPackage.criteriaStrategy)) errors.push("capabilityPackage.criteriaStrategy 必须是 fresh 或 reuse")
+    if (report.capabilityPackage.criteriaStrategy !== "fresh") errors.push("capabilityPackage.criteriaStrategy 必须是 fresh")
     if (!Array.isArray(report.capabilityPackage.requiredChecks) || !report.capabilityPackage.requiredChecks.length) errors.push("capabilityPackage.requiredChecks 必须是非空数组")
     else for (const level of report.capabilityPackage.requiredChecks) if (!CHECK_LEVELS.has(level)) errors.push(`无效必需层 ${level}`)
     if (!Array.isArray(report.capabilityPackage.criteriaRefs) || !report.capabilityPackage.criteriaRefs.length) errors.push("capabilityPackage.criteriaRefs 必须是非空数组")

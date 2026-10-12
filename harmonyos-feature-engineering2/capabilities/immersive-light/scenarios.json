@@ -313,6 +313,11 @@
       "title": "@ohos.arkui.uiMaterial (系统材质)"
     },
     {
+      "snapshotId": "alphabet-indexer-api",
+      "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/ts-container-alphabet-indexer",
+      "title": "AlphabetIndexer"
+    },
+    {
       "snapshotId": "design-guidance",
       "officialUrl": "https://developer.huawei.com/consumer/cn/doc/design-guides/immersivelight-0000002612101053",
       "title": "沉浸光感设计规范"
@@ -579,6 +584,7 @@
       ],
       "sources": [
         "component",
+        "alphabet-indexer-api",
         "ui-material-api",
         "enable",
         "constraints"
@@ -604,6 +610,11 @@
             "topic": "导航材质生效条件",
             "hint": "从组件指南核对 Tabs 悬浮所需的 barOverlap、vertical、barPosition 条件、TabContent 不支持情况，以及 Navigation 标题栏实际生效的子区域。",
             "mustResolve": true
+          },
+          {
+            "topic": "索引条 Demo 交互前提",
+            "hint": "从 AlphabetIndexer 官网接口与示例核对 usingPopup、onRequestPopupData、一级索引选择与二级索引列表展示的完整交互。",
+            "mustResolve": true
           }
         ],
         "conflictProbes": []
@@ -618,10 +629,186 @@
           ]
         }
       ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "backgroundResource": "app.media.backing",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "设备算力分档",
+            "材质滤镜与非提示词视觉参数",
+            "API 与 SDK 版本矩阵",
+            "性能与功耗专项"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "SDK",
+              "版本",
+              "兼容"
+            ],
+            "capability": [
+              "设备",
+              "算力",
+              "高算力",
+              "中算力",
+              "低算力",
+              "能力分档"
+            ],
+            "performance": [
+              "性能",
+              "功耗",
+              "帧率",
+              "GPU"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D01-01",
+            "title": "底部页签材质效果",
+            "execution": "single_page",
+            "criteriaTopics": [
+              "导航组件（IL-F010）",
+              "导航材质生效条件"
+            ],
+            "variants": [
+              {
+                "id": "tabs-material",
+                "label": "底部悬浮页签材质",
+                "parameters": {
+                  "barOverlap": true,
+                  "vertical": false,
+                  "barPosition": "BarPosition.End",
+                  "systemMaterial": "enabled"
+                }
+              }
+            ]
+          },
+          {
+            "id": "D01-02",
+            "title": "索引提示弹窗 systemMaterial THIN / 背景模糊对比",
+            "execution": "single_page",
+            "criteriaTopics": [
+              "导航组件（IL-F011）"
+            ],
+            "demoSetupRequirements": [
+              {
+                "id": "indexer-secondary-popup",
+                "description": "显式设置 usingPopup(true)，启用提示弹窗。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              },
+              {
+                "id": "indexer-secondary-list",
+                "description": "通过 onRequestPopupData 返回当前一级索引项对应的非空二级索引字符串数组。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              }
+            ],
+            "variants": [
+              {
+                "id": "indexer-system-material-thin",
+                "label": "systemMaterial THIN",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN"
+                }
+              },
+              {
+                "id": "indexer-background-blur-none",
+                "label": "popupBackgroundBlurStyle NONE",
+                "parameters": {
+                  "popupBackgroundBlurStyle": "BlurStyle.NONE"
+                }
+              }
+            ]
+          },
+          {
+            "id": "D01-03",
+            "title": "全局 DISABLE / ENABLE / DEFAULT 对比",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": [
+              "导航组件（IL-F010）",
+              "导航组件（IL-F011）"
+            ],
+            "variants": [
+              {
+                "id": "global-disable",
+                "label": "全局 DISABLE",
+                "parameters": {
+                  "applicationMaterialState": "DISABLE"
+                }
+              },
+              {
+                "id": "global-enable",
+                "label": "全局 ENABLE",
+                "parameters": {
+                  "applicationMaterialState": "ENABLE"
+                }
+              },
+              {
+                "id": "global-default",
+                "label": "全局 DEFAULT",
+                "parameters": {
+                  "applicationMaterialState": "DEFAULT"
+                }
+              }
+            ]
+          },
+          {
+            "id": "D01-04",
+            "title": "默认参数 / THIN / ULTRA_THIN 对比",
+            "execution": "single_page",
+            "criteriaTopics": [
+              "导航组件（IL-F010）"
+            ],
+            "defaultEquivalence": {
+              "defaultVariantId": "tabs-floating-style-default",
+              "explicitVariantId": "tabs-thin",
+              "expected": "visual_equivalent",
+              "basis": "barFloatingStyle 生效且未显式设置内部字段时，组件默认开启沉浸光感，默认材质样式为 THIN；应与显式设置 THIN 的组件级效果进行同背景、同尺寸视觉对照。"
+            },
+            "variants": [
+              {
+                "id": "tabs-floating-style-default",
+                "label": "barFloatingStyle 默认参数（不显式设置内部字段）",
+                "parameters": {
+                  "barFloatingStyle": "present_without_explicit_parameters",
+                  "systemMaterial": "omitted",
+                  "barOverlap": true,
+                  "vertical": false,
+                  "barPosition": "BarPosition.End"
+                }
+              },
+              {
+                "id": "tabs-thin",
+                "label": "THIN",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN"
+                }
+              },
+              {
+                "id": "tabs-ultra-thin",
+                "label": "ULTRA_THIN",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.ULTRA_THIN"
+                }
+              }
+            ]
+          }
+        ]
+      },
       "implementation": {
         "steps": [
           "先识别目标到底是标题栏、悬浮 TabBar 或索引器弹窗，使用对应 Options/Style 入口。",
           "Tabs 只修改 FloatingTabBarStyle.systemMaterial，不向 TabContent 错加材质。",
+          "AlphabetIndexer 验证采用本次冻结官网示例的最小相关结构：显式 usingPopup(true)，通过 onRequestPopupData 返回非空二级索引列表，并保留一级索引选择后展示弹窗的交互。",
           "清除与目标材质同层互斥的背景色和背景模糊；不删除其他层的设计背景。"
         ]
       },
@@ -657,6 +844,17 @@
           "right": "barBackground(?:Color|BlurStyle)",
           "onViolation": "inconclusive",
           "message": "Tabs 栏普通背景可能覆盖材质，需核对同一配置对象。"
+        },
+        {
+          "id": "indexer-secondary-popup-interaction",
+          "kind": "conditional_require",
+          "when": "AlphabetIndexer",
+          "patterns": [
+            "usingPopup\\s*\\(\\s*true\\s*\\)",
+            "onRequestPopupData\\s*\\("
+          ],
+          "onMissing": "failed",
+          "message": "AlphabetIndexer Demo 必须显式启用提示弹窗并提供二级索引列表数据；这是效果可观察的实现前提，不计入特性验证点。"
         },
         {
           "id": "indexer-background-conflict",
@@ -1345,7 +1543,125 @@
           "out of scope"
         ]
       ],
-      "intentPriority": 3
+      "intentPriority": 3,
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "backgroundResource": "app.media.backing",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": [
+            "设备算力分档",
+            "材质滤镜与非提示词视觉参数",
+            "API 与 SDK 版本矩阵",
+            "性能与功耗专项"
+          ],
+          "excludedCriterionTypes": [
+            "version",
+            "capability",
+            "performance"
+          ],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": [
+              "API",
+              "SDK",
+              "版本",
+              "兼容"
+            ],
+            "capability": [
+              "设备",
+              "算力",
+              "高算力",
+              "中算力",
+              "低算力",
+              "能力分档"
+            ],
+            "performance": [
+              "性能",
+              "功耗",
+              "帧率",
+              "GPU"
+            ]
+          }
+        },
+        "points": [
+          {
+            "id": "D01-01",
+            "title": "背景色或背景模糊遮挡材质效果 FAQ 解决方案验证",
+            "execution": "single_page",
+            "criteriaTopics": [
+              "诊断排障（IL-F024）"
+            ],
+            "demoSetupRequirements": [
+              {
+                "id": "material-effective-scope",
+                "description": "样本容器置于 Navigation 标题栏（BarStyle.STACK）内，保证普通容器处于沉浸光感生效范围。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              },
+              {
+                "id": "capability-diagnostic",
+                "description": "页面展示 isImmersiveMaterialSupported 与 getGlobalMaterialLevel 查询结果，用于运行时诊断。",
+                "enforcement": "implementation_and_static_gate",
+                "countsAsFeatureValidation": false
+              }
+            ],
+            "variants": [
+              {
+                "id": "bg-opaque-wrong",
+                "label": "错误写法：不透明背景色覆盖材质",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN",
+                  "backgroundColor": "Color.White",
+                  "attributeOrder": "systemMaterial_then_backgroundColor"
+                }
+              },
+              {
+                "id": "bg-blur-wrong",
+                "label": "错误写法：背景模糊覆盖材质",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN",
+                  "backgroundBlurStyle": "BlurStyle.COMPONENT_THICK"
+                }
+              },
+              {
+                "id": "bg-transparent-solution",
+                "label": "FAQ解决方案：背景色设为透明",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN",
+                  "backgroundColor": "Color.Transparent"
+                }
+              }
+            ]
+          },
+          {
+            "id": "D01-02",
+            "title": "materialColor 传入不透明颜色后材质效果消失 FAQ 解决方案验证",
+            "execution": "single_page",
+            "criteriaTopics": [
+              "材质参数（IL-F017）"
+            ],
+            "variants": [
+              {
+                "id": "color-opaque-wrong",
+                "label": "错误写法：不透明 materialColor",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN",
+                  "materialColor": "Color.Red"
+                }
+              },
+              {
+                "id": "color-translucent-solution",
+                "label": "FAQ解决方案：带透明度赋色",
+                "parameters": {
+                  "systemMaterial": "ImmersiveStyle.THIN",
+                  "materialColor": "#80FF0000"
+                }
+              }
+            ]
+          }
+        ]
+      }
     },
     {
       "id": "IL-S009",

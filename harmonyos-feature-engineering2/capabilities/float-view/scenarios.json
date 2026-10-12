@@ -1,0 +1,454 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "float-view",
+  "displayName": "闪控窗与闪控球",
+  "defaultRoute": "float-view-api26",
+  "routes": [
+    {
+      "id": "float-view-api26",
+      "displayName": "闪控窗（API 26）",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 26,
+        "minTargetApi": 26,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "闪控窗接口、权限、模板和设备范围以本次冻结官网为准；不得仅根据能力名称推断兼容版本。"
+      },
+      "sdk": { "preferredApi": 26, "validatedLocalVersion": null, "requiredDeclarationGlobs": ["openharmony/ets/api/@ohos.window.floatView.d.ts"], "requiredSymbols": ["FloatViewController", "isFloatViewEnabled", "getFloatViewLimits", "setFloatViewVisibilityInApp"] },
+      "supportedTargets": { "window": ["floatView", "FloatViewController"], "configuration": ["FloatViewConfiguration"] },
+      "intentPatterns": ["闪控窗", "floatView", "float view", "API 26"]
+    },
+    {
+      "id": "floating-ball-api20",
+      "displayName": "闪控球（API 20 起）",
+      "status": "ready",
+      "projectRequirements": {
+        "model": "stage",
+        "minCompileApi": 20,
+        "minTargetApi": 20,
+        "minCompatibleApi": null,
+        "compatibleApiMayBeLower": true,
+        "compatibilityPolicy": "闪控球基础接口和后续版本新增接口分别以本次冻结官网为准。"
+      },
+      "sdk": { "preferredApi": 20, "validatedLocalVersion": null, "requiredDeclarationGlobs": ["openharmony/ets/api/@ohos.window.floatingBall.d.ts"], "requiredSymbols": ["FloatingBallController", "startFloatingBall", "updateFloatingBall", "stopFloatingBall"] },
+      "supportedTargets": { "window": ["floatingBall", "FloatingBallController"], "configuration": ["FloatingBallParams"] },
+      "intentPatterns": ["闪控球", "floatingBall", "floating ball", "API 20"]
+    }
+  ],
+  "projectSignals": [
+    { "id": "float-view-api", "route": "float-view-api26", "extensions": [".ets", ".ts"], "pattern": "\\bfloatView\\.|FloatViewController" },
+    { "id": "floating-ball-api", "route": "floating-ball-api20", "extensions": [".ets", ".ts"], "pattern": "\\bfloatingBall\\.|FloatingBallController" },
+    { "id": "float-view-permission", "extensions": [".json", ".json5", ".ets", ".ts"], "pattern": "ohos\\.permission\\.(FLOAT_VIEW|USE_FLOAT_BALL)" },
+    { "id": "anti-peep", "extensions": [".ets", ".ts", ".json", ".json5"], "pattern": "dlpAntiPeep|DLP_GET_HIDE_STATUS|setAntiPeepMaskLayer" }
+  ],
+  "safety": {
+    "modifyMinimumScope": true,
+    "preserveDirtyFiles": true,
+    "keepFailedChanges": true,
+    "automaticRollback": false,
+    "automaticSdkUpgrade": false,
+    "automaticEmulatorDownload": false,
+    "automaticUninstall": false,
+    "maxDirectedRepairRounds": 2
+  },
+  "verification": {
+    "layerStatuses": ["passed", "failed", "blocked", "not_run", "inconclusive"],
+    "verdicts": ["passed", "passed_with_spec_conflict", "build_passed_runtime_pending", "inconclusive", "failed", "blocked"],
+    "visualSuccessRequiresObservation": true,
+    "buildCommand": "devecocli build",
+    "runCommand": "devecocli run",
+    "devicePolicy": "run-only-when-requested-and-exactly-one-device-selected"
+  },
+  "entryPoints": [
+    { "snapshotId": "float-view-guide", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/float-view-guide", "title": "闪控窗开发指导" },
+    { "snapshotId": "float-view-design", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/doccenter-ux-design/floatview-0000002624640357", "title": "闪控球和闪控窗设计指南" },
+    { "snapshotId": "market-watch-practice", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/doccenter-advanced-features/bpta-always-on-market-watch", "title": "全链路盯盘开发实践" },
+    { "snapshotId": "float-view-api", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/js-apis-floatview", "title": "floatView API" },
+    { "snapshotId": "floating-ball-api", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatingball", "title": "floatingBall API" },
+    { "snapshotId": "window-type-overview", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/window-type-overview", "title": "窗口类型开发概述" },
+    { "snapshotId": "declare-permissions", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/declare-permissions", "title": "声明权限" },
+    { "snapshotId": "request-authorization", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/request-user-authorization", "title": "向用户申请授权" },
+    { "snapshotId": "anti-peep-guide", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/devicesecurity-dlpantipeep", "title": "防窥保护开发指导" },
+    { "snapshotId": "anti-peep-api", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/devicesecurity-dlpantipeep-api", "title": "防窥保护 API" },
+    { "snapshotId": "lockscreen-form", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-ui-lockscreen-form-development", "title": "ArkTS 锁屏卡片开发指导" },
+    { "snapshotId": "standby-form", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkui-ui-standby-form-development", "title": "待机屏保卡片开发指导" },
+    { "snapshotId": "service-widget-design", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/design-guides/system-features-service-widget-0000002087671904", "title": "服务卡片设计指南" },
+    { "snapshotId": "formkit-overview", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/formkit-overview", "title": "Form Kit 简介" },
+    { "snapshotId": "push-form-update", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/push-form-update", "title": "推送卡片刷新消息" },
+    { "snapshotId": "window-errors", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/errorcode-window", "title": "窗口错误码" },
+    { "snapshotId": "universal-errors", "officialUrl": "https://developer.huawei.com/consumer/cn/doc/harmonyos-references/errorcode-universal", "title": "通用错误码" }
+  ],
+  "scenarios": [
+    {
+      "id": "FV-S001",
+      "displayName": "闪控窗基础创建、启动与停止",
+      "route": "float-view-api26",
+      "intentPatterns": ["创建闪控窗", "启动闪控窗", "停止闪控窗", "单独操作闪控窗", "isFloatViewEnabled", "floatView.create", "FLOAT_VIEW权限"],
+      "intentGroups": [["闪控窗", "基础接入"], ["闪控窗", "权限"]],
+      "targets": ["floatView", "FloatViewController"],
+      "sources": ["float-view-guide", "float-view-api", "declare-permissions", "request-authorization", "window-errors", "universal-errors"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "设备能力检查", "hint": "核对系统能力、设备支持接口和不支持时的降级。", "mustResolve": true },
+          { "topic": "权限声明与授权", "hint": "核对权限类型、声明位置、用户授权流程和拒绝处理。", "mustResolve": true },
+          { "topic": "控制器创建与内容设置", "hint": "核对创建配置、上下文要求和页面内容设置顺序。", "mustResolve": true },
+          { "topic": "前台启动与单实例约束", "hint": "核对启动时应用状态、数量限制和冲突窗口条件。", "mustResolve": true },
+          { "topic": "停止与失败处理", "hint": "核对主动停止、系统停止、异常返回和控制器清理。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "具备权限且设备支持时从前台启动唯一闪控窗，停止或系统销毁后释放控制器；不满足条件时安全降级。", "criteriaTopics": ["设备能力检查", "权限声明与授权", "控制器创建与内容设置", "前台启动与单实例约束", "停止与失败处理"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["闪控球绑定", "防窥保护", "锁屏卡片", "待机屏保"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "SDK", "版本"],
+            "capability": ["设备", "机型", "支持范围"],
+            "performance": ["性能", "功耗", "刷新频率"]
+          }
+        },
+        "points": [
+          {
+            "id": "D01-01",
+            "title": "闪控窗启动与停止",
+            "execution": "single_page",
+            "criteriaTopics": ["控制器创建与内容设置", "前台启动与单实例约束", "停止与失败处理"],
+            "demoSetupRequirements": [
+              { "id": "permission-granted", "description": "由用户完成闪控窗权限授权并确认设备支持。", "enforcement": "implementation_and_static_gate", "countsAsFeatureValidation": false }
+            ],
+            "interactionRequirements": [
+              { "id": "start-float-view", "description": "从应用前台入口启动闪控窗。", "expected": "出现目标内容的闪控窗并收到本次判据要求的运行状态。" },
+              { "id": "stop-float-view", "description": "从应用或闪控窗入口停止窗口。", "expected": "窗口消失且控制器进入可安全重建状态。" }
+            ],
+            "variants": [
+              { "id": "stopped", "label": "未启动基线", "parameters": { "state": "stopped" } },
+              { "id": "started", "label": "已启动闪控窗", "parameters": { "state": "started" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["先检查能力和权限，不在拒绝后循环申请。", "按本次判据建立控制器、内容和尺寸后启动。", "停止和系统销毁路径统一清理监听与控制器引用。"] },
+      "staticRules": [
+        { "id": "float-view-capability", "kind": "require_any", "patterns": ["isFloatViewEnabled\\s*\\(", "canIUse\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗设备能力检查。" },
+        { "id": "float-view-create", "kind": "require_any", "patterns": ["floatView\\.create\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗控制器创建。" },
+        { "id": "float-view-content", "kind": "require_any", "patterns": ["setUIContext(?:ByName)?\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗内容设置。" },
+        { "id": "float-view-start", "kind": "require_any", "patterns": ["\\.start\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗启动调用。" },
+        { "id": "float-view-stop", "kind": "require_any", "patterns": ["\\.stop\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗停止调用。" }
+      ],
+      "negativeCases": ["未经用户授权直接启动", "设备不支持时仍创建窗口", "并发创建多个闪控窗", "停止失败后无状态记录"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "FV-S002",
+      "displayName": "闪控窗模板、尺寸与动态适配",
+      "route": "float-view-api26",
+      "intentPatterns": ["闪控窗模板", "FloatViewTemplateType", "闪控窗尺寸", "getFloatViewLimits", "setWindowSize", "onLimitsChange", "onRectChange", "Mini态", "宽高比"],
+      "intentPriority": 2,
+      "targets": ["FloatViewTemplateType", "FloatViewLimits"],
+      "sources": ["float-view-guide", "float-view-design", "float-view-api"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "模板选择与内容结构", "hint": "核对目标交互对应的模板类型、标题栏和内容区结构。", "mustResolve": true },
+          { "topic": "尺寸与宽高比限制", "hint": "核对当前模板和设备返回的最小、最大尺寸与比例范围。", "mustResolve": true },
+          { "topic": "限制变化监听", "hint": "核对设备形态或系统条件变化后的限制更新与重算。", "mustResolve": true },
+          { "topic": "实际矩形反馈", "hint": "核对系统调整尺寸后如何获得实际位置与大小。", "mustResolve": true },
+          { "topic": "多设备视觉规格", "hint": "核对目标设备下的布局、Mini 态和可读性要求。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "闪控窗使用目标模板并保持在当前设备限制范围内，限制变化后重新适配且实际矩形可观察。", "criteriaTopics": ["模板选择与内容结构", "尺寸与宽高比限制", "限制变化监听", "实际矩形反馈", "多设备视觉规格"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["全部设备矩阵", "闪控球业务", "防窥保护"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "版本"],
+            "capability": ["设备", "折叠屏", "平板", "PC"],
+            "performance": ["性能", "布局耗时", "帧率"]
+          }
+        },
+        "points": [
+          {
+            "id": "D02-01",
+            "title": "模板尺寸与限制变化适配",
+            "execution": "single_page",
+            "criteriaTopics": ["模板选择与内容结构", "尺寸与宽高比限制", "限制变化监听", "实际矩形反馈"],
+            "variants": [
+              { "id": "minimum", "label": "判据允许的较小尺寸", "parameters": { "size": "criteria_minimum" } },
+              { "id": "maximum", "label": "判据允许的较大尺寸", "parameters": { "size": "criteria_maximum" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["按目标内容选择单一模板。", "设置尺寸前查询当前限制。", "监听限制和实际矩形变化并更新布局，不写死设备像素。"] },
+      "staticRules": [
+        { "id": "float-view-template", "kind": "require_any", "patterns": ["FloatViewTemplateType\\.", "templateType\\s*:"], "onMissing": "failed", "message": "缺少闪控窗模板选择。" },
+        { "id": "float-view-limits", "kind": "require_any", "patterns": ["getFloatViewLimits\\s*\\("], "onMissing": "failed", "message": "设置尺寸前未查询闪控窗限制。" },
+        { "id": "float-view-size", "kind": "require_any", "patterns": ["setWindowSize\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗尺寸设置。" },
+        { "id": "float-view-limit-listener", "kind": "require_any", "patterns": ["onLimitsChange\\s*\\(", "onRectChange\\s*\\("], "onMissing": "inconclusive", "message": "未发现动态限制或矩形监听；按目标适配范围确认。" }
+      ],
+      "negativeCases": ["忽略系统返回限制写死尺寸", "切换模板但不重核尺寸", "只看请求尺寸不看实际矩形", "所有设备强制同一布局密度"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "FV-S003",
+      "displayName": "闪控窗状态、可见性与主窗口恢复",
+      "route": "float-view-api26",
+      "intentPatterns": ["闪控窗状态监听", "onStateChange", "闪控窗可见性", "setFloatViewVisibilityInApp", "restoreMainWindow", "恢复主窗口", "闪控窗位置监听", "getWindowProperties"],
+      "targets": ["FloatViewController"],
+      "sources": ["float-view-guide", "float-view-api", "window-type-overview", "window-errors"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "状态变化与停止原因", "hint": "核对状态枚举、停止原因和控制器失效时机。", "mustResolve": true },
+          { "topic": "应用内可见性", "hint": "核对前后台和多任务状态下的可见性设置与默认行为。", "mustResolve": true },
+          { "topic": "主窗口恢复", "hint": "核对恢复入口、Want 范围、交互或权限条件。", "mustResolve": true },
+          { "topic": "属性与矩形观察", "hint": "核对窗口属性、位置尺寸和变化回调。", "mustResolve": true },
+          { "topic": "监听注销", "hint": "核对停止、销毁或页面退出时的对称注销。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "闪控窗状态和实际矩形可被追踪，按目标控制应用内可见性并在允许条件下恢复主窗口，退出后无残留监听。", "criteriaTopics": ["状态变化与停止原因", "应用内可见性", "主窗口恢复", "属性与矩形观察", "监听注销"] }
+      ],
+      "implementation": { "steps": ["只注册目标需要的状态和矩形监听。", "按应用生命周期设置可见性。", "在允许的交互或权限条件下恢复本应用主窗口，并在控制器失效前注销监听。"] },
+      "staticRules": [
+        { "id": "float-view-state-listener", "kind": "require_any", "patterns": ["onStateChange\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗状态监听。" },
+        { "id": "float-view-observation", "kind": "require_any", "patterns": ["onRectChange\\s*\\(", "getWindowProperties\\s*\\("], "onMissing": "inconclusive", "message": "未发现窗口矩形或属性观察。" },
+        { "id": "float-view-listener-cleanup", "kind": "require_any", "patterns": ["offStateChange\\s*\\(", "offRectChange\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗监听注销。" }
+      ],
+      "negativeCases": ["控制器销毁后继续调用", "注册匿名回调导致无法精确注销", "无用户交互或权限却恢复主窗口", "把请求位置当作实际位置"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime"]
+    },
+    {
+      "id": "FV-S004",
+      "displayName": "闪控窗与闪控球绑定及形态切换",
+      "route": "float-view-api26",
+      "crossRoute": true,
+      "intentPatterns": ["闪控窗与闪控球绑定", "绑定闪控球", "floatView.bind", "floatView.unbind", "闪控窗切换闪控球", "形态切换", "绑定失败"],
+      "intentGroups": [["闪控窗", "闪控球", "绑定"], ["闪控窗", "闪控球", "切换"]],
+      "intentPriority": 3,
+      "targets": ["floatView", "floatingBall"],
+      "sources": ["float-view-guide", "float-view-api", "floating-ball-api", "float-view-design", "market-watch-practice", "window-errors"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "双控制器创建与权限", "hint": "核对两个控制器的创建顺序、上下文、权限和能力检查。", "mustResolve": true },
+          { "topic": "绑定参数与启动顺序", "hint": "核对绑定接口、闪控球参数、内容尺寸设置和启动顺序。", "mustResolve": true },
+          { "topic": "形态切换行为", "hint": "核对点击闪控球、最小化闪控窗和同一时刻显示形态。", "mustResolve": true },
+          { "topic": "绑定态回调差异", "hint": "核对绑定后点击、状态与销毁回调相对独立模式的差异。", "mustResolve": true },
+          { "topic": "解绑与联合停止", "hint": "核对解绑后的控制关系和从任一控制器停止时的结果。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "闪控窗与闪控球成功绑定后只显示一种形态，可按系统交互互相切换；解绑和停止结果符合绑定态判据。", "criteriaTopics": ["双控制器创建与权限", "绑定参数与启动顺序", "形态切换行为", "绑定态回调差异", "解绑与联合停止"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["防窥保护", "锁屏卡片", "待机屏保"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "版本"],
+            "capability": ["设备", "机型", "窗口冲突"],
+            "performance": ["性能", "刷新频率", "功耗"]
+          }
+        },
+        "points": [
+          {
+            "id": "D04-01",
+            "title": "闪控球与闪控窗双向切换",
+            "execution": "single_page",
+            "criteriaTopics": ["绑定参数与启动顺序", "形态切换行为", "绑定态回调差异", "解绑与联合停止"],
+            "interactionRequirements": [
+              { "id": "ball-to-view", "description": "从闪控球切换为闪控窗。", "expected": "闪控球隐藏并显示绑定的闪控窗内容。" },
+              { "id": "view-to-ball", "description": "从闪控窗切换为闪控球。", "expected": "闪控窗收起并显示绑定的闪控球。" }
+            ],
+            "variants": [
+              { "id": "ball", "label": "闪控球形态", "parameters": { "visible": "floating_ball" } },
+              { "id": "view", "label": "闪控窗形态", "parameters": { "visible": "float_view" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["分别创建两个控制器并检查两类权限。", "完成绑定后再设置闪控窗内容尺寸并启动。", "绑定态使用绑定语义处理点击、解绑和联合停止。"] },
+      "staticRules": [
+        { "id": "bound-float-view-create", "kind": "require_any", "patterns": ["floatView\\.create\\s*\\("], "onMissing": "failed", "message": "缺少绑定所需的闪控窗控制器创建。" },
+        { "id": "bound-floating-ball-create", "kind": "require_any", "patterns": ["floatingBall\\.create\\s*\\("], "onMissing": "failed", "message": "缺少绑定所需的闪控球控制器创建。" },
+        { "id": "float-view-bind", "kind": "require_any", "patterns": ["floatView\\.bind\\s*\\("], "onMissing": "failed", "message": "缺少闪控窗与闪控球绑定。" },
+        { "id": "float-view-unbind", "kind": "require_any", "patterns": ["floatView\\.unbind\\s*\\("], "onMissing": "inconclusive", "message": "未发现解绑入口；仅在目标要求解绑时判失败。" }
+      ],
+      "negativeCases": ["只创建一个控制器便调用绑定", "未检查两类权限", "绑定态仍依赖独立闪控球 click 回调切换", "分别停止造成残留窗口"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "FV-S005",
+      "displayName": "独立闪控球启动、更新与点击恢复",
+      "route": "floating-ball-api20",
+      "intentPatterns": ["创建闪控球", "启动闪控球", "updateFloatingBall", "stopFloatingBall", "闪控球点击", "闪控球恢复主窗口", "restoreMainWindow", "闪控球销毁"],
+      "targets": ["floatingBall", "FloatingBallController"],
+      "sources": ["floating-ball-api", "float-view-design", "window-type-overview", "declare-permissions", "request-authorization", "window-errors", "universal-errors"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "闪控球能力与权限", "hint": "核对设备能力、权限和窗口冲突条件。", "mustResolve": true },
+          { "topic": "控制器创建与启动参数", "hint": "核对上下文、模板、标题、内容和启动顺序。", "mustResolve": true },
+          { "topic": "运行时更新限制", "hint": "核对启动后的可更新字段、模板约束和状态错误。", "mustResolve": true },
+          { "topic": "点击与主窗口恢复", "hint": "核对点击回调、Want 范围和免点击权限条件。", "mustResolve": true },
+          { "topic": "停止销毁与监听清理", "hint": "核对停止、系统销毁原因、状态监听和注销。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "独立闪控球可按目标模板启动和更新，点击后在允许条件下恢复本应用主窗口，停止或系统销毁后清理监听。", "criteriaTopics": ["闪控球能力与权限", "控制器创建与启动参数", "运行时更新限制", "点击与主窗口恢复", "停止销毁与监听清理"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["闪控窗绑定", "全链路卡片", "防窥保护"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "版本"],
+            "capability": ["设备", "数量", "窗口冲突"],
+            "performance": ["性能", "更新频率"]
+          }
+        },
+        "points": [
+          {
+            "id": "D05-01",
+            "title": "闪控球启动、更新与点击",
+            "execution": "rebuild_per_variant",
+            "criteriaTopics": ["控制器创建与启动参数", "运行时更新限制", "点击与主窗口恢复"],
+            "interactionRequirements": [
+              { "id": "update-ball", "description": "在启动后更新用户点名的信息。", "expected": "闪控球显示更新内容且模板状态保持合法。" },
+              { "id": "click-ball", "description": "点击独立闪控球。", "expected": "按本次判据恢复本应用目标页面或执行目标点击行为。" }
+            ],
+            "variants": [
+              { "id": "initial", "label": "初始闪控球", "parameters": { "content": "fixture_initial" } },
+              { "id": "updated", "label": "更新后闪控球", "parameters": { "content": "fixture_updated" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["检查闪控球能力和权限后创建控制器。", "使用稳定测试数据启动并按允许字段更新。", "处理点击、主窗恢复、停止和系统销毁并注销监听。"] },
+      "staticRules": [
+        { "id": "floating-ball-create", "kind": "require_any", "patterns": ["floatingBall\\.create\\s*\\("], "onMissing": "failed", "message": "缺少闪控球控制器创建。" },
+        { "id": "floating-ball-start", "kind": "require_any", "patterns": ["startFloatingBall\\s*\\("], "onMissing": "failed", "message": "缺少闪控球启动。" },
+        { "id": "floating-ball-update", "kind": "require_any", "patterns": ["updateFloatingBall\\s*\\("], "onMissing": "inconclusive", "message": "未发现闪控球更新；仅在目标要求更新时判失败。" },
+        { "id": "floating-ball-stop", "kind": "require_any", "patterns": ["stopFloatingBall\\s*\\("], "onMissing": "failed", "message": "缺少闪控球停止路径。" }
+      ],
+      "negativeCases": ["未启动便更新", "更新时改变不允许变更的模板", "无点击或权限直接恢复主窗口", "系统销毁后保留控制器"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "FV-S006",
+      "displayName": "闪控窗防窥保护",
+      "route": "float-view-api26",
+      "intentPatterns": ["闪控窗防窥", "防窥保护", "DlpAntiPeep", "DLP_GET_HIDE_STATUS", "setAntiPeepMaskLayer", "窥视蒙层", "防窥状态监听"],
+      "intentGroups": [["闪控窗", "防窥"]],
+      "intentPriority": 3,
+      "targets": ["dlpAntiPeep", "floatView"],
+      "sources": ["float-view-guide", "market-watch-practice", "float-view-api", "anti-peep-guide", "anti-peep-api", "declare-permissions", "request-authorization"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "防窥能力与系统开关", "hint": "核对设备能力、系统设置和不可用时的处理。", "mustResolve": true },
+          { "topic": "双权限前置", "hint": "核对闪控窗和防窥状态所需权限及拒绝处理。", "mustResolve": true },
+          { "topic": "窥视状态监听", "hint": "核对状态枚举、监听注册和回调时序。", "mustResolve": true },
+          { "topic": "窗口标识与蒙层", "hint": "核对如何取得目标闪控窗标识并显示或解除系统蒙层。", "mustResolve": true },
+          { "topic": "监听与蒙层清理", "hint": "核对窗口停止、页面退出和保护关闭时的清理。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "设备和系统开关允许时，窥视状态触发目标闪控窗隐私蒙层，状态恢复或窗口退出后解除保护并注销监听。", "criteriaTopics": ["防窥能力与系统开关", "双权限前置", "窥视状态监听", "窗口标识与蒙层", "监听与蒙层清理"] }
+      ],
+      "implementation": { "steps": ["分别检查闪控窗和防窥能力、权限及系统开关。", "取得目标闪控窗实际标识后注册防窥状态监听。", "只对目标窗口控制蒙层，并在退出路径解除蒙层和注销监听。"] },
+      "staticRules": [
+        { "id": "anti-peep-capability", "kind": "require_any", "patterns": ["SystemCapability\\.Security\\.DlpAntiPeep", "canIUse\\s*\\("], "onMissing": "failed", "message": "缺少防窥能力检查。" },
+        { "id": "anti-peep-listener", "kind": "require_any", "patterns": ["dlpAntiPeep\\.on\\s*\\(", "getDlpAntiPeepInfo\\s*\\("], "onMissing": "failed", "message": "缺少防窥状态读取或监听。" },
+        { "id": "anti-peep-mask", "kind": "require_any", "patterns": ["setAntiPeepMaskLayer\\s*\\("], "onMissing": "failed", "message": "缺少防窥蒙层调用。" },
+        { "id": "anti-peep-cleanup", "kind": "require_any", "patterns": ["dlpAntiPeep\\.off\\s*\\(", "removeAntiPeepMaskLayer\\s*\\("], "onMissing": "inconclusive", "message": "未发现防窥监听或蒙层清理。" }
+      ],
+      "negativeCases": ["未开系统开关仍宣称防窥生效", "对错误窗口标识加蒙层", "权限拒绝后继续读取防窥状态", "窗口停止后保留监听或蒙层"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    },
+    {
+      "id": "FV-S007",
+      "displayName": "桌面、锁屏与待机全链路盯盘",
+      "route": "float-view-api26",
+      "crossRoute": true,
+      "intentPatterns": ["全链路盯盘", "桌面盯盘", "锁屏盯盘", "待机屏保盯盘", "AlwaysOnMarketWatch", "股票盯盘全链路"],
+      "intentGroups": [["盯盘", "锁屏", "待机"], ["闪控窗", "锁屏卡片", "待机屏保"]],
+      "intentPriority": 3,
+      "targets": ["floatView", "floatingBall", "FormExtensionAbility"],
+      "sources": ["market-watch-practice", "float-view-guide", "float-view-api", "floating-ball-api", "lockscreen-form", "standby-form", "service-widget-design", "formkit-overview", "push-form-update"],
+      "criteriaSpec": {
+        "required": [
+          { "topic": "场景形态与职责边界", "hint": "核对桌面、锁屏和待机形态分别承载的信息、入口与交互。", "mustResolve": true },
+          { "topic": "桌面闪控形态", "hint": "核对闪控球、闪控窗的创建绑定、切换和数据展示。", "mustResolve": true },
+          { "topic": "锁屏卡片配置与更新", "hint": "核对锁屏卡片支持条件、配置、刷新和交互边界。", "mustResolve": true },
+          { "topic": "待机屏保卡片配置与更新", "hint": "核对待机屏保入口、适配、隐私和刷新边界。", "mustResolve": true },
+          { "topic": "跨形态数据一致性", "hint": "核对行情数据源、刷新触发、缓存和各形态降级。", "mustResolve": true },
+          { "topic": "分层运行证据", "hint": "核对桌面、锁屏、待机分别需要的截图、状态和日志。", "mustResolve": true }
+        ],
+        "conflictProbes": []
+      },
+      "expectedOutcomeTemplates": [
+        { "assertion": "目标行情在桌面、锁屏和待机形态按各自判据呈现并保持数据一致，任一能力不可用时只降级该形态。", "criteriaTopics": ["场景形态与职责边界", "桌面闪控形态", "锁屏卡片配置与更新", "待机屏保卡片配置与更新", "跨形态数据一致性", "分层运行证据"] }
+      ],
+      "demoValidation": {
+        "layoutPolicy": "single_page_preferred",
+        "scopePolicy": {
+          "selection": "prompt_strong_relevance_only",
+          "prerequisiteHandling": "setup_or_static_only",
+          "excludedByDefault": ["真实证券交易", "未点名的推送渠道", "防窥保护"],
+          "excludedCriterionTypes": ["version", "capability", "performance"],
+          "includeExcludedTypeWhenPromptContains": {
+            "version": ["API", "版本"],
+            "capability": ["设备", "锁屏", "待机屏保", "支持范围"],
+            "performance": ["性能", "刷新频率", "功耗"]
+          }
+        },
+        "points": [
+          {
+            "id": "D07-01",
+            "title": "三种系统形态的行情一致性",
+            "execution": "single_page",
+            "criteriaTopics": ["桌面闪控形态", "锁屏卡片配置与更新", "待机屏保卡片配置与更新", "跨形态数据一致性", "分层运行证据"],
+            "demoSetupRequirements": [
+              { "id": "deterministic-market-data", "description": "提供可重复的本地行情测试数据和时间戳。", "enforcement": "implementation_and_static_gate", "countsAsFeatureValidation": false }
+            ],
+            "variants": [
+              { "id": "desktop", "label": "桌面闪控形态", "parameters": { "surface": "desktop" } },
+              { "id": "lockscreen", "label": "锁屏卡片形态", "parameters": { "surface": "lockscreen" } },
+              { "id": "standby", "label": "待机屏保形态", "parameters": { "surface": "standby" } }
+            ]
+          }
+        ]
+      },
+      "implementation": { "steps": ["以同一确定性行情源驱动各形态，但分别实现生命周期和配置。", "先完成用户明确要求的形态，不因示例存在自动加入 Push 或防窥。", "逐形态运行并保留独立证据和降级结果。"] },
+      "staticRules": [
+        { "id": "market-watch-desktop", "kind": "require_any", "patterns": ["floatView\\.", "floatingBall\\."], "onMissing": "failed", "message": "缺少桌面闪控形态实现。" },
+        { "id": "market-watch-form", "kind": "require_any", "patterns": ["FormExtensionAbility", "ohos\\.extension\\.form"], "onMissing": "failed", "message": "缺少卡片提供方实现或声明。" },
+        { "id": "market-watch-standby", "kind": "require_any", "patterns": ["standby\\s*:", "isAdapted\\s*:"], "onMissing": "failed", "message": "未发现待机屏保配置。" }
+      ],
+      "negativeCases": ["用单一普通页面冒充三种系统形态", "桌面截图代替锁屏和待机证据", "任一能力失败便删除其他可用形态", "使用真实交易接口作为 Demo 唯一数据源"],
+      "requiredChecks": ["static", "sdk", "build", "install", "runtime", "visual"]
+    }
+  ]
+}

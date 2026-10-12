@@ -2,12 +2,12 @@
 
 import { createHash } from "node:crypto"
 import { execFile } from "node:child_process"
-import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { join, dirname, resolve, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { promisify } from "node:util"
 import { validateOfficialFinalUrl, validateOfficialPageUrl } from "./lib/official-url.mjs"
-import { resolveReportOutputDirectory } from "./lib/report-output.mjs"
 
 const execFileAsync = promisify(execFile)
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
@@ -99,18 +99,22 @@ function declaredVersions(markdown) {
 }
 
 async function defaultFetcher(url) {
-  let stdout
+  const temporaryDirectory = await mkdtemp(join(tmpdir(), "harmony-doc-snapshot-"))
+  const outputFile = join(temporaryDirectory, "fetch.json")
   try {
-    ;({ stdout } = await execFileAsync(process.execPath, [join(SCRIPT_DIR, "fetch-doc.mjs"), url], {
-      encoding: "utf8",
-      maxBuffer: MAX_BUFFER,
-      windowsHide: true,
-    }))
-  } catch (error) {
-    if ([0, 1].includes(error?.code) && typeof error.stdout === "string") stdout = error.stdout
-    else throw new Error(String(error?.stderr || error?.message || error).trim())
+    try {
+      await execFileAsync(process.execPath, [join(SCRIPT_DIR, "fetch-doc.mjs"), url, "--output", outputFile], {
+        encoding: "utf8",
+        maxBuffer: MAX_BUFFER,
+        windowsHide: true,
+      })
+    } catch (error) {
+      if (![0, 1].includes(error?.code)) throw new Error(String(error?.stderr || error?.message || error).trim())
+    }
+    return JSON.parse(await readFile(outputFile, "utf8"))
+  } finally {
+    await rm(temporaryDirectory, { recursive: true, force: true })
   }
-  return JSON.parse(stdout)
 }
 
 async function prepareOutputDirectory(requested) {
@@ -176,8 +180,6 @@ export async function snapshotOfficialUrl(rawUrl, options = {}) {
   const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES
   const includeLinkedPages = options.includeLinkedPages ?? true
   if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 50) throw new Error("maxPages 必须是 1–50 的整数")
-  const defaultOutputDirectory = join(resolveReportOutputDirectory(), "evidence", "source-snapshot")
-  const requestedOutputDirectory = options.outputDirectory ?? defaultOutputDirectory
   const fetcher = options.fetcher ?? defaultFetcher
   const rootRoute = documentRoute(initialUrl)
   const queue = [initialUrl]
@@ -218,7 +220,9 @@ export async function snapshotOfficialUrl(rawUrl, options = {}) {
     filenames.set(records[index].canonicalUrl, records[index].filename)
   }
 
-  const output = await prepareOutputDirectory(requestedOutputDirectory)
+  const output = options.outputDirectory
+    ? await prepareOutputDirectory(options.outputDirectory)
+    : { path: await mkdtemp(join(tmpdir(), "harmony-review-snapshot-")), temporary: true }
   const evidenceDirectory = join(output.path, "evidence", "fetch")
   await mkdir(evidenceDirectory, { recursive: true })
   const snapshotItems = []

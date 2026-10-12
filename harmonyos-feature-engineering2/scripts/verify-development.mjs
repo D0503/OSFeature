@@ -6,7 +6,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises"
 import { dirname, isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { promisify } from "node:util"
-import { loadCapability, resolveScenario } from "./lib/capability-tools.mjs"
+import { loadCapability, resolveScenario, resolveScenarios } from "./lib/capability-tools.mjs"
 import { inspectDevelopmentProject, runStaticScenarioChecks, sdkCheckFromInspection } from "./lib/development-project.mjs"
 import { compareFileBaseline } from "./snapshot-project-files.mjs"
 import { deriveDevelopmentVerdict, validateDevelopmentReport } from "./validate-development-report.mjs"
@@ -105,6 +105,7 @@ function findNodeInLayout(root, by, value) {
   let found = null
   const visit = (node) => {
     if (found || !node || typeof node !== "object") return
+    if (Array.isArray(node)) { for (const item of node) visit(item); return }
     const attrs = node.attributes ?? node
     const text = String(attrs.text ?? "")
     const id = String(attrs.id ?? "")
@@ -120,13 +121,13 @@ function findNodeInLayout(root, by, value) {
   return found
 }
 
-const CRITERIA_STATUS = new Set(["fresh", "reused"])
+const CRITERIA_STATUS = new Set(["fresh"])
 
 function validateCriteriaDocument(criteriaDocument, scenario) {
   const invalid = []
   if (criteriaDocument?.schemaVersion !== "1.0") invalid.push("schemaVersion 必须为 1.0")
   if (criteriaDocument?.scenarioId !== scenario.id) invalid.push(`scenarioId 必须为 ${scenario.id}`)
-  if (!["fresh", "reuse"].includes(criteriaDocument?.strategy)) invalid.push("strategy 必须是 fresh 或 reuse")
+  if (criteriaDocument?.strategy !== "fresh") invalid.push("strategy 必须是 fresh")
   if (!Array.isArray(criteriaDocument?.criteria) || !criteriaDocument.criteria.length) invalid.push("criteria 必须是非空数组")
   else {
     const ids = new Set()
@@ -136,7 +137,7 @@ function validateCriteriaDocument(criteriaDocument, scenario) {
       else if (ids.has(criterion.id)) invalid.push(`${label}.id 重复`)
       else ids.add(criterion.id)
       if (typeof criterion?.statement !== "string" || !criterion.statement.trim()) invalid.push(`${label}.statement 必填`)
-      if (!CRITERIA_STATUS.has(criterion?.status)) invalid.push(`${label}.status 必须是 fresh 或 reused`)
+      if (!CRITERIA_STATUS.has(criterion?.status)) invalid.push(`${label}.status 必须是 fresh`)
       if (typeof criterion?.anchor !== "string" || !criterion.anchor.trim()) invalid.push(`${label}.anchor 必填`)
     }
   }
@@ -206,9 +207,14 @@ async function appendObservationEvidence(evidence, item, fallbackSummary) {
 }
 
 export async function runDevelopmentVerification(skillRoot, request, options = {}) {
+  if (request.deviceType !== undefined && !['emulator', 'real-device'].includes(request.deviceType)) throw new Error('device-type 必须为 emulator 或 real-device')
   const executeCommand = options.commandRunner ?? runDeveco
   const capability = await loadCapability(skillRoot, request.feature ?? "immersive-light")
-  const resolution = resolveScenario(capability, request.goal, request.target)
+  const selectedId = request.scenarioId ?? options.criteria?.scenarioId
+  if (request.scenarioId && options.criteria && request.scenarioId !== options.criteria.scenarioId) throw new Error("指定场景与本轮判据 scenarioId 不一致")
+  const resolution = selectedId
+    ? (() => { const resolved = resolveScenarios(capability, [], [selectedId]); return { ...resolved, selected: resolved.selected[0] } })()
+    : resolveScenario(capability, request.goal, request.target)
   if (resolution.status !== "resolved") return { report: null, resolution, rendered: null }
   const scenario = resolution.selected
   // 多目标报告统一写入工程产物目录；每次运行的原始证据独立保存。
@@ -219,7 +225,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
   if (options.baseline && resolve(options.baseline.projectRoot) !== resolve(request.project)) throw new Error("实施基线不属于目标工程")
   if (options.executeBuild || options.executeRun) {
     if (!options.criteria) {
-      throw new Error(`场景 ${scenario.id} 缺少本次判据集：先 freeze-snapshot → diff-snapshots → derive-criteria（materials/validate）产出 criteria.json，经 --criteria 注入；判据权威来源是本次冻结快照，未经现提不得构建或运行。`)
+      throw new Error(`场景 ${scenario.id} 缺少本次判据集：先 freeze-snapshot → derive-criteria（materials/validate）产出 criteria.json，经 --criteria 注入；判据权威来源是本次冻结快照，未经现提不得构建或运行。`)
     }
     const invalid = validateCriteriaDocument(options.criteria, scenario)
     if (invalid.length) throw new Error(`criteria 无效: ${invalid.join("; ")}`)
@@ -492,7 +498,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
 
   if (buildFailed) for (const level of ["install", "runtime", "visual"]) checks[level] = check(required.has(level), "not_run", "本轮构建失败，未执行设备操作或采用观察结论。")
   const changes = options.baseline ? (await compareFileBaseline(options.baseline)).changes : []
-  const criteriaDocument = options.criteria ?? { criteria: [], snapshots: [], strategy: "reuse", frozenAt: null }
+  const criteriaDocument = options.criteria ?? { criteria: [], snapshots: [], strategy: "fresh", frozenAt: null }
   const trace = buildImplementationTrace(criteriaDocument, options.implementation, changes, Boolean(options.baseline))
   const criteriaIds = criteriaDocument.criteria.map((criterion) => criterion.id)
   const conflictGroups = new Set(criteriaDocument.criteria.filter((criterion) => criterion.conflictGroup).map((criterion) => criterion.conflictGroup))
@@ -510,8 +516,8 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
       product: request.product ?? inspection.product.selected?.name ?? null,
       buildMode: request.buildMode ?? "debug",
       device: request.device ?? null,
+      deviceType: request.deviceType ?? null,
       navigation: request.navigationPath ?? null,
-      criteria: request.criteriaPath ?? null,
     },
     capabilityPackage: {
       featureId: capability.feature.id,
@@ -563,7 +569,7 @@ export async function runDevelopmentVerification(skillRoot, request, options = {
 
 function parseArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const valued = new Set(["project", "feature", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "sdk", "baseline", "implementation", "observations", "judgment", "navigate", "criteria", "frozen", "output", "repair-attempts", "skill-root"])
+  const valued = new Set(["project", "feature", "scenario", "goal", "target", "component", "module", "target-files", "product", "build-mode", "device", "device-type", "sdk", "baseline", "implementation", "observations", "judgment", "navigate", "criteria", "frozen", "output", "repair-attempts", "skill-root"])
   const result = {}
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index]
@@ -594,6 +600,7 @@ async function main() {
   const criteria = args.criteria ? JSON.parse(await readFile(args.criteria, "utf8")) : null
   const result = await runDevelopmentVerification(args["skill-root"] ?? scriptRoot, {
     feature: args.feature,
+    scenarioId: args.scenario,
     project: args.project,
     goal: args.goal,
     target: args.component ?? args.target,
@@ -603,6 +610,7 @@ async function main() {
     product: args.product,
     buildMode: args["build-mode"],
     device: args.device,
+    deviceType: args['device-type'],
     sdk: args.sdk,
     navigationPath: args.navigate ?? null,
     criteriaPath: args.criteria ?? null,

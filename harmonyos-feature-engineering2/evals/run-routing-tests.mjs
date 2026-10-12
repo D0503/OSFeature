@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict"
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises"
+import { mkdtemp, mkdir, writeFile, rm, readFile, access } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
-import { loadCapability, resolveScenario } from "../scripts/lib/capability-tools.mjs"
+import { loadCapability, resolveScenario, resolveScenarios } from "../scripts/lib/capability-tools.mjs"
 import { deriveMaterials, validateDraft } from "../scripts/derive-criteria.mjs"
-import { diffAgainstLatest } from "../scripts/diff-snapshots.mjs"
 import { runStaticScenarioChecks } from "../scripts/lib/development-project.mjs"
+import { snapshotOfficialUrl } from "../scripts/snapshot-url.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const capability = await loadCapability(root)
@@ -41,6 +41,14 @@ for (const [id, goals] of Object.entries(cases)) for (const goal of goals) {
   assertions++
 }
 assert.deepEqual(failures, [], failures.join("\n"))
+const multiGoals = resolveScenarios(capability, ['实现搜索框标题栏具有沉浸光感效果', '内容区标题栏开启沉浸光感'])
+check(multiGoals.status === 'resolved' && multiGoals.selected.map((item) => item.id).join(',') === 'IL-S013,IL-S014', 'multiple explicit goals retain both selected scenarios')
+const multiSelection = resolveScenarios(capability, [], ['IL-S013', 'IL-S014', 'IL-S013'])
+check(multiSelection.selected.map((item) => item.id).join(',') === 'IL-S013,IL-S014', 'explicit multiple selection deduplicates IDs without dropping scenes')
+assert.throws(() => resolveScenarios(capability, [], ['IL-S999']), /未注册场景/)
+assertions++
+const partialSelection = resolveScenarios(capability, ['实现搜索框标题栏具有沉浸光感效果', '实现沉浸光感典型场景'])
+check(partialSelection.status === 'needs_selection' && partialSelection.selected.some((item) => item.id === 'IL-S013') && partialSelection.resolutions.some((item) => item.status === 'ambiguous'), 'ambiguity preserves resolved goals and asks only for remaining choices')
 const typical = resolveScenario(capability, "实现沉浸光感典型场景")
 check(typical.status === "ambiguous" && typical.candidates.map((item) => item.id).sort().join() === "IL-S013,IL-S014", "典型场景未指定效果时提供两个候选")
 check(resolveScenario(capability, "").status === "needs_input", "空目标需要输入")
@@ -71,6 +79,13 @@ try {
     const result = await runStaticScenarioChecks(project, capability.scenariosData.scenarios.find((item) => item.id === id), { modules: [] })
     check(result.rules.find((item) => item.id === rule)?.status === "passed", `${id} 已登记入口能通过静态识别: ${content}`)
   }
+  await writeFile(join(project, "Index.ets"), "AlphabetIndexer(['#', 'A'], 0).usingPopup(true).onRequestPopupData((index: number) => ['示例项'])")
+  const indexerScenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S003")
+  const validIndexer = await runStaticScenarioChecks(project, indexerScenario, { modules: [] })
+  check(validIndexer.rules.find((item) => item.id === "indexer-secondary-popup-interaction")?.status === "passed", "AlphabetIndexer 二级提示弹窗交互通过静态门禁")
+  await writeFile(join(project, "Index.ets"), "AlphabetIndexer(['#', 'A'], 0)")
+  const invalidIndexer = await runStaticScenarioChecks(project, indexerScenario, { modules: [] })
+  check(invalidIndexer.rules.find((item) => item.id === "indexer-secondary-popup-interaction")?.status === "failed", "AlphabetIndexer 缺少 usingPopup/onRequestPopupData 时静态门禁失败")
   const directory = join(temporary, "frozen")
   await mkdir(join(directory, "snapshots"), { recursive: true })
   const scenario = capability.scenariosData.scenarios.find((item) => item.id === "IL-S013")
@@ -81,18 +96,17 @@ try {
     snapshots.push({ ...entryById.get(snapshotId), contentSha256: createHash("sha256").update(content).digest("hex"), updatedDate: null })
   }
   await writeFile(join(directory, "frozen.json"), JSON.stringify({ frozenAt: "2026-09-08T00:00:00Z", snapshots }))
-  const diff = await diffAgainstLatest(capability, directory)
-  const materials = await deriveMaterials(capability, scenario.id, directory, diff)
+  const materials = await deriveMaterials(capability, scenario.id, directory)
   check(materials.status === "materials_ready", "新增场景必须现提判据，不能复用旧通用导航判据")
   check(materials.materials.requiredTopics.some((item) => item.topic === "搜索标题栏滚动联动"), "材料包包含典型场景专属主题")
   check(materials.materials.conflictProbes.some((item) => item.id === "search-title-nesting"), "材料包保留嵌套约束监测")
   const draft = { schemaVersion: "1.0", scenarioId: scenario.id,
     criteria: scenario.criteriaSpec.required.map((topic, index) => ({ id: `TEST-${index}`, type: "behavior", topic: topic.topic, statement: "测试正文的判据", snapshotId: "typical-scenes", anchor: "本次冻结页" })),
-    conflictResolutions: [], confirmations: diff.highRisk.map((item) => ({ snapshotId: item.snapshotId, category: item.category, userDecision: "proceed", note: "离线测试夹具" })) }
-  const missing = await validateDraft(capability, scenario.id, directory, draft, diff)
+    conflictResolutions: [] }
+  const missing = await validateDraft(capability, scenario.id, directory, draft)
   check(missing.status === "invalid" && missing.invalid.some((item) => item.includes("search-title-nesting")), "未审查新增冲突监测点时拒绝草稿")
   draft.conflictResolutions = [{ probeId: "search-title-nesting", verdict: "resolved", basis: "测试夹具无嵌套冲突" }]
-  check((await validateDraft(capability, scenario.id, directory, draft, diff)).status === "validated", "新增主题与监测结论完整时可生成判据")
+  check((await validateDraft(capability, scenario.id, directory, draft)).status === "validated", "新增主题与监测结论完整时可生成判据")
   const hdsTopics = {
     "IL-S009": ["HDS 导航材质与背景滚动联动"],
     "IL-S010": ["HDS 页签悬浮布局条件"],
@@ -110,17 +124,13 @@ try {
       pages.push({ ...entryById.get(snapshotId), contentSha256: createHash("sha256").update(content).digest("hex") })
     }
     await writeFile(join(frozen, "frozen.json"), JSON.stringify({ frozenAt: "2026-09-10T00:00:00Z", snapshots: pages }))
-    const change = await diffAgainstLatest(capability, frozen)
-    const material = await deriveMaterials(capability, id, frozen, change)
+    const material = await deriveMaterials(capability, id, frozen)
     check(material.status === "materials_ready" && topics.every((t) => material.materials.requiredTopics.some((r) => r.topic === t)), `${id} 材料包含新增核对主题`)
     const input = { schemaVersion: "1.0", scenarioId: id, conflictResolutions: [],
-      confirmations: change.highRisk.map((r) => ({ snapshotId: r.snapshotId, category: r.category, userDecision: "proceed", note: "离线夹具" })),
       criteria: hds.criteriaSpec.required.map((r, i) => ({ id: `${id}-T${i}`, topic: r.topic, statement: "本次冻结原文的要求", snapshotId: hds.sources[0], anchor: "HDS 测试冻结原文" })) }
     const incomplete = { ...input, criteria: input.criteria.filter((c) => !topics.includes(c.topic)) }
-    check((await validateDraft(capability, id, frozen, incomplete, change)).status === "invalid", `${id} 遗漏新增主题不能生成完整判据`)
-    check((await validateDraft(capability, id, frozen, input, change)).status === "validated", `${id} 判据从本次冻结原文补齐后通过`)
-    const reuse = await deriveMaterials(capability, id, join(root, "capabilities/immersive-light/sessions/latest"), { status: "clean" })
-    check(reuse.status === "degraded_reuse" && topics.every((t) => reuse.reason.includes(t)), `${id} 旧判据不得静默跳过新主题`)
+    check((await validateDraft(capability, id, frozen, incomplete)).status === "invalid", `${id} 遗漏新增主题不能生成完整判据`)
+    check((await validateDraft(capability, id, frozen, input)).status === "validated", `${id} 判据从本次冻结原文补齐后通过`)
   }
   const custom = capability.scenariosData.scenarios.find((s) => s.id === "IL-S012")
   await writeFile(join(project, "Index.ets"), `import { hdsMaterial } from '@kit.UIDesignKit';\ntry { const types = hdsMaterial.getSystemMaterialTypes(); if (types.includes(hdsMaterial.MaterialType.IMMERSIVE)) { const level = hdsMaterial.MaterialLevel.EXQUISITE; } } catch (e) { console.error('query failed'); }`)
@@ -128,5 +138,18 @@ try {
   check(customResult.status === "passed", "缺少 SMOOTH 不单独判失败；等级策略由本次判据和观察核对")
 } finally {
   await rm(temporary, { recursive: true, force: true })
+}
+const snapshotUrl = 'https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/test-review-snapshot'
+const fakeFetcher = async (url) => ({ canonicalUrl: url, pageUrl: url, title: 'fixture', contentMarkdown: '# fixture\n\n本轮审阅正文', retrievedAt: '2026-10-10T00:00:00Z', status: 'success' })
+const snapshots = []
+try {
+  for (let index = 0; index < 2; index++) snapshots.push(await snapshotOfficialUrl(snapshotUrl, { fetcher: fakeFetcher, includeLinkedPages: false }))
+  check(snapshots.every((item) => item.temporary && item.outputDirectory.startsWith(join(tmpdir(), 'harmony-review-snapshot-'))), 'review snapshots default to temporary storage')
+  check(snapshots[0].outputDirectory !== snapshots[1].outputDirectory, 'separate reviews do not share default snapshot directories')
+  const manifest = JSON.parse(await readFile(join(snapshots[0].outputDirectory, 'source-manifest.json'), 'utf8'))
+  check(manifest.snapshots.length === 1 && manifest.snapshots[0].sha256, 'temporary review retains its integrity index during execution')
+  await access(join(snapshots[0].outputDirectory, manifest.snapshots[0].localPath))
+} finally {
+  for (const item of snapshots) await rm(item.outputDirectory, { recursive: true, force: true })
 }
 process.stdout.write(`ok - ${assertions} routing and criteria assertions\n`)
