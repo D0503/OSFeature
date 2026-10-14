@@ -1,6 +1,6 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、智感握姿、Smart Reach、adaptToHandedness，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）。工程 API 低于路线所需版本时，可提供升级本机 SDK、compileSdkVersion 并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、平行视界、智感握姿、Smart Reach、adaptToHandedness、智能体框架服务、Agent Framework Kit、FunctionComponent，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）；通过 Function 组件拉起智能体（应用 API 20、元服务 API 21），开发 Agent 和关联应用等前置操作提供指导。工程 API 低于路线所需版本时，可提供升级本机 SDK、compileSdkVersion 并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -83,11 +83,9 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 ## 当前已注册能力
 
-当前注册表包含沉浸光感、平行视界和智感握姿能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[验证闭环](references/workflows/verification.md)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感、平行视界、智感握姿和智能体框架服务能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[验证闭环](references/workflows/verification.md)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
-## 能力包扩展
-
-新增特性前完整读取 [能力包契约](references/feature-package-contract.md)。先在注册表外完成并验证全部资料，达到契约要求后再以 `ready` 状态注册。
+智能体框架服务仅实现 Function 组件拉起智能体；开发 Agent、关联应用与测试发布等前置操作按能力包提供指导。A2A、AgentExtensionAbility 或后端开发请求即使命中 Kit 名称，也不属于当前实现范围；普通 Agent/Function 请求不能据此自动命中。其运行与视觉验证必须使用已确认的 Phone/Tablet 真机，按能力包采集点击、打开及关闭证据，不能以按钮显示替代拉起成功。
 
 ## 资源加载表
 
@@ -99,14 +97,8 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 | 实施后静态验证 | 运行 `node scripts/verify-integration.mjs --project <path> --feature <id> [--sdk <path>]` |
 | 工程验证闭环与报告 | 按[验证闭环](references/workflows/verification.md)调用 `scripts/verify-development.mjs`，采集目标页证据并补录判定 |
 | 输出计划或报告 | [共享输出契约](references/shared/output-contracts.md) 与 `assets/templates/` |
-| 新增能力包 | [references/feature-package-contract.md](references/feature-package-contract.md) |
 | 检查 Skill 结构 | 运行 `node scripts/validate-structure.mjs` |
 | 检查已注册能力包 | 运行 `node scripts/validate-feature-package.mjs --feature <id>` |
-| 运行冒烟测试 | 运行 `node evals/run-smoke-tests.mjs` |
-| 智感握姿专项测试 | 运行 `node evals/run-smart-reach-tests.mjs` |
-| 平行视界专项测试 | 运行 `node evals/run-easygo-tests.mjs` |
-| 运行工具测试 | 运行 `node evals/run-tool-tests.mjs` |
-| 运行验证执行器测试 | 运行 `node evals/run-development-tests.mjs` |
 
 ## 完成标准
 

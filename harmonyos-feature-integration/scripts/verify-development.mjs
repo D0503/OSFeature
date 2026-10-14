@@ -37,8 +37,25 @@ function detectDeviceKind(deviceInfo, target) {
   return fields.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v.trim()))) ? "emulator" : "physical"
 }
 
+export function detectAgentDeviceKind(deviceInfo, target) {
+  let info = deviceInfo
+  if (typeof info === "string") { try { info = JSON.parse(info) } catch { info = null } }
+  const candidate = info?.device ?? info?.data ?? info
+  const values = [target, candidate?.name, candidate?.model, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.deviceKind, candidate?.connectType]
+  if (candidate?.isEmulator === true || values.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v)))) return "emulator"
+  const form = candidate?.deviceType ?? candidate?.type
+  const supported = typeof form === "string" && /^(phone|tablet)$/i.test(form)
+  const physical = candidate?.isEmulator === false || /^(physical|real|真机)$/i.test(candidate?.deviceKind ?? "") || /^usb$/i.test(candidate?.connectType ?? "")
+  return supported && physical ? "physical" : "unknown"
+}
+
+function requireAgentPhysical(run) {
+  if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") throw new Error("Agent Framework Kit 运行与视觉验证需要已确认的 Phone/Tablet 真机，模拟器或设备类型未知不能验收")
+}
+
 async function importDeveloperScreenshots(run, runDirectory, paths) {
   if (!Array.isArray(paths) || !paths.length) return
+  requireAgentPhysical(run)
   if (run.feature === "smart-reach" && run.deviceKind === "emulator") throw new Error("智感握姿视觉验证只能使用真机，不能在模拟器运行中导入截图")
   for (const item of paths) {
     const source = resolve(item)
@@ -97,6 +114,7 @@ function developerOnlyVisual(judgment, run) {
 export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment?.schemaVersion !== "1.0" || judgment.runId !== run.runId || judgment.goal !== run.goal) throw new Error("判定必须绑定本次 runId 与 goal")
   if (judgment.visual || judgment.runtime) {
+    requireAgentPhysical(run)
     if (run.checks.build.status !== "passed") throw new Error("构建未通过，不能补录效果判定")
     if (judgment.runtime || !developerOnlyVisual(judgment, run)) for (const key of ["install", "navigation"]) if (run.checks[key].status !== "passed") throw new Error("安装或目标页导航未通过，不能补录效果判定；视觉判定仅可豁免全部引用开发者真机截图的设备阶段")
   }
@@ -114,7 +132,21 @@ export async function applyJudgment(run, judgment, runs = [run]) {
     }
     if (level === "visual" && !evidence.some((v) => v.type === "screenshot")) throw new Error("视觉判定必须引用本次目标页面截图")
     if (level === "runtime" && !evidence.some((v) => ["runtime_log", "component_tree"].includes(v.type))) throw new Error("运行判定需要日志或交互组件树证据")
+    if (run.feature === "agent-framework-kit" && item.status === "passed") {
+      if (level === "visual" && new Set(evidence.filter((e) => e.type === "screenshot").map((e) => e.sha256)).size < 2) throw new Error("Function 视觉通过需要入口与对话框打开状态两张不同截图")
+      if (level === "runtime") {
+        for (const scenario of ["entry-clicked", "dialog-opened", "dialog-closed"]) {
+          const observation = item.observations?.find((v) => v.scenario === scenario)
+          requiredText(observation?.note, `Function ${scenario} 观察说明`)
+          if (!Array.isArray(observation.evidence) || !observation.evidence.length) throw new Error(`Function ${scenario} 缺少证据`)
+          for (const ref of observation.evidence) {
+            if (!evidence.some((e) => e.id === ref.id && e.sha256 === ref.sha256 && ["runtime_log", "component_tree"].includes(e.type))) throw new Error(`Function ${scenario} 必须引用本轮 runtime.evidence 中的日志或交互组件树`)
+          }
+        }
+      }
+    }
     run.checks[level] = check(item.status, item.summary)
+    if (run.feature === "agent-framework-kit" && level === "runtime" && item.observations) run.checks.runtime.observations = structuredClone(item.observations)
   }
   if (!judgment.visual && !judgment.runtime && !judgment.staticReview) throw new Error("判定文件没有 visual、runtime 或 staticReview 结论")
   if (judgment.staticReview) applyStaticReview(runs, judgment.staticReview)
@@ -140,12 +172,14 @@ export async function verifyDevelopment(request, options = {}) {
         requiredText(request.screenshotScenario, "screenshot-scenario")
         if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
         if (!run.device || run.checks.install.status !== "passed" || run.checks.navigation.status !== "passed") throw new Error("补采截图需要本轮安装和目标页导航已通过")
-        if (run.feature === "smart-reach") {
+        if (run.feature === "smart-reach" || run.feature === "agent-framework-kit") {
           const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
-          if (info.exitCode !== 0 || detectDeviceKind(info.stdout, run.device) !== "physical") throw new Error("智感握姿补采截图只能使用已确认的真机")
+          const kind = run.feature === "agent-framework-kit" ? detectAgentDeviceKind(info.stdout, run.device) : detectDeviceKind(info.stdout, run.device)
+          if (info.exitCode !== 0 || kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
+          run.deviceKind = kind
         }
-        try { Screenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
-        catch { run.checks.visual = check("not run", "截图采集失败或文件不是有效PNG，未完成视觉验证")}
+        try { await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
+        catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
       }
       await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot)
       if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
@@ -188,7 +222,7 @@ export async function verifyDevelopment(request, options = {}) {
     run.checks.sdk = compatibility.availableRoutes?.includes(run.route) && inspection.localSdk.status === "valid" ? check("passed", `本机 SDK API ${run.after.sdk}，${run.route} 路线可用`) : check("failed", "本机 SDK 或工程版本不满足所选路线，需先完成版本门禁")
     run.staticFindings = staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status))
     const priorReviews = new Map(collection.runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.review).map((f) => [f.id, f.review])))
-    for (const finding of run.staticFindings) if (finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
+    for (const finding of run.staticFindings) if (run.feature !== "agent-framework-kit" && finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
     recomputeStaticCheck(run)
     if (staticResult.counts.fail && run.checks.static.status !== "failed") run.checks.static = check("failed", "静态门禁失败")
     run.checks.build = check("not_run", "未请求构建")
@@ -208,9 +242,13 @@ export async function verifyDevelopment(request, options = {}) {
     if (request.executeRun && request.device && run.checks.build.status === "passed") {
       const info = await call(["device", "view", "--target", request.device, "--format", "json"])
       run.deviceInfo = info.exitCode === 0 ? info.stdout.trim() : "系统信息采集失败"
-      if (info.exitCode === 0) run.deviceKind = detectDeviceKind(run.deviceInfo, request.device)
-      const result = await call(launchArgs)
-      run.checks.install = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "应用已安装并启动" : `安装或启动失败：${(result.stderr || result.stdout || "无输出").slice(-1200)}`)
+      if (info.exitCode === 0) run.deviceKind = run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
+      if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") {
+        run.checks.install = check("not_run", "Agent Framework Kit 需要已确认的 Phone/Tablet 真机，未执行安装运行")
+      } else {
+        const result = await call(launchArgs)
+        run.checks.install = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "应用已安装并启动" : `安装或启动失败：${(result.stderr || result.stdout || "无输出").slice(-1200)}`)
+      }
     }
     run.checks.navigation.summary = run.checks.install.status !== "passed" ? "应用未成功安装启动" : "未提供目标页导航与断言"
     if (run.checks.install.status === "passed" && request.navigate) {

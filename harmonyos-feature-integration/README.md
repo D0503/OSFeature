@@ -47,6 +47,12 @@
 
 **特殊限制：视觉验证仅限真机**——握持手、操作手和原生跟手都需要真实人手握持与触控，模拟器一律不采集、不导入、不判定。
 
+### 4. 智能体框架服务（agent-framework-kit）
+
+唯一接入路线 `function-component`：通过系统 Function 图标或按钮拉起指定智能体。应用要求 API 20，元服务及 `ICON_ABOVE_TITLE` 要求 API 21；支持 Stage、Phone/Tablet 真机、中国境内（不含港澳台），不支持模拟器。
+
+提供图标/按钮示例、可选可用性查询、初始化参数重建、事件清理、兼容回退及排障。创建 Agent、关联应用、手动签名与测试发布提供开发者操作指引；工程实现不扩展至 A2A、AgentExtensionAbility 或后端。入口详见 [能力包](references/features/agent-framework-kit/README.md)。真机验收要求点击、对话框打开与关闭证据，构建或按钮显示不能证明拉起成功。
+
 ### 通用能力
 
 - **升级接入**：工程 API 或本机 SDK 低于路线门槛时，不是终止结论，而是给出"升级 SDK / compileSdkVersion 至路线 `minApi`、targetSdkVersion 至 `minTargetApi`、compatibleSdkVersion 保持不变"的接入选项，由用户决定。
@@ -88,6 +94,12 @@
 - 原组件位移模式：目标组件本身随有效手别平移（贴边组件屏外绕行、底部宽组件屏内平移）；
 - 新增同步跟手组件模式：保留原组件不动，在易操作区新增同功能组件（如来电横幅在握持手侧增加接听/挂断按钮组，两组共享业务状态与防重复提交）
 
+### 智能体框架服务
+
+- Function 图标入口与携带 title/queryText 的按钮入口；
+- 可选可用性查询、对话框打开/关闭监听、初始化配置重建与兼容回退；
+- Agent 创建、应用关联、手动签名及真机测试发布操作指引；
+
 ## 目录结构
 
 ```text
@@ -102,18 +114,35 @@ harmonyos-feature-integration/
 │   ├── run-tool-tests.mjs            # 工具脚本单元测试
 │   ├── run-development-tests.mjs     # 验证执行器测试
 │   ├── run-smart-reach-tests.mjs     # 智感握姿专项测试
+│   ├── run-agent-framework-tests.mjs # 智能体框架服务专项测试
 │   └── run-easygo-tests.mjs          # 平行视界专项测试
 ├── references/
 │   ├── feature-registry.json         # 特性注册表（唯一路由依据）
 │   ├── feature-package-contract.md   # 能力包契约（新增特性前必读）
 │   ├── workflows/                    # 通用工作流（发现/门禁/设计/实施/验证/排障）
 │   ├── shared/                       # 共享资料（兼容性模型、设备矩阵、证据规则、输出契约等）
-│   └── features/                     # 三大能力包
+│   └── features/                     # 四个能力包
 │       ├── immersive-light/          # 沉浸光感（routes: hds / arkui）
 │       ├── easygo-parallel/          # 平行视界（routes: router / navigation）
-│       └── smart-reach/              # 智感握姿（routes: native-component / operating-hand / holding-hand）
+│       ├── smart-reach/              # 智感握姿（routes: native-component / operating-hand / holding-hand）
+│       └── agent-framework-kit/      # 智能体框架服务（route: function-component）
 └── scripts/                          # 工具脚本（见下表）
 ```
+
+## Skill 维护
+
+新增特性前完整读取[能力包契约](references/feature-package-contract.md)。先在注册表外完成并验证全部资料，达到契约要求后再以 `ready` 状态注册。
+
+`evals/` 用于维护 Skill 时的评测和回归测试。以下命令在 `harmonyos-feature-integration` 目录执行：
+
+| 维护任务 | 命令 |
+|---|---|
+| 冒烟测试 | `node evals/run-smoke-tests.mjs` |
+| 智感握姿专项测试 | `node evals/run-smart-reach-tests.mjs` |
+| 平行视界专项测试 | `node evals/run-easygo-tests.mjs` |
+| 智能体框架服务专项测试 | `node evals/run-agent-framework-tests.mjs` |
+| 工具测试 | `node evals/run-tool-tests.mjs` |
+| 验证执行器测试 | `node evals/run-development-tests.mjs` |
 
 ## 测试人员的测试步骤
 
@@ -121,7 +150,7 @@ harmonyos-feature-integration/
 
 1. Node.js 18+（`node -v` 确认）。
 2. 工作目录，无需安装额外 npm 依赖。
-3. 如涉及端到端验证，需准备：HarmonyOS SDK、可构建的 Stage 模型测试工程、签名与目标设备（真机/模拟器；智感握姿必须真机）。
+3. 如涉及端到端验证，需准备：HarmonyOS SDK、可构建的 Stage 模型测试工程、签名与目标设备（智感握姿与智能体框架服务必须真机）。智能体框架服务还需真实 Agent、应用关联及有效的测试发布或正式发布。
 
 ### 第二步：端到端接入验证（需真实工程与设备）
 
@@ -135,6 +164,7 @@ harmonyos-feature-integration/
    | 沉浸光感 | 空目录 | 请使用harmonyos-feature-integration，生成一个demo实现标题栏接入沉浸光感 |
    | 平行视界 | 综合商城模板 | 请使用harmonyos-feature-integration，对当前工程实现平行视界 |
    | 智感握姿 | 综合新闻模板 | 请使用harmonyos-feature-integration，为首页发表按钮接入智感握姿。悬浮球本身随握持手左右换侧，保留支持纵向拖拽，横向拖拽去除，不新增按钮 |
+   | 智能体框架服务 | 已关联 Agent 的 Stage 工程 | 请使用harmonyos-feature-integration，在首页通过 FunctionComponent 拉起我的智能体；agentId 使用已配置的真实值，前置平台操作提供指导 |
 
 4. **结果验收**：每个场景完成后核对是否产出 `<工程>/os-feature-integration/integration-report.md` 及其截图；构建通过不代表视觉通过，未执行真机验证的项必须标注未验证，不得写成通过。
 

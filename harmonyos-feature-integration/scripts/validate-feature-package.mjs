@@ -186,6 +186,13 @@ try {
         }
         issue(errors, typeof profile.documents?.troubleshooting === "string", "profile.documents.troubleshooting", "缺少智感握姿排障资料")
       }
+      if (feature.id === "agent-framework-kit") {
+        issue(errors, profile.routeComposition?.mode === "exclusive" && routeIds.size === 1 && routeIds.has("function-component"), "profile.routes", "Function 组件必须是唯一接入路线")
+        issue(errors, profile.routes[0]?.minApi === 20 && profile.routes[0]?.minTargetApi === undefined, "profile.routes.function-component", "Function 基础 API 20，不推断 target 门槛")
+        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "应保留 target")
+        issue(errors, profile.capabilities?.atomicService?.minApi === 21 && profile.capabilities?.iconAboveTitle?.minApi === 21, "profile.capabilities", "元服务及 ICON_ABOVE_TITLE 要求 API 21")
+        for (const key of ["prerequisites", "troubleshooting"]) issue(errors, typeof profile.documents?.[key] === "string", `profile.documents.${key}`, "缺少前置指导或排障资料")
+      }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")
 
       await validateDocumentMap(

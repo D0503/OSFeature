@@ -568,6 +568,96 @@
         "系统组件原生适配（如 HDS）当前只为有证据的 HdsTabs 实例提供实现",
         "不能将属性、版本或权限外推到所有组件"
       ]
+    },
+    {
+      "id": 47,
+      "prompt": "为 API 20 的 Stage 应用接入 Agent Framework Kit，只在首页增加 Function 图标拉起已有智能体。",
+      "expected_output": "使用 agent-framework-kit 的 function-component 路线，检查真实 agentId 和平台关联，限定目标页。",
+      "files": [],
+      "expectations": [
+        "不实现 A2A 或聊天后端",
+        "核验 SDK/compile API 20，保留 target/compatible",
+        "不把 FunctionController 无条件放入低版本页面初始化",
+        "保留接入前布局和业务路径"
+      ]
+    },
+    {
+      "id": 48,
+      "prompt": "我的 API 20 元服务想用 FunctionComponent，按钮使用 ICON_ABOVE_TITLE。",
+      "expected_output": "元服务与 ICON_ABOVE_TITLE 都要求 API 21，提供升级 SDK/compile 的选项。",
+      "files": [],
+      "expectations": [
+        "不把应用 API 20 支持等同元服务支持",
+        "保留 target/compatible",
+        "用户选择升级后才实施"
+      ]
+    },
+    {
+      "id": 49,
+      "prompt": "我还没开发 Agent，也没关联应用，想通过 Function 组件拉起智能体，告诉我前置步骤。",
+      "expected_output": "指导开发者创建 Agent、获取 agentId、关联已上架应用、核对手动签名身份和发布真机测试。",
+      "files": [],
+      "expectations": [
+        "不自动操作平台",
+        "不向开发者索取签名私钥或账号密码",
+        "说明同账号已上架应用的关联限制",
+        "不把示例 ID 当真实 ID"
+      ]
+    },
+    {
+      "id": 50,
+      "prompt": "isAgentSupport 抛 1022400011，我把 Function 入口隐藏了，首次用户怎么授权？",
+      "expected_output": "隐私未授权独立处理，保留用户主动点击系统组件的授权恢复路径。",
+      "files": [],
+      "expectations": [
+        "查询是可选步骤",
+        "区分 false 和异常",
+        "不自动接受协议",
+        "不让失败查询永久隐藏唯一授权入口"
+      ]
+    },
+    {
+      "id": 51,
+      "prompt": "我要用 Agent Framework Kit 开发 A2A 服务端和 AgentExtensionAbility。",
+      "expected_output": "说明当前能力只实现 Function 拉起，A2A 实现超出范围。",
+      "files": [],
+      "expectations": [
+        "即使 Kit 名称命中也不生成 A2A 代码",
+        "不自动增加扩展声明或后端"
+      ]
+    },
+    {
+      "id": 52,
+      "prompt": "FunctionComponent 已编译并在模拟器显示了按钮，请确认智能体拉起成功。",
+      "expected_output": "模拟器不支持该 Kit，不能依据构建和按钮显示判为成功。",
+      "files": [],
+      "expectations": [
+        "只接受已确认的 Phone/Tablet 真机",
+        "要求点击、对话框打开与关闭证据",
+        "设备类型未知时不自动认定真机"
+      ]
+    },
+    {
+      "id": 53,
+      "prompt": "FunctionComponent 的 agentId 和 queryText 改了，仍然打开旧内容。",
+      "expected_output": "参数仅初始化生效，需要销毁重建并处理旧控制器、监听及迟到的查询结果。",
+      "files": [],
+      "expectations": [
+        "不声称修改 State 就能动态更新 Function 配置",
+        "不增加无关页面或组件",
+        "复核 on/off 使用同一回调"
+      ]
+    },
+    {
+      "id": 54,
+      "prompt": "应用提示 Agent 未授权给该应用，但已经关联了。",
+      "expected_output": "核对包名、appid、应用名称、手动签名和发布状态。",
+      "files": [],
+      "expectations": [
+        "说明自动签名可能产生与关联配置不同的 appid",
+        "修改关联后由开发者重新发布测试",
+        "没有真实设备证据时不声称修复验证通过"
+      ]
     }
   ]
 }

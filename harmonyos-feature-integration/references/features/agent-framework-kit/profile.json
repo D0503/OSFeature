@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "agent-framework-kit",
+  "displayName": "智能体框架服务",
+  "routeComposition": { "mode": "exclusive", "selectionField": "selectedRoutes", "allowed": ["function-component"] },
+  "targetSdkPolicy": "preserve-unless-declared",
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": ["runtime-version-unsupported", "device-capability-unsupported", "agent-unavailable", "privacy-not-accepted", "account-or-network-unavailable", "feature-disabled", "service-error"],
+    "preserve": ["component-tree-or-existing-code-path", "responsive-layout-orientation-and-window-mode", "state-data-controllers-events-and-lifecycle", "existing-error-denial-and-unavailable-behavior", "ordinary-visual-style"]
+  },
+  "routes": [{
+    "id": "function-component",
+    "displayName": "通过 Function 组件拉起智能体",
+    "minApi": 20,
+    "minApiMeaning": "function-component-and-controller-capability",
+    "requiresStage": true,
+    "moduleTypes": ["entry", "feature"],
+    "components": ["FunctionComponent", "FunctionController", "AgentController"],
+    "documents": { "implementation": "implementation.md", "assets": "assets-catalog.md", "validation": "performance-validation.md" }
+  }],
+  "capabilities": { "atomicService": { "minApi": 21 }, "iconAboveTitle": { "minApi": 21 } },
+  "constraints": [
+    { "id": "syscap", "route": "function-component", "value": "SystemCapability.AI.Agent.AgentKit" },
+    { "id": "devices", "route": "function-component", "values": ["phone", "tablet"] },
+    { "id": "region", "route": "function-component", "value": "china-mainland" },
+    { "id": "runtime-device", "route": "function-component", "value": "physical-only" },
+    { "id": "initialization", "route": "function-component", "value": "recreate-to-change-parameters" },
+    { "id": "prerequisites", "route": "function-component", "value": "developer-guidance-only" }
+  ],
+  "documents": {
+    "entry": "README.md", "compatibility": "compatibility.md", "implementation": "implementation.md",
+    "validation": "performance-validation.md", "assets": "assets-catalog.md", "fallback": "fallback.md",
+    "sharedValidation": "performance-validation.md", "troubleshooting": "troubleshooting.md", "prerequisites": "prerequisites.md"
+  },
+  "evidence": { "policy": "snapshot-first-verify-on-change-or-conflict" }
+}

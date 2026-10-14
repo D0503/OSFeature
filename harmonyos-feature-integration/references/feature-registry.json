@@ -45,6 +45,14 @@
       "status": "ready",
       "entry": "references/features/smart-reach/README.md",
       "profile": "references/features/smart-reach/profile.json"
+    },
+    {
+      "id": "agent-framework-kit",
+      "displayName": "智能体框架服务",
+      "aliases": ["Agent Framework Kit", "FunctionComponent", "FunctionController", "通过Function组件拉起智能体"],
+      "status": "ready",
+      "entry": "references/features/agent-framework-kit/README.md",
+      "profile": "references/features/agent-framework-kit/profile.json"
     }
   ]
 }

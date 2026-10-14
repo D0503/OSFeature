@@ -13,10 +13,10 @@ const featureDir = resolve(skillRoot, "references", "features", "immersive-light
 
 const structure = await validateSkillStructure(skillRoot)
 assert.deepEqual(structure.errors, [])
-assert.deepEqual(structure.counts, { features: 3, ready: 3 })
+assert.deepEqual(structure.counts, { features: 4, ready: 4 })
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"))
-assert.equal(registry.features.length, 3)
+assert.equal(registry.features.length, 4)
 assert.deepEqual(registry.features[0], {
   id: "immersive-light",
   displayName: "沉浸光感",
@@ -46,6 +46,8 @@ for (const prompt of ["请接入平行视界", "EASYGO", "easy_go.json", "easygo
 for (const prompt of ["实现分栏布局", "实现自适应布局"]) assert.equal(matchFeature(prompt), null)
 for (const prompt of ["请接入智感握姿", "SMART REACH", "SmartReach", "adaptToHandedness", "smart-reach"]) assert.equal(matchFeature(prompt)?.id, "smart-reach")
 for (const prompt of ["HdsTabs", "普通单手布局", "一般手势识别"]) assert.equal(matchFeature(prompt), null)
+for (const prompt of ["智能体框架服务", "Agent Framework Kit", "AgentFrameworkKit", "FunctionComponent", "FunctionController", "通过 Function 组件拉起智能体"]) assert.equal(matchFeature(prompt)?.id, "agent-framework-kit")
+for (const prompt of ["Agent", "Function", "开发聊天页面", "A2A", "AgentExtensionAbility"]) assert.equal(matchFeature(prompt), null)
 assert.equal(matchFeature("请接入碰一碰"), null)
 assert.equal(matchFeature("帮我实现窗口沉浸式并处理安全区"), null)
 
