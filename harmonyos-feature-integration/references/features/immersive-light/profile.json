@@ -12,6 +12,9 @@
   "displayName": "沉浸光感",
   "fallbackPolicy": {
     "baseline": "pre-integration-source-state",
+    "scopeNotes": [
+      "Floating Tabs component-tree branches depend only on the route runtime API threshold, not device type, breakpoints or material support. Below the threshold preserve the original tree and its existing device adaptation; at or above it keep the integrated bottom floating layout and downgrade only material when unavailable or disabled. This exception takes precedence over generic component-tree and responsive-layout preservation."
+    ],
     "appliesWhen": [
       "runtime-version-unsupported",
       "device-capability-unsupported",

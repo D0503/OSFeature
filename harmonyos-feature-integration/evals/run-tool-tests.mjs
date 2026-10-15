@@ -574,6 +574,24 @@ for (const [source, count, expected] of [
 for (const route of ["hds", "arkui"]) {
   const tabs = route === "hds" ? "HdsTabs" : "Tabs"
   const floating = `${tabs}({ barPosition: BarPosition.End }) {}.vertical( false ).barOverlap(true).barFloatingStyle({ barWidth: customWidth })`
+  for (const [source, detected] of [
+    [`if (apiReady && isPhone) { ${floating} } else { Tabs() {} }`, true],
+    [`if (apiReady && deviceInfo.deviceType === 'phone') { ${floating} }`, true],
+    [`if (apiReady && breakpoint === 'sm') { ${floating} }`, true],
+    [`if (apiReady) { ${floating} } else if (isTablet) { Tabs() {} }`, true],
+    [`if (canUseFloating()) { ${floating} }`, false],
+    [`${floating}\n// isPhone deviceType\n/* isTablet breakpoint */`, false]
+  ]) {
+    await writeFile(paddingSourcePath, source)
+    const inspected = await inspectProject(versionProject, { sdkPath: sdk26 })
+    equal(inspected.signals.tabDeviceBranchCandidate.detected, detected)
+    const result = verifyInspection(inspected, evaluateCompatibility(inspected, profile), route)
+    const layout = result.checks.find((v) => v.id === "floating-tabs-width-and-breakpoints")
+    equal(layout.status, "warn")
+    ok(layout.message.includes("only by the route runtime API threshold"))
+    ok(layout.message.includes("Original-branch device adaptation remains unchanged"))
+    equal(await readFile(paddingSourcePath, "utf8"), source)
+  }
   for (const [source, widthCount, directionCount, positionCount, status] of [
     [floating, 0, 0, 0, "warn"],
     [floating.replace("barWidth: customWidth", ""), 0, 0, 0, "warn"],

@@ -380,6 +380,7 @@ function inspectModules(files) {
 }
 
 const SIGNALS = [
+  { id: "tabDeviceBranchCandidate", regex: /\b(?:deviceType|isPhone|isTablet|isPad|isLarge|breakpoint|breakPoint|currentBreakpoint)\b/ },
   { id: "outerBarWidth", regex: /\.\s*barWidth\s*\(/ },
   { id: "tabDirectionCandidate", regex: /\bvertical\s*(?:\((?!\s*false\s*\))|:(?!\s*false\b))/ },
   { id: "tabPositionCandidate", regex: /\bbarPosition\s*(?:\((?!\s*BarPosition\.End\s*\))|:(?!\s*BarPosition\.End\s*[,}]))/ },
@@ -1123,7 +1124,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     ? s.hdsTabs.detected && s.barFloatingStyle.detected
     : route === "arkui" && s.nativeTabsFloatingStyle.detected
   const needsPaddingReview = hasFloatingStyle && s.layoutBottomPadding.detected
-  const tabLayoutCandidates = [s.outerBarWidth, s.tabDirectionCandidate, s.tabPositionCandidate]
+  const tabLayoutCandidates = [s.outerBarWidth, s.tabDirectionCandidate, s.tabPositionCandidate, s.tabDeviceBranchCandidate]
     .flatMap((signal) => signal?.evidence ?? [])
   checks.push(check(
     "floating-tabs-width-and-breakpoints",
@@ -1131,7 +1132,8 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
     hasFloatingStyle ? "warn" : "not_applicable",
     tabLayoutCandidates,
     !hasFloatingStyle ? "No floating Tabs detected" :
-      (tabLayoutCandidates.length ? "Outer barWidth or direction/position candidates detected. " : "No outer barWidth or side-layout candidate detected; this does not prove branch coverage. ") +
+      (tabLayoutCandidates.length ? "Width, direction/position or device/breakpoint candidates detected. " : "No layout or device/breakpoint candidate detected; this does not prove branch coverage. ") +
+      "Trace the integration branch predicate: select integrated versus original component trees only by the route runtime API threshold (HDS 23, ArkUI 26), never by device type, breakpoint or material support. Follow wrappers even when no candidate matches. Original-branch device adaptation remains unchanged; do not redesign it. " +
       "Review component ownership, wrappers and version branches. Remove outer .barWidth(...) only from the immersive integration branch; use barFloatingStyle.barWidth or its defaults. Use vertical(false) and BarPosition.End at every breakpoint, orientation and window size. Preserve original responsive side/bottom layout and widths only in the legacy API branch. Material disabled or unsupported-device fallback keeps bottom Tabs. Static coexistence is not a failure; verify layouts on target pages"
   ))
   checks.push(check(

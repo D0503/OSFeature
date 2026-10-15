@@ -223,6 +223,8 @@ HdsNavigation() {
 
 ## HDS 底部悬浮 Tab 迁移
 
+组件树只按运行 API 分支：API 23 及以上进入 HdsTabs 升级接入分支，低于 23 保留原 Tabs 及其原有设备适配；不以手机、平板、断点或材质能力作为升级分支的附加条件。材质不可用或关闭在 HdsTabs 分支内处理，不切回原 Tabs。最低兼容版本已达到 23 时无需新增低版本分支。
+
 `HdsTabs` 及链上的 `TabContent` 本身也要按[共享安全区规则](../../shared/validation.md#窗口沉浸状态与栏间距)配置 `.expandSafeArea([SafeAreaType.SYSTEM], [...])`，按需选择 BOTTOM、TOP 或一次合并两者，不能只扩展外围容器和内部页面。
 
 未开启窗口沉浸式时，底部安全区扩展必须覆盖每个 Tab 页，包括非默认页和懒加载页；不能只改首页或公共 HdsTabs。**必须沿扩展链逐个父布局组件配置 `expandSafeArea`，从真实滚动容器一直覆盖到页面宿主，不能跳过中间层级。**自定义组件和 Builder 必须进入内部检查实际布局节点，并切换所有 Tab 验证。
