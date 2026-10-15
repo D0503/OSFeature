@@ -1,0 +1,6 @@
+{
+  module: {
+    name: 'entry', type: 'entry', deviceTypes: ['phone', 'tablet'],
+    abilities: [{ name: 'EntryAbility', srcEntry: './ets/entryability/EntryAbility.ets' }]
+  }
+}
