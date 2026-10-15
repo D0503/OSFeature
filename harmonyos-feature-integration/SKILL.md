@@ -39,6 +39,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 适用于所有已注册特性，规则细节见 [兼容性模型](references/shared/compatibility-model.md)：
 
 - 工程 API 或已验证的本机 SDK 低于特性路线所需版本时，兼容性门禁返回 `upgrade_available`，这不是终止结论：应提供“安装或切换到达到路线 `minApi` 的本机 SDK，按路线要求将 `targetSdkVersion` 升至 `minTargetApi`（未声明时使用 `minApi`；能力包声明 `targetSdkPolicy: preserve-unless-declared` 时保留 target）、`compatibleSdkVersion` 保持不变”的接入选项。所有低版本、不支持、未授权或特性关闭路径都必须保留接入前的源程序状态；普通样式只是视觉维度之一，不能替代原布局、交互、数据和业务行为。
+- 升级 `targetSdkVersion` 时，先核实目标 SDK 及配套构建工具的版本配置规范，再按规定的字段类型和值写入。依据使用本机对应版本的配置 schema、官方模板或官方配置文档；不得将 API 等级直接当作配置值，也不得自行拼接版本号。具体格式核验规则见[兼容性模型](references/shared/compatibility-model.md)。
 - 存在多条可用路线或任何升级选项（`decisionRequired` 为 true）时，必须把可选接入方式、建议路线和理由一并列给用户，由用户决定路线。
 - 仅一条可用路线且无需升级时，给出建议路线和理由即可继续。
 - 能力包声明 `routeComposition.mode: composable` 时，多条路线可以同时选中。使用 `selectedRoutes` 加载每条路线自己的实现、资产与验证资料；`recommendedRoute` 只表示主要建议，不得据此丢弃工程中仍在使用的补充路线。

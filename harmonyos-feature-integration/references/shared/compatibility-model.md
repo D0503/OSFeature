@@ -20,7 +20,9 @@
 
 任何已注册特性都支持“升级接入”：当工程或已验证的本机 SDK 低于路线所需 API 时，先安装或切换到达到路线 `minApi` 的 SDK，无需显式配置 `compileSdkVersion`，按路线要求将 `targetSdkVersion` 升至 `minTargetApi`（未声明时使用 `minApi`），`compatibleSdkVersion` 保持不变以继续兼容旧版本设备。能力包声明 `targetSdkPolicy: preserve-unless-declared` 时，未声明 minTargetApi 就保持原 target，不推断额外门槛。可选字段/API 的 requiredApi 高于路线 minApi 时，以 requiredApi 作为 SDK/有效 compile API 要求。脚本的 `upgradeCompileApi` / `requiredCompileApi` 表示有效编译版本门槛，不表示必须写入 `compileSdkVersion`。
 
-门禁结果中的 API 数值表示版本等级，不是工程配置的序列化格式。写入 API 26 时使用字符串 `"26.0.0"`，无括号后缀；API 26 起的点分版本按首段归一化用于比较。旧系统版本如 `"6.1.0(23)"` 按括号中的 API 解析，不能把 `"6.1.0"` 的首段当作 API 6。最低兼容版本未调整时保留其原值和格式。
+门禁结果中的 API 数值（包括 `upgradeTargetApi`）仅表示版本等级，不能据此推导工程配置的字段类型或版本写法。升级 `targetSdkVersion` 前，必须查阅目标 SDK 及配套构建工具对应版本的配置 schema、官方模板或官方配置文档，确认允许的类型、格式及版本映射后再写入。SDK 清单中的 API 等级或包版本本身不足以证明它就是该字段的合法值；不得自行拼接版本号或照搬其他 SDK 版本的格式。
+
+格式示例：API 23 的 `"6.1.0(23)"` 与 API 26 的 `"26.0.0"` 体现了不同版本的写法差异，实际配置以目标版本规范为准，不能由示例外推其他版本。无法核实合法写法时，明确缺失的依据，不猜测写入。最低兼容版本未调整时保留其原值和格式，无需新增 `compileSdkVersion`。写入后重新执行检查和构建，确认配置被实际工具接受；脚本能解析出 API 等级不等于构建配置合法。
 
 - 本机 SDK/compile 门槛按 `routes[].minApi` 判定；运行设备范围由 compatible/target 上下文决定，但 `routes[].minTargetApi` 是独立硬门槛，不能被较高的 compatible API 或应用级条件替代；
 - `targetSdkVersion` 已达门槛而 `compatibleSdkVersion` 未达时，路线可用，但低版本设备必须使用能力包指定且在低版本可调用的 API 做运行时保护，并保留接入前的组件树、响应式布局和交互；仅增加材质的组件还应保留普通背景、边框等视觉样式；

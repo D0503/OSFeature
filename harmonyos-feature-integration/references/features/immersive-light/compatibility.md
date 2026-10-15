@@ -19,7 +19,7 @@
 
 ## 本机 SDK 举证
 
-工程配置中的 API 26 版本写为字符串 `"26.0.0"`，不添加括号后缀。升级到 API 26 时，`targetSdkVersion` 使用此写法；无需新增 `compileSdkVersion`，已有该配置且需要调整时使用相同写法；仅在决定提高最低兼容版本到 API 26 时才将 `compatibleSdkVersion` 设置为 `"26.0.0"`，否则保留原值。工具内部将点分版本归一化为数值 API 26 用于门禁比较，不将归一化数值直接作为生成配置的格式。
+工程版本配置按[兼容性模型](../../shared/compatibility-model.md)核实目标 SDK 及配套构建工具的规定后写入。API 23 的 `"6.1.0(23)"` 和 API 26 的 `"26.0.0"` 是格式示例，不代替对目标版本规范的核验。工具内部归一化的 API 数值仅用于门禁比较，不直接作为生成配置的值。无需新增 `compileSdkVersion`；`compatibleSdkVersion` 保留原值与格式，除非已明确决定提高最低兼容版本。
 
 选路前必须验证实际参与构建的本机 SDK，不以工程 target API 代替：
 

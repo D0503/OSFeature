@@ -615,7 +615,7 @@ export function evaluateCompatibility(inspection, profile) {
         upgradeCompileApi: route.minApi,
         upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
         sdkStatus: sdkRoute?.status ?? "not_checked",
-        note: `Install or select a local SDK with API ${route.minApi} or later and ensure the effective compile API reaches ${route.minApi}; no explicit compileSdkVersion is required (if already configured below the requirement, adjust that existing value), targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path${route.minApi === 26 || requiredTargetApi === 26 ? '. When writing API 26 to build-profile.json5, use the string "26.0.0" without a parenthesized suffix; preserve the existing compatibleSdkVersion value and format' : ''}`
+        note: `Install or select a local SDK with API ${route.minApi} or later and ensure the effective compile API reaches ${route.minApi}; no explicit compileSdkVersion is required (if already configured below the requirement, adjust that existing value), targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path. Before writing targetSdkVersion, verify its accepted type, format and version mapping against the target SDK and matching build-tool configuration schema, official template or official configuration documentation. API levels and SDK package versions are not configuration values by themselves; do not invent or extrapolate a version string. Preserve the existing compatibleSdkVersion value and format`
       })
     }
   }
