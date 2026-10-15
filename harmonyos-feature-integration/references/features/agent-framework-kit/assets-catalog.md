@@ -1,45 +1,40 @@
 # Function 代码资产
 
-[AgentFunctionEntry.ets](assets/AgentFunctionEntry.ets) 为受外层版本/设备门禁保护的增强子组件。导入后按目标布局嵌入，不复制整页。`agentId` 由开发者提供真实值；默认空值不会构建 Function 组件。
+## ComponentV2 页面示例
+
+[Agent.ets](assets/Agent.ets) 使用 `@Entry`、`@ComponentV2` 和 `@Local`。运行 API 与 SysCap 满足要求后才创建 FunctionController；查询返回 true 时显示“智能创建”按钮。查询、事件订阅/退订和组件构建均受版本与能力检查保护。
+
+同一个控制器用于查询、组件绑定及对话框事件。页面进入时查询可用性并订阅事件，离开时以同一回调分别退订。
+
+### 运行 API 与前置条件
+
+- **应用**：本机 SDK、compile 至少 API 20（HarmonyOS 6.0.0），`minAgentApi` 使用 20；**元服务**：本机 SDK、compile 至少 API 21（HarmonyOS 6.0.1），将 `minAgentApi` 设置为 21。若使用 `ICON_ABOVE_TITLE`，应用也须使用 API 21 门槛。运行判断读取 `deviceInfo.sdkApiVersion`，不以编译版本代替运行版本。
+- 使用 Stage 工程，页面由 UIAbility 承载，可取得有效的 UIAbilityContext；按工程现有页面路由方式注册并进入该页面。宿主本身需支持示例所用的 ComponentV2 状态管理；既有页面使用其他状态管理方式时按原架构合并逻辑，不整页替换。
+- 在支持 `SystemCapability.AI.Agent.AgentKit` 的 Phone/Tablet 真机运行，适用地区为中国境内（不含港澳台）；模拟器不支持。SysCap 检查不能代替设备、地区及服务条件核验。
+- 在 `agentId` 中填写真实且已关联当前应用的 Agent ID（1–64 字符）。默认空值不创建控制器、不查询，也不显示 Function 入口。根据实际业务调整 title/queryText。
+- 完成 Agent 开发、应用关联、手动签名身份核对，以及正式发布或面向当前测试账号的真机测试发布；设备登录华为账号并联网。具体操作见[前置操作指引](prerequisites.md)。
+- **用户已完成小艺隐私授权**。本示例以查询成功作为展示条件；若查询抛出 `1022400011`，入口不会显示，不能用它作为首次授权的唯一入口。面向首次用户时，采用下方直接展示入口的片段，或复用已有授权入口；完成授权后重新进入页面查询。
+
+### 融入现有工程
+
+版本或能力不满足时，示例不执行 Agent 接口及组件构建。接入已有页面时，在此分支保留接入前的布局、操作、状态及业务路径，不照搬空白页面作为业务回退，不自动提高 compatibleSdkVersion。更多规则见[兼容性](compatibility.md)和[回退](fallback.md)。
+
+FunctionComponent 参数仅在初始化时生效；运行中切换 Agent 或业务意图时，需要销毁重建组件并隔离旧查询结果。填写实际配置后，完成工程构建和真机点击、打开、关闭验证。
+
+## 直接展示入口的片段
+
+只需要用户主动点击拉起、不需要预查询和事件监听时，直接在现有页面嵌入 FunctionComponent，无需创建 FunctionController。以下片段合并进现有 build；页面导入 FunctionComponent、BusinessError、deviceInfo 和 hilog，定义 `agentId` 及 `minAgentApi`（应用 20，元服务 21）。
 
 ```typescript
-// 外层 apiAllowed 使用项目已验证的运行 API 判断：应用 20，元服务 21。
-if (this.apiAllowed && canIUse('SystemCapability.AI.Agent.AgentKit')) {
-  AgentFunctionEntry({ agentId: this.agentId })
-}
-```
-
-带业务意图的按钮：
-
-```typescript
-if (this.apiAllowed && canIUse('SystemCapability.AI.Agent.AgentKit')) {
-  AgentFunctionEntry({
+if (deviceInfo.sdkApiVersion >= this.minAgentApi &&
+  this.agentId.length > 0 && this.agentId.length <= 64) {
+  FunctionComponent({
     agentId: this.agentId,
-    title: this.confirmedTitle,
-    queryText: this.confirmedQueryText
+    onError: (error: BusinessError): void => {
+      hilog.error(0x0001, 'AgentExample', 'Function error: %{public}d', error.code);
+    }
   })
 }
 ```
 
-外层门禁未满足时沿用接入前原业务，不增加空白占位。apiAllowed 是宿主已有运行检查的结果，不是由 compileSdkVersion 推断的运行值。初始化参数需改变时由宿主销毁旧增强实例后重建，不依靠 @Prop/@State 修改使 FunctionComponent 动态更新。
-
-## 可选控制器
-
-仅在需要查询或事件时，在受保护增强组件内创建 `private controller: FunctionController = new FunctionController()`，并给 FunctionComponent 传入 `controller: this.controller`。不在可能运行于低版本的外层页面无条件构造控制器。
-
-```typescript
-private onAgentOpenedCallback = (): void => { /* 在此调用已有的打开处理 */ };
-private onAgentClosedCallback = (): void => { /* 在此调用已有的关闭处理 */ };
-
-aboutToAppear(): void {
-  this.controller?.on('agentDialogOpened', this.onAgentOpenedCallback);
-  this.controller?.on('agentDialogClosed', this.onAgentClosedCallback);
-}
-
-aboutToDisappear(): void {
-  this.controller?.off('agentDialogOpened', this.onAgentOpenedCallback);
-  this.controller?.off('agentDialogClosed', this.onAgentClosedCallback);
-}
-```
-
-此片段只展示事件配对，复用时合并现有生命周期；重复进入、部分订阅失败及 controller 共用时按实际控制流处理，不直接全量退订。可用性查询采用[实施](implementation.md)中的 true/false/异常与生命周期规则，不默认把查询加成必需步骤。
+不传 title 时显示图标；需要带业务意图的按钮时，增加 `options: { title: this.confirmedTitle, queryText: this.confirmedQueryText }`，内容使用用户确认的业务文案。组件自行处理点击与系统授权，不叠加自动拉起或覆盖点击事件。门禁不满足时沿用原业务，不为新增入口保留空白占位。

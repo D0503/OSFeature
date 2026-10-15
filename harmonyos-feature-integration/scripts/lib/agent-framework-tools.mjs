@@ -152,7 +152,7 @@ export function evaluateAgentFramework(inspection, profile) {
   if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi) {
     result.status = "upgrade_available"
     result.decisionRequired = true
-    result.upgradeOptions.push({ route: ROUTE, upgradeLocalSdkApi: sdk.apiVersion < requiredApi ? requiredApi : null, upgradeCompileApi: requiredApi, upgradeTargetApi: null, keepCompatibleApi: inspection.api.compatible, note: `SDK/compile 至少 API ${requiredApi}；保留 target/compatible，旧系统继续原程序路径。` })
+    result.upgradeOptions.push({ route: ROUTE, upgradeLocalSdkApi: sdk.apiVersion < requiredApi ? requiredApi : null, upgradeCompileApi: requiredApi, upgradeTargetApi: null, keepCompatibleApi: inspection.api.compatible, note: `安装或切换 SDK，使有效 compile 至少 API ${requiredApi}；无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；保留 target/compatible，旧系统继续原程序路径。` })
   } else {
     result.status = "conditional"
     result.availableRoutes = [ROUTE]

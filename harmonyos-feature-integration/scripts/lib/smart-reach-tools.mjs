@@ -75,7 +75,7 @@ export function evaluateSmartReach(inspection, profile) {
     const apiSatisfied = sdk.apiVersion >= r.minApi
     base.sdk.routes[r.id] = { status: apiSatisfied ? "supported" : "sdk_too_old", minApi: r.minApi, apiSatisfied }
     if (apiSatisfied && inspection.api.compile >= r.minApi) base.availableRoutes.push(r.id)
-    else base.upgradeOptions.push({ route: r.id, upgradeLocalSdkApi: apiSatisfied ? null : r.minApi, upgradeCompileApi: r.minApi, upgradeTargetApi: null, keepCompatibleApi: inspection.api.compatible, note: `本机 SDK 和 compile 至少 API ${r.minApi}；保留 target/compatible。低版本只运行原程序路径，不以其他感知替代所选能力。` })
+    else base.upgradeOptions.push({ route: r.id, upgradeLocalSdkApi: apiSatisfied ? null : r.minApi, upgradeCompileApi: r.minApi, upgradeTargetApi: null, keepCompatibleApi: inspection.api.compatible, note: `安装或切换本机 SDK，使有效 compile 至少 API ${r.minApi}；无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；保留 target/compatible。低版本只运行原程序路径，不以其他感知替代所选能力。` })
   }
   const usages = inspection.smartReach?.usages ?? []
   base.selectedRoutes = base.availableRoutes.filter((id) => usages.some((u) => u.route === id && u.operation !== "off" && u.enabled !== false))

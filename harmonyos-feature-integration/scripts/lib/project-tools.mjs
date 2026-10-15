@@ -615,7 +615,7 @@ export function evaluateCompatibility(inspection, profile) {
         upgradeCompileApi: route.minApi,
         upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
         sdkStatus: sdkRoute?.status ?? "not_checked",
-        note: `Ensure the local SDK API and compileSdkVersion reach ${route.minApi}, targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path${route.minApi === 26 || requiredTargetApi === 26 ? '. When writing API 26 to build-profile.json5, use the string "26.0.0" without a parenthesized suffix; preserve the existing compatibleSdkVersion value and format' : ''}`
+        note: `Install or select a local SDK with API ${route.minApi} or later and ensure the effective compile API reaches ${route.minApi}; no explicit compileSdkVersion is required (if already configured below the requirement, adjust that existing value), targetSdkVersion reaches ${requiredTargetApi}, keep compatibleSdkVersion at ${compatible}, protect lower devices at runtime, and preserve the pre-integration source state on every fallback path${route.minApi === 26 || requiredTargetApi === 26 ? '. When writing API 26 to build-profile.json5, use the string "26.0.0" without a parenthesized suffix; preserve the existing compatibleSdkVersion value and format' : ''}`
       })
     }
   }
@@ -627,7 +627,7 @@ export function evaluateCompatibility(inspection, profile) {
       upgradeOptions,
       decisionRequired: true,
       missingConditions: [
-        `No route is currently supported by both the project configuration and the verified local SDK API; install or select the required SDK version and upgrade compileSdkVersion/targetSdkVersion as needed while keeping compatibleSdkVersion for lower devices`
+        `No route is currently supported by both the project configuration and the verified local SDK API; install or select the required SDK version without adding an explicit compileSdkVersion, adjust an existing compile setting only if below the requirement, and upgrade targetSdkVersion as needed while keeping compatibleSdkVersion for lower devices`
       ],
       fallbackRequirements: [
         "runtime-version-guard",

@@ -143,7 +143,7 @@ export function evaluateEasyGo(inspection, profile) {
   if (!Number.isInteger(inspection.api.compile) || !Number.isInteger(inspection.api.compatible)) { base.missingConditions.push("工程 compile/compatible API 无法确定"); return base }
   if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi) {
     base.status = "upgrade_available"; base.decisionRequired = true
-    base.upgradeOptions = profile.routes.map((r) => ({ route: r.id, requiredSdkApi: requiredApi, requiredCompileApi: requiredApi, keepCompatibleApi: inspection.api.compatible, note: `所用平行视界配置/API 需要 SDK 与 compile API ${requiredApi}；保留 compatible，资料未声明额外 target 门槛，不自动修改 target` }))
+    base.upgradeOptions = profile.routes.map((r) => ({ route: r.id, requiredSdkApi: requiredApi, requiredCompileApi: requiredApi, keepCompatibleApi: inspection.api.compatible, note: `所用平行视界配置/API 需要 SDK 与有效 compile API ${requiredApi}；安装或切换 SDK 即可，无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；保留 compatible，资料未声明额外 target 门槛，不自动修改 target` }))
     base.missingConditions.push(`所用配置或查询接口要求 API ${requiredApi}`)
     return base
   }

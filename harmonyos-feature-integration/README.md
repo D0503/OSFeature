@@ -55,7 +55,7 @@
 
 ### 通用能力
 
-- **升级接入**：工程 API 或本机 SDK 低于路线门槛时，不是终止结论，而是给出"升级 SDK / compileSdkVersion 至路线 `minApi`、targetSdkVersion 至 `minTargetApi`、compatibleSdkVersion 保持不变"的接入选项，由用户决定。
+- **升级接入**：工程 API 或本机 SDK 低于路线门槛时，不是终止结论，而是给出"安装或切换 SDK 至路线 `minApi`（无需显式配置 `compileSdkVersion`）、按路线要求调整 targetSdkVersion 至 `minTargetApi`、compatibleSdkVersion 保持不变"的接入选项，由用户决定。
 - **用户路线决策**：存在多条可用路线或升级选项（`decisionRequired`）时，必须把可选方式、建议路线和理由一并列给用户确认。
 - **验证闭环**：`verify-development.mjs` 自动执行静态检查、SDK 检查、ohpm/Hvigor 构建（`--no-daemon`）、安装启动、目标页导航与截图采集，最终只交付一份 `integration-report.md` 及其截图。
 - **未注册特性**：如"碰一碰"等未注册能力，只返回注册边界，不生成猜测性实现，也不借用名称相近能力的资料。

@@ -5,7 +5,7 @@
 3. 将结果解释为：
    - `supported`：至少一条路线的必要条件已满足；
    - `conditional`：存在可用路线，但目标能力还缺 module、target API、运行时能力或外部条件；
-   - `upgrade_available`：工程 API 或本机 SDK 低于所有路线门槛，可通过安装/切换 SDK 以及升级 `targetSdkVersion`/`compileSdkVersion` 接入，`compatibleSdkVersion` 保持不变；低版本路径需运行时版本保护并保留接入前的源程序状态；
+   - `upgrade_available`：工程 API 或本机 SDK 低于所有路线门槛，可通过安装/切换 SDK 以及按路线要求调整 `targetSdkVersion` 接入，无需显式配置 `compileSdkVersion`，`compatibleSdkVersion` 保持不变；低版本路径需运行时版本保护并保留接入前的源程序状态；
    - `unsupported`：工程模型等事实排除了所有路线，且升级无法补救；
    - `insufficient_context`：关键工程事实、本机 SDK 位置或根清单无法可靠读取。
 4. 输出 SDK 根目录与清单、本机 API、路线、升级选项、阻断条件、`fallbackPolicy`、需要保留的源程序状态维度和证据位置。`unsupported` 是业务结论，不是脚本故障；`upgrade_available` 不是终止结论。

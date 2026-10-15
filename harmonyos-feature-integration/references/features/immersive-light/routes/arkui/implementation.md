@@ -4,7 +4,7 @@ ArkUI 路线覆盖 API 26+ 的原生 ArkUI `Navigation`、`Tabs`、弹窗和交�
 
 ## 前置门禁
 
-- 本机 SDK 根清单 API、工程 `compileSdkVersion` 和 `targetSdkVersion` 都必须达到 26；
+- 本机 SDK 根清单 API、有效 compile API 和 `targetSdkVersion` 都必须达到 26；
 - Stage 模型是必需条件；应用级 metadata 还必须位于 `entry` module；
 - `compatibleSdkVersion < 26` 时，使用低版本可用的 `deviceInfo.sdkApiVersion >= 26` 保护 API 26 调用和配置；仅材质变化时复用原组件，组件、布局或导航结构变化时使用组件树分支；
 - 应用启动完成并退出启动加载页后，在 API 26 运行版本保护内检查 `uiMaterial.isImmersiveMaterialSupported()`；调用时机见[开启策略](activation.md#能力查询时机)；

@@ -1,6 +1,6 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、平行视界、智感握姿、Smart Reach、adaptToHandedness、智能体框架服务、Agent Framework Kit、FunctionComponent，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）；通过 Function 组件拉起智能体（应用 API 20、元服务 API 21），开发 Agent 和关联应用等前置操作提供指导。工程 API 低于路线所需版本时，可提供升级本机 SDK、compileSdkVersion 并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、平行视界、智感握姿、Smart Reach、adaptToHandedness、智能体框架服务、Agent Framework Kit、FunctionComponent，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）；通过 Function 组件拉起智能体（应用 API 20、元服务 API 21），开发 Agent 和关联应用等前置操作提供指导。工程 API 低于路线所需版本时，可提供升级本机 SDK（无需显式配置 compileSdkVersion）并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -38,7 +38,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 适用于所有已注册特性，规则细节见 [兼容性模型](references/shared/compatibility-model.md)：
 
-- 工程 API 或已验证的本机 SDK 低于特性路线所需版本时，兼容性门禁返回 `upgrade_available`，这不是终止结论：应提供“安装或切换到达到路线 `minApi` 的本机 SDK，升级 `compileSdkVersion` 至 `minApi`、`targetSdkVersion` 至 `minTargetApi`（未声明时使用 `minApi`；能力包声明 `targetSdkPolicy: preserve-unless-declared` 时保留 target）、`compatibleSdkVersion` 保持不变”的接入选项。所有低版本、不支持、未授权或特性关闭路径都必须保留接入前的源程序状态；普通样式只是视觉维度之一，不能替代原布局、交互、数据和业务行为。
+- 工程 API 或已验证的本机 SDK 低于特性路线所需版本时，兼容性门禁返回 `upgrade_available`，这不是终止结论：应提供“安装或切换到达到路线 `minApi` 的本机 SDK，按路线要求将 `targetSdkVersion` 升至 `minTargetApi`（未声明时使用 `minApi`；能力包声明 `targetSdkPolicy: preserve-unless-declared` 时保留 target）、`compatibleSdkVersion` 保持不变”的接入选项。所有低版本、不支持、未授权或特性关闭路径都必须保留接入前的源程序状态；普通样式只是视觉维度之一，不能替代原布局、交互、数据和业务行为。
 - 存在多条可用路线或任何升级选项（`decisionRequired` 为 true）时，必须把可选接入方式、建议路线和理由一并列给用户，由用户决定路线。
 - 仅一条可用路线且无需升级时，给出建议路线和理由即可继续。
 - 能力包声明 `routeComposition.mode: composable` 时，多条路线可以同时选中。使用 `selectedRoutes` 加载每条路线自己的实现、资产与验证资料；`recommendedRoute` 只表示主要建议，不得据此丢弃工程中仍在使用的补充路线。
@@ -74,7 +74,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 2. 检查实际工程和本机 SDK 根清单，不假设文件路径、组件类型或 SDK 版本；
 3. 修改范围保持在用户请求与已确认路线内，复用工程现有架构与类型；
 4. 按能力包 `fallbackPolicy` 为旧版本、不支持设备、未授权和特性关闭路径保留接入前的源程序状态；只在满足条件的增强分支接入新特性；
-5. 按[验证闭环](references/workflows/verification.md)运行 `verify-development.mjs`，自动执行具备条件的静态检查、SDK 检查和构建；明确设备后继续安装、导航和截图。智感握姿视觉验证仅真机：先引导开发者完成握姿动作，再采集截图或导入开发者真机截图，模拟器一律不判定；
+5. 按[验证闭环](references/workflows/verification.md)运行 `verify-development.mjs`，自动执行具备条件的静态检查、SDK 检查和构建。本次接入引起的检查或编译错误，由 AI 分析检查结果和日志、最小修改并重新验证构建；只有遇到无法自行解决的阻断时才报告具体原因。通过后明确设备并继续安装、导航和截图。智感握姿视觉验证仅真机：先引导开发者完成握姿动作，再采集截图或导入开发者真机截图，模拟器一律不判定；
 6. AI 阅读本轮证据后补录运行、视觉判定与静态 `warn` 项复核结论；最终只交付一份 Markdown 汇总报告及其截图，包含实际改造、特性类别或路由模式、视觉验证和升级兼容，未验证项明确列出。
 
 ### 故障排查
@@ -103,7 +103,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 ## 完成标准
 
 - 路由结论能回溯到注册表中的唯一匹配项；
-- 路由结论同时能回溯到本机 `sdk-pkg.json`、工程 `compileSdkVersion` 和能力包 `routes[].minApi`；
+- 路由结论同时能回溯到本机 `sdk-pkg.json`、有效 compile API（未显式配置时取已验证的活动 SDK）和能力包 `routes[].minApi`；
 - 存在多条路线或升级选项时，路线与升级决定已交由用户确认；
 - 可组合能力的 `selectedRoutes` 覆盖实际目标组件，各路线结果分别验证；
 - 实现只使用能力入口明确提供的版本、接口和限制；

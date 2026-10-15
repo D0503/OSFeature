@@ -11,7 +11,7 @@
 | ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26，且 `targetAPIVersion >= 26.0.0` | 用于原生 Navigation/Tabs、支持通用属性的组件、弹窗和交互组件；Stage 模型 |
 | API 26 应用级开关 | ArkUI 路线门禁已满足 | 额外要求配置位于 `entry` 类型 module 的 `module.json5` |
 | API 26 跨版本调用 | `compatibleSdkVersion < 26` | 使用低版本可用的 `deviceInfo.sdkApiVersion >= 26` 保护新增接口调用和配置；涉及组件、布局或导航结构变化时使用组件树分支，进入 API 26 路径后再做材质能力判断 |
-| 升级接入（通用） | 工程低于路线门槛时 | 升级 `targetSdkVersion`/`compileSdkVersion` 至 23（HDS）或 26（ArkUI），`compatibleSdkVersion` 保持不变；低版本设备需运行时保护，并保留源程序接入前的布局、交互和普通视觉样式；是否升级与路线由用户决定 |
+| 升级接入（通用） | 工程低于路线门槛时 | 安装或切换本机 SDK，并将 `targetSdkVersion` 升至 23（HDS）或 26（ArkUI），无需显式配置 `compileSdkVersion`，`compatibleSdkVersion` 保持不变；低版本设备需运行时保护，并保留源程序接入前的布局、交互和普通视觉样式；是否升级与路线由用户决定 |
 
 这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担 HDS 导航，并用 ArkUI `uiMaterial` 改造原生 Navigation/Tabs、普通组件、弹窗和交互组件。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
 
@@ -19,14 +19,14 @@
 
 ## 本机 SDK 举证
 
-工程配置中的 API 26 版本写为字符串 `"26.0.0"`，不添加括号后缀。升级到 API 26 时，`targetSdkVersion` 以及工程显式配置的 `compileSdkVersion` 使用此写法；仅在决定提高最低兼容版本到 API 26 时才将 `compatibleSdkVersion` 设置为 `"26.0.0"`，否则保留原值。工具内部将点分版本归一化为数值 API 26 用于门禁比较，不将归一化数值直接作为生成配置的格式。
+工程配置中的 API 26 版本写为字符串 `"26.0.0"`，不添加括号后缀。升级到 API 26 时，`targetSdkVersion` 使用此写法；无需新增 `compileSdkVersion`，已有该配置且需要调整时使用相同写法；仅在决定提高最低兼容版本到 API 26 时才将 `compatibleSdkVersion` 设置为 `"26.0.0"`，否则保留原值。工具内部将点分版本归一化为数值 API 26 用于门禁比较，不将归一化数值直接作为生成配置的格式。
 
 选路前必须验证实际参与构建的本机 SDK，不以工程 target API 代替：
 
 - HDS 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 23；
 - ArkUI 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 26；
 - 路线阶段不扫描 `.d.ts`、`.d.ets`、SDK 子包或具体接口符号；具体接口由实施后的源码检查和真实工程构建确认；
-- 工程 `compileSdkVersion` 也必须达到路线门槛。`compatibleSdkVersion` 决定旧设备范围，`targetSdkVersion` 决定目标行为，两者都不能单独证明接口可编译。
+- 有效 compile API 也必须达到路线门槛；无需显式配置 `compileSdkVersion`，未配置时取已验证的活动 SDK API。`compatibleSdkVersion` 决定旧设备范围，`targetSdkVersion` 决定目标行为，两者都不能单独证明接口可编译。
 
 本机 SDK 路由只比较根清单 API 与沉浸光感路线门槛 23，不通过扫描 HDS 组件符号推断材质能力。工程扫描发现 `HdsNavigation` 或 `HdsTabs` 时，只能说明项目采用了相应组件体系；若 SDK 或有效 compile API 仍处于 18～22，结果应为可升级接入，而不是 HDS 沉浸光感已支持。
 
