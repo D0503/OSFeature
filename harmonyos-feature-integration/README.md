@@ -164,7 +164,7 @@ harmonyos-feature-integration/
    | 沉浸光感 | 空目录 | 请使用harmonyos-feature-integration，生成一个demo实现标题栏接入沉浸光感 |
    | 平行视界 | 综合商城模板 | 请使用harmonyos-feature-integration，对当前工程实现平行视界 |
    | 智感握姿 | 综合新闻模板 | 请使用harmonyos-feature-integration，为首页发表按钮接入智感握姿。悬浮球本身随握持手左右换侧，保留支持纵向拖拽，横向拖拽去除，不新增按钮 |
-   | 智能体框架服务 | 已关联 Agent 的 Stage 工程 | 请使用harmonyos-feature-integration，在首页通过 FunctionComponent 拉起我的智能体；agentId 使用已配置的真实值，前置平台操作提供指导 |
+   | 智能体框架服务 | 综合商城模板 | 请使用harmonyos-feature-integration，在首页搜索按钮旁接入一个智能体按钮，能拉起智能Agent，描述为购物助手 |
 
 4. **结果验收**：每个场景完成后核对是否产出 `<工程>/os-feature-integration/integration-report.md` 及其截图；构建通过不代表视觉通过，未执行真机验证的项必须标注未验证，不得写成通过。
 
