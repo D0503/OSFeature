@@ -76,6 +76,7 @@ function deviceLabel(run) {
 }
 
 function stageSummary(key, value) {
+  if (value.origin === "manual") return value.summary
   if (key === "static") return value.status === "passed" ? value.summary : "待处理项目见下方，扫描提示不等于已确认缺陷"
   if (value.status === "failed" && ["build", "install", "navigation"].includes(key)) {
     return value.reportSummary ?? { build: "构建失败，需解决构建错误后重验；未继续安装", install: "安装或启动失败，未完成目标页验证", navigation: "目标页导航或页面断言失败，不能据此验收目标效果" }[key]
@@ -172,6 +173,7 @@ export async function saveReport(output, directory, collection) {
       if (e.scenario) lines.push("", `截图场景：${escape(e.scenario)}。`)
       lines.push("", `<img src="evidence/${filename}" alt="目标页面截图" width="270" />`, "")
       if (e.origin === "developer") lines.push("", `截图来源：开发者按引导在真机采集并导入。`)
+      if (e.origin === "manual") lines.push("", `截图来源：本轮手动验证采集并导入，具体结论见验证结果。`)
     }
   }
   lines.push("", "## 升级与兼容", "", "SDK 版本与回退行为按整个工程记录一份；保留行为覆盖所有改造项。", "")

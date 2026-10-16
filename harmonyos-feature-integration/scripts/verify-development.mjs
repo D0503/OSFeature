@@ -41,16 +41,74 @@ export function detectAgentDeviceKind(deviceInfo, target) {
   let info = deviceInfo
   if (typeof info === "string") { try { info = JSON.parse(info) } catch { info = null } }
   const candidate = info?.device ?? info?.data ?? info
-  const values = [target, candidate?.name, candidate?.model, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.deviceKind, candidate?.connectType]
+  const values = [target, candidate?.name, candidate?.model, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.kind, candidate?.deviceKind, candidate?.connectType]
   if (candidate?.isEmulator === true || values.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v)))) return "emulator"
   const form = candidate?.deviceType ?? candidate?.type
   const supported = typeof form === "string" && /^(phone|tablet)$/i.test(form)
-  const physical = candidate?.isEmulator === false || /^(physical|real|真机)$/i.test(candidate?.deviceKind ?? "") || /^usb$/i.test(candidate?.connectType ?? "")
+  const physical = candidate?.isEmulator === false || /^(physical|real|真机)$/i.test(candidate?.deviceKind ?? "") || /^device$/i.test(candidate?.kind ?? "") || /^usb$/i.test(candidate?.connectType ?? "")
   return supported && physical ? "physical" : "unknown"
 }
 
 function requireAgentPhysical(run) {
   if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") throw new Error("Agent Framework Kit 运行与视觉验证需要已确认的 Phone/Tablet 真机，模拟器或设备类型未知不能验收")
+}
+
+async function importManualEvidence(run, runDirectory, manifest) {
+  if (manifest?.schemaVersion !== "1.0" || manifest.runId !== run.runId || manifest.goal !== run.goal || !run.device || manifest.device !== run.device) throw new Error("手动证据必须绑定本轮 runId、goal 和 device")
+  if (run.checks.build.status !== "passed") throw new Error("本轮构建未通过，不能导入手动验证")
+  const build = run.evidence.find((e) => e.type === "build_log" && e.id === manifest.buildEvidence?.id && e.sha256 === manifest.buildEvidence?.sha256)
+  if (!build || !await exists(build.path) || await fileHash(build.path) !== build.sha256) throw new Error("手动证据缺少本轮构建证据或哈希不匹配")
+  requiredText(manifest.provenance, "manualEvidence.provenance（设备、本轮构建产物与采集过程的关联依据）")
+  if (!Array.isArray(manifest.files) || !manifest.files.length) throw new Error("manualEvidence.files 必须非空")
+  const allowedTypes = new Set(["screenshot", "component_tree", "runtime_log", "install_log", "navigation_log", "device_info"])
+  const files = new Map()
+  for (const item of manifest.files) {
+    requiredText(item.key, "手动证据 key")
+    if (files.has(item.key) || !allowedTypes.has(item.type)) throw new Error("手动证据 key 重复或 type 不支持")
+    requiredText(item.path, "手动证据 path")
+    const content = await readFile(resolve(item.path))
+    if (!content.length || hash(content) !== item.sha256) throw new Error(`手动证据为空或哈希不匹配：${item.key}`)
+    if (item.type === "screenshot" && !content.subarray(0, 8).equals(PNG_MAGIC)) throw new Error("手动截图不是有效 PNG")
+    files.set(item.key, { ...item, content })
+  }
+  if (manifest.deviceInfo !== undefined) {
+    const info = files.get(manifest.deviceInfo)
+    if (info?.type !== "device_info") throw new Error("deviceInfo 必须引用设备信息 JSON 证据")
+    const data = JSON.parse(info.content.toString("utf8"))
+    const device = data?.device ?? data?.data ?? data
+    if ((device?.serial ?? device?.serialNumber) !== run.device) throw new Error("手动设备信息与本轮 device 不一致")
+    if (run.deviceKind === "emulator") throw new Error("不能用手动证据覆盖本轮模拟器事实")
+    run.deviceInfo = data
+    run.deviceKind = detectAgentDeviceKind(data, run.device)
+  }
+  requireAgentPhysical(run)
+  if (run.feature === "smart-reach" && run.deviceKind !== "physical") throw new Error("智感握姿手动验证仅允许已确认的真机")
+  const stages = manifest.stages ?? {}
+  for (const [key, stage] of Object.entries(stages)) {
+    if (!["install", "navigation"].includes(key) || !["passed", "failed", "inconclusive"].includes(stage.status)) throw new Error("手动阶段仅支持 install/navigation 及 passed/failed/inconclusive")
+    requiredText(stage.summary, `manualEvidence.stages.${key}.summary`)
+    if (!Array.isArray(stage.evidence) || !stage.evidence.length || stage.evidence.some((id) => !files.has(id))) throw new Error("手动阶段缺少本次导入的证据引用")
+    const types = stage.evidence.map((id) => files.get(id).type)
+    if (stage.status === "passed" && key === "install" && !types.includes("install_log")) throw new Error("手动安装启动通过必须引用安装与启动日志，截图不能证明安装本轮产物")
+    if (stage.status === "passed" && key === "navigation") {
+      if ((stages.install?.status ?? run.checks.install.status) !== "passed") throw new Error("安装启动未通过，不能将手动导航标记通过")
+      if (!types.some((type) => ["component_tree", "navigation_log"].includes(type))) throw new Error("手动导航通过须引用页面断言日志或组件树")
+    }
+  }
+  const imported = new Map()
+  for (const [key, item] of files) {
+    const id = nextEvidenceId(run)
+    const path = join(runDirectory, `${id}.${item.type === "screenshot" ? "png" : "log"}`)
+    await writeFile(path, item.content)
+    const evidence = { id, type: item.type, path, sha256: item.sha256, origin: "manual", scenario: key }
+    run.evidence.push(evidence)
+    imported.set(key, { id, sha256: item.sha256 })
+  }
+  run.manualVerification = { provenance: manifest.provenance, buildEvidence: manifest.buildEvidence }
+  for (const [key, stage] of Object.entries(stages)) run.checks[key] = { ...check(stage.status, `手动验证：${stage.summary}`), origin: "manual", evidence: stage.evidence.map((id) => imported.get(id)) }
+  // 新证据需重新判定，旧的效果通过不能覆盖尚未阅读的证据。
+  if ([...files.values()].some((e) => e.type === "screenshot")) run.checks.visual = check("inconclusive", "已导入手动截图，等待 AI 阅读并补录判定")
+  if ([...files.values()].some((e) => ["runtime_log", "component_tree"].includes(e.type))) run.checks.runtime = check("inconclusive", "已导入手动运行证据，等待 AI 阅读并补录判定")
 }
 
 async function importDeveloperScreenshots(run, runDirectory, paths) {
@@ -62,7 +120,7 @@ async function importDeveloperScreenshots(run, runDirectory, paths) {
     if (!await exists(source)) throw new Error(`导入截图不存在：${item}`)
     const content = await readFile(source)
     if (!content.subarray(0, 8).equals(PNG_MAGIC)) throw new Error(`导入截图不是有效 PNG：${item}`)
-    const id = `E${run.evidence.length + 1}`
+    const id = nextEvidenceId(run)
     const path = join(runDirectory, `${id}.png`)
     await writeFile(path, content)
     run.evidence.push({ id, type: "screenshot", origin: "developer", path, sha256: hash(content) })
@@ -108,7 +166,7 @@ function applyStaticReview(runs, review) {
 function developerOnlyVisual(judgment, run) {
   const refs = judgment.visual?.evidence
   if (!Array.isArray(refs) || !refs.length) return false
-  return refs.every((ref) => run.evidence.find((v) => v.id === ref.id && v.sha256 === ref.sha256)?.origin === "developer")
+  return refs.every((ref) => ["developer", "manual"].includes(run.evidence.find((v) => v.id === ref.id && v.sha256 === ref.sha256)?.origin))
 }
 
 export async function applyJudgment(run, judgment, runs = [run]) {
@@ -116,7 +174,8 @@ export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment.visual || judgment.runtime) {
     requireAgentPhysical(run)
     if (run.checks.build.status !== "passed") throw new Error("构建未通过，不能补录效果判定")
-    if (judgment.runtime || !developerOnlyVisual(judgment, run)) for (const key of ["install", "navigation"]) if (run.checks[key].status !== "passed") throw new Error("安装或目标页导航未通过，不能补录效果判定；视觉判定仅可豁免全部引用开发者真机截图的设备阶段")
+    const partialManualRuntime = judgment.runtime?.status === "inconclusive" && run.manualVerification && judgment.runtime.evidence?.length && judgment.runtime.evidence.every((ref) => run.evidence.find((e) => e.id === ref.id && e.sha256 === ref.sha256)?.origin === "manual")
+    if ((judgment.runtime && !partialManualRuntime) || (judgment.visual && !developerOnlyVisual(judgment, run))) for (const key of ["install", "navigation"]) if (run.checks[key].status !== "passed") throw new Error("安装或目标页导航未通过，不能补录效果通过；手动证据可补录未确认的运行观察及真机截图判定")
   }
   for (const level of ["visual", "runtime"]) {
     const item = judgment[level]
@@ -165,9 +224,11 @@ export async function verifyDevelopment(request, options = {}) {
     if (request.screenshotScenario && !request.captureScreenshot) throw new Error("screenshot-scenario 需要同时使用 capture-screenshot")
     if (request.resume) {
       if (request.executeBuild || request.executeRun || request.navigate || request.captureLayout || request.changes) throw new Error("resume 仅允许补录 judgment、导入截图或采集截图，不执行构建、安装或导航")
-      if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot) throw new Error("resume 需要提供 judgment、导入截图或采集截图")
+      if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot && !request.manualEvidence) throw new Error("resume 需要提供 judgment、手动证据、导入截图或采集截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
+      if (run.feature === "agent-framework-kit" && run.deviceKind !== "emulator") run.deviceKind = detectAgentDeviceKind(run.deviceInfo, run.device)
+      if (request.manualEvidence) await importManualEvidence(run, join(directory, run.runId), request.manualEvidence)
       if (request.captureScreenshot) {
         requiredText(request.screenshotScenario, "screenshot-scenario")
         if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
@@ -187,6 +248,7 @@ export async function verifyDevelopment(request, options = {}) {
       return { runId: run.runId, report, status: deriveVerdict(run), evidence: run.evidence }
     }
     for (const key of ["feature", "goal", "route"]) requiredText(request[key], key)
+    if (request.manualEvidence) throw new Error("手动证据须使用 --resume 绑定已有构建运行")
     const { feature, profile } = await loadFeature(skillRoot, request.feature)
     if (!profile.routes.some((r) => r.id === request.route)) throw new Error(`route 必须明确选择 ${profile.routes.map((r) => r.id).join(" 或 ")}；组合路线分别验证`)
     validateChanges(request.changes)
@@ -290,7 +352,7 @@ export async function verifyDevelopment(request, options = {}) {
 
 export function parseDevelopmentArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-scenario"])
+  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-scenario", "manual-evidence"])
   const repeatable = new Set(["import-screenshot"])
   const args = {}
   for (let i = 0; i < argv.length; i++) {
@@ -310,7 +372,7 @@ export function parseDevelopmentArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const request = parseDevelopmentArgs(process.argv.slice(2))
-    for (const key of ["changes", "navigate", "judgment"]) if (request[key]) request[key] = JSON.parse(await readFile(request[key], "utf8"))
+    for (const key of ["changes", "navigate", "judgment", "manualEvidence"]) if (request[key]) request[key] = JSON.parse(await readFile(request[key], "utf8"))
     const result = await verifyDevelopment(request)
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     if (result.status === "failed") process.exitCode = 1

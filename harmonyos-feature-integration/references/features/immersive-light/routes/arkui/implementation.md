@@ -14,6 +14,8 @@ ArkUI 路线覆盖 API 26+ 的原生 ArkUI `Navigation`、`Tabs`、弹窗和交�
 
 ## 按目标加载
 
+涉及搜索框标题栏滚动收缩或内容分类栏滚入标题栏时，同时读取[官方场景正例](components/title-scroll-examples.md)，按对应交互选择片段，不自动为普通标题栏增加滚动联动。
+
 | 目标 | 必读资料 |
 |---|---|
 | `systemMaterial` 参数、颜色、反色、阴影、覆盖关系 | [通用材质](common-material.md) |

@@ -10,6 +10,8 @@
 
 按[验证闭环](../workflows/verification.md)由 `verify-development.mjs` 生成 `<工程>/os-feature-integration/integration-report.md`，`--output` 可覆盖目录。最终只交付一份 Markdown 与其引用的截图，不生成 JSON 汇总报告；过程日志与判定数据留在临时目录。未执行、未到达目标页或未判图均不得写成通过。
 
+报告更新及最终总结的一致性要求见[验证闭环：结果与存储](../workflows/verification.md#结果与存储)。
+
 ## 故障排查
 
 输出环境、现象、证据、根因、修复、回归与限制。不得把 `warn` 写成已确认错误，也不得把未运行的测试写成通过。

@@ -4,6 +4,7 @@
 
 ## ArkUI 矩阵
 
+- 采用搜索框标题栏收缩正例时，验证快速跨越收缩阈值、负向回弹、回顶和字体变化；标题高度与 Builder 一致，透明度在 0～1 内，初始避让不随收缩重复改变，隐藏搜索区域不拦截操作或无障碍焦点；
 - 本机 SDK、compile API、target API 均达到 26；target 低于 26 时路线不可用而不是仅禁用应用级 metadata；
 - `compatibleSdkVersion < 26` 时，验证 `sdkApiVersion >= 26` 的支持与低版本路径；仅材质变化时检查调用和配置保护，组件、布局或导航结构变化时检查组件树分支；
 - `isImmersiveMaterialSupported()` 返回 true/false；
