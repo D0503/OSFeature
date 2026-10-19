@@ -65,6 +65,11 @@ Object.assign(emulatorManifest.files[0], { path: emulatorInfo, sha256: await fil
 await assert.rejects(verifyDevelopment({ ...manualResume, manualEvidence: emulatorManifest }, options), /真机/)
 const priorCalls = calls.length
 const imported = await verifyDevelopment({ ...manualResume, manualEvidence: manual }, options)
+assert.equal(imported.logging.sessionId, manualRun.logging.sessionId)
+const importEvents = (await readFile(imported.logging.events, "utf8")).trim().split("\n").map((line) => JSON.parse(line))
+assert.ok(importEvents.some((e) => e.stage === "manual-evidence" && e.status === "completed" && e.runId === manualRun.runId))
+const archivedManual = importEvents.find((e) => e.type === "runtime_log" && e.evidenceId === imported.evidence.find((v) => v.origin === "manual" && v.type === "runtime_log").id)
+assert.match(await readFile(archivedManual.path, "utf8"), /fixture: clicked/)
 assert.equal(calls.length, priorCalls, "手动补录不执行设备命令")
 assert.equal(imported.status, "inconclusive", "导入不自动验收")
 const importedLog = imported.evidence.find((e) => e.origin === "manual" && e.type === "runtime_log")

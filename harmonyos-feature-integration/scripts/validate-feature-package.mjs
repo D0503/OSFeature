@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { cliLog, logResult } from "./lib/skill-log.mjs"
 
 import { access, readFile } from "node:fs/promises"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
@@ -49,7 +50,8 @@ async function validateDocumentMap(errors, packageDir, documents, pathPrefix, re
 }
 
 try {
-  const args = parseCliArgs(process.argv.slice(2), ["feature"])
+  cliLog("feature-package")
+  const args = parseCliArgs(process.argv.slice(2), ["feature", "log-session", "project"])
   if (!args.feature) throw new Error("Required option: --feature <id>")
   const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const errors = []
@@ -220,9 +222,9 @@ try {
     issue(errors, contract.includes(required), "references/feature-package-contract.md", `能力包契约缺少栏目: ${required}`)
   }
 
-  process.stdout.write(`${JSON.stringify({ status: errors.length ? "invalid" : "valid", feature: args.feature, errors }, null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify(logResult("feature-package", { status: errors.length ? "invalid" : "valid", feature: args.feature, errors }, errors.length ? "failed" : "passed"), null, 2)}\n`)
   process.exit(errors.length ? 1 : 0)
 } catch (error) {
-  process.stdout.write(`${JSON.stringify({ status: "error", error: error instanceof Error ? error.message : String(error) }, null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify(logResult("feature-package", { status: "error", error: error instanceof Error ? error.message : String(error) }, "failed"), null, 2)}\n`)
   process.exit(2)
 }

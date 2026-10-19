@@ -1,3 +1,4 @@
+import { logEvent } from "./skill-log.mjs"
 import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
@@ -6,7 +7,7 @@ import { inspectSmartReach, evaluateSmartReach, verifySmartReach } from "./smart
 import { inspectAgentFramework, evaluateAgentFramework, verifyAgentFramework } from "./agent-framework-tools.mjs"
 import { inspectMaterialInventory } from "./material-inventory.mjs"
 
-const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
+const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules", "os-feature-integration"])
 const TEXT_EXTENSIONS = new Set([".ets", ".ts", ".json", ".json5"])
 
 function slash(path) {
@@ -1217,6 +1218,7 @@ export function parseCliArgs(argv, definitions) {
 export async function loadFeature(skillRoot, featureId) {
   const registryPath = resolve(skillRoot, "references", "feature-registry.json")
   const registry = JSON.parse(await readFile(registryPath, "utf8"))
+  logEvent({ stage: "resources", status: "read", path: registryPath })
   const feature = registry.features.find((item) => item.id === featureId)
   if (!feature) throw new Error(`Feature is not registered: ${featureId}`)
   if (feature.status !== "ready") throw new Error(`Feature is not ready: ${featureId}`)
@@ -1226,6 +1228,7 @@ export async function loadFeature(skillRoot, featureId) {
     throw new Error(`Feature profile is invalid: ${feature.profile}`)
   }
   const profile = JSON.parse(await readFile(profilePath, "utf8"))
+  logEvent({ stage: "resources", status: "read", path: profilePath, feature: featureId })
   if (!profile || typeof profile !== "object" || profile.schemaVersion !== "1.0") {
     throw new Error(`Feature profile schemaVersion is invalid: ${feature.profile}`)
   }

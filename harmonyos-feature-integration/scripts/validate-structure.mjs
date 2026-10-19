@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { cliLog, logResult } from "./lib/skill-log.mjs"
 
 import { access, readFile } from "node:fs/promises"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
@@ -142,22 +143,32 @@ export async function validateSkillStructure(skillRoot) {
 }
 
 async function main() {
+  cliLog("structure")
+  const argv = process.argv.slice(2)
+  const positional = []
+  for (let i = 0; i < argv.length; i++) {
+    if (["--log-session", "--project"].includes(argv[i])) {
+      if (!argv[i + 1] || argv[i + 1].startsWith("--")) throw new Error(`缺少 ${argv[i]} 值`)
+      i++
+    } else if (argv[i].startsWith("--") || positional.length) throw new Error(`未知参数 ${argv[i]}`)
+    else positional.push(argv[i])
+  }
   const defaultRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-  const skillRoot = process.argv[2] ? resolve(process.argv[2]) : defaultRoot
+  const skillRoot = positional[0] ? resolve(positional[0]) : defaultRoot
   const result = await validateSkillStructure(skillRoot)
   const output = {
     status: result.errors.length ? "invalid" : "valid",
     ...result.counts,
     errors: result.errors
   }
-  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify(logResult("structure", output, result.errors.length ? "failed" : "passed"), null, 2)}\n`)
   process.exit(result.errors.length ? 1 : 0)
 }
 
 const invokedPath = process.argv[1] ? pathToFileURL(resolve(process.argv[1])).href : ""
 if (invokedPath === import.meta.url) {
   main().catch((error) => {
-    process.stderr.write(`${JSON.stringify({ status: "invalid", errors: [{ path: "$", message: error instanceof Error ? error.stack ?? error.message : String(error) }] }, null, 2)}\n`)
+    process.stderr.write(`${JSON.stringify(logResult("structure", { status: "invalid", errors: [{ path: "$", message: error instanceof Error ? error.stack ?? error.message : String(error) }] }, "failed"), null, 2)}\n`)
     process.exit(2)
   })
 }

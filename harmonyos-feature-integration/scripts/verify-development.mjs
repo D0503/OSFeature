@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { currentLog, openLog, withLog, loggedStage, logEvent } from "./lib/skill-log.mjs"
 import { randomUUID } from "node:crypto"
 import { mkdir, readFile, rmdir, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
@@ -24,7 +25,9 @@ async function captureDeviceScreenshot(run, runDirectory, scenario, call) {
     throw new Error("截图采集失败或文件不是有效 PNG")
   }
   if (scenario) run.evidence = run.evidence.filter((e) => e.type !== "screenshot" || e.scenario !== scenario)
-  run.evidence.push({ id: nextEvidenceId(run), type: "screenshot", path, sha256: await fileHash(path), ...(scenario ? { scenario } : {}) })
+  const item = { id: nextEvidenceId(run), type: "screenshot", path, sha256: await fileHash(path), ...(scenario ? { scenario } : {}) }
+  run.evidence.push(item)
+  currentLog()?.artifact(`${run.runId}-${item.id}.png`, await readFile(path), { binary: true, runId: run.runId, evidenceId: item.id, type: item.type })
   const count = run.evidence.filter((e) => e.type === "screenshot").length
   run.checks.visual = check("inconclusive", `已采集目标页截图 ${count} 张，等待 AI 实际阅读并补录判定`)
 }
@@ -102,6 +105,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
     await writeFile(path, item.content)
     const evidence = { id, type: item.type, path, sha256: item.sha256, origin: "manual", scenario: key }
     run.evidence.push(evidence)
+    currentLog()?.artifact(`${run.runId}-${id}.${item.type === "screenshot" ? "png" : "log"}`, item.content, { binary: item.type === "screenshot", runId: run.runId, evidenceId: id, type: item.type })
     imported.set(key, { id, sha256: item.sha256 })
   }
   run.manualVerification = { provenance: manifest.provenance, buildEvidence: manifest.buildEvidence }
@@ -124,6 +128,7 @@ async function importDeveloperScreenshots(run, runDirectory, paths) {
     const path = join(runDirectory, `${id}.png`)
     await writeFile(path, content)
     run.evidence.push({ id, type: "screenshot", origin: "developer", path, sha256: hash(content) })
+    currentLog()?.artifact(`${run.runId}-${id}.png`, content, { binary: true, runId: run.runId, evidenceId: id, type: "screenshot" })
   }
   run.checks.visual = check("inconclusive", `已导入开发者提供的真机截图 ${paths.length} 张，等待 AI 实际阅读并补录判定`)
 }
@@ -211,7 +216,44 @@ export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment.staticReview) applyStaticReview(runs, judgment.staticReview)
 }
 
+async function verificationLog(request) {
+  if (currentLog()) return currentLog()
+  let session = request.logSession
+  if (!session && request.resume && request.project) {
+    const output = resolve(request.output ?? join(request.project, "os-feature-integration"))
+    try {
+      const collection = JSON.parse(await readFile(join(cacheDirectory(output), "collection.json"), "utf8"))
+      session = collection.runs.find((run) => run.runId === request.resume)?.logging?.directory
+    } catch (error) { if (error.code !== "ENOENT") throw error }
+  }
+  return openLog({ project: request.project, session })
+}
+
 export async function verifyDevelopment(request, options = {}) {
+  let log
+  try { log = await verificationLog(request) }
+  catch (error) {
+    log = openLog({ project: request.project })
+    log.event({ stage: "verification", source: "script", status: "failed", error: error.message })
+    throw error
+  }
+  const runId = request.resume ?? randomUUID()
+  return withLog(log, async () => {
+    const started = Date.now()
+    logEvent({ stage: "verification", status: "started", resume: request.resume, request })
+    try {
+      const result = await verifyDevelopmentInternal({ ...request, _runId: runId }, options)
+      logEvent({ stage: "verification", status: result.status, durationMs: Date.now() - started, report: result.report })
+      return { ...result, logging: log.metadata }
+    } catch (error) {
+      logEvent({ stage: "verification", status: "failed", durationMs: Date.now() - started, error: error.message })
+      throw error
+    }
+  }, { runId })
+}
+
+async function verifyDevelopmentInternal(request, options = {}) {
+
   requiredText(request.project, "project")
   const output = resolve(request.output ?? join(request.project, "os-feature-integration"))
   const directory = cacheDirectory(output)
@@ -227,8 +269,10 @@ export async function verifyDevelopment(request, options = {}) {
       if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot && !request.manualEvidence) throw new Error("resume 需要提供 judgment、手动证据、导入截图或采集截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
+      logEvent({ stage: "resume", status: "started", previousRunId: run.runId, previousLogging: run.logging, legacy: !run.logging })
+      run.logging = currentLog().metadata
       if (run.feature === "agent-framework-kit" && run.deviceKind !== "emulator") run.deviceKind = detectAgentDeviceKind(run.deviceInfo, run.device)
-      if (request.manualEvidence) await importManualEvidence(run, join(directory, run.runId), request.manualEvidence)
+      if (request.manualEvidence) await loggedStage("manual-evidence", () => importManualEvidence(run, join(directory, run.runId), request.manualEvidence))
       if (request.captureScreenshot) {
         requiredText(request.screenshotScenario, "screenshot-scenario")
         if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
@@ -239,26 +283,26 @@ export async function verifyDevelopment(request, options = {}) {
           if (info.exitCode !== 0 || kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
           run.deviceKind = kind
         }
-        try { await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
+        try { await loggedStage("screenshot", () => captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project))) }
         catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
       }
-      await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot)
-      if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
+      if (request.importScreenshot?.length) await loggedStage("screenshot-import", () => importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot))
+      if (request.judgment) await loggedStage("judgment", () => applyJudgment(run, request.judgment, collection.runs), { judgment: request.judgment })
       const report = await saveReport(output, directory, collection)
       return { runId: run.runId, report, status: deriveVerdict(run), evidence: run.evidence }
     }
     for (const key of ["feature", "goal", "route"]) requiredText(request[key], key)
     if (request.manualEvidence) throw new Error("手动证据须使用 --resume 绑定已有构建运行")
-    const { feature, profile } = await loadFeature(skillRoot, request.feature)
+    const { feature, profile } = await loggedStage("feature-load", () => loadFeature(skillRoot, request.feature), { feature: request.feature, route: request.route })
     if (!profile.routes.some((r) => r.id === request.route)) throw new Error(`route 必须明确选择 ${profile.routes.map((r) => r.id).join(" 或 ")}；组合路线分别验证`)
     validateChanges(request.changes)
     if (request.navigate) validateNavigation(request.navigate)
     if (request.judgment) throw new Error("先执行验证，再用 --resume 与 --judgment 补录本次观察")
-    const runId = randomUUID()
+    const runId = request._runId
     const runDirectory = join(directory, runId)
     await mkdir(runDirectory)
     const run = {
-      runId, project: resolve(request.project), feature: request.feature, featureName: feature.displayName, goal: request.goal, route: request.route,
+      runId, logging: currentLog().metadata, project: resolve(request.project), feature: request.feature, featureName: feature.displayName, goal: request.goal, route: request.route,
       product: request.product ?? "default", buildMode: request.buildMode ?? "debug", module: request.module ?? null,
       changes: structuredClone(request.changes), createdAt: new Date().toISOString(), device: request.device ?? null, evidence: [],
       checks: Object.fromEntries(["static", "sdk", "build", "install", "navigation", "runtime", "visual"].map((key) => [key, check("not_run", "尚未执行")]))
@@ -268,17 +312,18 @@ export async function verifyDevelopment(request, options = {}) {
       const path = join(runDirectory, `${id}.${extension}`)
       await writeFile(path, content)
       const item = { id, type, path, sha256: await fileHash(path) }
+      currentLog().artifact(`${runId}-${id}.${extension}`, content, { runId, evidenceId: id, type })
       run.evidence.push(item)
       return item
     }
     const call = async (args, type = "device_log") => {
       let result
-      try { result = await (options.commandRunner ?? runDeveco)(args, request.project) }
+      try { result = await loggedStage("device", () => (options.commandRunner ?? runDeveco)(args, request.project), { args }) }
       catch (error) { result = { exitCode: null, stdout: "", stderr: error.message } }
       await record(result.exitCode === 0 ? type : "command_failure", `${JSON.stringify(args)}\n${result.stdout ?? ""}\n${result.stderr ?? ""}`)
       return result
     }
-    const { inspection, compatibility, staticResult } = await (options.inspector ?? inspectVerification)(request)
+    const { inspection, compatibility, staticResult } = await loggedStage("inspection", () => (options.inspector ?? inspectVerification)(request))
     run.after = { sdk: inspection.localSdk.apiVersion ?? "unknown", compile: inspection.api.compile, target: inspection.api.target, compatible: inspection.api.compatible }
     await record("static", JSON.stringify({ inspection, compatibility, staticResult }, null, 2), "json")
     run.checks.sdk = compatibility.availableRoutes?.includes(run.route) && inspection.localSdk.status === "valid" ? check("passed", `本机 SDK API ${run.after.sdk}，${run.route} 路线可用`) : check("failed", "本机 SDK 或工程版本不满足所选路线，需先完成版本门禁")
@@ -287,16 +332,21 @@ export async function verifyDevelopment(request, options = {}) {
     for (const finding of run.staticFindings) if (run.feature !== "agent-framework-kit" && finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
     recomputeStaticCheck(run)
     if (staticResult.counts.fail && run.checks.static.status !== "failed") run.checks.static = check("failed", "静态门禁失败")
+    logEvent({ stage: "sdk", status: run.checks.sdk.status, inspection: inspection.localSdk, compatibility })
+    logEvent({ stage: "static", status: run.checks.static.status, findings: run.staticFindings })
+    const previousAttempt = collection.runs.find((r) => sameTarget(r, run))
+    if (previousAttempt) logEvent({ stage: "retry", status: "started", previousRunId: previousAttempt.runId, previousLogging: previousAttempt.logging })
     run.checks.build = check("not_run", "未请求构建")
     if (run.checks.sdk.status === "failed" || run.checks.static.status === "failed") run.checks.build.summary = "SDK 或静态门禁失败，未构建"
     else if (request.executeBuild) {
       let result
-      try { result = await (options.buildRunner ?? runHvigorBuild)(request.project, { product: run.product, buildMode: run.buildMode, module: run.module, modules: inspection.modules, sdkPath: inspection.localSdk.path }) }
+      try { result = await loggedStage("build", () => (options.buildRunner ?? runHvigorBuild)(request.project, { product: run.product, buildMode: run.buildMode, module: run.module, modules: inspection.modules, sdkPath: inspection.localSdk.path })) }
       catch (error) { result = { exitCode: null, stderr: error.message } }
       await record("build_log", `${result.stdout ?? ""}\n${result.stderr ?? ""}`)
       run.checks.build = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "ohpm、Hvigor 同步与打包通过" : `构建失败：${result.failedStage ?? "工具或构建阶段"}；${(result.stderr || result.stdout || "无输出").slice(-1800)}`)
       if (result.exitCode !== 0) run.checks.build.reportSummary = `构建失败，停止于${{ "ohpm install": "依赖安装", "hvigor sync": "工程同步", "hvigor build": "HAP 打包" }[result.failedStage] ?? "构建工具执行阶段"}；未继续安装，修复后需重验`
     }
+    logEvent({ stage: "build", ...run.checks.build })
     const launchArgs = ["run", "--skip-build", "--product", run.product, "--build-mode", run.buildMode, "--device", request.device ?? ""]
     if (run.module) launchArgs.push("--module", run.module)
     if (request.ability) launchArgs.push("--ability", request.ability)
@@ -312,13 +362,15 @@ export async function verifyDevelopment(request, options = {}) {
         run.checks.install = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "应用已安装并启动" : `安装或启动失败：${(result.stderr || result.stdout || "无输出").slice(-1200)}`)
       }
     }
+    logEvent({ stage: "install", ...run.checks.install })
     run.checks.navigation.summary = run.checks.install.status !== "passed" ? "应用未成功安装启动" : "未提供目标页导航与断言"
     if (run.checks.install.status === "passed" && request.navigate) {
       try {
-        await navigate(request.navigate, call, launchArgs, request.device, options.pause)
+        await loggedStage("navigation", () => navigate(request.navigate, call, launchArgs, request.device, options.pause))
         run.checks.navigation = check("passed", "导航完成，目标页面断言通过")
       } catch (error) { run.checks.navigation = check("failed", error.message) }
     }
+    logEvent({ stage: "navigation", ...run.checks.navigation })
     if (run.checks.navigation.status === "passed") {
       run.checks.runtime = check("inconclusive", "已进入目标页，交互与启动时机仍需结合运行证据判定")
       const logArgs = ["log", "--device", request.device, "--from", "1m", "--tail", "200"]
@@ -329,14 +381,14 @@ export async function verifyDevelopment(request, options = {}) {
       if (profile.featureId === "smart-reach" && run.deviceKind === "emulator") {
         run.checks.visual = check("not_run", "智感握姿视觉验证只能使用真机；检测到目标设备为模拟器，未采集截图")
       } else if (request.captureScreenshot) {
-        try { await captureDeviceScreenshot(run, runDirectory, request.screenshotScenario, call) }
+        try { await loggedStage("screenshot", () => captureDeviceScreenshot(run, runDirectory, request.screenshotScenario, call)) }
         catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
       }
     } else {
       run.checks.runtime.summary = `未完成目标页验证：${run.checks.navigation.summary}`
       run.checks.visual.summary = `未完成目标页视觉验证：${run.checks.build.status !== "passed" ? run.checks.build.summary : run.checks.install.status !== "passed" ? run.checks.install.summary : run.checks.navigation.summary}`
     }
-    await importDeveloperScreenshots(run, runDirectory, request.importScreenshot)
+    if (request.importScreenshot?.length) await loggedStage("screenshot-import", () => importDeveloperScreenshots(run, runDirectory, request.importScreenshot))
     const previous = collection.runs.find((r) => sameTarget(r, run))
     if (previous) {
       for (const key of ["sdk", "compile", "target", "compatible"]) {
@@ -352,7 +404,7 @@ export async function verifyDevelopment(request, options = {}) {
 
 export function parseDevelopmentArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-scenario", "manual-evidence"])
+  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-scenario", "manual-evidence", "log-session"])
   const repeatable = new Set(["import-screenshot"])
   const args = {}
   for (let i = 0; i < argv.length; i++) {
@@ -370,11 +422,26 @@ export function parseDevelopmentArgs(argv) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  let log
   try {
-    const request = parseDevelopmentArgs(process.argv.slice(2))
-    for (const key of ["changes", "navigate", "judgment", "manualEvidence"]) if (request[key]) request[key] = JSON.parse(await readFile(request[key], "utf8"))
-    const result = await verifyDevelopment(request)
+    const argv = process.argv.slice(2)
+    const bootstrap = {}
+    for (const key of ["project", "output", "resume", "log-session"]) {
+      const i = argv.indexOf(`--${key}`)
+      if (i >= 0 && argv[i + 1] && !argv[i + 1].startsWith("--")) bootstrap[key === "log-session" ? "logSession" : key] = argv[i + 1]
+    }
+    log = await verificationLog(bootstrap)
+    const result = await withLog(log, async () => {
+      const request = parseDevelopmentArgs(argv)
+      for (const key of ["changes", "navigate", "judgment", "manualEvidence"]) if (request[key]) request[key] = JSON.parse(await readFile(request[key], "utf8"))
+      return verifyDevelopment(request)
+    })
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     if (result.status === "failed") process.exitCode = 1
-  } catch (error) { process.stderr.write(`${error.message}\n`); process.exitCode = 2 }
+  } catch (error) {
+    log ??= openLog()
+    log.event({ stage: "verification-cli", source: "script", status: "failed", error: error.message })
+    process.stderr.write(`${error.message}\n[skill-log] ${JSON.stringify(log.metadata)}\n`)
+    process.exitCode = 2
+  }
 }

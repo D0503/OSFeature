@@ -7,6 +7,8 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 通过注册表识别 HarmonyOS 新特性，并只加载命中特性的能力包。注册表中的能力都必须具备可执行资料；不完整能力在完成前不得注册。
 
+开始调用时先按[调用过程日志](references/workflows/call-logging.md)建立会话；本次识别、资料加载、方案、实施、修复、验证和交付沿用同一会话，按该文档记录 AI 主导动作。
+
 结构校验和工具脚本支持 Windows、macOS、Linux，需要 Node.js 18+。实际接入需要可读取的 HarmonyOS Stage 模型工程；构建与运行能力取决于项目本身的 SDK、签名、设备和工具环境。
 
 ## 输入范围
