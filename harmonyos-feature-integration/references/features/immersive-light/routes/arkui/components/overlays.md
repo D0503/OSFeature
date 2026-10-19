@@ -8,7 +8,8 @@
 | Popup | 不开启 | `PopupOptions.systemMaterial` | 必须显式设置 |
 | Tips | 不开启 | `TipsOptions.systemMaterial` | 必须显式设置 |
 | Menu | 开启，默认 `THICK` | `ContextMenuOptions.systemMaterial` 等实际入口 Options | 按调用入口确认类型，不复用 HDS 的 `HdsNavigationMenuContentOptions` |
-| Dialog/Sheet | 开启，默认 `ULTRA_THICK` | `CustomDialogControllerOptions`、`AlertDialogParam`、`ActionSheetOptions`、`SheetOptions` 等 | 背景色或背景模糊会遮挡；避免大面积材质 |
+| Dialog | 开启，默认 `ULTRA_THICK` | `CustomDialogControllerOptions`、`AlertDialogParam`、`ActionSheetOptions` 等 | 背景色或背景模糊会遮挡；避免大面积材质 |
+| Sheet（bindSheet） | 不开启，无默认材质 | `SheetOptions.systemMaterial` | 必须显式设置 `ULTRA_THICK`；避免大面积材质 |
 
 `DEFAULT` 与 `ENABLE` 不能合并理解：Dialog、Toast、AlphabetIndexer 和启用 `copyOption` 的文本选择菜单在 `DEFAULT` 下存在系统默认材质，但可能受背景色、模糊和阴影配置影响；普通 Menu 与 SelectionMenu 需要 `ENABLE` 才默认开启。Popup、Tips 在 `DEFAULT`、`ENABLE` 下都不会自动开启，需要使用各自 Options 显式设置。
 
@@ -17,7 +18,7 @@ CalendarPickerDialog、DatePickerDialog、TextPickerDialog、TimePickerDialog �
 ## 实施规则
 
 1. 先确定真实调用入口和对应 Options 类型；同名 `systemMaterial` 不代表 Options 可互换。
-2. 应用级默认已经满足目标时，不重复强制写入同样材质；需要自定义或明确关闭时再使用组件级入口。
+2. 应用级默认已经满足目标时，不重复强制写入同样材质；需要自定义或明确关闭时再使用组件级入口。`bindSheet` 在应用级 `ENABLE` 下没有默认材质，接入时必须在 `SheetOptions.systemMaterial` 显式设置 `ULTRA_THICK` 材质。
 3. 明确关闭使用 `uiMaterial.Material.empty`，除非该组件官方说明了不同语义。
 4. 弹窗已有背景色、背景模糊、自定义阴影或大尺寸时，先决定保留原视觉还是采用材质，不叠加碰运气。
 5. 大面积 Dialog/Sheet 的 GPU 和动效开销单独评估；关键内容不能依赖透明背景才能辨识。
