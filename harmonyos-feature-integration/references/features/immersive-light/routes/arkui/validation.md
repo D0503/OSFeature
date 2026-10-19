@@ -19,6 +19,7 @@
 - AlphabetIndexer、Toast、Popup、Tips、Menu、Dialog/Sheet、SelectionMenu 和文本选择菜单的 `DEFAULT`/`ENABLE` 默认状态、Options 类型和背景冲突；
 - `bindSheet` 即使处于应用级 `ENABLE`，也必须检查 `SheetOptions.systemMaterial` 已显式设置为 `ULTRA_THICK` 材质，不能按 Dialog 的默认材质判定完成；
 - Button、Select、Toggle、Slider、Chip、ChipGroup/ChipGroupV2、SegmentButton/SegmentButtonV2 的专属入口、默认状态、生效域和预设视觉限制；
+- 接入沉浸光感的 Button 必须显式设置 `.backgroundColor(Color.Transparent)`，验证默认蓝色背景未影响材质效果；
 - CalendarPickerDialog、DatePickerDialog、TextPickerDialog、TimePickerDialog 按 CustomDialog 验证；CalendarPicker 自带弹出框仍不支持；
 - MultiCapsuleSegmentButtonV2 不支持沉浸光感，保留原样式；
 - Select 按钮与菜单两个独立入口；

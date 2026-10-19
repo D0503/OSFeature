@@ -4,7 +4,7 @@
 
 | 组件 | 应用级 `ENABLE` 默认 | 组件级入口 | 关键限制 |
 |---|---|---|---|
-| Button | 不开启 | `systemMaterial` | 仅在 Navigation/NavDestination 标题栏或有效的底部横向悬浮 TabBar 内生效；`lightEffect` 会替代默认按压态和悬浮态；自动反色需要系统颜色资源 |
+| Button | 不开启 | `systemMaterial` | 接入时必须显式设置 `.backgroundColor(Color.Transparent)`，避免默认蓝色背景影响材质效果；仅在 Navigation/NavDestination 标题栏或有效的底部横向悬浮 TabBar 内生效；`lightEffect` 会替代默认按压态和悬浮态；自动反色需要系统颜色资源 |
 | Select | 按钮和菜单都开启 | 按钮 `systemMaterial`，菜单 `menuSystemMaterial` | 两个入口相互独立；按钮默认 `ULTRA_THIN` 并开启交互与流光，菜单默认 `THICK` |
 | Toggle | 开启 | `systemMaterial` | Checkbox 当前不支持；Switch 参数只是开启标记并使用内部预设；Button 类型按 Button 规则 |
 | Slider | 开启 | `systemMaterial` | 参数只是开启标记；`undefined` 恢复原 Slider；交互效果要求 `SliderBlockType.DEFAULT` 且 `SliderStyle` 非 `NONE` |
@@ -12,6 +12,8 @@
 | SegmentButton/V2 | 开启，默认 `THIN` | 对应 Options 的 `backgroundSystemMaterial` | SegmentButton 的 capsule 且 multiply=true 不支持；MultiCapsuleSegmentButtonV2 不支持沉浸光感；受支持的 V2 开启后支持选中项跟随拖拽 |
 
 ## 自动反色
+
+`Button` 中的图标建议优先使用 `SymbolGlyph($r('sys.symbol.xxx'))`，而非 `Image()`；`xxx` 替换为目标 SDK 中实际可用且语义匹配的系统符号资源名。
 
 `colorInvert: true` 只会处理支持反色的系统资源。Button、ChipGroup、SegmentButton 的文字或图标若使用硬编码颜色，不应承诺自动反色。深浅色模式下逐项检查选中、未选中、禁用、按压和悬浮状态。
 

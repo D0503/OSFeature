@@ -162,7 +162,7 @@
           "defaultStyle": null,
           "entries": ["systemMaterial"],
           "effectScopes": ["navigation-title", "bottom-floating-tabbar"],
-          "constraints": ["lightEffect-replaces-press-hover-feedback", "invertible-system-colors-only"]
+          "constraints": ["explicit-transparent-background-required", "lightEffect-replaces-press-hover-feedback", "invertible-system-colors-only"]
         },
         {
           "id": "select",

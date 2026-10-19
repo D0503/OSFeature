@@ -170,6 +170,7 @@ export struct GameTitleScrollPage {
 
       Button('搜索')
         .height(40)
+        .backgroundColor(Color.Transparent)
         .systemMaterial(new uiMaterial.ImmersiveMaterial({
           interactive: true,
           lightEffect: { color: Color.White }
