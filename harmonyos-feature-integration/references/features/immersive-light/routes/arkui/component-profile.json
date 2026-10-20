@@ -120,7 +120,7 @@
           "defaultStyle": "ULTRA_THICK",
           "entries": ["CustomDialogControllerOptions.systemMaterial", "AlertDialogParam.systemMaterial", "ActionSheetOptions.systemMaterial", "SheetOptions.systemMaterial"],
           "effectScopes": ["all-page"],
-          "constraints": ["bindSheet-has-no-default-material-requires-explicit-ULTRA_THICK-via-SheetOptions.systemMaterial", "background-conflicts", "avoid-large-material-area", "CalendarPicker-popup-unsupported"]
+          "constraints": ["bindSheet-has-no-default-material-requires-explicit-material-via-SheetOptions.systemMaterial-style-customizable", "background-conflicts", "avoid-large-material-area", "CalendarPicker-popup-unsupported"]
         },
         {
           "id": "selection-menu",

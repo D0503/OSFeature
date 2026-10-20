@@ -179,6 +179,36 @@ Tabs({ barPosition: BarPosition.End }) {
 - 高、中算力设备显示 `THICK`，低算力设备降级为普通白色背景；
 - 提示弹窗通过上述背景属性条件控制默认材质，回退时保留普通背景路径。
 
+最小示例（依据[官方示例 4：设置提示弹窗的沉浸光感效果](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/ts-container-alphabet-indexer#示例4设置提示弹窗的沉浸光感效果)提炼）：
+
+```typescript
+@Component
+struct AlphabetIndexerMaterialExample {
+  private indexLabels: string[] = ['A', 'B'];
+  private popupItems: string[][] = [['安'], ['卜', '白', '包']];
+  @State selectedIndex: number = 0;
+
+  build() {
+    AlphabetIndexer({ arrayValue: this.indexLabels, selected: this.selectedIndex })
+      .usingPopup(true)
+      .alignStyle(IndexerAlign.Left)
+      .onSelect((index: number) => {
+        this.selectedIndex = index;
+      })
+      .onRequestPopupData((index: number): string[] => {
+        return this.popupItems[index] ?? [];
+      })
+      .onPopupSelect((index: number) => {
+        console.info(`Popup item selected: ${index}`);
+      })
+  }
+}
+```
+
+该片段用于满足 [ArkUI 开启策略](../activation.md)的 API 26 接入分支，未在目标工程编译或真机验证。`.usingPopup(true)` 开启提示弹窗；不设置 `popupBackground` 和 `popupBackgroundBlurStyle`，由系统呈现默认 `THICK` 材质，无需额外调用 `.systemMaterial(...)`。已有代码显式配置这两个属性时，仅在接入分支移除配置或传入 `undefined`，回退分支保留原值。
+
+接入时复用工程已有索引数据、选中状态和列表联动：`onSelect` 对应一级索引，`onRequestPopupData` 返回该索引下的二级数据，`onPopupSelect` 的参数是弹窗二级数据中的位置。示例日志应替换为原有业务回调；无需复制官网示例的背景图或列表布局。实际材质效果随设备算力及系统沉浸光感档位调整。
+
 ## 路由判定
 
 - 扫描到 `HdsTabs`：选择 HDS；
