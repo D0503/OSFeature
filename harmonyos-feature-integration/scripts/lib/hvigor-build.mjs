@@ -1,4 +1,4 @@
-import { executeLoggedCommand } from "./skill-log.mjs"
+import { spawn } from "node:child_process"
 import { access, mkdir, rmdir, utimes } from "node:fs/promises"
 import { basename, delimiter, dirname, join, resolve } from "node:path"
 
@@ -38,7 +38,16 @@ export function buildStages(tools, { product, buildMode, module, modules }) {
 }
 
 export function executeBuildStage(stage, cwd, env, timeout = 600000) {
-  return executeLoggedCommand(stage, cwd, env, timeout)
+  return new Promise((done) => {
+    const child = spawn(stage.command, stage.args, { cwd, env, shell: false, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] })
+    let stdout = "", stderr = "", timedOut = false
+    const timer = setTimeout(() => { timedOut = true; child.kill() }, timeout)
+    timer.unref()
+    child.stdout.on("data", (data) => { stdout += data.toString() })
+    child.stderr.on("data", (data) => { stderr += data.toString() })
+    child.once("error", (error) => { clearTimeout(timer); done({ exitCode: null, stdout, stderr: `${stderr}\n${error.message}` }) })
+    child.once("close", (code, signal) => { clearTimeout(timer); done({ exitCode: timedOut ? null : code, stdout, stderr: `${stderr}${timedOut ? "\n构建阶段超时" : signal ? `\n终止信号: ${signal}` : ""}` }) })
+  })
 }
 
 export async function runHvigorBuild(project, selection, { tools, runner = executeBuildStage } = {}) {

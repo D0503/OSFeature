@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "float-view-ball",
+  "displayName": "闪控窗／球",
+  "routeComposition": {
+    "mode": "composable",
+    "selectionField": "selectedRoutes",
+    "allowed": [
+      "float-view",
+      "floating-ball"
+    ]
+  },
+  "targetSdkPolicy": "preserve-unless-declared",
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": [
+      "runtime-version-unsupported",
+      "device-capability-unsupported",
+      "permission-error",
+      "feature-disabled",
+      "service-failed"
+    ],
+    "preserve": [
+      "component-tree-or-existing-code-path",
+      "responsive-layout-orientation-and-window-mode",
+      "state-data-controllers-events-and-lifecycle",
+      "existing-error-denial-and-unavailable-behavior",
+      "ordinary-visual-style"
+    ]
+  },
+  "routes": [
+    {
+      "id": "float-view",
+      "displayName": "闪控窗",
+      "minApi": 26,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry",
+        "feature"
+      ],
+      "components": [
+        "floatView"
+      ],
+      "documents": {
+        "implementation": "routes/float-view.md",
+        "assets": "routes/float-view.md",
+        "validation": "routes/float-view.md"
+      }
+    },
+    {
+      "id": "floating-ball",
+      "displayName": "闪控球",
+      "minApi": 20,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry",
+        "feature"
+      ],
+      "components": [
+        "floatingBall"
+      ],
+      "documents": {
+        "implementation": "routes/floating-ball.md",
+        "assets": "routes/floating-ball.md",
+        "validation": "routes/floating-ball.md"
+      }
+    }
+  ],
+  "capabilities": {
+    "binding": {
+      "minApi": 26
+    },
+    "ballVisibility": {
+      "minApi": 24
+    },
+    "ballDestroy": {
+      "minApi": 26
+    },
+    "ballColorsAndAnimation": {
+      "minApi": 26
+    }
+  },
+  "documents": {
+    "entry": "README.md",
+    "compatibility": "compatibility.md",
+    "implementation": "implementation.md",
+    "validation": "performance-validation.md",
+    "assets": "assets-catalog.md",
+    "fallback": "fallback.md",
+    "sharedValidation": "performance-validation.md",
+    "troubleshooting": "troubleshooting.md"
+  },
+  "evidence": {
+    "policy": "snapshot-first-verify-on-change-or-conflict"
+  }
+}

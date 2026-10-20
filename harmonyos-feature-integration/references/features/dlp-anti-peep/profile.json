@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "dlp-anti-peep",
+  "displayName": "防窥保护",
+  "routeComposition": {
+    "mode": "composable",
+    "selectionField": "selectedRoutes",
+    "allowed": [
+      "status-observation",
+      "system-mask"
+    ]
+  },
+  "targetSdkPolicy": "preserve-unless-declared",
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": [
+      "runtime-version-unsupported",
+      "device-capability-unsupported",
+      "permission-error",
+      "feature-disabled",
+      "service-failed"
+    ],
+    "preserve": [
+      "component-tree-or-existing-code-path",
+      "responsive-layout-orientation-and-window-mode",
+      "state-data-controllers-events-and-lifecycle",
+      "existing-error-denial-and-unavailable-behavior",
+      "ordinary-visual-style"
+    ]
+  },
+  "routes": [
+    {
+      "id": "status-observation",
+      "displayName": "防窥状态感知",
+      "minApi": 20,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry",
+        "feature"
+      ],
+      "components": [
+        "dlpAntiPeep"
+      ],
+      "documents": {
+        "implementation": "routes/status-observation.md",
+        "assets": "routes/status-observation.md",
+        "validation": "routes/status-observation.md"
+      }
+    },
+    {
+      "id": "system-mask",
+      "displayName": "系统防窥蒙层",
+      "minApi": 21,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry",
+        "feature"
+      ],
+      "components": [
+        "dlpAntiPeep.setAntiPeepMaskLayer"
+      ],
+      "documents": {
+        "implementation": "routes/system-mask.md",
+        "assets": "routes/system-mask.md",
+        "validation": "routes/system-mask.md"
+      }
+    }
+  ],
+  "capabilities": {
+    "optionsAndInformation": {
+      "minApi": 23
+    }
+  },
+  "documents": {
+    "entry": "README.md",
+    "compatibility": "compatibility.md",
+    "implementation": "implementation.md",
+    "validation": "performance-validation.md",
+    "assets": "assets-catalog.md",
+    "fallback": "fallback.md",
+    "sharedValidation": "performance-validation.md",
+    "troubleshooting": "troubleshooting.md"
+  },
+  "evidence": {
+    "policy": "snapshot-first-verify-on-change-or-conflict"
+  }
+}

@@ -110,7 +110,7 @@ export function inspectEasyGo(files, maskComments) {
   }
 }
 
-const fields26 = ["wideSplit", "squareSplit", "mode", "pagePairs", "transPages", "splitDividerColor", "drawableRectHook", "enableInSplitScreen"]
+const fields26 = ["wideSplit", "squareSplit", "mode", "pagePairs", "transPages", "splitDividerColor", "drawableRectHook", "enableInSplitScreen", "disableSplitByDefault"]
 export function easyGoRequiredApi(inspection, profile) {
   let api = Math.min(...profile.routes.map((r) => r.minApi))
   if (inspection.easyGo?.stateQueries?.length) api = Math.max(api, profile.capabilities.isEasySplit.minApi)
@@ -201,7 +201,8 @@ export function verifyEasyGo(inspection, compatibility, routeOption) {
             if (id === "router" && ["homeNavigationId", "disablePlaceholder", "disableDivider"].includes(k)) fail("navigation-only", `${k} 仅支持 Navigation`)
             else warn("unknown-field", `${key}.${k} 不在资料定义中，需核对`)
           }
-          for (const k of ["enableReducedContainerSize", "supportLandscapeFullscreen", "dialogSupportSplit", "drawableRectHook", "enableInSplitScreen", "disablePlaceholder", "disableDivider"]) if (own(o, k) && typeof o[k] !== "boolean") fail("type", `${k} 必须为布尔值`)
+          for (const k of ["enableReducedContainerSize", "supportLandscapeFullscreen", "dialogSupportSplit", "drawableRectHook", "enableInSplitScreen", "disableSplitByDefault", "disablePlaceholder", "disableDivider"]) if (own(o, k) && typeof o[k] !== "boolean") fail("type", `${k} 必须为布尔值`)
+          if (own(o, "disableSplitByDefault")) warn("patch-version", "disableSplitByDefault 需要 API 26.0.1；整数 API 门禁不能验证补丁版本，需核实 SDK/compile 与目标系统支持，并验证手动开关状态优先")
           for (const k of ["homePage", "relatedPage", "homeNavigationId"]) if (own(o, k) && (typeof o[k] !== "string" || !o[k].trim())) fail("type", `${k} 必须为非空字符串`)
           if (own(o, "relatedPage") && !o.homePage) fail("related", "relatedPage 必须同时配置 homePage")
           if (o.relatedPage) warn("related-parameters", "关联页不能接收动态参数，需确认可独立初始化")

@@ -13,6 +13,7 @@
         "uiMaterial",
         "systemMaterial",
         "内容区标题固定到标题栏",
+        "内容标题固定到标题栏",
         "分类栏滚入标题栏",
         "沉浸光感标题栏滚动吸顶"
       ],
@@ -49,10 +50,41 @@
     {
       "id": "agent-framework-kit",
       "displayName": "智能体框架服务",
-      "aliases": ["Agent Framework Kit", "FunctionComponent", "FunctionController", "通过Function组件拉起智能体"],
+      "aliases": [
+        "Agent Framework Kit",
+        "AgentFrameworkKit",
+        "FunctionComponent",
+        "FunctionController",
+        "通过Function组件拉起智能体",
+        "通过 Function 组件拉起智能体"
+      ],
       "status": "ready",
       "entry": "references/features/agent-framework-kit/README.md",
       "profile": "references/features/agent-framework-kit/profile.json"
+    },
+    {
+      "id": "float-view-ball",
+      "displayName": "闪控窗／球",
+      "aliases": [
+        "闪控窗",
+        "闪控球",
+        "闪控窗/球",
+        "floatView",
+        "floatingBall"
+      ],
+      "status": "ready",
+      "entry": "references/features/float-view-ball/README.md",
+      "profile": "references/features/float-view-ball/profile.json"
+    },
+    {
+      "id": "dlp-anti-peep",
+      "displayName": "防窥保护",
+      "aliases": [
+        "DlpAntiPeep"
+      ],
+      "status": "ready",
+      "entry": "references/features/dlp-anti-peep/README.md",
+      "profile": "references/features/dlp-anti-peep/profile.json"
     }
   ]
 }

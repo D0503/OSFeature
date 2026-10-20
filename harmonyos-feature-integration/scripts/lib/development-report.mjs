@@ -1,7 +1,6 @@
-import { currentLog, logEvent, redact } from "./skill-log.mjs"
 import { createHash } from "node:crypto"
 import { access, copyFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises"
-import { join, relative, resolve } from "node:path"
+import { join, resolve } from "node:path"
 import { tmpdir } from "node:os"
 
 export const hash = (value) => createHash("sha256").update(value).digest("hex")
@@ -138,17 +137,6 @@ export async function loadCollection(output, project) {
 export async function saveReport(output, directory, collection) {
   await mkdir(output, { recursive: true })
   const reportPath = join(output, "integration-report.md")
-  logEvent({ stage: "report", status: "started", report: reportPath })
-  const log = currentLog()
-  if (log) for (const run of collection.runs.filter((r) => r.logging?.sessionId === log.sessionId)) {
-    for (const item of run.evidence) {
-      const content = await readFile(item.path)
-      if (hash(content) !== item.sha256) throw new Error(`证据丢失或哈希不匹配: ${item.path}`)
-      log.artifact(`${run.runId}-${item.id}${item.type === "screenshot" ? ".png" : ".log"}`, content, { binary: item.type === "screenshot", runId: run.runId, evidenceId: item.id, type: item.type })
-    }
-    run.logging = log.metadata
-    logEvent({ stage: "judgment", status: deriveVerdict(run), runId: run.runId, checks: run.checks, fallback: run.changes.fallback })
-  }
   const previous = await exists(reportPath) ? await readFile(reportPath, "utf8") : ""
   const previousImages = [...previous.matchAll(/<img src="evidence\/([a-f0-9]{64}\.png)" alt="目标页面截图" width="270" \/>/g), ...previous.matchAll(/!\[目标页面截图\]\(<evidence\/([a-f0-9]{64}\.png)>\)/g)].map((m) => m[1])
   const featureNames = [...new Set(collection.runs.map((r) => r.featureName ?? ({ "immersive-light": "沉浸光感", "easygo-parallel": "平行视界", "smart-reach": "智感握姿", "agent-framework-kit": "智能体框架服务" })[r.feature] ?? r.feature))]
@@ -163,18 +151,13 @@ export async function saveReport(output, directory, collection) {
     lines.push(`### ${escape(r.goal)}`, "", `页面 / 组件：${escape(r.changes.page)} / ${escape(r.changes.component)}。`, "", `视觉结果：**${statusLabel(r.checks.visual.status)}**。${escape(r.checks.visual.summary)}`, "", deviceLabel(r), "", `验证时间：${escape(r.createdAt)}；整体结果：${statusLabel(deriveVerdict(r))}。`, "", "| 验证阶段 | 结果 | 说明 |", "|---|---|---|")
     const names = { static: "静态检查", sdk: "SDK", build: "构建", install: "安装启动", navigation: "目标页导航", runtime: "运行观察", visual: "视觉验证" }
     for (const [key, value] of Object.entries(r.checks).filter(([key]) => key !== "visual")) lines.push(`| ${names[key]} | ${statusLabel(value.status)} | ${escape(stageSummary(key, value))} |`)
-    if (r.logging?.timeline) {
-      const target = relative(output, r.logging.timeline).replaceAll("\\", "/")
-      const href = /^[A-Za-z]:/.test(target) ? r.logging.timeline.replaceAll("\\", "/") : target
-      lines.push("", `本次诊断日志：[session.log](<${href}>)（会话 ${r.logging.sessionId}）。`, "")
-    }
     const findings = r.staticFindings ?? []
     if (findings.length || !["passed", "not_applicable"].includes(r.checks.static.status)) {
       lines.push("", findings.some((f) => !f.review) ? "待处理事项：" : "静态复核结论：", "")
       if (!findings.length) lines.push("- 静态检查尚未完成复核，需重新检查并明确具体问题。")
       for (const finding of findings) {
         const locations = (finding.evidence ?? []).map((e) => typeof e === "string" ? e : e.path ? `${e.path}${e.line ? `:${e.line}` : ""}` : "").filter(Boolean)
-        const label = escape(findingLabels[finding.id] ?? (/^(easygo|smart-reach|agent-framework)-/.test(finding.id) ? finding.message : `需人工复核检查项（${finding.id}）`))
+        const label = escape(findingLabels[finding.id] ?? (/^(easygo|smart-reach|agent-framework|float-view-ball|dlp-anti-peep)-/.test(finding.id) ? finding.message : `需人工复核检查项（${finding.id}）`))
         const location = locations.length ? `；位置：${[...new Set(locations)].slice(0, 3).map(escape).join("、")}` : ""
         if (finding.review) lines.push(`- ${finding.review.status === "passed" ? "已复核通过" : "复核确认问题"}：${label}${location}；${escape(finding.review.note)}。`)
         else lines.push(`- ${finding.status === "fail" ? "检查失败" : "待核对"}：${label}${location}。`)
@@ -219,7 +202,5 @@ export async function saveReport(output, directory, collection) {
     const path = join(output, "evidence", name)
     if (!currentImages.has(name) && await exists(path) && await fileHash(path) === name.slice(0, -4)) await unlink(path)
   }
-  log?.artifact("collection.json", JSON.stringify(redact(collection), null, 2), { type: "verification-state" })
-  logEvent({ stage: "report", status: "completed", report: reportPath })
   return reportPath
 }

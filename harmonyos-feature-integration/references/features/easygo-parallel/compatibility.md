@@ -5,6 +5,7 @@
 | entry 的 easyGo 开发者配置，Router 或 Navigation 分栏 | 23 | SDK 根清单与有效 compile 均达到 23 |
 | UIContext.isEasySplit() | 24 | 仅在调用该接口时要求 SDK/compile 24；运行 API 低于 24 时不得调用 |
 | mode、pagePairs、transPages、wideSplit/squareSplit、splitDividerColor、drawableRectHook、enableInSplitScreen | 26 | 使用任意字段即要求 SDK/compile 26，不把购物示例当作 API 23 模板 |
+| disableSplitByDefault | 26.0.1 | true/false 均需此版本；整数 API 26 门禁之外，须核实 SDK/compile 和目标系统的补丁版本 |
 
 基础路线 `minApi: 23`；已配置增强字段或状态查询时，扫描输出的 `requiredApi` 上调到 24/26。计划新增但尚未写入的字段也必须按此表先判门槛。`targetSdkPolicy: preserve-unless-declared` 表示本资料未声明额外 target 要求：保留已有 target，不把 SDK/compile 门槛冒充 target 门槛。compatible 保留原值；低版本实际行为需回归，尤其旧系统如何处理高版本 JSON 字段不能仅凭编译通过推断。
 

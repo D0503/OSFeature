@@ -2,6 +2,8 @@
 
 ## Skill 接入默认值
 
+开发者未特别要求时，本次接入的 wideWindowMode 和 squareWindowMode 必须均显式启用分栏：Router 路线使用 `routerSplit`，Navigation 路线使用 `navigationSplit`。仅在开发者明确要求关闭对应窗口的平行视界时使用 `original`，不将其作为默认值；范围外的设备配置保持不变。
+
 两个字段的官方缺省值均为 false；本 Skill 新接入默认显式设置 enableReducedContainerSize=true，API 26 同时设置 drawableRectHook=true。API 23～25 优先提出升级选项，用户选择保持版本时省略 drawableRectHook。合法的 false 仍受支持，已有显式 false 或用户明确选择不静默覆盖。写入前完成 [配置确认](configuration-confirmation.md)，特别是全屏页和购物模式过渡页，不把官方空数组默认值当作用户已确认无需这些页面。
 
 ## 结构与资源
@@ -10,7 +12,7 @@
 
 结构为 `{ "common": { "displayModeOptions": { ... } }, "phone": { ... }, "tablet": { ... } }`。common 必填；设备覆盖配置独立完整，不和 common 深合并。
 
-displayModeOptions 的 wideWindowMode 必填，squareWindowMode 可选；值为 `original`、`routerSplit`、`navigationSplit`。后两者必须有对应的 routerSplitOptions 或 navigationSplitOptions 对象；两种 Options 不可共存。资料未说明的缺省行为不推断，需覆盖方形窗口时显式配置。
+displayModeOptions 的 wideWindowMode 必填，官方结构中 squareWindowMode 可选，但本 Skill 默认显式配置两项分栏。值为 `original`、`routerSplit`、`navigationSplit`。后两者必须有对应的 routerSplitOptions 或 navigationSplitOptions 对象；两种 Options 不可共存。开发者明确选择的 original 仍为合法配置，静态校验不能因接入默认值而判错。
 
 ## Options 字段
 
@@ -36,5 +38,8 @@ displayModeOptions 的 wideWindowMode 必填，squareWindowMode 可选；值为 
 | splitDividerColor | 对象，light/dark 可选，颜色为 #AARRGGBB；默认适配深浅色；应用不适配深色时两色设为一致 |
 | drawableRectHook | 官方默认 false，Skill 在 API 26 新接入默认 true；true 时 drawableRect 开启页面级容器能力，按右页尺寸换算 |
 | enableInSplitScreen | 默认 false；true 时允许窗口分屏中尺寸满足条件时进入平行视界 |
+| disableSplitByDefault | API 26.0.1 起支持，可选布尔值，默认 false：开关初始开启；true：初始关闭。用户手动调整过开关后，以手动状态为准 |
 
 不从示例继承不需要的增强字段。改变模式、关联页或全屏页会影响产品交互，应依据任务与既有导航关系确定。
+
+来源：[华为平行视界官方文档](https://developer.huawei.com/consumer/cn/doc/doccenter-multi-device/bpta-easygo-parallel)，2026-10-20 核实其 [Markdown 正文](https://developer.huawei.com/consumer/cn/doc/doccenter-multi-device/bpta-easygo-parallel.md)。

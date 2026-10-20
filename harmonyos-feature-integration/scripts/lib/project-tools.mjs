@@ -1,13 +1,13 @@
-import { logEvent } from "./skill-log.mjs"
 import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
 import { inspectEasyGo, evaluateEasyGo, verifyEasyGo } from "./easygo-tools.mjs"
 import { inspectSmartReach, evaluateSmartReach, verifySmartReach } from "./smart-reach-tools.mjs"
 import { inspectAgentFramework, evaluateAgentFramework, verifyAgentFramework } from "./agent-framework-tools.mjs"
+import { inspectWindowPrivacy, evaluateWindowPrivacy, verifyWindowPrivacy } from "./window-privacy-tools.mjs"
 import { inspectMaterialInventory } from "./material-inventory.mjs"
 
-const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules", "os-feature-integration"])
+const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
 const TEXT_EXTENSIONS = new Set([".ets", ".ts", ".json", ".json5"])
 
 function slash(path) {
@@ -513,6 +513,7 @@ export async function inspectProject(projectPath, options = {}) {
     easyGo: inspectEasyGo(files, maskComments),
     smartReach: inspectSmartReach(files, maskComments),
     agentFramework: inspectAgentFramework(files, maskComments),
+    ...inspectWindowPrivacy(files, maskComments),
     materialInventory: await inspectMaterialInventory(files, maskComments),
     evidence: [compatible.evidence, target.evidence, compile.evidence, ...localSdk.evidence].filter(Boolean),
     unknown,
@@ -524,6 +525,7 @@ export async function inspectProject(projectPath, options = {}) {
 }
 
 export function evaluateCompatibility(inspection, profile) {
+  if (["float-view-ball", "dlp-anti-peep"].includes(profile.featureId)) return evaluateWindowPrivacy(inspection, profile)
   if (profile.featureId === "agent-framework-kit") return evaluateAgentFramework(inspection, profile)
   if (profile.featureId === "smart-reach") return evaluateSmartReach(inspection, profile)
   if (profile.featureId === "easygo-parallel") return evaluateEasyGo(inspection, profile)
@@ -714,6 +716,7 @@ function effectiveArkuiMaterialState(inspection) {
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
+  if (["float-view-ball", "dlp-anti-peep"].includes(compatibility.featureId)) return verifyWindowPrivacy(inspection, compatibility, routeOption)
   if (compatibility.featureId === "agent-framework-kit") return verifyAgentFramework(inspection, compatibility, routeOption)
   if (compatibility.featureId === "smart-reach") return verifySmartReach(inspection, compatibility, routeOption)
   if (compatibility.featureId === "easygo-parallel") return verifyEasyGo(inspection, compatibility, routeOption)
@@ -1218,7 +1221,6 @@ export function parseCliArgs(argv, definitions) {
 export async function loadFeature(skillRoot, featureId) {
   const registryPath = resolve(skillRoot, "references", "feature-registry.json")
   const registry = JSON.parse(await readFile(registryPath, "utf8"))
-  logEvent({ stage: "resources", status: "read", path: registryPath })
   const feature = registry.features.find((item) => item.id === featureId)
   if (!feature) throw new Error(`Feature is not registered: ${featureId}`)
   if (feature.status !== "ready") throw new Error(`Feature is not ready: ${featureId}`)
@@ -1228,7 +1230,6 @@ export async function loadFeature(skillRoot, featureId) {
     throw new Error(`Feature profile is invalid: ${feature.profile}`)
   }
   const profile = JSON.parse(await readFile(profilePath, "utf8"))
-  logEvent({ stage: "resources", status: "read", path: profilePath, feature: featureId })
   if (!profile || typeof profile !== "object" || profile.schemaVersion !== "1.0") {
     throw new Error(`Feature profile schemaVersion is invalid: ${feature.profile}`)
   }

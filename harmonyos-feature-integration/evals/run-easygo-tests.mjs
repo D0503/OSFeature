@@ -88,6 +88,9 @@ for (const route of ["router", "navigation"]) {
   for (const api of [23, 26]) {
     const name = `${route}-${api === 26 ? "shopping-api26" : "api23"}.json`
     const config = JSON.parse(await readFile(join(root, "references/features/easygo-parallel/assets", name), "utf8"))
+    for (const field of ["wideWindowMode", "squareWindowMode"]) {
+      assert.equal(config.common.displayModeOptions[field], `${route}Split`, `${name}: ${field} defaults to route split`)
+    }
     const o = config.common.displayModeOptions[`${route}SplitOptions`]
     assert.equal(o.enableReducedContainerSize, true, `${name}: new integration default`)
     if (api === 26) assert.equal(o.drawableRectHook, true, `${name}: API 26 default`)
@@ -105,6 +108,27 @@ for (const route of ["router", "navigation"]) {
     assert.equal(verify(explicitFalse, route).counts.fail, 0, `${name}: false is valid`)
     assert.equal(chosen.enableReducedContainerSize, false, "Verification must not overwrite user choice")
     if (api === 26) assert.equal(chosen.drawableRectHook, false)
+  }
+}
+assert.equal(profile.capabilities.disableSplitByDefault.minApiVersion, "26.0.1")
+for (const route of ["router", "navigation"]) {
+  for (const value of [true, false]) {
+    const i = mutate((i) => {
+      i.api.compile = 23; i.localSdk.apiVersion = 23
+      i.easyGo.records[0].configs[0].value = { common: { displayModeOptions: {
+        wideWindowMode: `${route}Split`, [`${route}SplitOptions`]: { disableSplitByDefault: value }
+      } } }
+    }, route === "router" ? router : navigation)
+    assert.equal(compat(i).requiredApi, 26)
+    assert.equal(compat(i).status, "upgrade_available")
+    i.api.compile = 26; i.localSdk.apiVersion = 26
+    assert.equal(verify(i, route).counts.fail, 0)
+    assert.ok(has(verify(i, route), "patch-version", "warn"), "Integer API 26 does not prove 26.0.1 support")
+    assert.equal(has(verify(i, route), "unknown-field"), false)
+    const o = i.easyGo.records[0].configs[0].value.common.displayModeOptions[`${route}SplitOptions`]
+    assert.equal(o.disableSplitByDefault, value)
+    o.disableSplitByDefault = "false"
+    assert.ok(has(verify(i, route), "type", "fail"))
   }
 }
 // Isolate drawableRectHook from shopping mode so its version gate is tested independently.

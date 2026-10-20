@@ -2,6 +2,8 @@
 
 模板仅提供配置起点，不直接覆盖已有资源。实际 module.easyGo 引用位置、文件名、页面和设备覆盖须由工程事实确定。
 
+四份模板的 wideWindowMode 和 squareWindowMode 均显式使用对应路线的 routerSplit 或 navigationSplit。开发者未特别要求时必须保留这两个分栏默认值；只有明确要求关闭对应窗口的平行视界时才改为 original。
+
 - [Router API 23](assets/router-api23.json)：基础导航配置；pages/Index 必须替换为实际主页路径。
 - [Navigation API 23](assets/navigation-api23.json)：以 Navigation 首页 navBar 为主页的基础配置。
 - [Router API 26 购物模式](assets/router-shopping-api26.json)：在基础配置上显式启用 mode=0。

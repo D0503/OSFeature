@@ -93,6 +93,12 @@
     },
     "enableInSplitScreen": {
       "minApi": 26
+    },
+    "disableSplitByDefault": {
+      "minApi": 26,
+      "minApiVersion": "26.0.1",
+      "default": false,
+      "patchVersionVerification": "manual-required"
     }
   },
   "constraints": [

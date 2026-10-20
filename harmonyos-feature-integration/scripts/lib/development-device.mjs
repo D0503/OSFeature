@@ -1,4 +1,6 @@
+import { execFile } from "node:child_process"
 import { readFile, stat } from "node:fs/promises"
+import { promisify } from "node:util"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
 import { executeBuildStage } from "./hvigor-build.mjs"
 
@@ -31,8 +33,7 @@ export async function runDeveco(args, cwd) {
   if (args.some((v) => typeof v !== "string" || /[\0\r\n]/.test(v))) throw new Error("设备命令参数无效")
   let command = "devecocli", prefix = []
   if (process.platform === "win32") {
-    const { stdout, stderr, exitCode } = await executeBuildStage({ name: "device-tool-discovery", command: "where.exe", args: ["devecocli.cmd"] }, cwd, process.env)
-    if (exitCode !== 0) throw new Error(`未找到 devecocli.cmd: ${stderr || stdout}`)
+    const { stdout } = await promisify(execFile)("where.exe", ["devecocli.cmd"], { windowsHide: true })
     const wrappers = stdout.split(/\r?\n/).map((v) => v.trim()).filter((v) => v.toLowerCase().endsWith("devecocli.cmd"))
     if (!wrappers.length) throw new Error("未找到 devecocli.cmd")
     let entry

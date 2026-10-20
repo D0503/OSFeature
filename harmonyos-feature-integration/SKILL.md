@@ -1,13 +1,11 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、平行视界、智感握姿、Smart Reach、adaptToHandedness、智能体框架服务、Agent Framework Kit、FunctionComponent，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）；通过 Function 组件拉起智能体（应用 API 20、元服务 API 21），开发 Agent 和关联应用等前置操作提供指导。工程 API 低于路线所需版本时，可提供升级本机 SDK（无需显式配置 compileSdkVersion）并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、平行视界、智感握姿、Smart Reach、adaptToHandedness、智能体框架服务、Agent Framework Kit、FunctionComponent、闪控窗、闪控球、floatView、floatingBall、防窥保护、DlpAntiPeep，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）；通过 Function 组件拉起智能体（应用 API 20、元服务 API 21），开发 Agent 和关联应用等前置操作提供指导。工程 API 低于路线所需版本时，可提供升级本机 SDK（无需显式配置 compileSdkVersion）并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
 
 通过注册表识别 HarmonyOS 新特性，并只加载命中特性的能力包。注册表中的能力都必须具备可执行资料；不完整能力在完成前不得注册。
-
-开始调用时先按[调用过程日志](references/workflows/call-logging.md)建立会话；本次识别、资料加载、方案、实施、修复、验证和交付沿用同一会话，按该文档记录 AI 主导动作。
 
 结构校验和工具脚本支持 Windows、macOS、Linux，需要 Node.js 18+。实际接入需要可读取的 HarmonyOS Stage 模型工程；构建与运行能力取决于项目本身的 SDK、签名、设备和工具环境。
 
@@ -86,9 +84,11 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 
 ## 当前已注册能力
 
-当前注册表包含沉浸光感、平行视界、智感握姿和智能体框架服务能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[验证闭环](references/workflows/verification.md)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球和防窥保护能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[验证闭环](references/workflows/verification.md)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
 智能体框架服务仅实现 Function 组件拉起智能体；开发 Agent、关联应用与测试发布等前置操作按能力包提供指导。A2A、AgentExtensionAbility 或后端开发请求即使命中 Kit 名称，也不属于当前实现范围；普通 Agent/Function 请求不能据此自动命中。其运行与视觉验证必须使用已确认的 Phone/Tablet 真机，按能力包采集点击、打开及关闭证据，不能以按钮显示替代拉起成功。
+
+闪控窗／球支持独立窗、独立球及按需绑定切换；同时选择窗球路线不代表绑定。防窥保护是独立能力，用户要求时可与闪控窗联动，各自门禁分别核验。普通全局悬浮窗、悬浮按钮、画中画、防截屏或隐私遮罩不自动映射到这两个能力。防窥效果只接受已确认的 Phone 真机证据；闪控球按能力包的模拟器条件验证，不推定闪控窗或绑定支持模拟器。
 
 ## 资源加载表
 

@@ -658,6 +658,94 @@
         "修改关联后由开发者重新发布测试",
         "没有真实设备证据时不声称修复验证通过"
       ]
+    },
+    {
+      "id": 55,
+      "prompt": "给现有Stage应用接入闪控球，SDK API20，保持原业务兼容。",
+      "expected_output": "选择floating-ball，验证本机SDK、ACL和前台条件；API20路径不使用API24/26接口。",
+      "files": [],
+      "expectations": [
+        "float-view-ball",
+        "USE_FLOAT_BALL",
+        "保留原业务"
+      ]
+    },
+    {
+      "id": 56,
+      "prompt": "请实现闪控窗，并允许最小化到闪控球，工程API24。",
+      "expected_output": "明确升级API26，选中两条路线，双权限、未启动时bind、只启动一端与成对销毁。",
+      "files": [],
+      "expectations": [
+        "由用户决定升级",
+        "bind前均未启动",
+        "停止一端销毁两端"
+      ]
+    },
+    {
+      "id": 57,
+      "prompt": "应用既有独立闪控球，也要独立闪控窗，不需要切换绑定。",
+      "expected_output": "保留两条路线，处理互斥，不自动调用bind。",
+      "files": [],
+      "expectations": [
+        "两条路线",
+        "不自动绑定",
+        "互斥"
+      ]
+    },
+    {
+      "id": 58,
+      "prompt": "我要防窥保护，工程API20，检测到窥视后显示系统蒙层。",
+      "expected_output": "状态感知API20但系统蒙层API21，给出SDK升级选择并保持compatible；检查受限权限和真机开关。",
+      "files": [],
+      "expectations": [
+        "dlp-anti-peep",
+        "API21",
+        "未知不是PASS"
+      ]
+    },
+    {
+      "id": 59,
+      "prompt": "API21应用增加防窥设置弹框。",
+      "expected_output": "requestAntiPeepOptions要求API23，不能以基础API20推断；提供升级选择或系统设置指引。",
+      "files": [],
+      "expectations": [
+        "API23",
+        "不循环弹框",
+        "保留target和compatible"
+      ]
+    },
+    {
+      "id": 60,
+      "prompt": "给闪控窗增加防窥，点击缩小切到球后再返回。",
+      "expected_output": "组合两个能力包，STARTED获取windowId，不可见/销毁时失效，返回时重查；不宣称球已保护。",
+      "files": [],
+      "expectations": [
+        "API26",
+        "DLP_GET_HIDE_STATUS",
+        "Phone真机",
+        "闪控球不推定被遮罩"
+      ]
+    },
+    {
+      "id": 61,
+      "prompt": "防窥查询报错就返回PASS，再调用passDlpAntiPeepInfo恢复吧。",
+      "expected_output": "拒绝把错误当成PASS；保持unknown/未保护。放通仅由明确用户操作触发，说明到锁屏或退出前持续效果。",
+      "files": [],
+      "expectations": [
+        "unknown",
+        "放通不是恢复",
+        "不报保护成功"
+      ]
+    },
+    {
+      "id": 62,
+      "prompt": "帮我做普通悬浮按钮和防截屏。",
+      "expected_output": "不自动路由窗球或防窥保护，不生成其权限与控制器。",
+      "files": [],
+      "expectations": [
+        "不误命中",
+        "不扩展能力"
+      ]
     }
   ]
 }

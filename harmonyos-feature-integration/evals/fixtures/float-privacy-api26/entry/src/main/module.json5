@@ -1,0 +1,21 @@
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "deviceTypes": [
+      "phone"
+    ],
+    "pages": "$profile:main_pages",
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.FLOAT_VIEW"
+      },
+      {
+        "name": "ohos.permission.USE_FLOAT_BALL"
+      },
+      {
+        "name": "ohos.permission.DLP_GET_HIDE_STATUS"
+      }
+    ]
+  }
+}

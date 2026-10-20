@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { cliLog, logResult } from "./lib/skill-log.mjs"
 
 import { access, readFile } from "node:fs/promises"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
@@ -50,8 +49,7 @@ async function validateDocumentMap(errors, packageDir, documents, pathPrefix, re
 }
 
 try {
-  cliLog("feature-package")
-  const args = parseCliArgs(process.argv.slice(2), ["feature", "log-session", "project"])
+  const args = parseCliArgs(process.argv.slice(2), ["feature"])
   if (!args.feature) throw new Error("Required option: --feature <id>")
   const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
   const errors = []
@@ -195,6 +193,15 @@ try {
         issue(errors, profile.capabilities?.atomicService?.minApi === 21 && profile.capabilities?.iconAboveTitle?.minApi === 21, "profile.capabilities", "元服务及 ICON_ABOVE_TITLE 要求 API 21")
         for (const key of ["prerequisites", "troubleshooting"]) issue(errors, typeof profile.documents?.[key] === "string", `profile.documents.${key}`, "缺少前置指导或排障资料")
       }
+      if (["float-view-ball", "dlp-anti-peep"].includes(feature.id)) {
+        const expected = feature.id === "float-view-ball" ? { "float-view": 26, "floating-ball": 20 } : { "status-observation": 20, "system-mask": 21 }
+        issue(errors, profile.routeComposition?.mode === "composable" && routeIds.size === 2 && Object.keys(expected).every((id) => routeIds.has(id)), "profile.routes", "需声明两条可组合路线")
+        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "无独立 target 门槛证据，应保留 target")
+        for (const route of profile.routes ?? []) issue(errors, route.minApi === expected[route.id] && route.minTargetApi === undefined, `profile.routes.${route.id}`, "路线 API 门槛错误或无依据提高 target")
+        const capabilities = feature.id === "float-view-ball" ? { binding: 26, ballVisibility: 24, ballDestroy: 26, ballColorsAndAnimation: 26 } : { optionsAndInformation: 23 }
+        for (const [key, minApi] of Object.entries(capabilities)) issue(errors, profile.capabilities?.[key]?.minApi === minApi, `profile.capabilities.${key}`, "可选接口 API 门槛错误")
+        issue(errors, typeof profile.documents?.troubleshooting === "string", "profile.documents.troubleshooting", "缺少排障资料")
+      }
       issue(errors, profile.evidence?.policy === "snapshot-first-verify-on-change-or-conflict", "profile.evidence.policy", "证据策略不符合契约")
 
       await validateDocumentMap(
@@ -222,9 +229,9 @@ try {
     issue(errors, contract.includes(required), "references/feature-package-contract.md", `能力包契约缺少栏目: ${required}`)
   }
 
-  process.stdout.write(`${JSON.stringify(logResult("feature-package", { status: errors.length ? "invalid" : "valid", feature: args.feature, errors }, errors.length ? "failed" : "passed"), null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify({ status: errors.length ? "invalid" : "valid", feature: args.feature, errors }, null, 2)}\n`)
   process.exit(errors.length ? 1 : 0)
 } catch (error) {
-  process.stdout.write(`${JSON.stringify(logResult("feature-package", { status: "error", error: error instanceof Error ? error.message : String(error) }, "failed"), null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify({ status: "error", error: error instanceof Error ? error.message : String(error) }, null, 2)}\n`)
   process.exit(2)
 }
