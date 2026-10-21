@@ -1,6 +1,6 @@
 # 闪控窗防窥联动
 
-用户明确要求闪控窗防窥时，加载本能力与独立的[防窥能力](../dlp-anti-peep/README.md)，各自保留版本、权限、应用形态和设备门禁。交集要求实际支持防窥的 Phone 真机、API26、FLOAT_VIEW 授权与 DLP_GET_HIDE_STATUS ACL；不支持元服务，绑定球时另需 USE_FLOAT_BALL。
+用户明确要求闪控窗防窥时，加载本能力与独立的[防窥能力](../dlp-anti-peep/README.md)，各自保留版本、权限、应用形态和设备门禁。交集要求实际支持防窥的 Phone 真机、API26、FLOAT_VIEW 的 ACL 与用户授权、DLP_GET_HIDE_STATUS 的 ACL；不支持元服务，绑定球时另需 USE_FLOAT_BALL。
 
 闪控窗联动属于组合接入，只有用户明确要求时，才在防窥状态回调中结合[闪控窗路线](routes/float-view.md)的窗口状态和 ID 获取方式实施。普通主窗口的接入结果不能作为闪控窗已受保护的证据。
 

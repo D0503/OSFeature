@@ -40,7 +40,7 @@
 }
 ```
 
-**实施时和实施结束后的最终交付说明中，都必须提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限。** 两次提醒均须包含以下调试与上架要求及 ACL 申请链接：
+**实施前（首次修改工程前）和实施结束后的最终交付说明中，都必须提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限。** 两次提醒均须包含以下调试与上架要求及 ACL 申请链接：
 
 - **仅本地调试防窥保护能力：** 自动签名时同意权限申请即可。
 - **应用上架需使用防窥保护能力：** 需要申请 `ohos.permission.DLP_GET_HIDE_STATUS` 权限，并在 HarmonyOS 开发者中心平台 [申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。

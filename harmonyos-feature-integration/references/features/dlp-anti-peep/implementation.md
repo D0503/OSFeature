@@ -4,7 +4,7 @@
 
 确认[兼容性](compatibility.md)中的设备、API、人脸识别及系统/应用开关条件。按[权限声明与 ACL](compatibility.md#权限声明与-acl)在实际宿主 `module.json5` 中声明 `ohos.permission.DLP_GET_HIDE_STATUS`，配置 `reason`、`usedScene` 及对应字符串资源。
 
-**实施时提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限。** 仅本地调试防窥保护能力，自动签名时同意权限申请即可；应用上架需使用此能力，须在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。
+**实施前（首次修改工程前）提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限。** 仅本地调试防窥保护能力，自动签名时同意权限申请即可；应用上架需使用此能力，须在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。
 
 先确定需要保护的实际内容和窗口。下面的 `isPrivacyHidden` 表示目标内容的隐藏状态：工程已有对应状态时直接复用，并保留原来的初始显示策略；没有时再按此名称定义。必须将状态接入目标内容的实际渲染逻辑，隐藏时显示已确认的替代内容，恢复时展示原数据，不修改业务数据本身。
 
@@ -292,4 +292,4 @@ aboutToDisappear(): void {
 
 ## 结束提醒
 
-实施结束后的最终交付说明必须再次提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限；仅本地调试时，自动签名同意权限申请即可；应用上架需使用此能力时，须在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。实施时已提醒也不能省略。
+实施结束后的最终交付说明必须再次提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限；仅本地调试时，自动签名同意权限申请即可；应用上架需使用此能力时，须在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。实施前已提醒也不能省略。

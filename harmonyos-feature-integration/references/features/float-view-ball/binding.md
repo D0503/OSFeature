@@ -1,6 +1,6 @@
 # 窗球绑定切换（API 26）
 
-前提：两端可用、Phone/Tablet 实际支持、FLOAT_VIEW 已授权、USE_FLOAT_BALL 已完成 ACL。创建两个尚未启动的控制器，给窗加载页面，注册各自状态回调，然后 await floatView.bind(view, ball, params)。绑定参数覆盖球控制器此前保存的启动参数。
+前提：两端可用、Phone/Tablet 实际支持、FLOAT_VIEW 与 USE_FLOAT_BALL 均已完成权限声明，且 FLOAT_VIEW 已获用户授权。创建两个尚未启动的控制器，给窗加载页面，注册各自状态回调，然后 await floatView.bind(view, ball, params)。绑定参数覆盖球控制器此前保存的启动参数。
 
 绑定成功后只调用一端启动：view.start() 或 ball.startFloatingBall(params)，由业务决定初始展示形态。系统同时创建两端窗口，但只展示一端；用户通过系统操作切换。不要在球 click 回调中再启动窗或同时恢复主窗口。
 
