@@ -129,6 +129,7 @@ export function verifySmartReach(inspection, compatibility, routeOption = "auto"
           check(`permission-fields-${owner}-${permission.name}`, reasonValid && sceneValid ? "pass" : "fail", `${permission.name} 的 user_grant 声明必须包含 reason 字符串资源引用及 usedScene.abilities/when`, [{ path: owner }])
           if (reasonValid && sceneValid) check(`permission-resources-${owner}-${permission.name}`, "warn", "核对 reason 资源可解析且用途准确，usedScene.abilities 属于实际使用能力的模块 Ability，页面可见期感知使用 inuse", [{ path: owner }])
         }
+        if (route === "operating-hand" && activity) check(`authorization-${owner}`, "warn", "操作手若使用 ACTIVITY_MOTION，调用前须经 requestPermissionsFromUser 获得授权；静态检查不能证明授权结果与 motion 调用顺序，需复核拒绝、异常及页面离开路径", ev)
         if (route === "operating-hand" && gesture && !activity && inspection.api.compatible < 20) check(`permission-api-${owner}`, "warn", "仅 DETECT_GESTURE 无法覆盖 API 15–19；补充 ACTIVITY_MOTION 声明或将操作手增强限制到 API 20+", ev)
       }
       for (const u of active.filter((u) => u.operation === "on")) {

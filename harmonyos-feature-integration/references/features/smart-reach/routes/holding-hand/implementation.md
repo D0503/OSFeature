@@ -6,7 +6,7 @@
 
 ## 1. 权限与版本
 
-在所属 HAP 的 `module.json5` 声明 `ohos.permission.DETECT_GESTURE`；此权限不需要运行时请求授权。声明示例见 [兼容性](../../compatibility.md)。
+在所属 HAP 的 `module.json5` 声明 `ohos.permission.DETECT_GESTURE`，填写 `reason` 与 `usedScene`；此权限不需要运行时请求授权。声明示例见 [兼容性](../../compatibility.md)。
 
 SDK/compile 至少 API 20。通过 `@kit.MultimodalAwarenessKit` 导入 `motion`；运行时 API 20+ 和 `canIUse('SystemCapability.MultimodalAwareness.Motion')` 都满足后才进入新接口路径。compatible 低于 20 时保护整个新调用路径；SysCap 不能代替版本检查，也不能保证具体硬件支持。
 
@@ -41,11 +41,56 @@ SDK/compile 至少 API 20。通过 `@kit.MultimodalAwarenessKit` 导入 `motion`
 3. `aboutToAppear` / `aboutToDisappear` 适用于组件出现和消失；缓存页面、Tab 切换、前后台场景须结合工程实际可见性处理，不能假设切换页面一定触发组件销毁。
 4. 页面隐藏或进入后台时停止感知、忽略迟到回调，不更新隐藏页面。缓存页面保留位置状态，重新可见且功能启用后恢复监听；新建页面以原布局初始化。
 
+以下片段合并到已有页面。`canUseHoldingHand()` 由工程实现，同时检查运行 API 20+ 与 `canIUse('SystemCapability.MultimodalAwareness.Motion')`；`holdingSubscribed` 仅在 on/off 成功后改变。页面出现时先设为可见再调用 `startHoldingHand()`，`aboutToDisappear` 先设为不可见再调用 `stopHoldingHand()`：
+
+```arkts
+import { motion } from '@kit.MultimodalAwarenessKit'
+
+handleHoldingHandChange: Callback<motion.HoldingHandStatus> = (status) => {
+  if (!this.canUseHoldingHand()) return
+  if (status === motion.HoldingHandStatus.LEFT_HAND_HELD) {
+    this.applyHoldingSide(false)
+  } else if (status === motion.HoldingHandStatus.RIGHT_HAND_HELD) {
+    this.applyHoldingSide(true)
+  }
+}
+
+private startHoldingHand(): void {
+  if (this.holdingSubscribed || !this.canUseHoldingHand()) return
+  try {
+    motion.on('holdingHandChanged', this.handleHoldingHandChange)
+    this.holdingSubscribed = true
+  } catch (error) {
+    // 记录 201、801 或服务错误，恢复接入前布局与功能。
+  }
+}
+
+private stopHoldingHand(): void {
+  if (!this.holdingSubscribed || !this.canUseHoldingHand()) return
+  try {
+    motion.off('holdingHandChanged', this.handleHoldingHandChange)
+    this.holdingSubscribed = false
+  } catch (error) {
+    // 记录退订错误并保留订阅标志，避免下一次重复 on。
+  }
+}
+```
+
+`applyHoldingSide` 仅对新的有效方向移位，正在操作目标时先缓存方向；未知、双手、未握持状态不进入该方法。功能关闭时同样调用受守卫保护的 `stopHoldingHand()`，并恢复原位置；退订失败的后续处理按[共同约束](../../implementation.md#自定义路径的共同约束)。
+
 ## 4. 左右布局与转场
 
 侧边悬浮按钮在现有容器中设置左右对齐；容器适合时，可采用 `RelativeContainer` 内的左右条件分支，分别设置 `HorizontalAlign.Start/End`，底部对齐保持一致。
 
 侧边切换使用 `TransitionEffect.move(TransitionEdge.START/END)` 从对应屏外进出，避免按钮横穿内容区域。动画曲线优先使用官方推荐值：组件出场位移动画使用 `curves.interpolatingSpring(0, 1, 200, 17)`（stiffness=200，出场更利落）；从屏幕外移入/移出使用 `curves.interpolatingSpring(0, 1, 170, 17)`（stiffness=170，侧边绕行更自然）。不得使用未经验证的参数组合。首次出场标志放在页面状态中，不因条件分支重建而重复触发首次动画。
+
+在原按钮 Builder 的属性链上配置对应方向的进出场，保留业务点击事件：
+
+```arkts
+.transition(TransitionEffect.move(edge).animation({
+  curve: curves.interpolatingSpring(0, 1, 170, 17)
+}))
+```
 
 通过 `if/else` 切换左右分支时，退出分支中的组件沿当前侧滑出，进入分支中的组件从对侧滑入。分别为分支配置 `TransitionEffect.move(...).animation({ curve: ... })`，两个过渡由框架同步执行，无需手动编排先后时序。不要用定时器串联“隐藏、等待、再显示”，也不要在两段动画之间插入空白状态。这里的退出/进入组件是同一跟手目标的左右呈现，不是新增模式中持续保留的原入口；原入口不参加这次换侧动画。
 

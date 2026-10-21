@@ -73,7 +73,7 @@ assert.ok(has(verify(inspected), "permission-api-", "warn"), "Gesture alone does
 await writeFile(manifest, `{module:{name:'entry',type:'entry',requestPermissions:[{name:'ohos.permission.ACTIVITY_MOTION',reason:'$string:gesture_reason',usedScene:{abilities:['EntryAbility'],when:'inuse'}}]}}`)
 inspected = await scan()
 assert.ok(has(verify(inspected), "permission-", "pass"))
-assert.ok(!has(verify(inspected), "authorization", "warn"))
+assert.ok(has(verify(inspected), "authorization", "warn"))
 assert.ok(!has(verify(inspected), "permission-api-", "warn"))
 assert.ok(has(verify(inspected), "permission-fields-", "pass"))
 for (const route of ["operating-hand", "holding-hand"]) {
@@ -92,6 +92,12 @@ for (const route of ["operating-hand", "holding-hand"]) {
     assert.ok(has(verify(invalid, route), "permission-fields-", "fail"))
   }
 }
+const declarationOnly = mutate((i) => {
+  i.smartReach.records[0].permissions = ["ohos.permission.DETECT_GESTURE"]
+  i.smartReach.records[0].permissionDeclarations = [{ name: "ohos.permission.DETECT_GESTURE" }]
+})
+assert.ok(has(verify(declarationOnly, "holding-hand"), "permission-fields-", "fail"))
+assert.ok(!has(verify(declarationOnly, "holding-hand"), "authorization", "warn"))
 
 await writeFile(page, `import motion from '@ohos.multimodalAwareness.motion'; motion.getRecentOperatingHandStatus();`)
 inspected = await scan()
