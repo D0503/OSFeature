@@ -103,6 +103,10 @@ export function inspectWindowPrivacy(files, maskComments) {
           usages.push({ ...evidence(m.index), api, route, operation, receiver, args, props, minApi, event: literal(args[0]) })
         }
       }
+      if (api === "dlpAntiPeep") for (const receiver of receivers) {
+        const re = new RegExp(`(?<![\\w$.])${escape(receiver)}\\s*\\.\\s*AntiPeepOptionsResult\\b`, "g")
+        for (const m of code.matchAll(re)) if (isCode(m)) usages.push({ ...evidence(m.index), api, route: "status-observation", operation: "AntiPeepOptionsResult", receiver, args: [], minApi: 23 })
+      }
       // Optional properties in indirect parameter objects still raise the package version.
       if (api === "floatingBall") for (const m of positions.matchAll(/\b(titleColor|contentColor|textUpdateAnimationType)\s*:/g)) usages.push({ ...evidence(m.index), api, route: "floating-ball", operation: "api26-parameter-candidate", minApi: 26, args: [] })
     }

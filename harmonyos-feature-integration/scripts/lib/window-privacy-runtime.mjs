@@ -8,6 +8,10 @@ export function windowPrivacyScenarios(feature, route, inspection) {
   }
   if (feature === "dlp-anti-peep") {
     const scenarios = ["switch-checked", "hide-observed", "pass-observed", "fallback-preserved", "subscription-cleaned"]
+    const operations = new Set(inspection.dlpAntiPeep?.usages?.map((usage) => usage.operation))
+    if (operations.has("requestAntiPeepOptions")) scenarios.push("options-result-checked", "options-failure-handled")
+    if (operations.has("publishAntiPeepInformation")) scenarios.push("information-published", "information-failure-handled")
+    if (operations.has("passDlpAntiPeepInfo")) scenarios.push("explicit-pass-confirmed", "pass-duration-checked")
     if (route === "system-mask") {
       scenarios.push("mask-applied", "mask-failure-handled", "window-invalidated")
       if (inspection.floatViewBall?.usages?.some((u) => u.route === "float-view")) scenarios.push("float-view-protected", "target-window-invalidated")

@@ -42,9 +42,9 @@
         "dlpAntiPeep"
       ],
       "documents": {
-        "implementation": "routes/status-observation.md",
-        "assets": "routes/status-observation.md",
-        "validation": "routes/status-observation.md"
+        "implementation": "implementation.md",
+        "assets": "assets-catalog.md",
+        "validation": "performance-validation.md"
       }
     },
     {
@@ -60,9 +60,9 @@
         "dlpAntiPeep.setAntiPeepMaskLayer"
       ],
       "documents": {
-        "implementation": "routes/system-mask.md",
-        "assets": "routes/system-mask.md",
-        "validation": "routes/system-mask.md"
+        "implementation": "implementation.md",
+        "assets": "assets-catalog.md",
+        "validation": "performance-validation.md"
       }
     }
   ],
@@ -79,7 +79,9 @@
     "assets": "assets-catalog.md",
     "fallback": "fallback.md",
     "sharedValidation": "performance-validation.md",
-    "troubleshooting": "troubleshooting.md"
+    "troubleshooting": "troubleshooting.md",
+    "scenarios": "scenarios.md",
+    "settingsAndInformation": "settings-and-information.md"
   },
   "evidence": {
     "policy": "snapshot-first-verify-on-change-or-conflict"

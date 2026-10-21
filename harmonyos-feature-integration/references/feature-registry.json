@@ -80,7 +80,13 @@
       "id": "dlp-anti-peep",
       "displayName": "防窥保护",
       "aliases": [
-        "DlpAntiPeep"
+        "DlpAntiPeep",
+        "屏幕防窥",
+        "系统防窥蒙层",
+        "setAntiPeepMaskLayer",
+        "requestAntiPeepOptions",
+        "AntiPeepOptionsResult",
+        "publishAntiPeepInformation"
       ],
       "status": "ready",
       "entry": "references/features/dlp-anti-peep/README.md",

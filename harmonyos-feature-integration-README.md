@@ -53,6 +53,12 @@
 
 提供图标/按钮示例、可选可用性查询、初始化参数重建、事件清理、兼容回退及排障。创建 Agent、关联应用、手动签名与测试发布提供开发者操作指引；工程实现不扩展至 A2A、AgentExtensionAbility 或后端。入口详见 [能力包](references/features/agent-framework-kit/README.md)。真机验收要求点击、对话框打开与关闭证据，构建或按钮显示不能证明拉起成功。
 
+### 防窥保护（dlp-anti-peep）
+
+通过 Device Security Kit 感知窥视状态，按业务需要隐藏金融字段、短视频个性化内容或即时通讯信息，也可覆盖指定窗口。支持两条可组合路线：状态感知 API20、系统防窥蒙层 API21；设置弹框和再次风险提示为 API23 可选能力。需要支持防窥保护的 Phone、Stage 模型、DLP_GET_HIDE_STATUS 权限及相应签名、人脸识别和系统/应用开关。
+
+能力包包含场景选型、逐项版本门禁、状态未知与异常处理、每次页面进入的蒙层去重、订阅清理及真机验收。与闪控窗联动时分别核验两项能力；普通防截屏或自定义隐私遮罩不自动命中。详见 [防窥保护能力包](harmonyos-feature-integration/references/features/dlp-anti-peep/README.md)。
+
 ### 通用能力
 
 - **升级接入**：工程 API 或本机 SDK 低于路线门槛时，不是终止结论，而是给出"安装或切换 SDK 至路线 `minApi`（无需显式配置 `compileSdkVersion`）、按路线要求调整 targetSdkVersion 至 `minTargetApi`、compatibleSdkVersion 保持不变"的接入选项，由用户决定。

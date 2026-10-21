@@ -20,7 +20,7 @@ const has = (r, suffix, status) => r.checks.some((c) => c.id.includes(suffix) &&
 const registry = JSON.parse(await readFile(join(root, "references/feature-registry.json"), "utf8"))
 const match = (text) => registry.features.find((f) => [f.id, f.displayName, ...f.aliases].some((k) => text.toLowerCase().includes(k.toLowerCase())))?.id
 for (const input of ["闪控窗", "闪控球", "闪控窗/球", "floatView", "FLOATINGBALL"]) assert.equal(match(input), "float-view-ball")
-for (const input of ["防窥保护", "DlpAntiPeep", "dlpAntiPeep"]) assert.equal(match(input), "dlp-anti-peep")
+for (const input of ["防窥保护", "DlpAntiPeep", "dlpAntiPeep", "屏幕防窥", "系统防窥蒙层", "setAntiPeepMaskLayer", "requestAntiPeepOptions", "AntiPeepOptionsResult", "publishAntiPeepInformation"]) assert.equal(match(input), "dlp-anti-peep")
 for (const input of ["全局悬浮窗", "悬浮按钮", "画中画", "防截屏", "隐私遮罩"]) assert.equal(match(input), undefined)
 
 const ball = await inspect("floating-ball-api20", 20), view = await inspect("float-view-api26", 26)
@@ -93,9 +93,30 @@ for (const [operation, expected] of [["setFloatingBallVisibilityInApp(true)", 24
 assert.equal(compat(await source(ballSource.replace("title: '进度'", "title: '进度', textUpdateAnimationType: 0"))).requiredApi, 26)
 const api23 = await source(original + "\ndlpAntiPeep.requestAntiPeepOptions(context);")
 assert.equal(compat(api23, "dlp-anti-peep").requiredApi, 23)
+assert.ok(windowPrivacyScenarios("dlp-anti-peep", "status-observation", api23).includes("options-result-checked"))
+for (const [expression, operation, expectedScenarios] of [
+  ["dlpAntiPeep.publishAntiPeepInformation();", "publishAntiPeepInformation", ["information-published", "information-failure-handled"]],
+  ["dlpAntiPeep.passDlpAntiPeepInfo();", "passDlpAntiPeepInfo", ["explicit-pass-confirmed", "pass-duration-checked"]],
+  ["const result = dlpAntiPeep.AntiPeepOptionsResult.SUCCESS;", "AntiPeepOptionsResult", []],
+]) {
+  const input = await source("import { dlpAntiPeep } from '@kit.DeviceSecurityKit';\n" + expression)
+  assert.equal(compat(input, "dlp-anti-peep").requiredApi, operation === "passDlpAntiPeepInfo" ? 20 : 23)
+  assert.equal(compat(input, "dlp-anti-peep").upgradeOptions.length, 0)
+  assert.ok(expectedScenarios.every((scenario) => windowPrivacyScenarios("dlp-anti-peep", "status-observation", input).includes(scenario)))
+  if (operation === "AntiPeepOptionsResult") {
+    const low = structuredClone(input); low.localSdk.apiVersion = 21; low.api.compile = 21
+    assert.equal(compat(low, "dlp-anti-peep").status, "upgrade_available")
+    assert.equal(compat(low, "dlp-anti-peep").upgradeOptions[0].upgradeTargetApi, null)
+  }
+}
+const aliasedEnum = await source("import { dlpAntiPeep as privacy } from '@kit.DeviceSecurityKit'; const result = privacy.AntiPeepOptionsResult.FAIL;")
+assert.equal(compat(aliasedEnum, "dlp-anti-peep").requiredApi, 23)
+const commentedEnum = await source("import { dlpAntiPeep } from '@kit.DeviceSecurityKit'; // dlpAntiPeep.AntiPeepOptionsResult.FAIL\nconst message = 'dlpAntiPeep.AntiPeepOptionsResult.SUCCESS';")
+assert.equal(commentedEnum.dlpAntiPeep.usages.length, 0)
 const statusOnly = await source("import { dlpAntiPeep } from '@kit.DeviceSecurityKit'; dlpAntiPeep.getDlpAntiPeepInfo();")
 assert.equal(compat(statusOnly, "dlp-anti-peep").requiredApi, 20)
 assert.equal(verify(statusOnly, "dlp-anti-peep", "status-observation").counts.fail, 0)
+assert.ok(!windowPrivacyScenarios("dlp-anti-peep", "status-observation", statusOnly).includes("options-result-checked"))
 
 assert.equal(detectPrivacyDeviceKind({ deviceType: "phone", connectType: "USB" }, "device-1"), "physical")
 assert.equal(detectPrivacyDeviceKind({ deviceType: "tablet", isEmulator: false }, "device-1"), "unknown")

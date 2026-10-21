@@ -2,7 +2,9 @@
 
 同时加载本能力与 [窗球能力](../float-view-ball/README.md)，各自保留版本、权限和设备门禁。交集要求实际支持防窥的 Phone 真机、API26、FLOAT_VIEW 授权与 DLP_GET_HIDE_STATUS ACL；绑定球时另需 USE_FLOAT_BALL。
 
-由覆盖闪控窗业务生命周期的所有者持有 AntiPeepSession。启动窗且收到 STARTED 后，取得 view.getWindowProperties().windowId，调用 session.setTargetWindow(id)，并在可用条件下 start。HIDDEN、IN_SIDEBAR、IN_FLOATING_BALL 时 setTargetWindow(undefined)，重新 STARTED 时重新获取 ID，不用缓存旧窗口 ID。STOPPED/ERROR 使目标失效；业务终止时 stop 退订。主窗口需要保护时使用独立目标会话或已有窗口管理器，避免把 lastWindow 误当作闪控窗。
+闪控窗联动属于组合接入，只有用户明确要求时，才在防窥状态回调中结合[窗球能力](../float-view-ball/README.md)的窗口状态和 ID 获取方式实施。普通主窗口的接入结果不能作为闪控窗已受保护的证据。
+
+按[防窥开发步骤](implementation.md)检查能力与开关、读取初始状态并注册监听。闪控窗收到 STARTED 后，使用其控制器 `getWindowProperties().windowId` 作为 `showSystemMaskLayer` 的目标；HIDDEN、IN_SIDEBAR、IN_FLOATING_BALL、STOPPED、ERROR 状态下不再对该不可见或已失效窗口发起蒙层调用。重新显示时重新获取 ID，业务退出时取消本次订阅。普通主窗的 `getWindowProperties().id` 不等于闪控窗 ID。
 
 当窗从球切回时，重查应用开关和当前状态。主应用后台而闪控窗可见的通知/蒙层行为必须实测，不因主窗口订阅成功推断跨窗口成功。失败保留原业务且记录未完成保护。
 
