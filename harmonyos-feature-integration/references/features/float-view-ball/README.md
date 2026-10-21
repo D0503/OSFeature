@@ -9,6 +9,6 @@
 - 用户明确需要窗球切换或工程已有 bind 时，额外读取 [绑定切换](binding.md)；两条路线同时出现不等于绑定。
 - 代码：[资产](assets-catalog.md)；失败和旧版本：[回退](fallback.md)。
 - 验收：[性能与验证](performance-validation.md)；诊断：[排障](troubleshooting.md)。
-- 用户要求防窥时才加载独立的 [防窥能力](../dlp-anti-peep/README.md) 与 [联动](../dlp-anti-peep/float-view-integration.md)。
+- 用户明确要求闪控窗防窥时，读取[防窥联动](anti-peep-integration.md)，按其中要求加载独立的[防窥能力](../dlp-anti-peep/README.md)。
 
 依据 2026-10-20 本地官方资料快照整理：[闪控窗指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/float-view-guide)、[窗 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatview)、[球指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/floatingball-guide)、[球 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatingball)。版本冲突时核对对应接口与目标 SDK 声明，不按样例工程版本反推 API 起点。

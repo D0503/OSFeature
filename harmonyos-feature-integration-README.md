@@ -57,7 +57,7 @@
 
 通过 Device Security Kit 感知窥视状态，按业务需要隐藏金融字段、短视频个性化内容或即时通讯信息，也可覆盖指定窗口。支持两条可组合路线：状态感知 API20、系统防窥蒙层 API21；设置弹框和再次风险提示为 API23 可选能力。需要支持防窥保护的 Phone、Stage 模型、DLP_GET_HIDE_STATUS 权限及相应签名、人脸识别和系统/应用开关。
 
-能力包包含场景选型、逐项版本门禁、状态未知与异常处理、每次页面进入的蒙层去重、订阅清理及真机验收。与闪控窗联动时分别核验两项能力；普通防截屏或自定义隐私遮罩不自动命中。详见 [防窥保护能力包](harmonyos-feature-integration/references/features/dlp-anti-peep/README.md)。
+能力包包含场景选型、逐项版本门禁、状态未知与异常处理、每次页面进入的蒙层去重、订阅清理及真机验收。普通防截屏或自定义隐私遮罩不自动命中。详见 [防窥保护能力包](harmonyos-feature-integration/references/features/dlp-anti-peep/README.md)。
 
 ### 通用能力
 

@@ -1,6 +1,6 @@
 # 防窥保护场景选择
 
-防窥保护独立于闪控窗。按用户指定的业务对象选择状态感知及可选系统蒙层，不自动新增页面、业务或关联能力。
+按用户指定的业务对象选择状态感知及可选系统蒙层，不自动新增页面、业务或关联能力。
 
 | 目标 | 路线与版本 | 接入范围 |
 |---|---|---|
@@ -15,6 +15,6 @@
 
 版本与授权见[兼容性](compatibility.md)，状态感知与内容保护按[开发步骤](implementation.md)接入，系统蒙层按其中第 6 步选配；设置及提示读取[专门说明](settings-and-information.md)。
 
-状态未知、查询失败或订阅失败不等于 PASS；保持接入前既有保护行为，不以异常作为展示敏感内容的依据。只有用户要求保护闪控窗时才加载 [联动说明](float-view-integration.md)。
+状态未知、查询失败或订阅失败不等于 PASS；保持接入前既有保护行为，不以异常作为展示敏感内容的依据。
 
 依据：[防窥保护最佳实践](https://developer.huawei.com/consumer/cn/doc/doccenter-advanced-features/bpta-antipeep-protection)、[API 参考](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/devicesecurity-dlpantipeep-api)。

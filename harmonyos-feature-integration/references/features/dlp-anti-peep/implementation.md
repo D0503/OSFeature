@@ -204,7 +204,7 @@ case dlpAntiPeep.DlpAntiPeepStatus.HIDE:
 
 系统蒙层通常与状态感知组合。工程已有可信的窥视状态订阅时，直接在该回调中接入蒙层处理，避免重复注册。
 
-该取值方式用于已确认由页面保护的普通应用窗口，其 ID 来自 `getWindowProperties().id`。工程已有窗口管理器时，直接使用其中当前存活、可见且归属明确的目标窗口正整数 ID，不另设全局窗口常量或存储。闪控窗按[联动说明](float-view-integration.md)取得控制器 `getWindowProperties().windowId`，不混用两种对象字段。
+该取值方式用于已确认由页面保护的普通应用窗口，其 ID 来自 `getWindowProperties().id`。工程已有窗口管理器时，直接使用其中当前存活、可见且归属明确的目标窗口正整数 ID。
 
 蒙层结果以工具返回值为准。失败或窗口无效时保持内容隐藏，只有明确的 PASS 才恢复内容。窗口获取完成后复用 `isPrivacyHidden` 检查当前是否仍需保护；`isSystemLayerTriggered` 防止成功后重复触发，`isMaskRequesting` 防止请求期间并发调用。系统蒙层交互由系统管理，未提供取消蒙层接口。负向场景和窗口证据要求见[性能与验证](performance-validation.md)。
 

@@ -1,6 +1,8 @@
 # 防窥保护 / DlpAntiPeep
 
-通过 Device Security Kit 感知屏幕窥视状态，独立保护应用窗口，或按需与闪控窗联动。普通防截屏、密码遮罩和自定义隐私按钮不自动命中。契约见 [profile.json](profile.json)。
+通过 Device Security Kit 感知屏幕窥视状态，按业务需要隐藏敏感内容或通过系统蒙层保护应用窗口。普通防截屏、密码遮罩和自定义隐私按钮不自动命中。契约见 [profile.json](profile.json)。
+
+**防窥保护不支持元服务。** 接入前核对目标应用形态；目标为元服务时，明确告知不支持并停止防窥接入，不能因使用 Stage 模型或满足 API 版本就认定可用。设备和其他前提见[兼容性](compatibility.md)。
 
 - 门禁、权限和设备：[兼容性](compatibility.md)。
 - 金融、短视频和即时通讯等目标：[场景选择](scenarios.md)，只实施用户要求的保护内容。
@@ -8,7 +10,6 @@
 - 设置弹框与风险提示：[设置与提示](settings-and-information.md)，两项均为 API23 可选能力。
 - 代码：[工具资产](assets-catalog.md)；异常：[回退](fallback.md)；问题：[排障](troubleshooting.md)。
 - 验收：[性能与验证](performance-validation.md)。
-- 目标包含闪控窗时才加载 [联动](float-view-integration.md) 和 [窗球能力](../float-view-ball/README.md)。
 
 ## 接入前澄清
 

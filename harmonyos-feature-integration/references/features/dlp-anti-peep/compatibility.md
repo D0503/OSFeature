@@ -6,7 +6,9 @@
 | setAntiPeepMaskLayer | 21 |
 | requestAntiPeepOptions、AntiPeepOptionsResult、publishAntiPeepInformation | 23 |
 
-来源：[官方API](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/devicesecurity-dlpantipeep-api)。Stage、Phone，SystemCapability.Security.DlpAntiPeep；设备设置须存在防窥保护选项。配置人脸识别，开启系统防窥保护并经人脸验证开启当前应用开关。元服务及其他形态不能仅凭 Stage 认定支持，先核对对应 SDK/官方支持证据。折叠屏设备也须按 Phone 类型、SysCap 和设备设置核验，不能据设备外形认定支持。
+来源：[官方API](https://developer.huawei.com/consumer/cn/doc/doccenter-references/api/devicesecurity-dlpantipeep-api)。Stage、Phone，SystemCapability.Security.DlpAntiPeep；设备设置须存在防窥保护选项。配置人脸识别，开启系统防窥保护并经人脸验证开启当前应用开关。折叠屏设备也须按 Phone 类型、SysCap 和设备设置核验，不能据设备外形认定支持。
+
+**应用形态限制：防窥保护不支持元服务。** 接入前必须核对目标应用形态；目标为元服务时，告知不支持并停止防窥接入。使用 Stage 模型、满足 API20/21/23 版本或通过 SysCap 检查，均不能解除这一限制。
 
 ## 权限声明与 ACL
 
@@ -49,6 +51,6 @@
 
 运行 API 守卫必须早于方法访问和调用，随后检查 SysCap、应用开关。API20/21 无设置弹框接口时，引导用户到“设置 > 隐私与安全 > 防窥保护”操作，不调用 API23。返回应用后重查状态；API23 弹框由用户主动操作触发，不循环弹出。
 
-无额外 target 门槛，保留 target/compatible。状态感知仅 API20；需要系统蒙层时 requiredApi 至少21；使用设置弹框/提示时至少23；闪控窗联动还要求窗能力 API26。单独状态路线可供业务保护逻辑使用，不默认制造自定义蒙层。
+无额外 target 门槛，保留 target/compatible。状态感知仅 API20；需要系统蒙层时 requiredApi 至少21；使用设置弹框/提示时至少23。单独状态路线可供业务保护逻辑使用，不默认制造自定义蒙层。
 
 注册成功且应用前台可见时才收到通知。人脸、光线、距离、遮挡会影响识别；必须在支持能力的 Phone 真机验证，模拟器和 SDK 编译不能证明保护成功。
