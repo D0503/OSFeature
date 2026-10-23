@@ -1,34 +1,33 @@
 # 窗球代码资产
 
-以下为合入现有所有者的方法片段，非完整业务工程。所有调用入口需完成[权限与设备门禁](compatibility.md)，并串行执行，复用真实 UIAbilityContext、页面、Want 与业务内容。运行版本/SysCap 检查在调用前执行；编译 SDK 也必须能解析导入符号。
+以下包含可复制的工具文件和合入现有所有者的方法片段，非完整业务工程。所有调用入口需完成[权限与设备门禁](compatibility.md)，并串行执行，复用真实 UIAbilityContext、页面、Want 与业务内容。运行版本/SysCap 检查在调用前执行；编译 SDK 也必须能解析导入符号。
 
 ## 闪控窗
 
-```typescript
-import { floatView } from '@kit.ArkUI';
-import { common } from '@kit.AbilityKit';
-import { deviceInfo } from '@kit.BasicServicesKit';
+使用 [FloatViewController.ets](assets/FloatViewController.ets)，按[闪控窗路线](routes/float-view.md)调用静态方法。类持有独立闪控窗控制器和状态，权限声明、ACL 申请及用户授权由调用方完成。
 
-async function prepareFloatView(context: common.UIAbilityContext, page: string,
-  onState: (info: floatView.FloatViewStateChangeInfo) => void): Promise<floatView.FloatViewController | undefined> {
-  if (deviceInfo.sdkApiVersion < 26 || !canIUse('SystemCapability.Window.SessionManager')) return undefined;
-  if (!floatView.isFloatViewEnabled()) return undefined;
-  const view = await floatView.create({ context, templateType: floatView.FloatViewTemplateType.ROUNDED_RECTANGLE });
-  await view.setUIContext(page);
-  view.onStateChange(onState);
-  return view;
-}
-```
+| 方法 | 用途 |
+|---|---|
+| `canUseFloatView()` | 分步检查 API26、SysCap、设备能力，异常返回 false |
+| `createFloatView(config, onStateChange?, onLimitsChange?, onRectChange?)` | 原样传入 FloatViewConfiguration 创建控制器并注册监听，业务回调可选 |
+| `startFloatView(page, size, storage?)` | 加载调用方页面、设置 window.Size、发出启动请求 |
+| `setWindowSize(size)` | 原样传入 window.Size 更新尺寸 |
+| `switchTemplate(property)` | 原样传入 TemplateProperty 更新模板与尺寸 |
+| `restoreMainWindow(wantParameters?)` | STARTED 时从用户点击恢复主窗口 |
+| `getWindowProperties()` | 同步读取有效窗口的属性；未启动、停止或异常状态抛错 |
+| `stopFloatView()` | 发出停止请求，STOPPED 时退订并清空引用 |
 
-`page` 必须已写入宿主 pages profile。准备方法不启动；所有者持有返回值，完成授权与前台检查后 `await view.start()`。异常交给所有者记录并清理。注册的 `onState` 应在 STOPPED 使 ID 失效、调用 `view.offStateChange(onState)` 并释放本实例；`ERROR` 不当成功。await 返回时所有者已退出则退订，不再启动。
+除能力检测和属性读取外，以上操作方法返回 Promise<void>，错误交给调用方处理。启动和停止最终状态仍以 STARTED／STOPPED 为准。状态和尺寸限制监听始终注册，矩形监听按可选回调注册；STOPPED 清理完成后调用业务状态回调。资产独占管理监听，页面不需要另存控制器引用。
 
-显示内容用原工程页面；独立小页可使用以下骨架，把 `content` 接到现有状态，不固化示例业务：
+页面路径必须写入宿主 pages profile。参数不补业务默认值，尺寸由调用方根据当前模板限制选择。注册监听失败尝试退订；加载或启动失败保留控制器供重试，停止失败不清空引用。创建等操作需串行执行，具体权限、失败清理及前台条件见路线。
 
-```typescript
+显示内容用原工程页面；独立小页可使用以下骨架，把 `content` 接到现有状态：
+
+```arkts
 @Entry
-@Component
+@ComponentV2
 struct FloatContent {
-  @State content: string = '';
+  @Local content: string = '';
   build() {
     Column() { Text(this.content) }
     .width('100%')
@@ -41,33 +40,23 @@ struct FloatContent {
 
 ## 闪控球
 
-```typescript
-import { floatingBall } from '@kit.ArkUI';
-import { common } from '@kit.AbilityKit';
-import { deviceInfo } from '@kit.BasicServicesKit';
+使用 [FloatingBallController.ets](assets/FloatingBallController.ets)，按[闪控球路线](routes/floating-ball.md)调用静态方法。类持有球控制器和状态，业务无需传入控制器。
 
-async function prepareFloatingBall(context: common.UIAbilityContext,
-  onClick: () => void,
-  onState: (state: floatingBall.FloatingBallState) => void): Promise<floatingBall.FloatingBallController | undefined> {
-  if (deviceInfo.sdkApiVersion < 20 || !canIUse('SystemCapability.Window.SessionManager')) return undefined;
-  if (!floatingBall.isFloatingBallEnabled()) return undefined;
-  const ball = await floatingBall.create({ context });
-  ball.on('click', onClick);
-  try {
-    ball.on('stateChange', onState);
-  } catch (error) {
-    ball.off('click', onClick);
-    throw error;
-  }
-  return ball;
-}
-```
+| 方法 | 用途 |
+|---|---|
+| `canUseFloatingBall()` | 分步检查 API20、SysCap、设备能力，异常返回 false |
+| `createFloatingBall(config, onClick?, onStateChange?, want?)` | 创建控制器并注册监听，业务回调和 Want 可选 |
+| `startFloatingBall(startParams)` | 原样传入 FloatingBallParams 启动 |
+| `updateFloatingBall(updateParams)` | 原样传入 FloatingBallParams 更新 |
+| `stopFloatingBall()` | 发出停止请求，STOPPED 时退订并清空类中引用 |
 
-所有者保存 `ball` 与同一回调。准备后按业务参数 `await ball.startFloatingBall(params)`；失败时退订并保留原业务。独立球 click 中可用真实 Want 恢复主窗，绑定球只让系统切换。STOPPED 后 `off('click', onClick)`、`off('stateChange', onState)`，再清空引用与自有图像。需要更新时先验证非 STATIC，标题及内容各≤64 UTF-8字节、图标像素≤192KB。
+异步操作返回 Promise<void>，错误交给调用方；实际启动和停止以状态通知为准。点击时有 Want 才恢复主窗口，可选点击回调不等待恢复完成。STOPPED 清理后执行业务状态回调。注册失败尝试退订；启动或停止失败保留引用用于重试。参数验证、权限、前台条件和防重复操作由业务处理。
+
+图标解码使用[球路线中的独立资源片段](routes/floating-ball.md#5-加载图标)，与控制器生命周期分开管理。
 
 ## 绑定
 
-复用上述两端准备逻辑；均未启动时调用 `await floatView.bind(view, ball, params)`，然后只 `await view.start()` 或只 `await ball.startFloatingBall(params)`。任何准备/绑定失败不继续启动，清理已经注册的回调。停止只选一端发请求、由两端终态统一收敛。完整时序和验收见[绑定流程](binding.md)。
+球端调用 createFloatingBall 创建并注册监听，不传点击回调和 want；取类中已创建的控制器，在两端均未启动时 bind，只启动一端。准备失败时由组合所有者清理本次监听和引用，运行后由 STOPPED 退订；见[绑定流程](binding.md)。
 
 ## 可选高版本接口
 

@@ -14,6 +14,25 @@
 
 displayModeOptions 的 wideWindowMode 必填，官方结构中 squareWindowMode 可选，但本 Skill 默认显式配置两项分栏。值为 `original`、`routerSplit`、`navigationSplit`。后两者必须有对应的 routerSplitOptions 或 navigationSplitOptions 对象；两种 Options 不可共存。开发者明确选择的 original 仍为合法配置，静态校验不能因接入默认值而判错。
 
+## 配置示例
+
+以 entry 模块位于 `products/entry` 的工程为例。在 `products/entry/src/main/module.json5` 的 `module` 对象中添加 easyGo，与 routerMap、pages 同级，不放在 abilities 内。以下为相关片段，工程原有权限、abilities 等配置保持原样：
+
+```json5
+{
+  "module": {
+    "name": "entry",
+    "type": "entry",
+    "mainElement": "EntryAbility",
+    "deviceTypes": ["phone", "tablet"],
+    "routerMap": "$profile:route_map",
+    "easyGo": "$profile:easy_go",
+    "pages": "$profile:main_pages"
+    // 其余模块配置保持原样
+  }
+}
+```
+
 ## Options 字段
 
 | 字段 | 规则、默认值和适用性 |
