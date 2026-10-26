@@ -7,6 +7,7 @@ import { verifyDevelopment, parseDevelopmentArgs, inspectVerification } from "..
 import { buildStages, runHvigorBuild } from "../scripts/lib/hvigor-build.mjs"
 import { navigate, resolveDevecoNodeEntry, validateNavigation } from "../scripts/lib/development-device.mjs"
 import { cacheDirectory, loadCollection, validateChanges } from "../scripts/lib/development-report.mjs"
+import { parseDevecoJson } from "../scripts/lib/deveco-json.mjs"
 
 const root = await mkdtemp(join(tmpdir(), "os-feature-tests-"))
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64")
@@ -46,6 +47,7 @@ const options = {
   commandRunner: async (args) => {
     calls.push(args)
     if (args[1] === "screenshot") await writeFile(args[args.indexOf("--path") + 1], png)
+    if (args[0] === "device") return { exitCode: 0, stdout: JSON.stringify({ name: "测试手机", osVersion: "API 26" }), stderr: "" }
     return { exitCode: 0, stdout: args[1] === "layout" ? JSON.stringify({ attributes: { id: "home-page", bounds: "[0,0][100,100]" } }) : "HarmonyOS API 26", stderr: "" }
   }, pause: async () => {}
 }
@@ -286,4 +288,51 @@ assert.ok(smartReport.includes("真机左右握姿均观察到按钮换边"))
 await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualRun.runId, importScreenshot: [join(root, "missing.png")] }, physicalOptions), /不存在/)
 await writeFile(join(root, "not-png.txt"), "text")
 await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualRun.runId, importScreenshot: [join(root, "not-png.txt")] }, physicalOptions), /PNG/)
+const notices = "New cli version 1.3.9 available\nNew docs version 1.3.9 available, run `devecocli docs update` to upgrade"
+const tree = [{ attributes: { id: "home-page", text: '中文 [括号] 和 "引号"', bounds: "[0,0][100,100]" } }]
+for (const output of [JSON.stringify(tree), `${JSON.stringify(tree)}\n${notices}`, `\u001b[33m${notices}\u001b[0m\n- Dumping layout…\n${JSON.stringify(tree)}`]) {
+  assert.deepEqual(parseDevecoJson(output, "layout"), tree)
+}
+for (const output of ["", "[", '{"children":[}', `${JSON.stringify(tree)}\n[]`, `unrecognized warning\n${JSON.stringify(tree)}`, `${JSON.stringify(tree)}\nERROR: failed`, "null", '"text"', '{"error":"permission denied"}', '[1]']) {
+  assert.throws(() => parseDevecoJson(output, "layout"), /组件树输出解析失败/)
+}
+const noticeText = [{ text: notices }]
+assert.deepEqual(parseDevecoJson(JSON.stringify(noticeText, null, 2), "layout"), noticeText, "保留 JSON 字符串内的提示文本")
+const noisyOptions = { ...options, commandRunner: async (args) => {
+  const result = await options.commandRunner(args)
+  return args[0] === "device" || args[1] === "layout" ? { ...result, stdout: `${result.stdout}\n${notices}`, stderr: "- Dumping layout…" } : result
+} }
+const noisy = await verifyDevelopment(request("noisy-json"), noisyOptions)
+const noisyRun = (await loadCollection(request("noisy-json").output, root)).collection.runs[0]
+assert.equal(noisyRun.checks.navigation.status, "passed")
+assert.equal(noisyRun.deviceInfo.name, "测试手机")
+assert.ok(noisy.evidence.some((e) => e.type === "screenshot"))
+const originalOutput = await readFile(noisy.evidence.find((e) => e.type === "component_tree").path, "utf8")
+assert.ok(originalOutput.includes(`\n${notices}\n--- stderr ---\n- Dumping layout…`), "保留原始提示并区分输出流")
+for (const [name, result, expected] of [
+  ["bad-layout", { exitCode: 0, stdout: "[" }, "组件树输出解析失败"],
+  ["failed-layout", { exitCode: 1, stdout: JSON.stringify(tree) }, "组件树采集命令失败"],
+  ["wrong-page", { exitCode: 0, stdout: '[{"id":"other-page"}]' }, "目标页面断言未命中"],
+  ["two-layouts", { exitCode: 0, stdout: `${JSON.stringify(tree)}\n[]` }, "组件树输出解析失败"]
+]) {
+  const run = await verifyDevelopment(request(name), { ...options, commandRunner: async (args) => args[1] === "layout" ? result : options.commandRunner(args) })
+  assert.equal(run.status, "failed")
+  assert.ok(!run.evidence.some((e) => e.type === "screenshot"))
+  assert.ok((await readFile(run.report, "utf8")).includes(expected))
+}
+const badDevice = await verifyDevelopment(request("bad-device-json"), { ...options, commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: '{"error":"denied"}' } : options.commandRunner(args) })
+assert.ok((await readFile(badDevice.report, "utf8")).includes("设备信息输出解析失败"))
+assert.ok(!badDevice.evidence.some((e) => e.type === "screenshot"))
+const stderrOnly = await verifyDevelopment(request("stderr-only-notice"), { ...options, commandRunner: async (args) => ({ ...await options.commandRunner(args), stderr: notices }) })
+assert.ok(stderrOnly.evidence.some((e) => e.type === "screenshot"), "stderr 提示不参与 JSON 解析")
+const resumeQuery = { project: root, output: scenarioOutput, resume: scenarioRun.runId, captureScreenshot: true, screenshotScenario: "左手" }
+await verifyDevelopment(resumeQuery, { ...scenarioOptions, commandRunner: async (args) => {
+  const result = await scenarioOptions.commandRunner(args)
+  return args[0] === "device" ? { ...result, stdout: `${result.stdout}\n${notices}` } : result
+} })
+const beforeBadQuery = (await loadCollection(scenarioOutput, root)).collection.runs[0].evidence.length
+await assert.rejects(verifyDevelopment(resumeQuery, { ...scenarioOptions, commandRunner: async () => ({ exitCode: 0, stdout: '{"device":', stderr: "query diagnostic" }) }), /设备信息输出解析失败/)
+const afterBadQuery = (await loadCollection(scenarioOutput, root)).collection.runs[0]
+assert.equal(afterBadQuery.evidence.length, beforeBadQuery + 1)
+assert.ok((await readFile(afterBadQuery.evidence.at(-1).path, "utf8")).includes('--- stdout ---\n{"device":\n--- stderr ---\nquery diagnostic'))
 console.log(JSON.stringify({ status: "passed" }))

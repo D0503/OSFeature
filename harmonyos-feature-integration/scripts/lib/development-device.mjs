@@ -3,6 +3,7 @@ import { readFile, stat } from "node:fs/promises"
 import { promisify } from "node:util"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
 import { executeBuildStage } from "./hvigor-build.mjs"
+import { parseDevecoJson } from "./deveco-json.mjs"
 
 async function isFile(path) {
   try { return (await stat(path)).isFile() } catch { return false }
@@ -78,8 +79,8 @@ export async function navigate(nav, call, launchArgs, device, pause = (ms) => ne
   validateNavigation(nav)
   const layout = async () => {
     const result = await call(["ui", "layout", "--device", device, "--format", "json", "--mode", "full", "--depth", "0"], "component_tree")
-    if (result.exitCode !== 0) throw new Error("组件树采集失败")
-    return JSON.parse(result.stdout)
+    if (result.exitCode !== 0) throw new Error(`组件树采集命令失败（退出码：${result.exitCode ?? "未知"}），请查看原始 stdout/stderr 证据`)
+    return parseDevecoJson(result.stdout, "layout")
   }
   const center = async (locator) => {
     const found = nodes(await layout()).filter((v) => matches(v, locator))

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { access, copyFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises"
 import { join, resolve } from "node:path"
 import { tmpdir } from "node:os"
+import { parseDevecoJson } from "./deveco-json.mjs"
 
 export const hash = (value) => createHash("sha256").update(value).digest("hex")
 export const exists = async (path) => { try { await access(path); return true } catch { return false } }
@@ -67,7 +68,7 @@ function deviceLabel(run) {
   const kind = run.deviceKind === "emulator" ? "（模拟器）" : ""
   let info = run.deviceInfo
   if (typeof info === "string") {
-    try { info = JSON.parse(info) } catch {
+    try { info = parseDevecoJson(info, "device") } catch {
       return `设备：${escape(run.device || "未指定")}${kind}；系统：${escape(info && !/^[\s]*[\[{]/.test(info) ? info : "未采集")}。`
     }
   }

@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { evaluateCompatibility, inspectProject, loadFeature, verifyInspection } from "./lib/project-tools.mjs"
 import { runHvigorBuild } from "./lib/hvigor-build.mjs"
 import { navigate, runDeveco, validateNavigation } from "./lib/development-device.mjs"
+import { parseDevecoJson } from "./lib/deveco-json.mjs"
 import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJudgment } from "./lib/window-privacy-runtime.mjs"
 
@@ -13,6 +14,10 @@ const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
 const requiredText = (v, name) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${name} 必填`) }
 const PNG_MAGIC = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+
+function commandEvidence(args, result) {
+  return `${JSON.stringify(args)}\nexitCode: ${result.exitCode ?? "unknown"}\n--- stdout ---\n${result.stdout ?? ""}\n--- stderr ---\n${result.stderr ?? ""}`
+}
 
 function nextEvidenceId(run) {
   return `E${Math.max(0, ...run.evidence.map((e) => Number(/^E(\d+)$/.exec(e.id)?.[1] ?? 0))) + 1}`
@@ -32,7 +37,7 @@ async function captureDeviceScreenshot(run, runDirectory, scenario, call) {
 
 function detectDeviceKind(deviceInfo, target) {
   let info = deviceInfo
-  if (typeof info === "string") { try { info = JSON.parse(info) } catch { info = null } }
+  if (typeof info === "string") { try { info = parseDevecoJson(info, "device") } catch { return "unknown" } }
   const candidate = info?.device ?? info?.data ?? info
   const fields = [target, candidate?.name, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.connectType]
   return fields.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v.trim()))) ? "emulator" : "physical"
@@ -40,7 +45,7 @@ function detectDeviceKind(deviceInfo, target) {
 
 export function detectAgentDeviceKind(deviceInfo, target) {
   let info = deviceInfo
-  if (typeof info === "string") { try { info = JSON.parse(info) } catch { info = null } }
+  if (typeof info === "string") { try { info = parseDevecoJson(info, "device") } catch { info = null } }
   const candidate = info?.device ?? info?.data ?? info
   const values = [target, candidate?.name, candidate?.model, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.kind, candidate?.deviceKind, candidate?.connectType]
   if (candidate?.isEmulator === true || values.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v)))) return "emulator"
@@ -59,7 +64,7 @@ export function detectPrivacyDeviceKind(deviceInfo, target) {
   const kind = detectAgentDeviceKind(deviceInfo, target)
   if (kind !== "physical") return kind
   let info = deviceInfo
-  if (typeof info === "string") { try { info = JSON.parse(info) } catch { return "unknown" } }
+  if (typeof info === "string") { try { info = parseDevecoJson(info, "device") } catch { return "unknown" } }
   const device = info?.device ?? info?.data ?? info
   return /^phone$/i.test(device?.deviceType ?? device?.type ?? "") ? "physical" : "unknown"
 }
@@ -85,7 +90,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
   if (manifest.deviceInfo !== undefined) {
     const info = files.get(manifest.deviceInfo)
     if (info?.type !== "device_info") throw new Error("deviceInfo 必须引用设备信息 JSON 证据")
-    const data = JSON.parse(info.content.toString("utf8"))
+    const data = parseDevecoJson(info.content.toString("utf8"), "device")
     const device = data?.device ?? data?.data ?? data
     if ((device?.serial ?? device?.serialNumber) !== run.device) throw new Error("手动设备信息与本轮 device 不一致")
     if (run.deviceKind === "emulator") throw new Error("不能用手动证据覆盖本轮模拟器事实")
@@ -247,10 +252,18 @@ export async function verifyDevelopment(request, options = {}) {
         if (!run.device || run.checks.install.status !== "passed" || run.checks.navigation.status !== "passed") throw new Error("补采截图需要本轮安装和目标页导航已通过")
         if (run.feature === "smart-reach" || run.feature === "agent-framework-kit" || run.feature === "dlp-anti-peep") {
           const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
-          const kind = run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(info.stdout, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(info.stdout, run.device) : detectDeviceKind(info.stdout, run.device)
-          if (info.exitCode !== 0 || kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
+          const queryId = nextEvidenceId(run)
+          const queryPath = join(directory, run.runId, `${queryId}.log`)
+          await writeFile(queryPath, commandEvidence(["device", "view", "--target", run.device, "--format", "json"], info))
+          run.evidence.push({ id: queryId, type: "device_log", path: queryPath, sha256: await fileHash(queryPath) })
+          // Persist the query even if parsing or physical-device validation stops this resume.
+          await saveReport(output, directory, collection)
+          if (info.exitCode !== 0) throw new Error(`设备信息查询命令失败（退出码：${info.exitCode ?? "未知"}）；证据：${queryPath}`)
+          const data = parseDevecoJson(info.stdout, "device")
+          const kind = run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
+          if (kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
           run.deviceKind = kind
-          run.deviceInfo = info.stdout
+          run.deviceInfo = data
         }
         try { await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
         catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
@@ -288,7 +301,7 @@ export async function verifyDevelopment(request, options = {}) {
       let result
       try { result = await (options.commandRunner ?? runDeveco)(args, request.project) }
       catch (error) { result = { exitCode: null, stdout: "", stderr: error.message } }
-      await record(result.exitCode === 0 ? type : "command_failure", `${JSON.stringify(args)}\n${result.stdout ?? ""}\n${result.stderr ?? ""}`)
+      await record(result.exitCode === 0 ? type : "command_failure", commandEvidence(args, result))
       return result
     }
     const { inspection, compatibility, staticResult } = await (options.inspector ?? inspectVerification)(request)
@@ -318,8 +331,16 @@ export async function verifyDevelopment(request, options = {}) {
     if (request.executeRun && request.device && run.checks.build.status === "passed") {
       const info = await call(["device", "view", "--target", request.device, "--format", "json"])
       run.deviceInfo = info.exitCode === 0 ? info.stdout.trim() : "系统信息采集失败"
+      let deviceError
+      if (info.exitCode !== 0) deviceError = `设备信息查询命令失败（退出码：${info.exitCode ?? "未知"}）`
+      else {
+        try { run.deviceInfo = parseDevecoJson(info.stdout, "device") }
+        catch (error) { deviceError = error.message }
+      }
       if (info.exitCode === 0) run.deviceKind = run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(run.deviceInfo, request.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
-      if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") {
+      if (deviceError) {
+        run.checks.install = { ...check("failed", deviceError), reportSummary: deviceError }
+      } else if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "Agent Framework Kit 需要已确认的 Phone/Tablet 真机，未执行安装运行")
       } else if (run.feature === "dlp-anti-peep" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "防窥保护需要已确认的 Phone 真机，未执行安装运行")
@@ -333,7 +354,7 @@ export async function verifyDevelopment(request, options = {}) {
       try {
         await navigate(request.navigate, call, launchArgs, request.device, options.pause)
         run.checks.navigation = check("passed", "导航完成，目标页面断言通过")
-      } catch (error) { run.checks.navigation = check("failed", error.message) }
+      } catch (error) { run.checks.navigation = { ...check("failed", error.message), reportSummary: error.message } }
     }
     if (run.checks.navigation.status === "passed") {
       run.checks.runtime = check("inconclusive", "已进入目标页，交互与启动时机仍需结合运行证据判定")
