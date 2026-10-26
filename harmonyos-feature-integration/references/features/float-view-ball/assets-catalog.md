@@ -63,7 +63,7 @@ struct FloatContent {
 
 ## 绑定
 
-使用 [FloatViewBallController.ets](assets/FloatViewBallController.ets)，复用同目录两个基础资产，按[绑定路线](binding.md)分步调用：prepare → bind → start('view' 或 'ball') → stop → 双端 STOPPED → release。unbind 为可选的显式解绑操作，成功后自动释放。未绑定准备失败用 release 清理。所有操作返回 Promise<void>，使用 async/await 与 hilog。
+使用 [FloatViewBallController.ets](assets/FloatViewBallController.ets)，复用同目录两个基础资产，按[绑定路线](routes/binding.md)分步调用：prepare → bind → start('view' 或 'ball') → stop → 双端 STOPPED → release。unbind 为可选的显式解绑操作，成功后自动释放。未绑定准备失败用 release 清理。所有操作返回 Promise<void>，使用 async/await 与 hilog。
 
 prepare 的参数为窗配置、球配置、页面路径、window.Size、可选 LocalStorage、可选 FloatViewBallCallbacks；bind 直接接收 FloatingBallParams。组合层直接使用基础资产的控制器字段，已有独立实例时先清理原流程，由业务入口防止重复点击及并发操作；不在基础窗、球资产中增加绑定依赖。尚未启动的绑定可直接 unbind，成功后自动释放引用。
 

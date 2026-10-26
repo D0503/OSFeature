@@ -1,12 +1,12 @@
 # 闪控窗／球绑定开发步骤（API 26 起）
 
-绑定是独立窗、球能力之上的组合接入。使用 [FloatViewBallController.ets](assets/FloatViewBallController.ets)，同时复制同目录的两个基础控制器。仅在用户明确需要窗球切换时加载本流程，不因同时选择两条路线自动绑定。
+绑定是独立窗、球能力之上的组合接入。使用 [FloatViewBallController.ets](../assets/FloatViewBallController.ets)，同时复制同目录的两个基础控制器。仅在用户明确需要窗球切换时加载本流程，不因同时选择两条路线自动绑定。
 
 ## 开发准备
 
-**实施前提醒：FLOAT_VIEW 与 USE_FLOAT_BALL 均是受限 ACL 权限，需在[开发者中心申请 ACL](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。** 实际宿主声明两项权限，核对签名 profile；FLOAT_VIEW 还需用户授权，USE_FLOAT_BALL 不通过用户授权弹框申请。按[兼容性](compatibility.md)核对 API26、Stage、SysCap、Phone/Tablet 实际支持情况及前台启动条件。
+**实施前提醒：FLOAT_VIEW 与 USE_FLOAT_BALL 均是受限 ACL 权限，需在[开发者中心申请 ACL](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。** 实际宿主声明两项权限，核对签名 profile；FLOAT_VIEW 还需用户授权，USE_FLOAT_BALL 不通过用户授权弹框申请。按[兼容性](../compatibility.md)核对 API26、Stage、SysCap、Phone/Tablet 实际支持情况及前台启动条件。
 
-先确定业务页面、窗模板与尺寸、球模板参数、首次展示窗还是球。参数及页面准备分别参考[窗路线](routes/float-view.md)和[球路线](routes/floating-ball.md)。所有方法使用 async/await、hilog 和 Promise<void>；失败记录后向调用方抛出。业务回调可选，状态由两个基础资产维护。
+先确定业务页面、窗模板与尺寸、球模板参数、首次展示窗还是球。参数及页面准备分别参考[窗路线](float-view.md)和[球路线](floating-ball.md)。所有方法使用 async/await、hilog 和 Promise<void>；失败记录后向调用方抛出。业务回调可选，状态由两个基础资产维护。
 
 ## 1. 创建两端并准备页面
 
@@ -71,7 +71,21 @@ await FloatViewBallController.start('ball');
 
 用户通过系统交互在窗、球之间切换，不在球点击回调里手动启动窗或恢复主窗口。窗进入 IN_FLOATING_BALL、HIDDEN 或 IN_SIDEBAR 时仍存活，不能清空基础资产中的控制器引用。
 
-窗内容使用原页面状态更新。绑定后的模板、尺寸和球内容更新仍调用两个基础资产，无需重新创建、绑定或启动。
+### 区分内容更新、模板切换与实例替换
+
+| 变化 | 处理方式 |
+|---|---|
+| 同一业务条目的内容变化、条目增删 | 更新共享业务数据，窗通过页面状态刷新；球更新当前展示条目的参数 |
+| 窗的展开／紧凑布局变化 | 同一控制器调用 switchTemplate，同时更新窗页面的布局状态 |
+| 条目数量、显示区域或系统尺寸限制变化 | 重新计算当前模板下的尺寸，调用 setWindowSize |
+| 球轮换展示不同条目 | 同一球模板下调用 updateFloatingBall，不重建控制器 |
+| 业务明确要求替换整组窗球，或更换不能在线更新的球模板 | 停止旧组、确认双端终态、释放后重新准备和绑定 |
+
+窗和球从同一份业务数据取值，但更新通道不同。窗可通过宿主已有 AppStorage／LocalStorage 等状态管理刷新，球需显式调用更新接口。数据变化只替换当前内容，不重复加载窗页面、绑定或启动控制器。业务列表用稳定 ID 标识条目，避免用实时变化的显示值作标识。
+
+### 窗模板、页面布局与尺寸同步
+
+需要上／下箭头控制展开、收起时，复用[展开／收起页面片段](float-view.md#展开收起页面片段)。该交互只改变闪控窗模板与页面布局，绑定关系和闪控球控制器保持不变。
 
 **切换窗模板**：先查询目标模板的尺寸限制，再调用 `FloatViewController.switchTemplate(property)`。这里切换的是窗的模板，不是窗球显示形态。
 
@@ -85,9 +99,16 @@ const property: floatView.TemplateProperty = {
   size: { width: limits.maxSize.width, height: limits.maxSize.height }
 };
 await FloatViewController.switchTemplate(property);
+// 成功后再把窗页面的响应式布局状态切换为紧凑布局。
 ```
 
+`switchTemplate` 只切换系统模板和窗口尺寸，不会替换页面内的组件。窗页面需维护自己的展开／紧凑布局状态，并用条件渲染切换内容；可使用 @Provide/@Consume 或宿主已有的状态方案共享。只有接口成功后才提交布局状态，失败保留原布局。切回展开布局时查询 ROUNDED_RECTANGLE 的限制，不能沿用横条模板的限制。过渡动画按产品需要实现，固定延时不能用来判定接口成功。
+
 **仅调整窗尺寸**：模板不变时调用 `await FloatViewController.setWindowSize(size)`。size 使用 `window.Size`，单位为 px，需满足当前模板的尺寸及比例限制。实际窗口尺寸通过准备阶段的 `onRectChange` 回调或 `FloatViewController.getFloatViewProperties()` 读取；属性返回 undefined 时不继续使用。
+
+条目数量变化、显示区域变化和 onLimitsChange 都可能触发尺寸重算。按内容所需宽高和当前可用空间计算；设计尺寸若使用 vp，先用实际 UIContext 的 vp2px 转成 px，再检查当前模板的 minSize、maxSize 和 ratioLimits。超出允许大小时在页面内部滚动或截断，不能只扩大窗口。onLimitsChange 表示约束变化，onRectChange 才表示实际矩形变化；读取 avoidArea 后用 px2vp 转换到页面布局单位，避开不可交互区域。组件退出时退订它自己的显示与窗口回调。
+
+### 球内容更新与条目轮换
 
 **更新球内容**：使用与绑定时相同的球模板，传入新的业务内容。
 
@@ -100,9 +121,18 @@ const updateParams: floatingBall.FloatingBallParams = {
 await FloatingBallController.updateFloatingBall(updateParams);
 ```
 
-上述球片段适用于前文的 NORMAL 模板，仅在球处于 STARTED 后调用；STATIC 不支持更新，也不能通过更新参数更换球模板。窗、球更新均按各自状态及参数约束执行，失败交由业务入口处理，详见[窗更新](routes/float-view.md)和[球更新](routes/floating-ball.md)。
+上述球片段适用于前文的 NORMAL 模板，仅在球处于 STARTED 后调用；STATIC 不支持更新，也不能通过更新参数更换球模板。窗、球更新均按各自状态及参数约束执行，失败交由业务入口处理，详见[窗更新](float-view.md)和[球更新](floating-ball.md)。
 
-球不是窗页面，也不推定它受到同一防窥蒙层保护；需要防窥时另读[防窥联动](anti-peep-integration.md)。
+业务有多条内容需要轮换时，在业务模型中保存当前展示条目的稳定 ID 和下一条 ID，不把轮换逻辑放入通用控制器：
+
+- 数据事件到达时，按当前 ID 找到最新条目，只刷新它的内容，避免每次数据更新都跳到下一条。
+- 轮换时机到达时，从最新列表选择下一条，再生成 FloatingBallParams。当前条目被删除时，优先选择仍存在的下一条，否则回到首条；列表为空时停止轮换，不读取首条或对长度取模。
+- 未到 STARTED 或正在停止时只保留最新业务数据，等球可以更新后再提交。更新 Promise 完成前不并发提交下一次更新，高频事件合并为最新值；失败不重建控制器，也不把显示记录为更新成功。
+- 轮换是可选业务行为，只启动一个轮换任务。停止窗球或替换整组实例时清理定时器、数据事件订阅；旧请求晚到的结果不能继续更新新实例。
+
+列表清空后的关闭策略由业务决定；若该窗球仅服务于列表内容，可停止整组并按第 5 节释放。窗组件切换布局时清理自己的动画和显示监听，整组业务订阅由组合流程的所有者清理，避免切换布局后重复订阅。
+
+球不是窗页面，也不推定它受到同一防窥蒙层保护；需要防窥时另读[防窥联动](../anti-peep-integration.md)。
 
 ## 5. 停止与释放（解绑可选）
 
@@ -121,7 +151,7 @@ await FloatViewBallController.release();
 
 ### 可选：显式解除绑定
 
-只有需要主动解除绑定关系时调用 unbind，一般业务关闭流程不需要此步骤。两端尚未启动的绑定可以直接解除；已请求启动时，必须确认双端 STOPPED：
+只有需要主动解除绑定关系时调用 unbind，一般业务关闭流程不需要此步骤。两端尚未启动的绑定可以直接解除；**已请求启动时，必须确认双端 STOPPED：**
 
 ```typescript
 await FloatViewBallController.unbind();
@@ -130,6 +160,17 @@ await FloatViewBallController.unbind();
 unbind 成功后会自动调用 release 清理引用。失败时保留引用供重试。
 
 release 仅清理监听和本地引用，不停止窗口，也不调用系统解绑接口。未绑定的准备流程被放弃时也可调用；尚未停止的绑定不能直接 release。完成释放后可重新 prepare。停止失败保留引用和监听，不能直接释放或宣称已关闭。
+
+### 按需替换整组窗球
+
+只在业务明确要求重建时执行。普通内容更新、列表增删、窗模板切换不走此流程。`restoreMainWindow(wantParameters)` 后的 onNewWant 可根据业务参数处理导航；恢复主窗口本身不要求销毁或重建窗球。若业务确实需要替换，则在业务所有者中记录一次替换请求和新配置：
+
+1. 停止旧组的轮换任务及数据更新订阅，调用 `await FloatViewBallController.stop()`。
+2. 由两个状态回调确认双端 STOPPED，并等待停止请求完成；不能收到单端 STOPPED 就重新创建，也不能用固定延时替代状态确认。
+3. 调用 `await FloatViewBallController.release()` 清理旧引用。unbind 仍是可选操作。
+4. 使用最新业务数据依次 `await prepare(...)`、`await bind(newBallParams)`、`await start('view' 或 'ball')`，明确新组首次展示形态；启动状态确认后恢复业务更新。
+
+替换请求由业务入口串行处理，完成后清除；用户主动关闭、列表为空或替换已取消时不自动再开。任一步失败停止后续创建／启动，保留错误与当前状态，不重复重建。再次启动仍须符合权限、设备和前台条件。
 
 ## 异常与恢复
 
@@ -152,6 +193,6 @@ release 仅清理监听和本地引用，不停止窗口，也不调用系统解
 - 创建、加载、绑定、启动、停止、解绑失败后不自动启动另一端、不丢失恢复所需引用。
 - 业务入口阻止重复点击和并发调用；页面加载和尺寸设置成功后才继续绑定启动。
 
-运行[验证流程](performance-validation.md)，静态与 Node 模拟测试不能替代 HarmonyOS 编译和真机系统切换验收。缺少签名、设备或系统条件时保留待验收状态。
+运行[验证流程](../performance-validation.md)，静态与 Node 模拟测试不能替代 HarmonyOS 编译和真机系统切换验收。缺少签名、设备或系统条件时保留待验收状态。
 
 **实施结束再次提醒：两项权限均为受限 ACL，USE_FLOAT_BALL 必须申请，FLOAT_VIEW 必须申请并取得用户授权；提供[ACL 申请入口](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。**

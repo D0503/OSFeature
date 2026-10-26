@@ -1,6 +1,6 @@
 # 闪控窗开发步骤（API 26 起）
 
-通过 `@kit.ArkUI` 的 `floatView` 创建系统闪控窗，加载业务页面并管理窗口尺寸、状态和关闭流程。本路线用于独立闪控窗；窗球切换按需读取[绑定路线](../binding.md)，使用独立组合资产。
+通过 `@kit.ArkUI` 的 `floatView` 创建系统闪控窗，加载业务页面并管理窗口尺寸、状态和关闭流程。本路线用于独立闪控窗；窗球切换按需读取[绑定路线](binding.md)，使用独立组合资产。
 
 ## 开发准备
 
@@ -52,6 +52,8 @@ if (!granted) {
 
 函数返回 Promise<boolean>：授权结果非空且全部通过时返回 true；拒绝、空结果或申请异常时返回 false，异常通过 hilog 记录。用户主动开启闪控窗时，在能力检查通过后调用一次，只有返回 true 才继续创建；拒绝或失败时保留原业务并使用已有提示方式，不循环请求。
 
+若入口同时包含收藏、订阅等业务操作，应分别记录业务结果与闪控窗开启结果。已完成的业务操作不因授权被拒绝而撤销；通过原有提示说明闪控窗未开启。授权成功也不代表窗口已经显示，实际展示仍以 STARTED 为准。
+
 此函数申请的是用户授权，不能代替 FLOAT_VIEW 的 ACL 申请、宿主权限声明及签名 profile 配置。第 3 步已包含此调用，将两步合入同一入口，避免重复申请。
 
 ## 3. 创建控制器、监听并启动
@@ -95,9 +97,28 @@ private async createWindow(): Promise<void> {
 - 注册监听失败会尝试退订并抛出错误。页面加载或启动失败时保留控制器，不重复 create；根据实际状态重试启动，或停止并清理本次监听。启动前准备失败不能假定一定会收到 STOPPED，需在放弃该实例时退订并清空引用。
 - 资产独占管理该控制器的监听，无参数 off 会取消对应事件的全部监听；业务使用可选回调，不另建独立监听所有者。
 
+### 宿主页面与功能组件
+
+功能模块可以只导出普通 `@Component`，由宿主 HAP 的 `@Entry` 页面承载。将下文的 `FloatViewContent` 放在功能模块或宿主组件目录，宿主页面导入后使用：
+
+```typescript
+// 宿主 pages/FloatViewPage.ets，按组件实际位置调整导入。
+import { FloatViewContent } from '../components/FloatViewContent';
+
+@Entry
+@Component
+struct FloatViewPage {
+  build() {
+    FloatViewContent()
+  }
+}
+```
+
+在宿主 pages profile 的 `src` 数组中合并 `"pages/FloatViewPage"`，保留其他页面。`setUIContent` / `startFloatView` 传入这个宿主页面路径，不能把普通组件所在文件路径当作页面路径；组件位于 HAR 时由宿主从该模块导入即可。
+
 ## 4. 更新内容、尺寸与模板
 
-内容更新使用已加载页面的正常状态管理。尺寸单位为 px，宽高必须大于 0；通过 `getFloatViewLimits(templateType)` 读取 minSize、maxSize 和 ratioLimits，再调用 `await FloatViewController.setWindowSize(size)`。第 3 步采用返回的最大尺寸，业务可在尺寸和比例约束内选择合适大小。
+内容更新使用已加载页面的正常状态管理。主页面和窗页面共享同一份业务数据，使用宿主已有 AppStorage／LocalStorage 等方案驱动刷新；不因字段变化或条目增删重新 setUIContent、create 或 start。列表使用稳定业务 ID 作为条目标识。尺寸单位为 px，宽高必须大于 0；通过 `getFloatViewLimits(templateType)` 读取 minSize、maxSize 和 ratioLimits，再调用 `await FloatViewController.setWindowSize(size)`。第 3 步采用返回的最大尺寸，业务可在尺寸和比例约束内选择合适大小。
 
 `onLimitsChange` 返回约束变化，不是实际窗口尺寸；需要动态布局时在回调中更新业务保存的约束。系统可能调整请求尺寸，实际位置和尺寸通过 createFloatView 的可选 onRectChange 回调获取，资产在 STOPPED 时退订。
 
@@ -113,7 +134,86 @@ const property: floatView.TemplateProperty = {
 await FloatViewController.switchTemplate(property);
 ```
 
+switchTemplate 只改变系统模板和窗口尺寸，页面还需同步改变自己的展开／紧凑布局状态；等待接口成功后再提交页面状态，失败保留原布局。切回原模板时重新读取目标模板的限制。条目数量、显示区域和 onLimitsChange 变化时，按当前模板重算尺寸；设计尺寸从 vp 转成 px 后再校验宽高和比例限制，实际布局参考 onRectChange 与 avoidArea。详细流程见[绑定场景的更新与替换](binding.md#4-系统切换与业务更新)，这些窗更新步骤也可独立使用。
+
 片段放入现有异步错误处理入口，按实际状态控制操作；控制器不存在时方法抛出异常。根据 `FloatViewController.getWindowProperties().avoidArea` 布局，避免交互控件落入不响应区域，不固定为某款手机的尺寸。
+
+### 展开／收起页面片段
+
+上箭头将闪控窗切为紧凑横条，下箭头切回展开矩形；这是窗模板切换，两个形态都不是闪控球。以下组件复用已创建的控制器，初始布局对应创建时的 ROUNDED_RECTANGLE；若初始模板为 HORIZONTAL_BAR，将 compact 初值设为 true。
+
+```typescript
+import { floatView } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FloatViewController } from '../controllers/FloatViewController';
+
+@Component
+export struct FloatViewContent {
+  @State compact: boolean = false;
+  @State switching: boolean = false;
+
+  private async changeLayout(compact: boolean): Promise<void> {
+    this.switching = true;
+    try {
+      const templateType = compact
+        ? floatView.FloatViewTemplateType.HORIZONTAL_BAR
+        : floatView.FloatViewTemplateType.ROUNDED_RECTANGLE;
+      const limits = FloatViewController.getFloatViewLimits(templateType);
+      if (limits === null) { return; }
+      const property: floatView.TemplateProperty = {
+        templateType: templateType,
+        size: { width: limits.maxSize.width, height: limits.maxSize.height }
+      };
+      await FloatViewController.switchTemplate(property);
+      this.compact = compact;
+    } catch (error) {
+      const err = error as BusinessError;
+      hilog.error(0xF811, 'FloatViewContent',
+        'Switch layout failed: %{public}s, %{public}s', String(err.code), err.message);
+    } finally {
+      this.switching = false;
+    }
+  }
+
+  build() {
+    Column() {
+      if (this.compact) {
+        Row() {
+          Text('业务摘要').layoutWeight(1)
+          SymbolGlyph($r('sys.symbol.chevron_down'))
+            .accessibilityText('展开')
+            .enabled(!this.switching)
+            .onClick(() => { this.changeLayout(false); })
+        }
+        .width('100%')
+      } else {
+        Column() {
+          Text('业务详细内容')
+          // 在这里接入现有业务组件及共享数据。
+        }
+        .layoutWeight(1)
+        Row() {
+          SymbolGlyph($r('sys.symbol.chevron_up'))
+            .accessibilityText('收起')
+            .enabled(!this.switching)
+            .onClick(() => { this.changeLayout(true); })
+        }
+        .width('100%')
+        .justifyContent(FlexAlign.Center)
+      }
+    }
+    .width('100%')
+    .height('100%')
+  }
+}
+```
+
+片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；布局按 avoidArea 留出交互避让空间。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
+
+**内容驱动尺寸**：展开布局按头部、内容条目和操作区计算高度，紧凑布局按摘要和操作区计算宽度；通过实际 UIContext 将 vp 换为 px，再按目标模板的宽高及比例约束选取尺寸。内容超过窗口上限时使用内部滚动或截断，不复制固定的单行高度、断点或窗口大小。
+
+**可选过渡效果**：需要淡入淡出时，可在页面 Stack 顶层放置覆盖层，通过 opacity 与 animation 控制，并设置 `hitTestBehavior(HitTestMode.None)`。覆盖层只用于视觉过渡，不承担防窥保护。切换完成或失败后均收起覆盖层；动画时长不作为系统接口完成依据，页面退出时清理自己创建的定时任务。
 
 ## 5. 恢复主窗口与读取窗口属性
 
