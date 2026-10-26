@@ -1,6 +1,6 @@
 # 闪控窗／球绑定开发步骤（API 26 起）
 
-绑定是独立窗、球能力之上的组合接入。使用 [FloatViewBallController.ets](../assets/FloatViewBallController.ets)，同时复制同目录的两个基础控制器。仅在用户明确需要窗球切换时加载本流程，不因同时选择两条路线自动绑定。
+`binding` 是窗球绑定的独立 CLI 路线，内部复用窗、球能力。使用 [FloatViewBallController.ets](../assets/FloatViewBallController.ets)，同时复制同目录的两个基础控制器。仅在用户明确需要窗球切换时加载本流程，不因同时选择两条独立路线自动绑定。
 
 ## 开发准备
 

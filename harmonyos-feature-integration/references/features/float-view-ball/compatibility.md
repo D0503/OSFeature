@@ -5,7 +5,8 @@
 | 闪控球基础 | 20 | Stage；USE_FLOAT_BALL 受限权限 |
 | setFloatingBallVisibilityInApp | 24 | 仅在该分支使用 |
 | onDestroy/offDestroy、titleColor/contentColor/textUpdateAnimationType | 26 | 文字颜色配置须有 backgroundColor |
-| 闪控窗与 bind/unbind | 26 | Stage；窗需要 FLOAT_VIEW，绑定同时需要球权限 |
+| 闪控窗路线 float-view | 26 | Stage；需要 FLOAT_VIEW |
+| 绑定路线 binding（bind/unbind） | 26 | Stage；同时检查窗、球权限与两端接口版本 |
 
 版本升级遵循[通用兼容性规则](../../shared/compatibility-model.md#升级接入对所有特性通用)。
 

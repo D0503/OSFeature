@@ -1,6 +1,6 @@
 # 性能与验证
 
-运行通用 inspect-project、check-compatibility、verify-integration，feature 使用 float-view-ball。auto 保留检测到的组合路线；verify-development 按 float-view/floating-ball 分别执行，共用报告但不以一条路线代替另一条。
+运行通用 inspect-project、check-compatibility、verify-integration，feature 使用 float-view-ball。auto 在发现 bind 时选择 binding，否则保留检测到的独立路线。verify-development 的独立场景使用 float-view 或 floating-ball，绑定场景使用 binding，一轮覆盖两端与系统切换。
 
 静态 warn 逐项附文件证据复核；扫描仅解析直接调用和字面量，动态参数、跨模块控制器、HAR宿主、控制流和授权不能由关键字证明。目标参数对象里的 titleColor/contentColor/textUpdateAnimationType 计入 API 26；候选同名字段需核对用途。
 

@@ -27,10 +27,18 @@ const ball = await inspect("floating-ball-api20", 20), view = await inspect("flo
 const pair = await inspect("float-bound-api26", 26), privacy = await inspect("anti-peep-api21", 21), linked = await inspect("float-privacy-api26", 26)
 assert.deepEqual(compat(ball).selectedRoutes, ["floating-ball"])
 assert.deepEqual(compat(view).selectedRoutes, ["float-view"])
-assert.deepEqual(compat(pair).selectedRoutes, ["float-view", "floating-ball"])
+assert.deepEqual(compat(pair).selectedRoutes, ["binding"])
 assert.equal(compat(pair).bindingDetected, true)
+assert.equal(compat(pair).recommendedRoute, "binding")
+assert.equal(verify(pair, "float-view-ball", "binding").route, "binding")
+assert.equal(verify(pair, "float-view-ball", "binding").counts.fail, 0)
+assert.ok(has(verify(pair, "float-view-ball", "float-view"), "binding-route", "fail"))
+assert.ok(has(verify(view, "float-view-ball", "binding"), "binding-implementation", "fail"))
+assert.ok(has(verify(ball, "float-view-ball", "binding"), "eligibility-binding", "fail"))
+assert.ok(!compat(ball).availableRoutes.includes("binding"))
+assert.ok(windowPrivacyScenarios("float-view-ball", "binding", ball).includes("pair-stopped"))
 assert.equal(compat(ball).requiredApi, 20)
-assert.equal(compat(pair).routeRequirements["floating-ball"], 26)
+assert.equal(compat(pair).routeRequirements["binding"], 26)
 assert.deepEqual(compat(privacy, "dlp-anti-peep").selectedRoutes, ["status-observation", "system-mask"])
 assert.equal(compat(privacy, "dlp-anti-peep").requiredApi, 21)
 for (const i of [ball, view, pair, linked]) assert.equal(verify(i).counts.fail, 0)
@@ -59,6 +67,7 @@ const ballSource = await readFile(join(fixture("floating-ball-api20"), "entry/sr
 const viewSource = await readFile(join(fixture("float-view-api26"), "entry/src/main/ets/pages/Index.ets"), "utf8")
 assert.equal(compat(await source(ballSource + "\n" + viewSource)).bindingDetected, false)
 assert.deepEqual(compat(await source(ballSource + "\n" + viewSource)).selectedRoutes, ["float-view", "floating-ball"])
+assert.ok(has(verify(await source(ballSource + "\n" + viewSource), "float-view-ball", "binding"), "binding-implementation", "fail"))
 for (const text of ["// " + original.replaceAll("\n", "\n// "), "const text = `" + original + "`;", "const text = 'floatView.bind(view, ball, {})';"]) {
   const i = await source(text)
   assert.equal(i.floatViewBall.usages.length, 0)
@@ -153,7 +162,7 @@ const options = {
   commandRunner: async (args) => ({ exitCode: 0, stderr: "", stdout: args[0] === "device" ? JSON.stringify({ deviceType: "phone", isEmulator: false }) : args[1] === "layout" ? JSON.stringify({ attributes: { id: "window-page", bounds: "[0,0][100,100]" } }) : "mock execution" }),
   pause: async () => {}
 }
-for (const [feature, route] of [["float-view-ball", "float-view"], ["dlp-anti-peep", "system-mask"]]) {
+for (const [feature, route] of [["float-view-ball", "binding"], ["dlp-anti-peep", "system-mask"]]) {
   const r = request(feature, route, feature)
   const output = await verifyDevelopment(r, options)
   assert.equal(output.status, "inconclusive")
@@ -176,4 +185,9 @@ for (const script of ["check-compatibility.mjs", "verify-integration.mjs"]) {
   assert.equal(result.status, 0, result.stdout + result.stderr)
   assert.equal(JSON.parse(result.stdout).featureId, "float-view-ball")
 }
+const bindingCli = spawnSync(process.execPath, [join(root, "scripts/verify-integration.mjs"),
+  "--project", fixture("float-bound-api26"), "--sdk", fixture("sdk-api26"),
+  "--feature", "float-view-ball", "--route", "binding"], { encoding: "utf8" })
+assert.equal(bindingCli.status, 0, bindingCli.stdout + bindingCli.stderr)
+assert.equal(JSON.parse(bindingCli.stdout).route, "binding")
 console.log(JSON.stringify({ status: "passed", features: Object.keys(profiles) }))

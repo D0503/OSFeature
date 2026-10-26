@@ -7,8 +7,8 @@
 ## 按任务加载
 
 - SDK、权限、设备与版本：[兼容性](compatibility.md)。
-- 实施：[实施入口](implementation.md)，再按 selectedRoutes 读取 [闪控窗](routes/float-view.md) 或 [闪控球](routes/floating-ball.md)。
-- 用户明确需要窗球切换或工程已有 bind 时，额外读取 [绑定切换](routes/binding.md)；两条路线同时出现不等于绑定。
+- 实施：[实施入口](implementation.md)，再按 selectedRoutes 读取 [闪控窗](routes/float-view.md) 、[闪控球](routes/floating-ball.md) 或 [绑定](routes/binding.md)。
+- 路线 ID：`float-view` 为独立窗，`floating-ball` 为独立球，`binding` 为[窗球绑定](routes/binding.md)。绑定只选 binding，内部复用两端能力；两个独立实现同时出现不等于绑定。
 - 代码：[资产](assets-catalog.md)；失败和旧版本：[回退](fallback.md)。
 - 验收：[性能与验证](performance-validation.md)；诊断：[排障](troubleshooting.md)。
 - 用户明确要求闪控窗防窥时，读取[防窥联动](anti-peep-integration.md)，按其中要求加载独立的[防窥能力](../dlp-anti-peep/README.md)。

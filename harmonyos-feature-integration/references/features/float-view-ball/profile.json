@@ -7,7 +7,8 @@
     "selectionField": "selectedRoutes",
     "allowed": [
       "float-view",
-      "floating-ball"
+      "floating-ball",
+      "binding"
     ]
   },
   "fallbackPolicy": {
@@ -62,6 +63,25 @@
         "implementation": "routes/floating-ball.md",
         "assets": "routes/floating-ball.md",
         "validation": "routes/floating-ball.md"
+      }
+    },
+    {
+      "id": "binding",
+      "displayName": "闪控窗／球绑定",
+      "minApi": 26,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry",
+        "feature"
+      ],
+      "components": [
+        "floatView",
+        "floatingBall"
+      ],
+      "documents": {
+        "implementation": "routes/binding.md",
+        "assets": "routes/binding.md",
+        "validation": "routes/binding.md"
       }
     }
   ],

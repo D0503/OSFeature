@@ -1,6 +1,6 @@
 # 接入实施
 
-先扫描实际入口、宿主 module、页面注册、已有浮窗/画中画和控制器所有者。确认用户需要窗、球还是绑定；展示可用路线与 SDK 升级选择，不因选择两条路线自动添加绑定。
+先扫描实际入口、宿主 module、页面注册、已有浮窗/画中画和控制器所有者。确认用户需要 float-view、floating-ball 还是 binding；展示可用路线与 SDK 升级选择。绑定只选 binding，不再同时选择两条独立路线。
 
 **实施前（首次修改工程前）提醒开发者：** `ohos.permission.USE_FLOAT_BALL` 与 `ohos.permission.FLOAT_VIEW` 都是受限 ACL 权限；闪控球必须申请前者，闪控窗必须申请后者并取得用户授权。按实际路线在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)，完成宿主声明与签名 profile 核对。
 

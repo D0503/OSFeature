@@ -3,7 +3,7 @@ export const WINDOW_PRIVACY_FEATURES = ["float-view-ball", "dlp-anti-peep"]
 export function windowPrivacyScenarios(feature, route, inspection) {
   if (feature === "float-view-ball") {
     const scenarios = ["window-started", "content-updated", "window-stopped", "fallback-preserved", "device-support-confirmed"]
-    if (inspection.floatViewBall?.usages?.some((u) => u.operation === "bind")) scenarios.push("view-to-ball", "ball-to-view", "pair-stopped")
+    if (route === "binding" || inspection.floatViewBall?.usages?.some((u) => u.operation === "bind")) scenarios.push("view-to-ball", "ball-to-view", "pair-stopped")
     return scenarios
   }
   if (feature === "dlp-anti-peep") {

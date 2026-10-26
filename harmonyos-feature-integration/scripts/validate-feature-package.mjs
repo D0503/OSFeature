@@ -191,8 +191,8 @@ try {
         for (const key of ["prerequisites", "troubleshooting"]) issue(errors, typeof profile.documents?.[key] === "string", `profile.documents.${key}`, "缺少前置指导或排障资料")
       }
       if (["float-view-ball", "dlp-anti-peep"].includes(feature.id)) {
-        const expected = feature.id === "float-view-ball" ? { "float-view": 26, "floating-ball": 20 } : { "status-observation": 20, "system-mask": 21 }
-        issue(errors, profile.routeComposition?.mode === "composable" && routeIds.size === 2 && Object.keys(expected).every((id) => routeIds.has(id)), "profile.routes", "需声明两条可组合路线")
+        const expected = feature.id === "float-view-ball" ? { "float-view": 26, "floating-ball": 20, binding: 26 } : { "status-observation": 20, "system-mask": 21 }
+        issue(errors, profile.routeComposition?.mode === "composable" && routeIds.size === Object.keys(expected).length && Object.keys(expected).every((id) => routeIds.has(id)), "profile.routes", "路线 ID 或数量不符合能力包约定")
         for (const route of profile.routes ?? []) issue(errors, route.minApi === expected[route.id] && route.minTargetApi === undefined, `profile.routes.${route.id}`, "路线 API 门槛错误或无依据提高 target")
         const capabilities = feature.id === "float-view-ball" ? { binding: 26, ballVisibility: 24, ballDestroy: 26, ballColorsAndAnimation: 26 } : { optionsAndInformation: 23 }
         for (const [key, minApi] of Object.entries(capabilities)) issue(errors, profile.capabilities?.[key]?.minApi === minApi, `profile.capabilities.${key}`, "可选接口 API 门槛错误")

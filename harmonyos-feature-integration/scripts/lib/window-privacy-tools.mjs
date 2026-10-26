@@ -121,8 +121,8 @@ export function evaluateWindowPrivacy(inspection, profile) {
   const sdkValid = sdk?.status === "valid" && Number.isInteger(sdk.apiVersion)
   const binding = data.usages.some((u) => u.operation === "bind")
   const detected = new Set(data.usages.map((u) => u.route))
-  if (binding) { detected.add("float-view"); detected.add("floating-ball") }
-  const routeRequirements = Object.fromEntries(profile.routes.map((r) => [r.id, Math.max(r.minApi, ...data.usages.filter((u) => u.route === r.id).map((u) => u.minApi), binding ? 26 : 0)]))
+  if (binding) { detected.clear(); detected.add("binding") }
+  const routeRequirements = Object.fromEntries(profile.routes.map((r) => [r.id, Math.max(r.minApi, ...data.usages.filter((u) => r.id === "binding" ? ["float-view", "floating-ball"].includes(u.route) : u.route === r.id).map((u) => u.minApi))]))
   const selectedRoutes = profile.routes.filter((r) => detected.has(r.id)).map((r) => r.id)
   const result = {
     schemaVersion: "1.0", featureId: profile.featureId, status: "insufficient_context", routeSelectionMode: "composable",
@@ -145,7 +145,7 @@ export function evaluateWindowPrivacy(inspection, profile) {
   result.status = (selectedRoutes.length ? selectedRoutes.some((r) => !result.availableRoutes.includes(r)) : !result.availableRoutes.length) ? "upgrade_available" : "conditional"
   result.recommendedRoute = selectedRoutes.find((r) => result.availableRoutes.includes(r)) ?? result.availableRoutes[0] ?? null
   result.decisionRequired = result.availableRoutes.length > 1 || result.upgradeOptions.length > 0
-  result.missingConditions.push(profile.featureId === "float-view-ball" ? "设备/窗口模式、前台状态、用户授权及 ACL 准入需运行核验；同时选择两条路线不代表绑定" : "Phone 真机能力、人脸识别、受限权限和系统/应用防窥开关需核验；未知状态不是 PASS")
+  result.missingConditions.push(profile.featureId === "float-view-ball" ? "设备/窗口模式、前台状态、用户授权及 ACL 准入需运行核验；绑定选择 binding；同时选择两条独立路线不代表绑定" : "Phone 真机能力、人脸识别、受限权限和系统/应用防窥开关需核验；未知状态不是 PASS")
   return result
 }
 
@@ -154,8 +154,12 @@ export function verifyWindowPrivacy(inspection, compatibility, routeOption = "au
   const routes = routeOption === "auto" ? compatibility.selectedRoutes : [routeOption]
   const add = (id, status, message, evidence = []) => checks.push({ id: `${compatibility.featureId}-${id}`, label: message, status, message, evidence })
   if (!routes.length) add("implementation", "warn", "未发现可确认的实现；先确认目标和路线，不能把导入当作接入成功", data.imports)
-  for (const route of routes) add(`eligibility-${route}`, compatibility.availableRoutes.includes(route) ? "pass" : "fail", `${route} SDK/compile 门槛 ${compatibility.routeRequirements[route] ?? "未知"}，不代表设备或授权可用`)
-  const usages = data.usages.filter((u) => routes.includes(u.route))
+  for (const route of routes) add(`eligibility-${route}`, compatibility.availableRoutes.includes(route) ? "pass" : "fail", `${route} SDK/compile/target 门槛 ${compatibility.routeRequirements[route] ?? "未知"}，不代表设备或授权可用`)
+  const bindingSelected = routes.includes("binding")
+  const checkedRoutes = bindingSelected ? ["float-view", "floating-ball"] : routes
+  const usages = data.usages.filter((u) => checkedRoutes.includes(u.route))
+  if (bindingSelected && !compatibility.bindingDetected) add("binding-implementation", "fail", "选择 binding 但未发现 bind 调用；两个独立实现不能视为已绑定", data.imports)
+  if (!bindingSelected && compatibility.bindingDetected) add("binding-route", "fail", "已发现绑定实现，请使用 binding 路线验证两端")
   for (const [i, u] of usages.entries()) {
     const owner = data.records.find((r) => r.modulePath === u.modulePath)
     if (!owner || !["entry", "feature"].includes(owner.moduleType)) add(`owner-${i}`, "warn", "追踪封装或 HAR 的实际宿主 HAP 与权限", [u])
@@ -185,15 +189,15 @@ export function verifyWindowPrivacy(inspection, compatibility, routeOption = "au
     }
     if (u.operation === "passDlpAntiPeepInfo") add(`explicit-pass-${i}`, "warn", "放通会持续到锁屏或应用退出，只能来自明确用户操作，不能用于默认恢复或错误处理", [u])
   }
-  if (compatibility.bindingDetected) {
+  if (bindingSelected || compatibility.bindingDetected) {
     add("binding", "warn", "绑定前两控制器必须未启动；绑定后只启动一端、停止一端会销毁两端；复核异步竞态、双权限和恢复失败路径", data.usages.filter((u) => u.operation === "bind"))
-    for (const r of ["float-view", "floating-ball"]) if (!compatibility.availableRoutes.includes(r)) add(`binding-${r}`, "fail", "绑定要求两条路线均满足 API 26")
+    if (!compatibility.availableRoutes.includes("binding")) add("binding-version", "fail", "绑定要求 SDK/compile/target 满足 API 26 及实际使用接口要求")
     for (const u of data.usages.filter((u) => u.operation === "bind")) {
       const owner = data.records.find((r) => r.modulePath === u.modulePath)
       if (owner && ["entry", "feature"].includes(owner.moduleType) && !owner.permissions.includes(permissionOf["floating-ball"])) add("binding-permission", "fail", "绑定还需要 USE_FLOAT_BALL 权限", [u])
     }
   }
-  for (const route of routes) if (!usages.some((u) => u.route === route)) add(`implementation-${route}`, "warn", "所选路线未发现实现，核对跨文件封装与目标")
+  for (const route of checkedRoutes) if (!usages.some((u) => u.route === route)) add(`implementation-${route}`, "warn", "所选路线未发现实现，核对跨文件封装与目标")
   add("runtime-guards", "warn", "逐条复核运行 API/SysCap/设备可用性保护先于创建和调用；核对前台、权限、开关、异常与原业务回退", usages)
   add("lifecycle", "warn", compatibility.featureId === "float-view-ball" ? "复核窗口互斥、停止完成回调、资源释放、尺寸变化和主窗口恢复时机" : "复核查询失败保持未知、HIDE 去重、异步退出后失效、窗口销毁清理和蒙层失败不报成功", usages)
   add("runtime-evidence", "warn", "须按能力包运行场景采集证据；静态候选、构建与入口截图不能证明功能生效")
