@@ -61,6 +61,6 @@ Router 填写真实 pages 路径，Navigation 填写真实 NavDestination name�
 
 新接入默认 `enableReducedContainerSize: true`；API 26 同时默认 `drawableRectHook: true`。这是 Skill 接入默认值，官方两个字段的缺省值仍为 false。默认值不构成强制合法性要求，合法的 false 不应被静态校验判错。
 
-API 23～25 工程优先建议将本机 SDK 与 compile 升到 26，以启用两个字段；保持 compatible，target 无独立要求时保留原值。用户确认升级前不改版本。用户选择保持旧版本时，仅开启 enableReducedContainerSize，省略 drawableRectHook 并说明限制。工程已有基础配置时，脚本的 requiredApi 可能仍是 23；AI 必须把计划新增的 drawableRectHook 纳入升级方案，不能仅依赖扫描结果。
+API 23～25 工程优先建议将本机 SDK、有效 compile 与 target 升到至少 26，以启用两个字段；保持 compatible，已有更高 target 不降低。用户确认升级前不改版本。用户选择保持旧版本时，仅开启 enableReducedContainerSize，省略 drawableRectHook 并说明限制。工程已有基础配置时，脚本的 requiredApi 可能仍是 23；AI 必须把计划新增的 drawableRectHook 纳入升级方案，不能仅依赖扫描结果。
 
 用户明确选择 false 时直接遵循；既有配置显式 false 时保留，将与新接入默认值的差异列入清单，用户明确选择更改后才覆盖。设备覆盖配置分别执行此规则，不因默认值更新而改动用户范围外的设备配置。

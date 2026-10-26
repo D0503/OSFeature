@@ -576,7 +576,7 @@
       "files": [],
       "expectations": [
         "不实现 A2A 或聊天后端",
-        "核验 SDK/compile API 20，保留 target/compatible",
+        "核验 SDK/有效 compile 与 target 至少 API 20，保留 compatible",
         "不把 FunctionController 无条件放入低版本页面初始化",
         "保留接入前布局和业务路径"
       ]
@@ -588,7 +588,7 @@
       "files": [],
       "expectations": [
         "不把应用 API 20 支持等同元服务支持",
-        "保留 target/compatible",
+        "target 按所用接口版本升级且不降低已有更高值，保留 compatible",
         "用户选择升级后才实施"
       ]
     },

@@ -10,7 +10,6 @@
       "navigation"
     ]
   },
-  "targetSdkPolicy": "preserve-unless-declared",
   "fallbackPolicy": {
     "baseline": "pre-integration-source-state",
     "appliesWhen": [

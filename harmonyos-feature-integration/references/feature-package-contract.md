@@ -17,7 +17,7 @@
 
 能力包含两条以上可同时使用的路线时，声明 `routeComposition.mode: composable`、`selectionField: selectedRoutes` 和允许组合的路线 ID。每条 `routes[]` 必须有独立的 `documents.implementation`、`documents.validation`、`documents.assets`；路线内部组件较多时，可以增加机器可读组件矩阵和分类资料，由 implementation 入口按目标渐进加载。能力包顶层文档只负责共同选型、回退和渐进加载。组合路线分别实施和验证，不能用单个 `recommendedRoute` 隐藏另一条真实使用的路线。
 
-互斥路线声明 `routeComposition.mode: exclusive`，`selectionField: selectedRoutes` 和允许的路线 ID，选择最多一项；不要为满足校验而虚假声明可组合。可选能力在 `capabilities` 中声明独立 `minApi`，扫描与方案按所用字段/API 计算 `requiredApi`。`targetSdkPolicy: preserve-unless-declared` 表示没有独立 target 证据时保持原 target；不声明此策略的现有能力保持原有升级规则。
+互斥路线声明 `routeComposition.mode: exclusive`，`selectionField: selectedRoutes` 和允许的路线 ID，选择最多一项；不要为满足校验而虚假声明可组合。可选能力在 `capabilities` 中声明独立 `minApi`，扫描与方案按所用字段/API 计算 `requiredApi`。版本升级遵循[通用兼容性规则](shared/compatibility-model.md#升级接入对所有特性通用)。
 
 ## 通用回退基线
 

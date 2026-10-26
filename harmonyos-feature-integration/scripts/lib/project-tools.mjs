@@ -597,6 +597,9 @@ export function evaluateCompatibility(inspection, profile) {
     return { ...base, missingConditions: ["Unable to determine compatible API level"] }
   }
 
+  if (target === null) {
+    return { ...base, missingConditions: ["Unable to determine target API level"] }
+  }
   const routes = profile.routes
   const availableRoutes = []
   const guardedRoutes = []
@@ -605,8 +608,8 @@ export function evaluateCompatibility(inspection, profile) {
     const sdkRoute = sdk.routes[route.id]
     const sdkAvailable = sdkRoute?.status === "supported"
     const compileAvailable = compile === null ? sdkApi >= route.minApi : compile >= route.minApi
-    const requiredTargetApi = route.minTargetApi ?? route.minApi
-    const targetAvailable = route.minTargetApi === undefined || (target !== null && target >= route.minTargetApi)
+    const requiredTargetApi = Math.max(route.minApi, route.minTargetApi ?? 0)
+    const targetAvailable = target !== null && target >= requiredTargetApi
     if (sdkAvailable && compileAvailable && targetAvailable && compatible >= route.minApi) {
       availableRoutes.push(route.id)
     } else if (sdkAvailable && compileAvailable && targetAvailable && target !== null && target >= route.minApi) {
@@ -615,7 +618,7 @@ export function evaluateCompatibility(inspection, profile) {
     } else {
       upgradeOptions.push({
         route: route.id,
-        upgradeTargetApi: requiredTargetApi,
+        upgradeTargetApi: Math.max(target, requiredTargetApi),
         upgradeCompileApi: route.minApi,
         upgradeLocalSdkApi: sdkAvailable ? null : route.minApi,
         sdkStatus: sdkRoute?.status ?? "not_checked",
@@ -657,7 +660,7 @@ export function evaluateCompatibility(inspection, profile) {
 
   const reasons = []
   for (const route of routes.filter((item) => detectedRouteSignals[item.id] && !availableRoutes.includes(item.id))) {
-    const requiredTargetApi = route.minTargetApi ?? route.minApi
+    const requiredTargetApi = Math.max(route.minApi, route.minTargetApi ?? 0)
     reasons.push(`Detected ${route.id} integration signals, but the route is unavailable; require local SDK/compile API ${route.minApi} and target API ${requiredTargetApi}`)
   }
   for (const route of routes.filter((item) => item.applicationLevel && availableRoutes.includes(item.id))) {

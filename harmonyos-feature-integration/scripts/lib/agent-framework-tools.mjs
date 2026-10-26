@@ -135,6 +135,7 @@ export function evaluateAgentFramework(inspection, profile) {
   const sdkValid = sdk?.status === "valid" && Number.isInteger(sdk.apiVersion)
   const minApi = profile.routes[0].minApi
   const requiredApi = Math.max(minApi, data.application?.type === "atomicService" ? profile.capabilities.atomicService.minApi : minApi, data.usages?.some((u) => u.operation === "api21-button") ? profile.capabilities.iconAboveTitle.minApi : minApi)
+  const requiredTargetApi = Math.max(requiredApi, profile.routes[0].minTargetApi ?? 0)
   const result = {
     schemaVersion: "1.0", featureId: FEATURE, status: "insufficient_context", requiredApi,
     recommendedRoute: null, selectedRoutes: [], availableRoutes: [], upgradeOptions: [], decisionRequired: false,
@@ -148,11 +149,11 @@ export function evaluateAgentFramework(inspection, profile) {
   if (inspection.model !== "stage") { result.status = inspection.model === "fa" ? "unsupported" : "insufficient_context"; result.missingConditions.push("需要 Stage 工程"); return result }
   if (!["app", "atomicService"].includes(data.application?.type)) { result.missingConditions.push("应用类型待确认：核对 AppScope/app.json5 与 product 的 bundleType；混合应用/元服务产物需先确定实际产物，不能按应用 API 20 推断元服务可用"); return result }
   if (!(data.records ?? []).some((m) => ["entry", "feature"].includes(m.moduleType))) { result.missingConditions.push("需定位实际承载组件的 entry/feature HAP"); return result }
-  if (![inspection.api.compile, inspection.api.compatible].every(Number.isInteger)) { result.missingConditions.push("工程 compile/compatible API 无法确定"); return result }
-  if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi) {
+  if (![inspection.api.compile, inspection.api.target, inspection.api.compatible].every(Number.isInteger)) { result.missingConditions.push("工程 compile/target/compatible API 无法确定"); return result }
+  if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi || inspection.api.target < requiredTargetApi) {
     result.status = "upgrade_available"
     result.decisionRequired = true
-    result.upgradeOptions.push({ route: ROUTE, upgradeLocalSdkApi: sdk.apiVersion < requiredApi ? requiredApi : null, upgradeCompileApi: requiredApi, upgradeTargetApi: null, keepCompatibleApi: inspection.api.compatible, note: `安装或切换 SDK，使有效 compile 至少 API ${requiredApi}；无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；保留 target/compatible，旧系统继续原程序路径。` })
+    result.upgradeOptions.push({ route: ROUTE, upgradeLocalSdkApi: sdk.apiVersion < requiredApi ? requiredApi : null, upgradeCompileApi: requiredApi, upgradeTargetApi: Math.max(inspection.api.target, requiredTargetApi), keepCompatibleApi: inspection.api.compatible, note: `安装或切换 SDK，使有效 compile 至少 API ${requiredApi}；无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；target 至少 API ${requiredTargetApi}，已有更高版本不降低；保留 compatible，升级须用户确认，旧系统继续原程序路径。` })
   } else {
     result.status = "conditional"
     result.availableRoutes = [ROUTE]

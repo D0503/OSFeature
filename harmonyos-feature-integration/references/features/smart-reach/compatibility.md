@@ -12,7 +12,7 @@
 
 本包支持 Stage 普通应用的 entry/feature HAP 接入；库代码定位到最终 HAP 配置权限。元服务、其他模型或未列出的设备支持待确认。
 
-先验证本机 `sdk-pkg.json`，再检查 compile/compatible。三条路线没有已确认的独立 target 门槛，采用 `targetSdkPolicy: preserve-unless-declared`；示例 target/compatible 23 不是所有路线必须升级到 23 的要求。SDK/compile 过低时提供对应路线的升级选项，保留原 target/compatible。compatible 低于所选路线时，保护整个新调用路径。
+先验证本机 sdk-pkg.json，再检查 compile/target/compatible。版本升级遵循[通用兼容性规则](../../shared/compatibility-model.md#升级接入对所有特性通用)。三条路线分别按实际使用要求判定，不统一套用示例的 API 23。compatible 低于所选路线时保护整个新调用路径。
 
 操作手与握持手路线须在实际承载功能的 HAP 模块 `src/main/module.json5` 的 `module.requestPermissions` 中声明对应权限。API 15–19 不因声明 DETECT_GESTURE 就获得操作手权限；若仅使用该权限，增强分支需限定 API 20+，更低系统继续原路径。
 

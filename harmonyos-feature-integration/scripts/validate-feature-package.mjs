@@ -166,7 +166,6 @@ try {
       }
       if (feature.id === "easygo-parallel") {
         issue(errors, profile.routeComposition?.mode === "exclusive", "profile.routeComposition.mode", "平行视界路线必须互斥")
-        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "不得推断平行视界的 target 门槛")
         issue(errors, routeIds.size === 2 && routeIds.has("router") && routeIds.has("navigation"), "profile.routes", "需覆盖 Router 与 Navigation")
         for (const route of profile.routes ?? []) {
           issue(errors, route.minApi === 23 && route.moduleTypes?.length === 1 && route.moduleTypes[0] === "entry", `profile.routes.${route.id}`, "基础配置 API 23 且仅支持 entry")
@@ -177,7 +176,6 @@ try {
       }
       if (feature.id === "smart-reach") {
         issue(errors, profile.routeComposition?.mode === "composable", "profile.routeComposition.mode", "智感握姿支持按不同目标组合路线")
-        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "智感握姿不推断独立 target 门槛")
         const expected = { "native-component": 23, "operating-hand": 15, "holding-hand": 20 }
         issue(errors, routeIds.size === 3 && Object.keys(expected).every((id) => routeIds.has(id)), "profile.routes", "智感握姿必须包含三条路径")
         for (const route of profile.routes ?? []) {
@@ -189,14 +187,12 @@ try {
       if (feature.id === "agent-framework-kit") {
         issue(errors, profile.routeComposition?.mode === "exclusive" && routeIds.size === 1 && routeIds.has("function-component"), "profile.routes", "Function 组件必须是唯一接入路线")
         issue(errors, profile.routes[0]?.minApi === 20 && profile.routes[0]?.minTargetApi === undefined, "profile.routes.function-component", "Function 基础 API 20，不推断 target 门槛")
-        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "应保留 target")
         issue(errors, profile.capabilities?.atomicService?.minApi === 21 && profile.capabilities?.iconAboveTitle?.minApi === 21, "profile.capabilities", "元服务及 ICON_ABOVE_TITLE 要求 API 21")
         for (const key of ["prerequisites", "troubleshooting"]) issue(errors, typeof profile.documents?.[key] === "string", `profile.documents.${key}`, "缺少前置指导或排障资料")
       }
       if (["float-view-ball", "dlp-anti-peep"].includes(feature.id)) {
         const expected = feature.id === "float-view-ball" ? { "float-view": 26, "floating-ball": 20 } : { "status-observation": 20, "system-mask": 21 }
         issue(errors, profile.routeComposition?.mode === "composable" && routeIds.size === 2 && Object.keys(expected).every((id) => routeIds.has(id)), "profile.routes", "需声明两条可组合路线")
-        issue(errors, profile.targetSdkPolicy === "preserve-unless-declared", "profile.targetSdkPolicy", "无独立 target 门槛证据，应保留 target")
         for (const route of profile.routes ?? []) issue(errors, route.minApi === expected[route.id] && route.minTargetApi === undefined, `profile.routes.${route.id}`, "路线 API 门槛错误或无依据提高 target")
         const capabilities = feature.id === "float-view-ball" ? { binding: 26, ballVisibility: 24, ballDestroy: 26, ballColorsAndAnimation: 26 } : { optionsAndInformation: 23 }
         for (const [key, minApi] of Object.entries(capabilities)) issue(errors, profile.capabilities?.[key]?.minApi === minApi, `profile.capabilities.${key}`, "可选接口 API 门槛错误")

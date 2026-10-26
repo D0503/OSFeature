@@ -140,10 +140,10 @@ export function evaluateEasyGo(inspection, profile) {
   if (!sdkValid) { base.missingConditions.push("本机 SDK 根清单未验证；使用 --sdk 指定 SDK"); return base }
   if (inspection.model !== "stage") { base.status = inspection.model === "fa" ? "unsupported" : "insufficient_context"; base.missingConditions.push("需要 Stage 工程"); return base }
   if (!inspection.modules.some((m) => m.type === "entry")) { base.status = "unsupported"; base.missingConditions.push("easyGo 仅支持 entry 模块"); return base }
-  if (!Number.isInteger(inspection.api.compile) || !Number.isInteger(inspection.api.compatible)) { base.missingConditions.push("工程 compile/compatible API 无法确定"); return base }
-  if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi) {
+  if (![inspection.api.compile, inspection.api.target, inspection.api.compatible].every(Number.isInteger)) { base.missingConditions.push("工程 compile/target/compatible API 无法确定"); return base }
+  if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi || profile.routes.some((r) => inspection.api.target < Math.max(requiredApi, r.minTargetApi ?? 0))) {
     base.status = "upgrade_available"; base.decisionRequired = true
-    base.upgradeOptions = profile.routes.map((r) => ({ route: r.id, requiredSdkApi: requiredApi, requiredCompileApi: requiredApi, keepCompatibleApi: inspection.api.compatible, note: `所用平行视界配置/API 需要 SDK 与有效 compile API ${requiredApi}；安装或切换 SDK 即可，无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；保留 compatible，资料未声明额外 target 门槛，不自动修改 target` }))
+    base.upgradeOptions = profile.routes.map((r) => ({ route: r.id, requiredSdkApi: requiredApi, requiredCompileApi: requiredApi, upgradeTargetApi: Math.max(inspection.api.target, requiredApi, r.minTargetApi ?? 0), keepCompatibleApi: inspection.api.compatible, note: `所用平行视界配置/API 需要 SDK 与有效 compile API ${requiredApi}；按需安装或切换 SDK，无需显式配置 compileSdkVersion，已有配置低于门槛时调整既有值；target 至少 API ${Math.max(requiredApi, r.minTargetApi ?? 0)}，已有更高版本不降低；保留 compatible，升级须用户确认` }))
     base.missingConditions.push(`所用配置或查询接口要求 API ${requiredApi}`)
     return base
   }

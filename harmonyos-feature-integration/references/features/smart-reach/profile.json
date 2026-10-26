@@ -7,7 +7,6 @@
     "selectionField": "selectedRoutes",
     "allowed": ["native-component", "operating-hand", "holding-hand"]
   },
-  "targetSdkPolicy": "preserve-unless-declared",
   "fallbackPolicy": {
     "baseline": "pre-integration-source-state",
     "appliesWhen": ["runtime-version-unsupported", "device-capability-unsupported", "permission-error", "feature-disabled", "service-or-subscription-failed"],

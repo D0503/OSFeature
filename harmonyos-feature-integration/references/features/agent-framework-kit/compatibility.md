@@ -15,7 +15,7 @@
 
 `requiredApi` 为基础 API 20、元服务 API 21、实际使用 ICON_ABOVE_TITLE API 21 的最大值。静态扫描不能解析 options 封装时必须复核其真实取值；方案新增 API 21 样式时同样按 21 检查本机 SDK、compile 和运行守卫。
 
-没有额外 target 门槛；保留原 target 和 compatible。SDK/compile 不足时给出升级选项，由用户决定；SDK 根清单未验证时不能判断路线可用。低于所用能力版本时，执行接入前路径，版本守卫必须先于控制器创建、方法调用及组件构建；不能先在未保护的字段初始化器中 new FunctionController 再在 build 中保护组件。
+版本升级遵循[通用兼容性规则](../../shared/compatibility-model.md#升级接入对所有特性通用)。SDK 根清单未验证时不能判断路线可用。低于所用能力版本时，执行接入前路径，版本守卫必须先于控制器创建、方法调用及组件构建；不能先在未保护的字段初始化器中 new FunctionController 再在 build 中保护组件。
 
 SysCap 只证明系统能力，不证明地区、机型、登录、隐私授权、网络、平台应用关联或 Agent 发布状态。`isAgentSupport` 返回 Promise<boolean>，不是 Agent 信息对象；true 表示 agentId 有效且 Agent 功能支持，false 表示 ID 无效或不支持，异常须分类处理。
 

@@ -3,7 +3,6 @@
   "featureId": "agent-framework-kit",
   "displayName": "智能体框架服务",
   "routeComposition": { "mode": "exclusive", "selectionField": "selectedRoutes", "allowed": ["function-component"] },
-  "targetSdkPolicy": "preserve-unless-declared",
   "fallbackPolicy": {
     "baseline": "pre-integration-source-state",
     "appliesWhen": ["runtime-version-unsupported", "device-capability-unsupported", "agent-unavailable", "privacy-not-accepted", "account-or-network-unavailable", "feature-disabled", "service-error"],

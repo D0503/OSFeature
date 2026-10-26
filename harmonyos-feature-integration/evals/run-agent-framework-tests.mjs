@@ -46,7 +46,7 @@ for (const field of ["sdk", "compile", "atomic"] ) {
   if (field === "atomic") input.api.compile = 20
   const result = compat(input)
   assert.equal(result.status, "upgrade_available")
-  assert.equal(result.upgradeOptions[0].upgradeTargetApi, null)
+  assert.equal(result.upgradeOptions[0].upgradeTargetApi, Math.max(input.api.target, result.requiredApi))
   assert.equal(result.upgradeOptions[0].keepCompatibleApi, input.api.compatible)
   assert.equal(result.upgradeOptions[0].upgradeCompileApi, field === "atomic" ? 21 : 20)
 }

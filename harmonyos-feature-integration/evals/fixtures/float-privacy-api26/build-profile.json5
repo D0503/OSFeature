@@ -4,7 +4,7 @@
       {
         "name": "default",
         "compileSdkVersion": 26,
-        "targetSdkVersion": 20,
+        "targetSdkVersion": 26,
         "compatibleSdkVersion": 20
       }
     ]

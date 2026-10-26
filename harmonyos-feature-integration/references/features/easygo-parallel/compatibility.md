@@ -7,11 +7,11 @@
 | mode、pagePairs、transPages、wideSplit/squareSplit、splitDividerColor、drawableRectHook、enableInSplitScreen | 26 | 使用任意字段即要求 SDK/compile 26，不把购物示例当作 API 23 模板 |
 | disableSplitByDefault | 26.0.1 | true/false 均需此版本；整数 API 26 门禁之外，须核实 SDK/compile 和目标系统的补丁版本 |
 
-基础路线 `minApi: 23`；已配置增强字段或状态查询时，扫描输出的 `requiredApi` 上调到 24/26。计划新增但尚未写入的字段也必须按此表先判门槛。`targetSdkPolicy: preserve-unless-declared` 表示本资料未声明额外 target 要求：保留已有 target，不把 SDK/compile 门槛冒充 target 门槛。compatible 保留原值；低版本实际行为需回归，尤其旧系统如何处理高版本 JSON 字段不能仅凭编译通过推断。
+基础路线 `minApi: 23`；已配置增强字段或状态查询时，扫描输出的 `requiredApi` 上调到 24/26。计划新增但尚未写入的字段也必须按此表先判门槛。版本升级遵循[通用兼容性规则](../../shared/compatibility-model.md#升级接入对所有特性通用)。低版本实际行为需回归，尤其旧系统如何处理高版本 JSON 字段不能仅凭编译通过推断。
 
 ## 新接入版本建议
 
-为默认开启 enableReducedContainerSize 和 drawableRectHook，API 23～25 工程优先建议升级本机 SDK 与 compile 到 26，升级需用户选择；选择保持旧版本时仅开启前者，省略后者。compatible 保持原值，target 无独立要求时保持。工具计算的 requiredApi 描述已有配置/调用，计划新增字段由 AI 按 [配置确认](configuration-confirmation.md) 提前纳入方案。显式 false 不是非法值；API 26 字段即便填 false 也不能写入低版本配置。
+为默认开启 enableReducedContainerSize 和 drawableRectHook，API 23～25 工程优先建议升级本机 SDK、有效 compile 与 target 到至少 26，升级需用户选择；选择保持旧版本时仅开启前者，省略后者。compatible 保持原值，已有更高 target 不降低。工具计算的 requiredApi 描述已有配置/调用，计划新增字段由 AI 按 [配置确认](configuration-confirmation.md) 提前纳入方案。显式 false 不是非法值；API 26 字段即便填 false 也不能写入低版本配置。
 
 ## 设备与窗口
 

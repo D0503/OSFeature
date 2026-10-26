@@ -18,7 +18,7 @@
 
 按[权限申请条件](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/restricted-permissions#ohospermissionuse_float_ball)核对业务准入。应用内需有默认关闭、由用户主动开启的闪控球开关，已有等价入口时复用；展示内容与应用实际功能匹配，不用于营销、广告或引导付费。权限声明不代表 ACL 已获准。
 
-基础接口需要 API20 编译 SDK 和运行系统，Stage 模型及有效 `UIAbilityContext`。Phone、Tablet 的系统模式限制，以及 PC/2in1 从 API26／HarmonyOS 7.0.0 起的支持条件，按[兼容性](../compatibility.md)核对。模拟器需 DevEco Studio 6.0.1 Release 及以上并核实目标系统支持。保留工程原有 target 和 compatible，按实际使用的接口判断版本要求。
+基础接口需要 API20 编译 SDK 和运行系统，Stage 模型及有效 `UIAbilityContext`。Phone、Tablet 的系统模式限制，以及 PC/2in1 从 API26／HarmonyOS 7.0.0 起的支持条件，按[兼容性](../compatibility.md)核对。模拟器需 DevEco Studio 6.0.1 Release 及以上并核实目标系统支持。版本升级遵循[通用兼容性规则](../../../shared/compatibility-model.md#升级接入对所有特性通用)，按实际使用的接口判断版本要求。
 
 ## 1. 导入控制器资产
 

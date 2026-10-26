@@ -134,12 +134,13 @@ export function evaluateWindowPrivacy(inspection, profile) {
   }
   if (!sdkValid) { result.missingConditions.push("本机 SDK 根清单未验证；使用 --sdk 指定 SDK"); return result }
   if (inspection.model !== "stage") { result.status = inspection.model === "fa" ? "unsupported" : "insufficient_context"; result.missingConditions.push("需要 Stage 工程"); return result }
-  if (!data.records.some((r) => ["entry", "feature"].includes(r.moduleType)) || ![inspection.api?.compile, inspection.api?.compatible].every(Number.isInteger)) { result.missingConditions.push("需要可定位的 entry/feature HAP 与有效 compile/compatible API"); return result }
+  if (!data.records.some((r) => ["entry", "feature"].includes(r.moduleType)) || ![inspection.api?.compile, inspection.api?.target, inspection.api?.compatible].every(Number.isInteger)) { result.missingConditions.push("需要可定位的 entry/feature HAP 与有效 compile/target/compatible API"); return result }
   for (const route of profile.routes) {
-    const requiredApi = routeRequirements[route.id], available = sdk.apiVersion >= requiredApi && inspection.api.compile >= requiredApi
+    const requiredApi = routeRequirements[route.id], requiredTargetApi = Math.max(requiredApi, route.minTargetApi ?? 0)
+    const available = sdk.apiVersion >= requiredApi && inspection.api.compile >= requiredApi && inspection.api.target >= requiredTargetApi
     result.sdk.routes[route.id] = { minApi: route.minApi, requiredApi, apiSatisfied: sdk.apiVersion >= requiredApi, status: sdk.apiVersion >= requiredApi ? "supported" : "sdk_too_old" }
     if (available) result.availableRoutes.push(route.id)
-    else result.upgradeOptions.push({ route: route.id, upgradeLocalSdkApi: sdk.apiVersion < requiredApi ? requiredApi : null, upgradeCompileApi: requiredApi, upgradeTargetApi: null, keepCompatibleApi: inspection.api.compatible, note: "安装或切换 SDK；保留 target/compatible，低版本继续原业务路径" })
+    else result.upgradeOptions.push({ route: route.id, upgradeLocalSdkApi: sdk.apiVersion < requiredApi ? requiredApi : null, upgradeCompileApi: requiredApi, upgradeTargetApi: Math.max(inspection.api.target, requiredTargetApi), keepCompatibleApi: inspection.api.compatible, note: `SDK/有效 compile 至少 API ${requiredApi}，target 至少 API ${requiredTargetApi}；已有更高版本不降低，保留 compatible，升级须用户确认，低版本继续原业务路径` })
   }
   result.status = (selectedRoutes.length ? selectedRoutes.some((r) => !result.availableRoutes.includes(r)) : !result.availableRoutes.length) ? "upgrade_available" : "conditional"
   result.recommendedRoute = selectedRoutes.find((r) => result.availableRoutes.includes(r)) ?? result.availableRoutes[0] ?? null

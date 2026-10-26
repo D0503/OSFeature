@@ -7,7 +7,7 @@
 | onDestroy/offDestroy、titleColor/contentColor/textUpdateAnimationType | 26 | 文字颜色配置须有 backgroundColor |
 | 闪控窗与 bind/unbind | 26 | Stage；窗需要 FLOAT_VIEW，绑定同时需要球权限 |
 
-无独立 target 门槛，保留 target 和 compatible；升级本机 SDK/有效 compile 的选择沿用通用门禁。新增接口也参与 requiredApi，不只检查已存在的源码。
+版本升级遵循[通用兼容性规则](../../shared/compatibility-model.md#升级接入对所有特性通用)。
 
 先判断运行 API，再判断 SystemCapability.Window.SessionManager，再调用 isFloatViewEnabled/isFloatingBallEnabled；SDK、SysCap 和布尔可用性均不能代替权限、前台和窗口模式检查。控制器只能使用有效 UIAbilityContext，HAR 代码须追踪实际宿主 HAP。元服务及未获证据的设备/分发形态先核对支持情况，不从 Stage 推断可用。
 

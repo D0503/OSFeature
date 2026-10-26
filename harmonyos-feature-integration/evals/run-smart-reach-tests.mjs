@@ -32,10 +32,10 @@ assert.doesNotMatch(JSON.stringify(verify(base).checks.map((c) => c.id)), /hds-m
 
 for (const [api, expected] of [[14, []], [15, ["operating-hand"]], [19, ["operating-hand"]], [20, ["operating-hand", "holding-hand"]], [22, ["operating-hand", "holding-hand"]], [23, ["native-component", "operating-hand", "holding-hand"]]]) {
   for (const limiting of ["sdk", "compile", "both"]) {
-    const i = mutate((v) => { if (limiting !== "compile") v.localSdk.apiVersion = api; if (limiting !== "sdk") v.api.compile = api; v.api.target = 14 })
+    const i = mutate((v) => { if (limiting !== "compile") v.localSdk.apiVersion = api; if (limiting !== "sdk") v.api.compile = api; v.api.target = 23 })
     assert.deepEqual(compat(i).availableRoutes, expected)
     assert.equal(compat(i).status, expected.length ? "conditional" : "upgrade_available")
-    assert.ok(compat(i).upgradeOptions.every((o) => o.upgradeTargetApi === null && o.keepCompatibleApi === 14))
+    assert.ok(compat(i).upgradeOptions.every((o) => o.upgradeTargetApi === 23 && o.keepCompatibleApi === 14))
   }
 }
 assert.equal(compat(mutate((i) => { i.localSdk.status = "missing" })).status, "insufficient_context")

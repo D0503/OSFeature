@@ -43,7 +43,7 @@ for (const [input, feature, required] of [[pair, "float-view-ball", 26], [privac
   const r = compat(low, feature)
   assert.equal(r.status, "upgrade_available")
   assert.equal(r.upgradeOptions.at(-1).upgradeCompileApi, required)
-  assert.equal(r.upgradeOptions.at(-1).upgradeTargetApi, null)
+  assert.equal(r.upgradeOptions.at(-1).upgradeTargetApi, Math.max(input.api.target, required))
   assert.equal(r.upgradeOptions.at(-1).keepCompatibleApi, 20)
   assert.equal(compat({ ...input, localSdk: { status: "missing" } }, feature).status, "insufficient_context")
   assert.equal(compat({ ...input, model: "fa" }, feature).status, "unsupported")
@@ -106,7 +106,7 @@ for (const [expression, operation, expectedScenarios] of [
   if (operation === "AntiPeepOptionsResult") {
     const low = structuredClone(input); low.localSdk.apiVersion = 21; low.api.compile = 21
     assert.equal(compat(low, "dlp-anti-peep").status, "upgrade_available")
-    assert.equal(compat(low, "dlp-anti-peep").upgradeOptions[0].upgradeTargetApi, null)
+    assert.equal(compat(low, "dlp-anti-peep").upgradeOptions[0].upgradeTargetApi, Math.max(low.api.target, 23))
   }
 }
 const aliasedEnum = await source("import { dlpAntiPeep as privacy } from '@kit.DeviceSecurityKit'; const result = privacy.AntiPeepOptionsResult.FAIL;")
