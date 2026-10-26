@@ -10,14 +10,21 @@
 |---|---|
 | `canUseFloatView()` | 分步检查 API26、SysCap、设备能力，异常返回 false |
 | `createFloatView(config, onStateChange?, onLimitsChange?, onRectChange?)` | 原样传入 FloatViewConfiguration 创建控制器并注册监听，业务回调可选 |
-| `startFloatView(page, size, storage?)` | 加载调用方页面、设置 window.Size、发出启动请求 |
+| `setUIContent(page, storage?)` | 单独加载页面，可传 LocalStorage |
+| `prepareFloatView(page, size, storage?)` | 仅加载页面、设置尺寸，不启动，返回 Promise<void> |
+| `startFloatView(page?, size?, storage?)` | 同时传入页面和尺寸时先准备再启动；无参时直接启动已准备的窗 |
 | `setWindowSize(size)` | 原样传入 window.Size 更新尺寸 |
 | `switchTemplate(property)` | 原样传入 TemplateProperty 更新模板与尺寸 |
 | `restoreMainWindow(wantParameters?)` | STARTED 时从用户点击恢复主窗口 |
+| `getFloatViewLimits(template)` | 获取模板尺寸限制，失败记录日志并返回 null |
+| `getFloatViewProperties()` | 获取有效窗口属性，失败记录日志并返回 undefined |
+| `registerStateChangeCallback(state, callback)` / `unRegisterStateChangeCallback()` | 按指定状态注册业务回调；同状态覆盖，退订全部此类业务回调 |
+| `registerLimitsChangeCallback(callback)` / `UnRegisterLimitsChangeCallback(callback?)` | 注册尺寸限制回调，按原回调或全部退订 |
+| `onRectChangeCallback(callback)` / `offRectChangeCallback(callback?)` | 注册矩形变化回调，按原回调或全部退订 |
 | `getWindowProperties()` | 同步读取有效窗口的属性；未启动、停止或异常状态抛错 |
 | `stopFloatView()` | 发出停止请求，STOPPED 时退订并清空引用 |
 
-除能力检测和属性读取外，以上操作方法返回 Promise<void>，错误交给调用方处理。启动和停止最终状态仍以 STARTED／STOPPED 为准。状态和尺寸限制监听始终注册，矩形监听按可选回调注册；STOPPED 清理完成后调用业务状态回调。资产独占管理监听，页面不需要另存控制器引用。
+创建、页面准备、启动、尺寸／模板设置、恢复和停止返回 Promise<void>，错误交给调用方处理；监听注册和退订为同步 void 方法，查询返回表中类型。启动和停止最终状态仍以 STARTED／STOPPED 为准。状态和尺寸限制监听始终注册，矩形监听按可选回调注册；STOPPED 清理完成后调用业务状态回调。业务可用独立方法补充监听；状态退订只清除 registerStateChangeCallback 注册的业务回调，保留内部生命周期监听及创建时传入的状态回调。STOPPED 时统一退订全部监听并清除状态业务回调。页面不需要另存控制器引用。
 
 页面路径必须写入宿主 pages profile。参数不补业务默认值，尺寸由调用方根据当前模板限制选择。注册监听失败尝试退订；加载或启动失败保留控制器供重试，停止失败不清空引用。创建等操作需串行执行，具体权限、失败清理及前台条件见路线。
 
@@ -56,8 +63,12 @@ struct FloatContent {
 
 ## 绑定
 
-球端调用 createFloatingBall 创建并注册监听，不传点击回调和 want；取类中已创建的控制器，在两端均未启动时 bind，只启动一端。准备失败时由组合所有者清理本次监听和引用，运行后由 STOPPED 退订；见[绑定流程](binding.md)。
+使用 [FloatViewBallController.ets](assets/FloatViewBallController.ets)，复用同目录两个基础资产，按[绑定路线](binding.md)分步调用：prepare → bind → start('view' 或 'ball') → stop → 双端 STOPPED → release。unbind 为可选的显式解绑操作，成功后自动释放。未绑定准备失败用 release 清理。所有操作返回 Promise<void>，使用 async/await 与 hilog。
+
+prepare 的参数为窗配置、球配置、页面路径、window.Size、可选 LocalStorage、可选 FloatViewBallCallbacks；bind 直接接收 FloatingBallParams。组合层直接使用基础资产的控制器字段，已有独立实例时先清理原流程，由业务入口防止重复点击及并发操作；不在基础窗、球资产中增加绑定依赖。尚未启动的绑定可直接 unbind，成功后自动释放引用。
 
 ## 可选高版本接口
 
 `setFloatingBallVisibilityInApp` 需API24守卫；`onDestroy/offDestroy`、颜色和动画需API26守卫。低版本编译样例不引用这些符号。`restoreMainWindow` 只从符合系统限制的用户点击触发，不自动后台拉起。
+
+绑定接入由 prepare 在两个基础资产的创建方法末尾传入 `retainControllerOnStopped = true`：STOPPED 时清理监听，引用保留至双端停止后 release 或显式 unbind 成功后清空。该参数默认 false，独立窗、球的清理行为不变。

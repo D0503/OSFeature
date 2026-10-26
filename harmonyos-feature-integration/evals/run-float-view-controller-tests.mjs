@@ -28,6 +28,7 @@ export const canIUse = () => env.supported;
 export const floatView = {
   FloatViewState: { STARTED: 1, HIDDEN: 2, STOPPED: 3, ERROR: 6 },
   isFloatViewEnabled() { env.enabledCalls++; return true; },
+  getFloatViewLimits(template) { if (env.failLimits) throw new Error("limits failed"); return { template }; },
   async create(config) { env.config = config; return env.controller; }
 };
 `);
@@ -56,8 +57,8 @@ const controller = {
   onLimitsChange(cb) { callbacks.set('limits', cb); },
   onRectChange(cb) { callbacks.set('rect', cb); },
   offStateChange() { callbacks.delete('state'); },
-  offLimitsChange() { callbacks.delete('limits'); },
-  offRectChange() { callbacks.delete('rect'); },
+  offLimitsChange(cb) { if (!cb || callbacks.get('limits') === cb) callbacks.delete('limits'); },
+  offRectChange(cb) { if (!cb || callbacks.get('rect') === cb) callbacks.delete('rect'); },
   async setUIContext(page, storage) { calls.push(['page', page, storage]); if (failPage) throw failure; },
   async setWindowSize(size) { calls.push(['size', size]); },
   async start() { calls.push(['start']); },
@@ -120,6 +121,45 @@ await C.createFloatView(config);
 assert.equal(callbacks.size, 2);
 callbacks.get('state')({ state: 3 });
 assert.equal(callbacks.size, 0);
+// Independent wrappers preserve internal lifecycle observation.
+assert.equal(C.getFloatViewProperties(), undefined);
+assert.deepEqual(C.getFloatViewLimits(1), { template: 1 });
+env.failLimits = true; assert.equal(C.getFloatViewLimits(1), null); env.failLimits = false;
+await C.createFloatView(config);
+let startedCount = 0, stoppedCount = 0;
+C.registerStateChangeCallback(1, () => startedCount++);
+C.registerStateChangeCallback(3, () => stoppedCount++);
+callbacks.get('state')({ state: 1 });
+assert.equal(startedCount, 1);
+assert.equal(C.getFloatViewProperties().windowId, 123);
+C.unRegisterStateChangeCallback();
+callbacks.get('state')({ state: 1 });
+assert.equal(startedCount, 1);
+assert.equal(C.state, 1);
+const limitsCallback = value => { limitsSeen = value; };
+const rectCallback = value => { rectSeen = value; };
+C.registerLimitsChangeCallback(limitsCallback);
+C.onRectChangeCallback(rectCallback);
+callbacks.get('limits')(size); callbacks.get('rect')(size);
+assert.equal(limitsSeen, size); assert.equal(rectSeen, size);
+C.UnRegisterLimitsChangeCallback(() => {}); assert.ok(callbacks.has('limits'));
+C.offRectChangeCallback(() => {}); assert.ok(callbacks.has('rect'));
+C.UnRegisterLimitsChangeCallback(limitsCallback); C.offRectChangeCallback(rectCallback);
+assert.ok(!callbacks.has('limits')); assert.ok(!callbacks.has('rect'));
+C.registerLimitsChangeCallback(limitsCallback); C.onRectChangeCallback(rectCallback);
+C.UnRegisterLimitsChangeCallback(); C.offRectChangeCallback();
+assert.ok(!callbacks.has('limits')); assert.ok(!callbacks.has('rect'));
+C.onRectChangeCallback(rectCallback);
+calls.length = 0;
+await C.setUIContent('pages/Content', storage); await C.setWindowSize(size); await C.startFloatView();
+assert.deepEqual(calls.map(c => c[0]), ['page', 'size', 'start']);
+assert.equal(calls[0][2], storage);
+await assert.rejects(C.startFloatView('pages/Content'), /both page and size/);
+C.registerStateChangeCallback(3, () => { assert.equal(callbacks.size, 0); stoppedCount++; });
+callbacks.get('state')({ state: 3 });
+assert.equal(stoppedCount, 1); assert.equal(callbacks.size, 0);
+await C.createFloatView(config); callbacks.get('state')({ state: 3 });
+assert.equal(stoppedCount, 1);
 assert.ok(logs.some(log => log[0] === 'debug'));
 assert.ok(logs.some(log => log[0] === 'error' && log.includes('Prepare and start float view')));
 assert.ok(logs.some(log => log[0] === 'error' && log.includes('Stop float view')));

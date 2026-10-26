@@ -45,7 +45,8 @@ export class FloatingBallController {
     config: floatingBall.FloatingBallConfiguration,
     onClick?: () => void,
     onStateChange?: (state: floatingBall.FloatingBallState) => void,
-    want?: Want): Promise<void> {
+    want?: Want,
+    retainControllerOnStopped: boolean = false): Promise<void> {
     if (FloatingBallController.floatingBallController) {
       return Promise.reject(new Error('FloatingBall controller already exists'));
     }
@@ -71,7 +72,8 @@ export class FloatingBallController {
           if (state === floatingBall.FloatingBallState.STOPPED) {
             controller.off('click');
             controller.off('stateChange');
-            FloatingBallController.floatingBallController = undefined;
+            // 绑定场景在解绑完成后释放引用，监听仍在 STOPPED 时清理。
+            if (!retainControllerOnStopped) { FloatingBallController.floatingBallController = undefined; }
             hilog.debug(DOMAIN, TAG, 'FloatingBall stopped and listeners removed');
           }
           onStateChange?.(state);

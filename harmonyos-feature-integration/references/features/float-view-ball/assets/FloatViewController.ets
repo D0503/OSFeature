@@ -44,6 +44,8 @@ export class FloatViewController {
   public static floatViewController: floatView.FloatViewController | undefined = undefined;
   public static state: floatView.FloatViewState | undefined = undefined;
 
+  private static stateCallbacks: Map<floatView.FloatViewState, () => void> = new Map();
+
   public static canUseFloatView(): boolean {
     try {
       if (deviceInfo.sdkApiVersion < 26) { return false; }
@@ -59,7 +61,8 @@ export class FloatViewController {
     config: floatView.FloatViewConfiguration,
     onStateChange?: (info: floatView.FloatViewStateChangeInfo) => void,
     onLimitsChange?: (limits: floatView.FloatViewLimits) => void,
-    onRectChange?: (info: floatView.FloatViewRectChangeInfo) => void): Promise<void> {
+    onRectChange?: (info: floatView.FloatViewRectChangeInfo) => void,
+    retainControllerOnStopped: boolean = false): Promise<void> {
     if (FloatViewController.floatViewController) {
       throw new Error('Float view controller already exists');
     }
@@ -71,15 +74,19 @@ export class FloatViewController {
       try {
         controller.onStateChange((info: floatView.FloatViewStateChangeInfo) => {
           FloatViewController.state = info.state;
+          const callback = FloatViewController.stateCallbacks.get(info.state);
           hilog.debug(DOMAIN, TAG, 'Float view state: %{public}d, reason: %{public}s', info.state, info.stopReason);
           if (info.state === floatView.FloatViewState.STOPPED) {
             controller.offStateChange();
             controller.offLimitsChange();
-            if (onRectChange) { controller.offRectChange(); }
-            FloatViewController.floatViewController = undefined;
+            controller.offRectChange();
+            FloatViewController.stateCallbacks.clear();
+            // 绑定场景在解绑完成后释放引用，监听仍在 STOPPED 时清理。
+            if (!retainControllerOnStopped) { FloatViewController.floatViewController = undefined; }
             hilog.debug(DOMAIN, TAG, 'Float view stopped and listeners removed');
           }
           onStateChange?.(info);
+          callback?.();
         });
         controller.onLimitsChange((limits: floatView.FloatViewLimits) => {
           hilog.debug(DOMAIN, TAG, 'Float view limits: %{public}s', JSON.stringify(limits));
@@ -105,15 +112,110 @@ export class FloatViewController {
     }
   }
 
-  public static async startFloatView(page: string, size: window.Size,
-    storage?: LocalStorage): Promise<void> {
+  public static registerStateChangeCallback(state: floatView.FloatViewState, callback: () => void): void {
+    FloatViewController.stateCallbacks.set(state, callback);
+    hilog.debug(DOMAIN, TAG, 'Succeed in registering state callback');
+  }
+
+  public static unRegisterStateChangeCallback(): void {
+    FloatViewController.stateCallbacks.clear();
+    hilog.debug(DOMAIN, TAG, 'Succeed in removing business state callbacks');
+  }
+
+  public static getFloatViewLimits(template: floatView.FloatViewTemplateType): floatView.FloatViewLimits | null {
+    try {
+      return floatView.getFloatViewLimits(template);
+    } catch (err) {
+      logError('Get float view limits', err as BusinessError);
+      return null;
+    }
+  }
+
+  public static getFloatViewProperties(): floatView.FloatViewProperties | undefined {
+    try {
+      return FloatViewController.getWindowProperties();
+    } catch (err) {
+      logError('Get float view properties', err as BusinessError);
+      return undefined;
+    }
+  }
+
+  public static registerLimitsChangeCallback(callback: (info: floatView.FloatViewLimits) => void): void {
+    const controller = FloatViewController.floatViewController;
+    if (!controller) { throw new Error('Float view controller is not initialized'); }
+    try {
+      controller.onLimitsChange(callback);
+      hilog.debug(DOMAIN, TAG, 'Succeed in onLimitsChange');
+    } catch (err) {
+      logError('onLimitsChange', err as BusinessError);
+      throw err;
+    }
+  }
+
+  public static UnRegisterLimitsChangeCallback(callback?: (info: floatView.FloatViewLimits) => void): void {
+    const controller = FloatViewController.floatViewController;
+    if (!controller) { throw new Error('Float view controller is not initialized'); }
+    try {
+      if (callback) { controller.offLimitsChange(callback); } else { controller.offLimitsChange(); }
+      hilog.debug(DOMAIN, TAG, 'Succeed in offLimitsChange');
+    } catch (err) {
+      logError('offLimitsChange', err as BusinessError);
+      throw err;
+    }
+  }
+
+  public static onRectChangeCallback(callback: (info: floatView.FloatViewRectChangeInfo) => void): void {
+    const controller = FloatViewController.floatViewController;
+    if (!controller) { throw new Error('Float view controller is not initialized'); }
+    try {
+      controller.onRectChange(callback);
+      hilog.debug(DOMAIN, TAG, 'Succeed in onRectChange');
+    } catch (err) {
+      logError('onRectChange', err as BusinessError);
+      throw err;
+    }
+  }
+
+  public static offRectChangeCallback(callback?: (info: floatView.FloatViewRectChangeInfo) => void): void {
+    const controller = FloatViewController.floatViewController;
+    if (!controller) { throw new Error('Float view controller is not initialized'); }
+    try {
+      if (callback) { controller.offRectChange(callback); } else { controller.offRectChange(); }
+      hilog.debug(DOMAIN, TAG, 'Succeed in offRectChange');
+    } catch (err) {
+      logError('offRectChange', err as BusinessError);
+      throw err;
+    }
+  }
+
+  public static async setUIContent(page: string, storage?: LocalStorage): Promise<void> {
     const controller = FloatViewController.floatViewController;
     if (!controller) { throw new Error('Float view controller is not initialized'); }
     try {
       await controller.setUIContext(page, storage);
       hilog.debug(DOMAIN, TAG, 'Succeed in loading float view page');
-      await controller.setWindowSize(size);
-      hilog.debug(DOMAIN, TAG, 'Succeed in setting float view size');
+    } catch (err) {
+      logError('Set UI content', err as BusinessError);
+      throw err;
+    }
+  }
+
+  public static async prepareFloatView(page: string, size: window.Size,
+    storage?: LocalStorage): Promise<void> {
+    await FloatViewController.setUIContent(page, storage);
+    await FloatViewController.setWindowSize(size);
+  }
+
+  public static async startFloatView(page?: string, size?: window.Size,
+    storage?: LocalStorage): Promise<void> {
+    const controller = FloatViewController.floatViewController;
+    if (!controller) { throw new Error('Float view controller is not initialized'); }
+    try {
+      if (page !== undefined && size !== undefined) {
+        await FloatViewController.prepareFloatView(page, size, storage);
+      } else if (page !== undefined || size !== undefined) {
+        throw new Error('Provide both page and size, or prepare them before starting');
+      }
       await controller.start();
       hilog.debug(DOMAIN, TAG, 'Float view start request completed');
     } catch (err) {

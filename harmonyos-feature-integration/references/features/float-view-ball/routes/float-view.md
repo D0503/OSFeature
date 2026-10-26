@@ -1,6 +1,6 @@
 # 闪控窗开发步骤（API 26 起）
 
-通过 `@kit.ArkUI` 的 `floatView` 创建系统闪控窗，加载业务页面并管理窗口尺寸、状态和关闭流程。本路线用于独立闪控窗。
+通过 `@kit.ArkUI` 的 `floatView` 创建系统闪控窗，加载业务页面并管理窗口尺寸、状态和关闭流程。本路线用于独立闪控窗；窗球切换按需读取[绑定路线](../binding.md)，使用独立组合资产。
 
 ## 开发准备
 
@@ -89,7 +89,7 @@ private async createWindow(): Promise<void> {
 `createFloatView(config, onStateChange?, onLimitsChange?, onRectChange?)` 创建控制器并注册监听，三个业务回调均可选。状态和尺寸限制监听始终注册，矩形监听仅在传入回调时注册；不要对同一控制器重复注册。业务回调自行处理其异常。
 
 - `pages/FloatViewPage` 替换为实际页面，在宿主 pages profile 的 `src` 中注册同一路径。窗口内容使用[页面骨架](../assets-catalog.md#闪控窗)或现有业务页面。
-- `startFloatView(page, size, storage?)` 依次等待页面加载、设置尺寸和发出启动请求；页面状态可通过可选 LocalStorage 传递。跨包页面需按命名路由改用平台 `setUIContextByName`，不要再调用会按路径加载页面的 startFloatView。
+- `prepareFloatView(page, size, storage?)` 仅加载页面和设置尺寸；`startFloatView(page, size, storage?)` 复用准备方法后发出启动请求；页面状态可通过可选 LocalStorage 传递。跨包页面需按命名路由改用平台 `setUIContextByName`，不要再调用会按路径加载页面的 startFloatView。
 - 创建与启动等方法使用 async/await，返回 Promise<void>；通过 hilog.debug/error 记录结果，try/catch 捕获失败后继续抛给调用方。`startFloatView` 完成不代表启动流程结束，以 STARTED 通知为准。HIDDEN、IN_SIDEBAR 保留控制器与业务状态；ERROR 不当作启动成功。
 - 复用工程入口的防重复操作状态，串行调用创建、启动和停止，避免 create 返回前再次创建。每次 await 后复核所有者与前台条件。创建和启动方法不会自动申请权限或检查前台，授权函数需由调用方显式调用。
 - 注册监听失败会尝试退订并抛出错误。页面加载或启动失败时保留控制器，不重复 create；根据实际状态重试启动，或停止并清理本次监听。启动前准备失败不能假定一定会收到 STOPPED，需在放弃该实例时退订并清空引用。
@@ -199,3 +199,19 @@ FloatViewController.stopFloatView().catch((err: BusinessError) => {
 静态检查通过不等于设备功能通过，缺少签名或适配设备时保留待验收状态。
 
 **实施结束后的最终交付说明必须再次提醒：FLOAT_VIEW 是受限 ACL 权限，必须完成[ACL 申请](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)并取得用户授权。** 声明权限或编译通过不能证明权限已生效。
+
+### 分步调用与补充监听
+
+需要单独加载页面、设置尺寸再启动时，使用同一个控制器：
+
+```typescript
+await FloatViewController.setUIContent('pages/FloatViewPage', storage);
+await FloatViewController.setWindowSize(size);
+await FloatViewController.startFloatView();
+```
+
+`startFloatView(page, size, storage?)` 仍支持一次完成准备与启动。`getFloatViewLimits(template)` 查询失败返回 null；`getFloatViewProperties()` 在窗口不可用或查询失败时返回 undefined，调用方先判断再使用。
+
+`registerStateChangeCallback(state, callback)` 为指定状态设置业务回调，同状态再次注册会覆盖；`unRegisterStateChangeCallback()` 清除这些业务回调，保留内部状态更新和 STOPPED 清理。创建时传入的 onStateChange 不受该方法影响。
+
+尺寸限制使用 `registerLimitsChangeCallback(callback)` / `UnRegisterLimitsChangeCallback(callback?)`；矩形变化使用 `onRectChangeCallback(callback)` / `offRectChangeCallback(callback?)`。传原回调只退订该回调，不传则退订该类全部监听，包括创建时注册的监听。STOPPED 统一清理，后续创建时重新注册。

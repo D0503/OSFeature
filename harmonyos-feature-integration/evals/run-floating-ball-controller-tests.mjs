@@ -52,9 +52,9 @@ env.syscap = true; env.checkError = failure;
 assert.equal(C.canUseFloatingBall(), false);
 env.checkError = null;
 assert.equal(C.canUseFloatingBall(), true);
-await C.startFloatingBall({});
-await C.updateFloatingBall({});
-await C.stopFloatingBall();
+await assert.rejects(C.startFloatingBall({}), /not initialized/);
+await assert.rejects(C.updateFloatingBall({}), /not initialized/);
+await assert.rejects(C.stopFloatingBall(), /not initialized/);
 assert.equal(calls.length, 0);
 for (const withClick of [false, true]) {
   for (const withState of [false, true]) {
@@ -74,7 +74,7 @@ for (const withClick of [false, true]) {
         } : undefined, withWant ? want : undefined);
       assert.equal(env.config, config);
       assert.equal(ball.listeners.size, 2);
-      await C.createFloatingBall(config);
+      await assert.rejects(C.createFloatingBall(config), /already exists/);
       assert.equal(C.floatingBallController, ball);
       assert.equal(ball.listeners.size, 2);
       const startParams = Object.freeze({ template: 2, title: 'title' });

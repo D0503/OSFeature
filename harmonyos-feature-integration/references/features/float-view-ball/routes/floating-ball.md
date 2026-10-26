@@ -76,7 +76,7 @@ if (FloatingBallController.canUseFloatingBall() &&
 }
 ```
 
-将片段放入工程现有异步错误处理及防重复操作入口中，串行执行创建、启动和停止；create 返回后再次检查业务有效性和前台条件。创建方法在已有控制器时返回已完成的 Promise，跳过重复创建，但调用方仍需防止创建完成前的并发请求。
+将片段放入工程现有异步错误处理及防重复操作入口中，串行执行创建、启动和停止；create 返回后再次检查业务有效性和前台条件。创建方法在已有控制器时拒绝重复创建，但调用方仍需防止创建完成前的并发请求。
 
 `createFloatingBall(config, onClick?, onStateChange?, want?)` 创建控制器并注册 click 和 stateChange，两个业务回调均可省略。启动不重复注册监听，启动和更新参数原样传入平台，不添加默认字段。
 
@@ -125,7 +125,7 @@ const icon = await loadFloatingBallIcon(context, 'business-icon.png');
 await FloatingBallController.stopFloatingBall();
 ```
 
-创建、启动、更新和停止均返回 Promise<void>，使用 then/catch 记录 hilog 日志，失败记录后继续抛给调用方，调用方使用 await/catch 处理；请求完成不代表生命周期结束，启动、停止分别以 STARTED／STOPPED 通知为准。未创建控制器时操作方法返回已完成的 Promise 并跳过操作，不代表球已启动、更新或停止。停止失败保留控制器及监听供诊断或重试，不误报已关闭。
+创建、启动、更新和停止均返回 Promise<void>，使用 then/catch 记录 hilog 日志，失败记录后继续抛给调用方，调用方使用 await/catch 处理；请求完成不代表生命周期结束，启动、停止分别以 STARTED／STOPPED 通知为准。未创建控制器时操作方法返回拒绝的 Promise，由调用方处理错误。停止失败保留控制器及监听供诊断或重试，不误报已关闭。
 
 监听注册失败会尝试退订并抛出异常；启动失败保留控制器，可按实际状态重试 startFloatingBall，不重复 create。放弃尚未启动的实例时需退订并清空类引用，不能假定一定收到 STOPPED。
 
@@ -135,7 +135,7 @@ await FloatingBallController.stopFloatingBall();
 
 ### 绑定场景
 
-调用 `FloatingBallController.createFloatingBall(config, undefined, onStateChange)`，不传 want。取类中已创建的控制器，在两端未启动时 bind，再启动一端。组合所有者保留解绑所需引用，准备失败时清理本次监听及实例；完整流程见[绑定](../binding.md)。
+按[绑定路线](../binding.md)使用独立的 FloatViewBallController 组合资产，负责两端准备、绑定、单端启动、停止与释放，按需显式解绑。不要先执行独立球的创建启动片段；组合层不传球点击回调或 Want，系统负责窗球切换。
 
 ## 7. 按需接入高版本能力
 
