@@ -102,11 +102,11 @@ await FloatViewController.switchTemplate(property);
 // 成功后再把窗页面的响应式布局状态切换为紧凑布局。
 ```
 
-`switchTemplate` 只切换系统模板和窗口尺寸，不会替换页面内的组件。窗页面需维护自己的展开／紧凑布局状态，并用条件渲染切换内容；可使用 @Provide/@Consume 或宿主已有的状态方案共享。只有接口成功后才提交布局状态，失败保留原布局。切回展开布局时查询 ROUNDED_RECTANGLE 的限制，不能沿用横条模板的限制。过渡动画按产品需要实现，固定延时不能用来判定接口成功。
+`switchTemplate` 只切换系统模板和窗口尺寸，不会替换页面内的组件。窗页面需维护自己的展开／紧凑布局状态，并用条件渲染切换内容；顶部预留随状态同步：常规态（ROUNDED_RECTANGLE）top padding 32vp，mini 态（HORIZONTAL_BAR）top padding 4vp。可使用 @Provide/@Consume 或宿主已有的状态方案共享。只有接口成功后才提交布局状态，失败保留原布局。切回展开布局时查询 ROUNDED_RECTANGLE 的限制，不能沿用横条模板的限制。过渡动画按产品需要实现，固定延时不能用来判定接口成功。
 
 **仅调整窗尺寸**：模板不变时调用 `await FloatViewController.setWindowSize(size)`。size 使用 `window.Size`，单位为 px，需满足当前模板的尺寸及比例限制。实际窗口尺寸通过准备阶段的 `onRectChange` 回调或 `FloatViewController.getFloatViewProperties()` 读取；属性返回 undefined 时不继续使用。
 
-条目数量变化、显示区域变化和 onLimitsChange 都可能触发尺寸重算。按内容所需宽高和当前可用空间计算；设计尺寸若使用 vp，先用实际 UIContext 的 vp2px 转成 px，再检查当前模板的 minSize、maxSize 和 ratioLimits。超出允许大小时在页面内部滚动或截断，不能只扩大窗口。onLimitsChange 表示约束变化，onRectChange 才表示实际矩形变化；读取 avoidArea 后用 px2vp 转换到页面布局单位，避开不可交互区域。组件退出时退订它自己的显示与窗口回调。
+条目数量变化、显示区域变化和 onLimitsChange 都可能触发尺寸重算。按内容所需宽高和当前可用空间计算；设计尺寸若使用 vp，先用实际 UIContext 的 vp2px 转成 px，再检查当前模板的 minSize、maxSize 和 ratioLimits。超出允许大小时在页面内部滚动或截断，不能只扩大窗口。onLimitsChange 表示约束变化，onRectChange 才表示实际矩形变化；读取 avoidArea 后用 px2vp 转换到页面布局单位，避开不可交互区域；顶部固定预留（常规态 32vp、mini 态 4vp）不因 avoidArea 为空而省略。组件退出时退订它自己的显示与窗口回调。
 
 ### 球内容更新与条目轮换
 

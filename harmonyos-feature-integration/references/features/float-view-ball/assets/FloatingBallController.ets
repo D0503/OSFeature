@@ -84,11 +84,11 @@ export class FloatingBallController {
         controller.off('click');
         controller.off('stateChange');
         FloatingBallController.floatingBallController = undefined;
-        throw err;
+        throw new Error('Register FloatingBall listeners failed');
       }
     }).catch((err: BusinessError) => {
       logError('Create FloatingBall controller or listeners', err);
-      throw err;
+      throw new Error('Create FloatingBall controller or listeners failed');
     });
   }
 
@@ -99,7 +99,7 @@ export class FloatingBallController {
       hilog.debug(DOMAIN, TAG, 'FloatingBall start request completed');
     }).catch((err: BusinessError) => {
       logError('Start FloatingBall', err);
-      throw err;
+      throw new Error('Start FloatingBall failed');
     });
   }
 
@@ -110,7 +110,7 @@ export class FloatingBallController {
       hilog.debug(DOMAIN, TAG, 'Succeed in updating FloatingBall');
     }).catch((err: BusinessError) => {
       logError('Update FloatingBall', err);
-      throw err;
+      throw new Error('Update FloatingBall failed');
     });
   }
 
@@ -122,7 +122,7 @@ export class FloatingBallController {
       hilog.debug(DOMAIN, TAG, 'FloatingBall stop request completed');
     }).catch((err: BusinessError) => {
       logError('Stop FloatingBall', err);
-      throw err;
+      throw new Error('Stop FloatingBall failed');
     });
   }
 }

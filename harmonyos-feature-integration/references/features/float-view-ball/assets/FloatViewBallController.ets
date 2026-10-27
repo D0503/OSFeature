@@ -40,7 +40,7 @@ export class FloatViewBallController {
       hilog.debug(DOMAIN, TAG, 'Succeed in preparing float view and floating ball');
     } catch (error) {
       logError('Prepare', error as BusinessError);
-      throw error;
+      throw new Error('Prepare float view and floating ball failed');
     }
   }
 
@@ -54,7 +54,7 @@ export class FloatViewBallController {
       hilog.debug(DOMAIN, TAG, 'Succeed in binding float view and floating ball');
     } catch (error) {
       logError('Bind', error as BusinessError);
-      throw error;
+      throw new Error('Bind float view and floating ball failed');
     }
   }
 
@@ -71,7 +71,7 @@ export class FloatViewBallController {
       hilog.debug(DOMAIN, TAG, 'Float view/ball start request completed');
     } catch (error) {
       logError('Start', error as BusinessError);
-      throw error;
+      throw new Error('Start float view/ball failed');
     }
   }
 
@@ -85,7 +85,7 @@ export class FloatViewBallController {
       hilog.debug(DOMAIN, TAG, 'Float view/ball stop request completed');
     } catch (error) {
       logError('Stop', error as BusinessError);
-      throw error;
+      throw new Error('Stop float view/ball failed');
     }
   }
 
@@ -105,7 +105,7 @@ export class FloatViewBallController {
       hilog.debug(DOMAIN, TAG, 'Succeed in unbinding float view and floating ball');
     } catch (error) {
       logError('Unbind', error as BusinessError);
-      throw error;
+      throw new Error('Unbind float view and floating ball failed');
     }
   }
 
@@ -139,7 +139,7 @@ export class FloatViewBallController {
       hilog.debug(DOMAIN, TAG, 'Succeed in releasing float view and floating ball');
     } catch (error) {
       logError('Release', error as BusinessError);
-      throw error;
+      throw new Error('Release float view and floating ball failed');
     }
   }
 }

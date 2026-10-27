@@ -104,11 +104,11 @@ export class FloatViewController {
         controller.offLimitsChange();
         if (onRectChange) { controller.offRectChange(); }
         FloatViewController.floatViewController = undefined;
-        throw err;
+        throw new Error('Create float view controller or listeners failed');
       }
     } catch (err) {
       logError('Create float view controller or listeners', err as BusinessError);
-      throw err;
+      throw new Error('Create float view controller or listeners failed');
     }
   }
 
@@ -148,7 +148,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in onLimitsChange');
     } catch (err) {
       logError('onLimitsChange', err as BusinessError);
-      throw err;
+      throw new Error('On limits change failed');
     }
   }
 
@@ -160,7 +160,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in offLimitsChange');
     } catch (err) {
       logError('offLimitsChange', err as BusinessError);
-      throw err;
+      throw new Error('Off limits change failed');
     }
   }
 
@@ -172,7 +172,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in onRectChange');
     } catch (err) {
       logError('onRectChange', err as BusinessError);
-      throw err;
+      throw new Error('On rect change failed');
     }
   }
 
@@ -184,7 +184,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in offRectChange');
     } catch (err) {
       logError('offRectChange', err as BusinessError);
-      throw err;
+      throw new Error('Off rect change failed');
     }
   }
 
@@ -196,7 +196,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in loading float view page');
     } catch (err) {
       logError('Set UI content', err as BusinessError);
-      throw err;
+      throw new Error('Set UI content failed');
     }
   }
 
@@ -220,7 +220,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Float view start request completed');
     } catch (err) {
       logError('Prepare and start float view', err as BusinessError);
-      throw err;
+      throw new Error('Prepare and start float view failed');
     }
   }
 
@@ -232,7 +232,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in setting float view size');
     } catch (err) {
       logError('Set float view size', err as BusinessError);
-      throw err;
+      throw new Error('Set float view size failed');
     }
   }
 
@@ -244,7 +244,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in switching float view template');
     } catch (err) {
       logError('Switch float view template', err as BusinessError);
-      throw err;
+      throw new Error('Switch float view template failed');
     }
   }
 
@@ -258,7 +258,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Succeed in restoring float view main window');
     } catch (err) {
       logError('Restore main window', err as BusinessError);
-      throw err;
+      throw new Error('Restore main window failed');
     }
   }
 
@@ -281,7 +281,7 @@ export class FloatViewController {
       hilog.debug(DOMAIN, TAG, 'Float view stop request completed');
     } catch (err) {
       logError('Stop float view', err as BusinessError);
-      throw err;
+      throw new Error('Stop float view failed');
     }
   }
 }
