@@ -271,7 +271,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
    | 闪控窗 | 已有业务页面的 Stage 工程 | 请使用 harmonyos-feature-integration，为当前业务页面接入独立闪控窗，使用 float-view 路线，先核对 API26、ACL 和用户授权。 |
    | 闪控球 | 已有业务内容的 Stage 工程 | 请使用 harmonyos-feature-integration，为当前业务接入独立闪控球，使用 floating-ball 路线，保留原页面与操作路径。 |
    | 窗球绑定 | 已有业务页面的 Stage 工程 | 请使用 harmonyos-feature-integration，为当前业务接入窗球绑定切换，选择 binding 路线，先展示窗，并验证双端停止与清理。 |
-   | 防窥保护 | 支持防窥的 Phone 真机与普通应用工程 | 请使用 harmonyos-feature-integration，为当前金融详情页的金额字段接入防窥状态感知，检测到窥视时隐藏金额，明确不需要系统蒙层和设置弹窗。 |
+   | 防窥保护 | 记账模板，支持防窥的 Phone 真机与普通应用工程 | 请使用harmonyos-feature-integration，为资产页面接入防窥保护，当非机主窥视时，资产页面所有金额变为*号。 |
+   | 防窥保护 | 金融理财模板，支持防窥的 Phone 真机与普通应用工程 | 请使用harmonyos-feature-integration，在理财购买页面接入防窥保护，当非机主窥视时，页面剩余额度和可用额度变为*号，并在推荐人代码下增加一行防窥蒙层的开关，点击开启后，当非机主窥视时，拉起防窥蒙层。 |
 
 4. **结果验收**：每个场景完成后核对是否产出 `<工程>/os-feature-integration/integration-report.md` 及其引用截图，并逐项核对 SDK、静态、构建、安装、目标页导航、运行、视觉和回退结果。构建通过不代表视觉通过，未完成的项标注未验证或未确认；组合路线分别验收，绑定使用 `binding` 验证两端与切换生命周期，权限提醒与最终报告保持一致。
 

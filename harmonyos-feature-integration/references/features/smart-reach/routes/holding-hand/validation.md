@@ -1,6 +1,6 @@
 # 握持手验证
 
-- API 19 及以下不执行 holdingHandChanged，API 20+ 核对所属 HAP 的 DETECT_GESTURE 声明、reason 资源、usedScene 的实际 Ability 与 inuse，以及运行 SysCap；无需运行时授权，可调用不等于具体机型支持。
+- API 19 及以下不执行 holdingHandChanged，API 20+ 核对所属 HAP 的 DETECT_GESTURE 声明、reason 资源、usedScene 的实际 Ability 与 inuse，以及运行 SysCap；无需运行时授权，可调用不等于具体机型支持。工程 compatible 低于 20 时，须在 API 低于 20 的环境安装本轮构建产物实测低版本回退表现（不订阅、增强不出现、源基线保持）并留存截图证据，经 `--judgment` 的 `fallback`（condition `low-api`）补录；该实测验证“增强不启用”，允许使用低版本模拟器，不受跟手效果仅真机的限制。
 - 支持真机正常姿态下验证左、右、双手、未握持和 UNKNOWN_STATUS=16；设备非静止时未握持不保证识别，不把没有结果归因于应用缺陷。
 - 分别从左侧、右侧进入未知、双手、未握持或暂时无回调状态，确认保持当前侧；首次无结果保持初始位置。随后明确关闭，确认恢复当前布局下的接入前位置，迟到回调不再移动组件。
 - 排查时检查开关、亮屏解锁、壳厚、手套、掌心/手指接触、朝向及外物接触；模拟状态只用于 UI 分支测试。

@@ -11,7 +11,7 @@ feature 使用 dlp-anti-peep，verify-development 按 status-observation/system-
 
 仅接受已确认的 Phone 真机效果证据，设备信息需有 Phone 类型与真机连接/标志。运行观察 runtime.observations 包含 switch-checked、hide-observed、pass-observed、fallback-preserved、subscription-cleaned；system-mask 另需 mask-applied、mask-failure-handled、window-invalidated。每项 note 说明实际操作并引用本轮 runtime.evidence 的 id/sha256。visual 至少包含保护前与保护后的两张不同截图；状态感知单独接入时截图对应已确认业务对两种状态的响应，不虚构蒙层。
 
-蒙层失败、权限拒绝和开关关闭必须显示未完成保护；故障注入可验证代码，但不能代替真实传感器检测。
+蒙层失败、权限拒绝和开关关闭必须显示未完成保护；故障注入可验证代码，但不能代替真实传感器检测。compatible 低于路线门槛时，低版本回退表现须实测并以 `fallback` 判定补录（见[回退路径的实测验证](fallback.md#回退路径的实测验证)），不以故障注入或静态复核替代。
 
 状态感知检查 `isListenOn` 配合 `aboutToDisappear` 取消订阅；选择系统蒙层时另检查 `isSystemLayerTriggered` 记录结果、`isMaskRequesting` 防止并发请求、`onPageHide` 复位成功标志后重新进入可再次触发。工程使用等价状态时按实际字段核验。重复进入不叠加监听，页面销毁后不再更新其状态，隐藏/销毁窗口不再发起蒙层请求。性能验证观察回调数量、窗口切换、耗时与资源，不引入高频轮询。
 
