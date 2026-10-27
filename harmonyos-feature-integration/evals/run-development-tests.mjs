@@ -42,6 +42,11 @@ const nav = { schemaVersion: "1.0", steps: [{ stepId: "home", action: "wait", ti
 const inspection = { localSdk: { status: "valid", apiVersion: 26, path: root }, api: { compile: 26, target: 26, compatible: 23 }, modules: [{ name: "entry", type: "entry" }] }
 let calls = [], builds = 0
 const options = {
+  deploymentRunner: async (_project, _run, call) => {
+    const result = await call(["fixture-deployment"])
+    if (result.exitCode !== 0) throw new Error("fixture deployment failed")
+    return { plan: {}, launchArgs: ["fixture-launch"] }
+  },
   inspector: async () => ({ inspection, compatibility: { availableRoutes: ["arkui"] }, staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
   buildRunner: async () => { builds++; return { exitCode: 0, stdout: "build passed" } },
   commandRunner: async (args) => {
@@ -55,7 +60,7 @@ const request = (name) => ({ project: root, feature: "immersive-light", route: "
 const success = await verifyDevelopment(request("success"), options)
 assert.equal(success.status, "inconclusive", "截图不自动通过")
 assert.equal(builds, 1)
-assert.ok(calls.find((a) => a[0] === "run").includes("--skip-build"))
+assert.ok(calls.some((a) => a[0] === "fixture-deployment"))
 const screenshot = success.evidence.find((e) => e.type === "screenshot")
 const log = success.evidence.find((e) => e.type === "runtime_log")
 const refs = (e) => [{ id: e.id, sha256: e.sha256 }]
@@ -86,7 +91,7 @@ for (const scenario of ["sdk", "static", "build", "install", "navigate", "screen
   }
   if (scenario === "build") opts.buildRunner = async () => ({ exitCode: 1, stderr: "compile error" })
   if (["install", "navigate", "screenshot"].includes(scenario)) opts.commandRunner = async (args) => {
-    if ((scenario === "install" && args[0] === "run") || (scenario === "screenshot" && args[1] === "screenshot")) { calls.push(args); return { exitCode: 1, stderr: "test failure" } }
+    if ((scenario === "install" && args[0] === "fixture-deployment") || (scenario === "screenshot" && args[1] === "screenshot")) { calls.push(args); return { exitCode: 1, stderr: "test failure" } }
     if (scenario === "navigate" && args[1] === "layout") { calls.push(args); return { exitCode: 0, stdout: '{"id":"wrong-page"}' } }
     return options.commandRunner(args)
   }

@@ -71,6 +71,7 @@ export function validateNavigation(nav) {
     if (s.action === "swipe" && !(["up", "down", "left", "right"].includes(s.direction) || (s.from?.length === 2 && s.to?.length === 2 && [...s.from, ...s.to].every(Number.isFinite)))) throw new Error("swipe 需要 direction 或 from/to 坐标")
     if (s.action === "wait" && (!Number.isInteger(s.timeoutMs) || s.timeoutMs < 1 || s.timeoutMs > 30000)) throw new Error("wait.timeoutMs 必须为 1..30000")
     if (s.expectPage !== undefined && !locator(s.expectPage)) throw new Error("expectPage 必须为精确匹配的 {by: id|text|type, value}")
+    if (s.expectPage?.by === "type" && /^(NavDestination|Navigation|Stack|Column|Row)$/.test(s.expectPage.value)) throw new Error("页面断言须定位目标页业务内容，不能只断言页面容器")
   }
   if (!nav.steps.at(-1).expectPage) throw new Error("最后一步必须包含目标页面 expectPage 断言")
 }
@@ -99,7 +100,11 @@ export async function navigate(nav, call, launchArgs, device, pause = (ms) => ne
       if (s.action === "input") args = ["ui", "text", "--device", device, s.value, ...(s.locator ? await center(s.locator) : [])]
       if (s.action === "wait") await pause(s.timeoutMs)
       if (args && (await call(args)).exitCode !== 0) throw new Error("设备命令失败")
-      if (s.expectPage && !nodes(await layout()).some((v) => matches(v, s.expectPage))) throw new Error("目标页面断言未命中")
+      if (s.expectPage) {
+        const matched = nodes(await layout()).filter((v) => matches(v, s.expectPage))
+        if (!matched.length) throw new Error("目标页面断言未命中")
+        if (matched.every((v) => /^(NavDestination|Navigation)$/.test(v.type ?? ""))) throw new Error("目标页面仅命中导航容器，请断言实际业务内容；不能以空壳页面验收")
+      }
     } catch (error) { throw new Error(`导航步骤 ${s.stepId}: ${error.message}`) }
   }
 }

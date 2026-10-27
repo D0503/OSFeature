@@ -7,6 +7,7 @@ import { evaluateCompatibility, inspectProject, loadFeature, verifyInspection } 
 import { runHvigorBuild } from "./lib/hvigor-build.mjs"
 import { navigate, runDeveco, validateNavigation } from "./lib/development-device.mjs"
 import { parseDevecoJson } from "./lib/deveco-json.mjs"
+import { deployProduct } from "./lib/development-deployment.mjs"
 import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJudgment } from "./lib/window-privacy-runtime.mjs"
 
@@ -285,7 +286,7 @@ export async function verifyDevelopment(request, options = {}) {
     await mkdir(runDirectory)
     const run = {
       runId, project: resolve(request.project), feature: request.feature, featureName: feature.displayName, goal: request.goal, route: request.route,
-      product: request.product ?? "default", buildMode: request.buildMode ?? "debug", module: request.module ?? null,
+      product: request.product ?? "default", buildMode: request.buildMode ?? "debug", module: request.module ?? null, ability: request.ability,
       changes: structuredClone(request.changes), createdAt: new Date().toISOString(), device: request.device ?? null, evidence: [],
       checks: Object.fromEntries(["static", "sdk", "build", "install", "navigation", "runtime", "visual"].map((key) => [key, check("not_run", "尚未执行")]))
     }
@@ -318,15 +319,13 @@ export async function verifyDevelopment(request, options = {}) {
     if (run.checks.sdk.status === "failed" || run.checks.static.status === "failed") run.checks.build.summary = "SDK 或静态门禁失败，未构建"
     else if (request.executeBuild) {
       let result
-      try { result = await (options.buildRunner ?? runHvigorBuild)(request.project, { product: run.product, buildMode: run.buildMode, module: run.module, modules: inspection.modules, sdkPath: inspection.localSdk.path }) }
+      try { result = await (options.buildRunner ?? runHvigorBuild)(request.project, { product: run.product, buildMode: run.buildMode, module: request.executeRun ? undefined : run.module, modules: inspection.modules, sdkPath: inspection.localSdk.path }) }
       catch (error) { result = { exitCode: null, stderr: error.message } }
       await record("build_log", `${result.stdout ?? ""}\n${result.stderr ?? ""}`)
       run.checks.build = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "ohpm、Hvigor 同步与打包通过" : `构建失败：${result.failedStage ?? "工具或构建阶段"}；${(result.stderr || result.stdout || "无输出").slice(-1800)}`)
       if (result.exitCode !== 0) run.checks.build.reportSummary = `构建失败，停止于${{ "ohpm install": "依赖安装", "hvigor sync": "工程同步", "hvigor build": "HAP 打包" }[result.failedStage] ?? "构建工具执行阶段"}；未继续安装，修复后需重验`
     }
-    const launchArgs = ["run", "--skip-build", "--product", run.product, "--build-mode", run.buildMode, "--device", request.device ?? ""]
-    if (run.module) launchArgs.push("--module", run.module)
-    if (request.ability) launchArgs.push("--ability", request.ability)
+    let launchArgs = []
     run.checks.install.summary = !request.executeRun ? "未请求安装运行" : !request.device ? "未指定目标设备，需先选择设备" : "本轮构建未通过，未安装运行"
     if (request.executeRun && request.device && run.checks.build.status === "passed") {
       const info = await call(["device", "view", "--target", request.device, "--format", "json"])
@@ -345,8 +344,14 @@ export async function verifyDevelopment(request, options = {}) {
       } else if (run.feature === "dlp-anti-peep" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "防窥保护需要已确认的 Phone 真机，未执行安装运行")
       } else {
-        const result = await call(launchArgs)
-        run.checks.install = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "应用已安装并启动" : `安装或启动失败：${(result.stderr || result.stdout || "无输出").slice(-1200)}`)
+        try {
+          const deployment = await (options.deploymentRunner ?? deployProduct)(request.project, run, call, record)
+          launchArgs = deployment.launchArgs
+          run.deployment = deployment.plan
+          run.checks.install = check("passed", "本轮 HAP/HSP 已安装，设备模块与版本核验通过，应用已启动")
+        } catch (error) {
+          run.checks.install = { ...check("failed", error.message), reportSummary: error.message }
+        }
       }
     }
     run.checks.navigation.summary = run.checks.install.status !== "passed" ? "应用未成功安装启动" : "未提供目标页导航与断言"

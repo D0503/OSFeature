@@ -157,6 +157,11 @@ const changes = {
 }
 const request = (feature, route, name) => ({ project, output: join(work, name), feature, route, goal: name, changes, executeBuild: true, executeRun: true, device: "phone-1", navigate: { schemaVersion: "1.0", steps: [{ stepId: "page", action: "wait", timeoutMs: 1, expectPage: { by: "id", value: "window-page" } }] } })
 const options = {
+  deploymentRunner: async (_project, _run, call) => {
+    const result = await call(["fixture-deployment"])
+    if (result.exitCode !== 0) throw new Error("fixture deployment failed")
+    return { plan: {}, launchArgs: ["fixture-launch"] }
+  },
   inspector: async (r) => ({ inspection: linked, compatibility: compat(linked, r.feature), staticResult: { checks: [], counts: { fail: 0, warn: 0 } } }),
   buildRunner: async () => ({ exitCode: 0, stdout: "mock build passed" }),
   commandRunner: async (args) => ({ exitCode: 0, stderr: "", stdout: args[0] === "device" ? JSON.stringify({ deviceType: "phone", isEmulator: false }) : args[1] === "layout" ? JSON.stringify({ attributes: { id: "window-page", bounds: "[0,0][100,100]" } }) : "mock execution" }),

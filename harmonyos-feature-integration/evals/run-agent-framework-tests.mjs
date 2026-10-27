@@ -123,6 +123,11 @@ const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 const secondPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64")
 let shots = 0, calls = []
 const options = {
+  deploymentRunner: async (_project, _run, call) => {
+    const result = await call(["fixture-deployment"])
+    if (result.exitCode !== 0) throw new Error("fixture deployment failed")
+    return { plan: {}, launchArgs: ["fixture-launch"] }
+  },
   inspector: async () => ({ inspection: app, compatibility: compat(app), staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
   buildRunner: async () => ({ exitCode: 0, stdout: "fixture build" }),
   commandRunner: async (args) => {

@@ -298,7 +298,7 @@ FloatViewController.stopFloatView().catch((err: BusinessError) => {
 
 静态检查通过不等于设备功能通过，缺少签名或适配设备时保留待验收状态。
 
-**实施结束后的最终交付说明必须再次提醒：FLOAT_VIEW 是受限 ACL 权限，必须完成[ACL 申请](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)并取得用户授权。** 声明权限或编译通过不能证明权限已生效。
+**实施结束后的最终交付说明必须再次提醒：FLOAT_VIEW 是受限 ACL 权限，必须完成[ACL 申请](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)并取得用户授权。** 接入后需要重新签名；本地调试使用自动签名时，同意本次权限申请，并核对更新后的签名 profile 包含所需权限。声明权限或编译通过不能证明权限已生效。
 
 ### 分步调用与补充监听
 

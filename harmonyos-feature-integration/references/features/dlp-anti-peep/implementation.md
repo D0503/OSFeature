@@ -292,4 +292,4 @@ aboutToDisappear(): void {
 
 ## 结束提醒
 
-实施结束后的最终交付说明必须再次提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限；仅本地调试时，自动签名同意权限申请即可；应用上架需使用此能力时，须在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。实施前已提醒也不能省略。
+实施结束后的最终交付说明必须再次提醒开发者：`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限；仅本地调试时，自动签名同意权限申请即可；应用上架需使用此能力时，须在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。接入后需要重新签名；本地调试使用自动签名时，同意本次权限申请，并核对更新后的签名 profile 包含所需权限。实施前已提醒也不能省略。

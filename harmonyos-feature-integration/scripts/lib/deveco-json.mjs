@@ -9,7 +9,7 @@ function notice(line) {
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value)
 
 export function parseDevecoJson(stdout, kind) {
-  const label = kind === "layout" ? "组件树" : "设备信息"
+  const label = kind === "layout" ? "组件树" : kind === "app" ? "应用模块信息" : "设备信息"
   if (typeof stdout !== "string") throw new Error(`${label}输出解析失败：stdout 不是文本`)
   let data
   try {
@@ -25,6 +25,8 @@ export function parseDevecoJson(stdout, kind) {
   if (kind === "layout") {
     const node = (value) => object(value) && (object(value.attributes) || Array.isArray(value.children) || ["id", "text", "type"].some((key) => typeof value[key] === "string"))
     if (!(Array.isArray(data) ? data.every(node) : node(data))) throw new Error(`${label}输出解析失败：JSON 结构不是组件树`)
+  } else if (kind === "app") {
+    if (!object(data) || !Array.isArray(data.hapModuleInfos)) throw new Error(`${label}输出解析失败：缺少 hapModuleInfos`)
   } else {
     const device = data?.device ?? data?.data ?? data
     if (!object(device) || !["name", "model", "serial", "serialNumber", "deviceType", "type", "connectType", "osVersion", "isEmulator"].some((key) => Object.hasOwn(device, key))) {

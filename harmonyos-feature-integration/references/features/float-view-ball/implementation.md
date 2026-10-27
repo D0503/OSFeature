@@ -11,4 +11,4 @@
 5. 平台请求的 Promise 不替代 STARTED／STOPPED 等系统状态通知。窗球控制器资产的异步操作返回 Promise，失败交给调用方处理；系统关闭、替换和主窗口销毁仍通过终态清理。
 6. 按 [验证](performance-validation.md) 完成静态、构建与运行证据。
 
-**实施结束后的最终交付说明必须再次提醒开发者：** `ohos.permission.USE_FLOAT_BALL` 与 `ohos.permission.FLOAT_VIEW` 都是受限 ACL 权限；闪控球必须申请前者，闪控窗必须申请后者并取得用户授权。按实际路线在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)，完成宿主声明与签名 profile 核对。 实施前已提醒也不能省略。
+**实施结束后的最终交付说明必须再次提醒开发者：** `ohos.permission.USE_FLOAT_BALL` 与 `ohos.permission.FLOAT_VIEW` 都是受限 ACL 权限；闪控球必须申请前者，闪控窗必须申请后者并取得用户授权。按实际路线在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)，完成宿主声明与签名 profile 核对。接入后需要重新签名；本地调试使用自动签名时，同意本次权限申请，并核对更新后的签名 profile 包含所需权限。实施前已提醒也不能省略。
