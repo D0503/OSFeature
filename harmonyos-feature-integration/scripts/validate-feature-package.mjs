@@ -210,9 +210,13 @@ try {
     }
 
     if (entry) {
-      for (const expected of ["compatibility.md", "implementation.md", "performance-validation.md", "assets-catalog.md", "profile.json"]) {
-        issue(errors, entry.includes(expected), feature.entry, `入口未路由到 ${expected}`)
+      const entryTargets = new Set(localLinks(entry).map((target) => resolve(dirname(entryPath), target)))
+      entryTargets.add(entryPath)
+      for (const role of ["compatibility", "implementation", "validation", "assets"]) {
+        const target = profile?.documents?.[role]
+        issue(errors, typeof target === "string" && entryTargets.has(resolve(packageDir, target)), feature.entry, `入口未路由到 ${role} 对应资料`)
       }
+      issue(errors, entryTargets.has(profilePath), feature.entry, "入口未路由到 profile")
       for (const target of localLinks(entry)) {
         issue(errors, await exists(resolve(dirname(entryPath), target)), `${feature.entry} -> ${target}`, "相对链接目标不存在")
       }

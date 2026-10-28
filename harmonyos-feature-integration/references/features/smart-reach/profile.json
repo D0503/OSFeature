@@ -31,7 +31,7 @@
       "requiresStage": true,
       "moduleTypes": ["entry", "feature"],
       "components": ["motion.operatingHandChanged", "motion.getRecentOperatingHandStatus"],
-      "documents": { "implementation": "routes/operating-hand/implementation.md", "assets": "routes/operating-hand/assets.md", "validation": "routes/operating-hand/validation.md" }
+      "documents": { "implementation": "routes/operating-hand/implementation.md", "assets": "routes/operating-hand/implementation.md", "validation": "routes/operating-hand/validation.md" }
     },
     {
       "id": "holding-hand",
@@ -41,7 +41,7 @@
       "requiresStage": true,
       "moduleTypes": ["entry", "feature"],
       "components": ["motion.holdingHandChanged"],
-      "documents": { "implementation": "routes/holding-hand/implementation.md", "assets": "routes/holding-hand/assets.md", "validation": "routes/holding-hand/validation.md" }
+      "documents": { "implementation": "routes/holding-hand/implementation.md", "assets": "routes/holding-hand/implementation.md", "validation": "routes/holding-hand/validation.md" }
     }
   ],
   "constraints": [

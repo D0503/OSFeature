@@ -25,7 +25,7 @@
 
 等待澄清期间可只读检查工程与本机 SDK，核对编译版本、兼容版本及用户期望支持的运行版本。所选接口的编译 SDK 和实际调用时的运行 API 均须达到门槛；完整工具文件另需 API23 编译 SDK，低版本按[开发步骤](implementation.md)提取所需函数。版本不足时说明升级或低版本保留行为的选项，由用户确认后实施，不自行提高最低兼容版本。确定范围后，再按[场景选择](scenarios.md)和[兼容性](compatibility.md)落实路线、设备能力及运行版本保护。
 
-**权限前置：必须在宿主 `module.json5` 声明 `ohos.permission.DLP_GET_HIDE_STATUS`，这是受限 ACL 权限。** 仅本地调试时，自动签名同意权限申请即可；应用上架使用时，需在 HarmonyOS 开发者中心平台 [申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。实施前（首次修改工程前）须向开发者明确提醒，实施结束后的最终交付说明中须再次提醒；两个时点均说明权限名称、本地调试与上架的不同要求，并提供 ACL 申请链接。声明示例见 [权限声明与 ACL](compatibility.md#权限声明与-acl)。
+实施前与交付时按[权限与提醒要求](compatibility.md#权限声明与-acl)向开发者说明本次路线的权限条件和申请入口。
 
 资料依据为 2026-10-20 的官方文档本地快照及配套示例：
 

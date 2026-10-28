@@ -56,14 +56,17 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 
 | 用户任务 | 必读文件 |
 |---|---|
+| 工程整体接入与候选盘点 | [工程发现与覆盖](shared/validation.md#工程发现) |
 | 版本判断、路线选择、前置检查 | [compatibility.md](compatibility.md) |
-| 所有实现与回退 | [implementation.md](implementation.md)、[shared/fallback.md](shared/fallback.md) |
+| 所有实现与回退 | [共享回退](shared/fallback.md)，再按下列 HDS/ArkUI 行加载实际选中路线 |
 | 内容区滚动时标题固定到标题栏、分类栏滚入标题栏、沉浸光感标题栏滚动吸顶 | [ArkUI 接入入口](routes/arkui/implementation.md)及[滚动内容切换到标题栏](routes/arkui/components/navigation.md#可选滚动内容切换到标题栏)；仅按用户要求实施该交互，普通列表内部吸顶不适用 |
 | HDS 导航、悬浮 Tab、MiniBar | [routes/hds/implementation.md](routes/hds/implementation.md)、[routes/hds/assets.md](routes/hds/assets.md) |
 | ArkUI 开启策略、原生 Navigation/Tabs、普通组件、菜单、弹窗 | [routes/arkui/implementation.md](routes/arkui/implementation.md)，再按目标加载该入口列出的分类资料 |
-| 示例资产选择入口 | [assets-catalog.md](assets-catalog.md)，再按 `selectedRoutes` 加载对应路线资产 |
-| 性能评审、测试与验收 | [performance-validation.md](performance-validation.md)，再按 `selectedRoutes` 读取对应验证文件 |
+| 示例资产选择入口 | 按 `selectedRoutes` 读取 [HDS 资产](routes/hds/assets.md)或 [ArkUI 资产](routes/arkui/assets.md) |
+| 性能评审、测试与验收 | [共享验证](shared/validation.md)，以及选中路线的 [HDS 验证](routes/hds/validation.md)／[ArkUI 验证](routes/arkui/validation.md) |
 | 材质无效、透明、卡顿或样式冲突排查 | [compatibility.md](compatibility.md)、[shared/validation.md](shared/validation.md)及选中路线的验证文件 |
+
+资产不能整文件覆盖业务页面；复制或改写前核对本机 SDK、工程版本、现有组件树和共享回退，接入后执行真实工程构建。组合路线分别应用各自门禁、导入和能力判断，不把两代接口封装成一个动态类型接口；共享资料只读取一次。
 
 同时完整读取主 Skill 指定的对应通用 workflow。机器选路以 [profile.json](profile.json) 为准，Markdown 用于解释、实施和人工复核；两者冲突时停止并报告能力包校验错误。
 

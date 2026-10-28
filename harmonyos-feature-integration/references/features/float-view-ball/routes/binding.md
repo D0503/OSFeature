@@ -4,7 +4,7 @@
 
 ## 开发准备
 
-**实施前提醒：FLOAT_VIEW 与 USE_FLOAT_BALL 均是受限 ACL 权限，需在[开发者中心申请 ACL](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。** 实际宿主声明两项权限，核对签名 profile；FLOAT_VIEW 还需用户授权，USE_FLOAT_BALL 不通过用户授权弹框申请。按[兼容性](../compatibility.md)核对 API26、Stage、SysCap、Phone/Tablet 实际支持情况及前台启动条件。
+首次修改前按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)向开发者说明本次路线的权限条件和申请入口。
 
 先确定业务页面、窗模板与尺寸、球模板参数、首次展示窗还是球。参数及页面准备分别参考[窗路线](float-view.md)和[球路线](floating-ball.md)。所有方法使用 async/await、hilog 和 Promise<void>；失败记录后向调用方抛出。业务回调可选，状态由两个基础资产维护。
 
@@ -195,4 +195,4 @@ release 仅清理监听和本地引用，不停止窗口，也不调用系统解
 
 运行[验证流程](../performance-validation.md)，静态与 Node 模拟测试不能替代 HarmonyOS 编译和真机系统切换验收。缺少签名、设备或系统条件时保留待验收状态。
 
-**实施结束再次提醒：两项权限均为受限 ACL，USE_FLOAT_BALL 必须申请，FLOAT_VIEW 必须申请并取得用户授权；提供[ACL 申请入口](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。**
+交付时按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)向开发者说明本次路线的权限条件和申请入口。

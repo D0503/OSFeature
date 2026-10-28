@@ -41,8 +41,8 @@
       ],
       "documents": {
         "implementation": "routes/router/implementation.md",
-        "validation": "routes/router/validation.md",
-        "assets": "routes/router/assets.md"
+        "validation": "routes/router/implementation.md",
+        "assets": "routes/router/implementation.md"
       }
     },
     {
@@ -60,8 +60,8 @@
       ],
       "documents": {
         "implementation": "routes/navigation/implementation.md",
-        "validation": "routes/navigation/validation.md",
-        "assets": "routes/navigation/assets.md"
+        "validation": "routes/navigation/implementation.md",
+        "assets": "routes/navigation/implementation.md"
       }
     }
   ],

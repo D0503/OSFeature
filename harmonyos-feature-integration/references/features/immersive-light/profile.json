@@ -206,9 +206,9 @@
   "documents": {
     "entry": "README.md",
     "compatibility": "compatibility.md",
-    "implementation": "implementation.md",
-    "validation": "performance-validation.md",
-    "assets": "assets-catalog.md",
+    "implementation": "README.md",
+    "validation": "README.md",
+    "assets": "README.md",
     "fallback": "shared/fallback.md",
     "sharedValidation": "shared/validation.md"
   },

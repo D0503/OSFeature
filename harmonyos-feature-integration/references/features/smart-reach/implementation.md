@@ -8,8 +8,8 @@
 | 路线 | 实现 | 资产 | 验证 |
 |---|---|---|---|
 | native-component | [系统组件原生适配](routes/native-component/implementation.md) | [原生资产](routes/native-component/assets.md) | [原生验证](routes/native-component/validation.md) |
-| operating-hand | [操作手](routes/operating-hand/implementation.md) | [操作手资产](routes/operating-hand/assets.md) | [操作手验证](routes/operating-hand/validation.md) |
-| holding-hand | [握持手](routes/holding-hand/implementation.md) | [握持手资产](routes/holding-hand/assets.md) | [握持手验证](routes/holding-hand/validation.md) |
+| operating-hand | [操作手](routes/operating-hand/implementation.md) | [操作手资产](routes/operating-hand/implementation.md#资产与接入) | [操作手验证](routes/operating-hand/validation.md) |
+| holding-hand | [握持手](routes/holding-hand/implementation.md) | [握持手资产](routes/holding-hand/implementation.md#资产与接入) | [握持手验证](routes/holding-hand/validation.md) |
 
 ## 跟手模式
 

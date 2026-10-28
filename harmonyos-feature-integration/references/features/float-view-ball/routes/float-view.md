@@ -6,7 +6,7 @@
 
 先确定展示内容、页面路径、模板、用户开启入口和结束展示的时机。复用原工程业务状态与导航，控制器的持有者需覆盖跨应用展示期。
 
-**实施前（首次修改工程前）提醒开发者：`ohos.permission.FLOAT_VIEW` 是受限 ACL 权限，必须申请并取得用户授权。** 在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)，核对实际签名 profile 包含该权限；ACL 获准不能代替用户授权。完整前提见[兼容性与权限](../compatibility.md)。
+首次修改前按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)向开发者说明本次路线的权限条件和申请入口。
 
 在实际宿主 HAP 的 `module.json5` 中合并权限声明，reason 资源和 abilities 替换为工程实际值：
 
@@ -345,15 +345,7 @@ FloatViewController.stopFloatView().catch((err: BusinessError) => {
 
 ## 异常与注意事项
 
-| 现象 | 检查重点 |
-|---|---|
-| 权限失败 | 宿主 FLOAT_VIEW 声明、reason 资源、ACL、实际签名 profile 和用户授权 |
-| 不支持或能力检测失败 | API26、SysCap、设备与窗口模式、isFloatViewEnabled；失败保留原业务 |
-| 空窗或页面加载失败 | pages profile 路径、页面资源、加载完成后才 start |
-| 尺寸不符 | px 单位、当前模板尺寸与比例约束、onRectChange 实际结果 |
-| 重复窗口或启动冲突 | 创建入口并发、应用前台、已有窗／球／画中画是否已结束 |
-| 恢复失败 | 用户点击来源、STARTED 状态、主窗口生命周期及参数类型 |
-| 停止后仍有回调 | 配对退订状态、限制及自行添加的矩形监听，清理业务订阅 |
+运行失败时按[闪控窗排查](../troubleshooting.md#闪控窗排查)核对证据。
 
 错误记录具体操作及 `BusinessError.code/message`，其他问题见[排障](../troubleshooting.md)；不支持、未授权及功能关闭沿用[回退策略](../fallback.md)。
 
@@ -370,7 +362,7 @@ FloatViewController.stopFloatView().catch((err: BusinessError) => {
 
 静态检查通过不等于设备功能通过，缺少签名或适配设备时保留待验收状态。
 
-**实施结束后的最终交付说明必须再次提醒：FLOAT_VIEW 是受限 ACL 权限，必须完成[ACL 申请](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)并取得用户授权。** 接入后需要重新签名；本地调试使用自动签名时，同意本次权限申请，并核对更新后的签名 profile 包含所需权限。声明权限或编译通过不能证明权限已生效。
+交付时按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)向开发者说明本次路线的权限条件和申请入口。
 
 ### 分步调用与补充监听
 

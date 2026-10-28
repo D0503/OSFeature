@@ -6,7 +6,7 @@
 
 先确定球展示的业务内容、使用模板、数据更新来源、点击后恢复的 Ability／页面，以及何时结束展示。复用工程已有入口、状态和导航；缺少影响实现的选择时补问，已明确的选择不重复确认。四种模板是可选项，不要求同时接入四套演示按钮。
 
-**实施前（首次修改工程前）提醒开发者：`ohos.permission.USE_FLOAT_BALL` 是必须申请的受限 ACL 权限。** 在 HarmonyOS 开发者中心平台[申请 ACL 权限](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)，核对实际签名 profile 包含该权限；它不是 `user_grant` 运行时弹框权限。窗球两项权限均属于受限 ACL 权限；若同时接入闪控窗，还必须申请 `ohos.permission.FLOAT_VIEW` 并取得用户授权。完整前提见[兼容性与权限](../compatibility.md)。
+首次修改前按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)向开发者说明本次路线的权限条件和申请入口。
 
 在实际宿主 HAP 的 `module.json5` 中合并以下声明，保留原有权限：
 
@@ -152,16 +152,7 @@ await FloatingBallController.stopFloatingBall();
 
 每个操作记录阶段、实例和 `BusinessError.code/message`，按具体接口的错误码定位；不支持、未授权或功能关闭时沿用[回退策略](../fallback.md)。
 
-| 现象／错误码 | 检查重点 |
-|---|---|
-| 201 | 宿主 USE_FLOAT_BALL 声明、ACL 批准及实际签名 profile |
-| 801 | 系统版本、设备和 Tablet 模式；不以枚举的设备标签推断接口可用 |
-| 1300019 | 空标题、UTF-8 字节超限、图标像素大小、颜色格式及增强参数条件 |
-| 1300021／1300022 | 同应用多球或重复操作，检查创建和启动是否串行 |
-| 1300024／1300025 | 控制器或球状态不支持当前操作，检查停止后仍更新等时序 |
-| 1300026 | 恢复主窗口的包名、目标 Want、用户点击条件和额外权限 |
-| 1300027／1300028 | 更新时修改了 template，或试图更新 STATIC |
-| 1300034（API26+） | 与已有闪控窗冲突，核对是否采用正确绑定／停止流程 |
+错误码与处理见[闪控球错误码](../troubleshooting.md#闪控球错误码)。
 
 球在前台启动后可跨应用展示，不因此自动添加定位权限或后台定位任务。
 
@@ -177,6 +168,6 @@ await FloatingBallController.stopFloatingBall();
 
 静态检查通过不等于设备功能通过；未具备签名、设备或系统条件的项目保留待验收状态。
 
-**实施结束后的最终交付说明必须再次提醒：USE_FLOAT_BALL 是必须申请的受限 ACL 权限，并提供[开发者中心 ACL 申请链接](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)。** 同时接入闪控窗时再次说明 FLOAT_VIEW 的受限 ACL 与用户授权要求；实施前已提醒不能省略结束提醒。
+交付时按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)向开发者说明本次路线的权限条件和申请入口。
 
 接口约束以对应 API 和目标 SDK 为准。

@@ -48,4 +48,10 @@ private requestOperatingHandPermission(): void {
 
 按 [共同生命周期规则](../../implementation.md) 连接页面实际可见期，在所属 HAP 声明对应权限，并处理调用异常。
 
-初次或换手后的多次触控才可能上报；排除边缘 8mm、窗口旋转、多指、指关节。不可把这一路线作为握持手 API 20 的自动低版本替代。读 [资产](assets.md) 和 [验证](validation.md)。
+初次或换手后的多次触控才可能上报；排除边缘 8mm、窗口旋转、多指、指关节。不可把这一路线作为握持手 API 20 的自动低版本替代。读 [资产](implementation.md#资产与接入) 和 [验证](validation.md)。
+
+## 资产与接入
+
+按 [操作手实施](implementation.md) 在实际页面组织 `operatingHandChanged` 监听或 `getRecentOperatingHandStatus()` 查询；权限声明见 [兼容性](../../compatibility.md)。
+
+单次查询无需订阅事件。事件监听使用同一回调订阅和退订；状态与业务交互由目标组件管理。验证见 [操作手验证](validation.md)。

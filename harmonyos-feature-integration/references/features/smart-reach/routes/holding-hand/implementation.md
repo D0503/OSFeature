@@ -82,7 +82,7 @@ private stopHoldingHand(): void {
 
 侧边悬浮按钮在现有容器中设置左右对齐；容器适合时，可采用 `RelativeContainer` 内的左右条件分支，分别设置 `HorizontalAlign.Start/End`，底部对齐保持一致。
 
-侧边切换使用 `TransitionEffect.move(TransitionEdge.START/END)` 从对应屏外进出，避免按钮横穿内容区域。动画曲线优先使用官方推荐值：组件出场位移动画使用 `curves.interpolatingSpring(0, 1, 200, 17)`（stiffness=200，出场更利落）；从屏幕外移入/移出使用 `curves.interpolatingSpring(0, 1, 170, 17)`（stiffness=170，侧边绕行更自然）。不得使用未经验证的参数组合。首次出场标志放在页面状态中，不因条件分支重建而重复触发首次动画。
+侧边切换使用 `TransitionEffect.move(TransitionEdge.START/END)` 从对应屏外进出，避免按钮横穿内容区域。曲线参数按[共同约束](../../implementation.md#自定义路径的共同约束)选择。首次出场标志放在页面状态中，不因条件分支重建而重复触发首次动画。
 
 若窗口尺寸异步取得，先计算接入前初始位置并写入初始分支，再打开渲染门禁；不能让坐标仍为 `0` 的占位分支先出现，否则首次会从错误侧滑入。换侧前分别设置入场分支的目标坐标和 `START/END`，退场分支保留自己的坐标和边直到离场结束。Builder 内的位置属性直接读取该分支的响应式位置状态，不依赖一次性传入的普通数值参数；原按钮可手动拖动时，拖动只更新当前分支，未收到新有效方向时保持用户放置的位置，同侧重复结果不把它吸回预置侧。
 
@@ -161,3 +161,9 @@ private buttonBranch(a: boolean) {
 自定义按钮由 `holdingHandChanged` 控制；如同时接入 HdsTabs，其位置交给 `adaptToHandedness`，不得用两种信号争抢同一组件。单独接入握持手感知不要求引入 HdsTabs、沉浸材质、新闻页面、引导弹窗或持久化逻辑。
 
 按 [握持手验证](validation.md) 检查声明、构建、生命周期、交互保护和退化行为，并引导开发者在支持真机上完成实际握姿操作与取证。静态检查、模拟事件或构建通过均不能替代真实识别效果。
+
+## 资产与接入
+
+按本页的接入步骤组织 `holdingHandChanged` 监听、位置状态和转场；将逻辑合并到已有页面与目标组件，沿用工程状态管理方式。权限声明见 [兼容性](../../compatibility.md)。
+
+使用同一回调订阅和退订，明确区分左右手与其他状态。验证见 [握持手验证](validation.md)。
