@@ -118,7 +118,7 @@ struct FloatViewPage {
 
 ## 4. 更新内容、尺寸与模板
 
-内容更新使用已加载页面的正常状态管理。主页面和窗页面共享同一份业务数据，使用宿主已有 AppStorage／LocalStorage 等方案驱动刷新；不因字段变化或条目增删重新 setUIContent、create 或 start。列表使用稳定业务 ID 作为条目标识。尺寸单位为 px，宽高必须大于 0；通过 `getFloatViewLimits(templateType)` 读取 minSize、maxSize 和 ratioLimits，再调用 `await FloatViewController.setWindowSize(size)`。第 3 步采用返回的最大尺寸，业务可在尺寸和比例约束内选择合适大小。
+内容更新使用已加载页面的正常状态管理。主页面和窗页面共享同一份业务数据，使用宿主已有 AppStorage／LocalStorage 等方案驱动刷新；不因字段变化或条目增删重新 setUIContent、create 或 start。列表使用稳定业务 ID 作为条目标识。尺寸单位为 px，宽高必须大于 0；通过 `getFloatViewLimits(templateType)` 读取 minSize、maxSize 和 ratioLimits，再调用 `await FloatViewController.setWindowSize(size)`。第 3 步采用返回的最大尺寸，业务可在尺寸和比例约束内选择合适大小；原工程已有断点或屏幕尺寸机制时，初始与后续尺寸可借用该机制取值，见[屏幕尺寸与断点响应](#屏幕尺寸与断点响应借用原工程既有机制)。
 
 `onLimitsChange` 返回约束变化，不是实际窗口尺寸；需要动态布局时在回调中更新业务保存的约束。系统可能调整请求尺寸，实际位置和尺寸通过 createFloatView 的可选 onRectChange 回调获取，资产在 STOPPED 时退订。
 
@@ -134,7 +134,7 @@ const property: floatView.TemplateProperty = {
 await FloatViewController.switchTemplate(property);
 ```
 
-switchTemplate 只改变系统模板和窗口尺寸，页面还需同步改变自己的展开／紧凑布局状态；等待接口成功后再提交页面状态，失败保留原布局。切回原模板时重新读取目标模板的限制。条目数量、显示区域和 onLimitsChange 变化时，按当前模板重算尺寸；设计尺寸从 vp 转成 px 后再校验宽高和比例限制，实际布局参考 onRectChange 与 avoidArea。详细流程见[绑定场景的更新与替换](binding.md#4-系统切换与业务更新)，这些窗更新步骤也可独立使用。
+switchTemplate 只改变系统模板和窗口尺寸，页面还需同步改变自己的展开／紧凑布局状态；等待接口成功后再提交页面状态，失败保留原布局。切回原模板时重新读取目标模板的限制。条目数量、显示区域、onLimitsChange 变化，以及原工程既有断点或屏幕尺寸机制的更新（见[屏幕尺寸与断点响应](#屏幕尺寸与断点响应借用原工程既有机制)），都按当前模板重算尺寸；设计尺寸从 vp 转成 px 后再校验宽高和比例限制，实际布局参考 onRectChange 与 avoidArea。详细流程见[绑定场景的更新与替换](binding.md#4-系统切换与业务更新)，这些窗更新步骤也可独立使用。
 
 片段放入现有异步错误处理入口，按实际状态控制操作；控制器不存在时方法抛出异常。窗页面顶部必须预留固定避让空间：常规态（ROUNDED_RECTANGLE 展开矩形）top padding 32vp，mini 态（HORIZONTAL_BAR 紧凑横条）top padding 4vp，模板切换时随布局状态同步。再根据 `FloatViewController.getWindowProperties().avoidArea` 布局，避免交互控件落入不响应区域，不固定为某款手机的尺寸。
 
@@ -217,6 +217,75 @@ export struct FloatViewContent {
 
 **可选过渡效果**：需要淡入淡出时，可在页面 Stack 顶层放置覆盖层，通过 opacity 与 animation 控制，并设置 `hitTestBehavior(HitTestMode.None)`。覆盖层只用于视觉过渡，不承担防窥保护。切换完成或失败后均收起覆盖层；动画时长不作为系统接口完成依据，页面退出时清理自己创建的定时任务。
 
+### 屏幕尺寸与断点响应（借用原工程既有机制）
+
+设备屏幕尺寸变化（折叠屏展开/折叠、旋转、分屏）时，闪控窗不会自动跟随：窗口停留在创建时的尺寸，可能与新屏幕不匹配。是否让闪控窗跟随更新，由原工程现状决定：
+
+| 原工程现状 | 闪控窗的处理 |
+|---|---|
+| 已有断点或屏幕尺寸响应机制 | 借用该机制，断点变化时重算并更新窗口尺寸（见下文三步） |
+| 没有该机制 | 不响应：保持创建时尺寸，仍受 onLimitsChange 约束更新，不为闪控窗专门新增屏幕尺寸监听或断点工具 |
+
+「已有机制」指工程中已存在的屏幕尺寸感知设施，例如断点工具类（按屏幕宽度分档并更新状态）、`display.on('change')` 订阅、媒体查询、主窗口 `windowSizeChange` 监听或 GridRow 断点状态；适配过折叠屏或大屏的工程通常已有其中一种。
+
+借用分三步：
+
+1. 找状态源：定位原工程维护断点或屏幕尺寸值的状态，如 AppStorage 键、全局状态库、@Provide/@Consume、事件总线。该机制已订阅屏幕变化并在变化时更新断点值，闪控窗不新建任何监听。
+2. 窗页面消费该状态：闪控窗页面接入同一状态并在变化时收到通知；订阅与退订由该机制的既有所有者管理。
+3. 重算尺寸：回调中按当前模板读取 minSize、maxSize，期望尺寸（vp）收敛到限制内并转 px，调用 `setWindowSize`。
+
+```typescript
+import { floatView, window } from '@kit.ArkUI';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { FloatViewController } from '../controllers/FloatViewController';
+
+@Component
+export struct FloatViewBreakpointSizer {
+  // 断点状态源接入原工程既有机制：AppStorage 键、@Consume、状态库、事件总线等
+  // 按实际机制选择，currentBreakpoint 为占位键名，窗页面不新建监听。
+  @StorageLink('currentBreakpoint') @Watch('onBreakpointChange') currentBreakpoint: number = 1;
+  @State compact: boolean = false;
+  @State itemCount: number = 3; // 业务条目数，接现有数据源。
+
+  private onBreakpointChange(): void {
+    const templateType = this.compact
+      ? floatView.FloatViewTemplateType.HORIZONTAL_BAR
+      : floatView.FloatViewTemplateType.ROUNDED_RECTANGLE;
+    const limits = FloatViewController.getFloatViewLimits(templateType);
+    if (limits === null) { return; }
+    const uiContext = this.getUIContext();
+    // 期望尺寸按业务内容计算：宽度取当前断点下的业务设计宽度，
+    // 高度取基础高度 + 条目数×行高；数值为占位，统一收敛到模板 min/max 后转 px。
+    const widthVp: number = Math.min(Math.max(355, uiContext.px2vp(limits.minSize.width)),
+      uiContext.px2vp(limits.maxSize.width));
+    const heightVp: number = Math.min(Math.max(78 + 32 * this.itemCount,
+      uiContext.px2vp(limits.minSize.height)), uiContext.px2vp(limits.maxSize.height));
+    const size: window.Size = {
+      width: uiContext.vp2px(widthVp),
+      height: uiContext.vp2px(heightVp)
+    };
+    FloatViewController.setWindowSize(size).catch((err: BusinessError) => {
+      hilog.error(0xF811, 'FloatViewBreakpointSizer', 'Resize by breakpoint failed: %{public}s',
+        String(err.code));
+    });
+  }
+
+  build() {
+    // 业务内容；顶部预留常规态 32vp、mini 态 4vp。
+    Column() {
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ top: this.compact ? 4 : 32 })
+  }
+}
+```
+
+- 片段中的设计宽度、基础高度与行高为占位数值，替换为业务实际值；`@StorageLink('currentBreakpoint')` 对应第 1 步找到的状态源，原工程使用 @Consume、状态库或事件总线时替换为等价接入方式。
+- 重算流程与第 4 节一致：读取当前模板 minSize、maxSize 和 ratioLimits，期望尺寸从 vp 转 px 并收敛到限制内再 `setWindowSize`；模板切换时同样按当前断点取目标模板尺寸，不直接沿用最大尺寸。
+- HIDDEN、IN_SIDEBAR、IN_FLOATING_BALL 期间断点可能变化：尺寸更新只调整窗口尺寸参数，不拉起窗口；恢复可见前按当前断点核对一次。
+
 ## 5. 恢复主窗口与读取窗口属性
 
 仅从闪控窗中的用户点击触发恢复，且窗口需处于 STARTED 状态。传入的是 `Record<string, Object>` 类型的 wantParameters，用于主窗口 `onNewWant` 处理业务路由，不是闪控球接口的 Want：
@@ -295,6 +364,7 @@ FloatViewController.stopFloatView().catch((err: BusinessError) => {
 - 授权通过后前台创建、页面加载、STARTED、内容更新、关闭及再次开启。
 - 权限拒绝、查询失败、后台启动、无效页面、重复点击与已有球／画中画冲突，不误报启动成功。
 - 两类模板、尺寸与比例限制变化、实际矩形、顶部预留随形态在 32vp／4vp 间同步、交互避让区域、点击恢复正确业务页面。
+- 原工程已有断点或屏幕尺寸机制时，屏幕尺寸变化（折叠屏展开/折叠、旋转、分屏）下窗尺寸经该机制更新且仍满足当前模板限制，窗页面不重复订阅；原工程没有该机制时窗保持创建尺寸，不为窗新增监听。
 - 拖动、最小化进入侧栏、恢复、用户关闭、系统替换和主窗口销毁后监听与资源收敛；侧栏及垃圾桶操作按设备和模式支持条件验收。
 - 加载、启动及停止失败后保留可诊断状态，重试不产生重复监听。
 

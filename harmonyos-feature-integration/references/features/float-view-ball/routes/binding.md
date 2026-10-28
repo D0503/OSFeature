@@ -106,7 +106,7 @@ await FloatViewController.switchTemplate(property);
 
 **仅调整窗尺寸**：模板不变时调用 `await FloatViewController.setWindowSize(size)`。size 使用 `window.Size`，单位为 px，需满足当前模板的尺寸及比例限制。实际窗口尺寸通过准备阶段的 `onRectChange` 回调或 `FloatViewController.getFloatViewProperties()` 读取；属性返回 undefined 时不继续使用。
 
-条目数量变化、显示区域变化和 onLimitsChange 都可能触发尺寸重算。按内容所需宽高和当前可用空间计算；设计尺寸若使用 vp，先用实际 UIContext 的 vp2px 转成 px，再检查当前模板的 minSize、maxSize 和 ratioLimits。超出允许大小时在页面内部滚动或截断，不能只扩大窗口。onLimitsChange 表示约束变化，onRectChange 才表示实际矩形变化；读取 avoidArea 后用 px2vp 转换到页面布局单位，避开不可交互区域；顶部固定预留（常规态 32vp、mini 态 4vp）不因 avoidArea 为空而省略。组件退出时退订它自己的显示与窗口回调。
+条目数量变化、显示区域变化、onLimitsChange 以及原工程既有断点或屏幕尺寸机制的更新都可能触发尺寸重算；窗是否借用原工程机制响应屏幕变化，按[窗路线的屏幕尺寸与断点响应](float-view.md#屏幕尺寸与断点响应借用原工程既有机制)执行，不为窗单独新增监听。按内容所需宽高和当前可用空间计算；设计尺寸若使用 vp，先用实际 UIContext 的 vp2px 转成 px，再检查当前模板的 minSize、maxSize 和 ratioLimits。超出允许大小时在页面内部滚动或截断，不能只扩大窗口。onLimitsChange 表示约束变化，onRectChange 才表示实际矩形变化；读取 avoidArea 后用 px2vp 转换到页面布局单位，避开不可交互区域；顶部固定预留（常规态 32vp、mini 态 4vp）不因 avoidArea 为空而省略。组件退出时退订它自己的显示与窗口回调。
 
 ### 球内容更新与条目轮换
 
