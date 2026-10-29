@@ -152,6 +152,29 @@ import { FloatViewController } from '../controllers/FloatViewController';
 export struct FloatViewContent {
   @State compact: boolean = false;
   @State switching: boolean = false;
+  @State leftAvoidWidth: number = 0;
+  @State rightAvoidWidth: number = 0;
+  private rectChanged: (info: floatView.FloatViewRectChangeInfo) => void = () => {
+    this.updateAvoidArea();
+  };
+
+  aboutToAppear(): void {
+    FloatViewController.onRectChangeCallback(this.rectChanged);
+    this.updateAvoidArea();
+  }
+
+  aboutToDisappear(): void {
+    if (FloatViewController.floatViewController) {
+      FloatViewController.offRectChangeCallback(this.rectChanged);
+    }
+  }
+
+  private updateAvoidArea(): void {
+    const properties = FloatViewController.getFloatViewProperties();
+    if (!properties) { return; }
+    this.leftAvoidWidth = this.getUIContext().px2vp(properties.avoidArea.leftRect.width);
+    this.rightAvoidWidth = this.getUIContext().px2vp(properties.avoidArea.rightRect.width);
+  }
 
   private async changeLayout(compact: boolean): Promise<void> {
     this.switching = true;
@@ -167,6 +190,7 @@ export struct FloatViewContent {
       };
       await FloatViewController.switchTemplate(property);
       this.compact = compact;
+      this.updateAvoidArea();
     } catch (error) {
       const err = error as BusinessError;
       hilog.error(0xF811, 'FloatViewContent',
@@ -187,6 +211,8 @@ export struct FloatViewContent {
             .onClick(() => { this.changeLayout(false); })
         }
         .width('100%')
+        .padding({ left: this.leftAvoidWidth, right: this.rightAvoidWidth })
+        .onAreaChange(() => { this.updateAvoidArea(); })
       } else {
         Column() {
           Text('业务详细内容')
@@ -211,7 +237,9 @@ export struct FloatViewContent {
 }
 ```
 
-片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；页面根容器按当前形态预留顶部避让：常规态（展开矩形）padding 32vp、mini 态（紧凑横条）padding 4vp，随 compact 状态在 switchTemplate 成功后同步切换，其余交互避让按 avoidArea 处理。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
+片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；页面根容器按当前形态预留顶部避让：常规态（展开矩形）padding 32vp、mini 态（紧凑横条）padding 4vp，随 compact 状态在 switchTemplate 成功后同步切换，mini 态还需在内容容器（包含摘要及展开按钮）设置左右 padding，分别取 `avoidArea.leftRect.width`、`avoidArea.rightRect.width` 经 `px2vp` 转换后的值；不能固定写成相同数值，也不要在父子容器重复累加。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
+
+`avoidArea` 内的组件不响应手势，左右留白也必须覆盖展开按钮，不能只给文本加 padding。属性须在窗口有效后读取；页面加载期间返回 undefined 时暂不更新，并在 STARTED 后通过业务现有状态通知触发首次读取。片段在内容布局、模板切换成功和窗口矩形变化后刷新；页面退出仅退订自己的 rectChanged 回调。若工程已通过创建时的 onRectChange 统一分发矩形变化，复用该回调刷新上述状态，不重复注册。左右 padding 是页面内部避让，不额外增加已设置的窗口外部宽度。
 
 **内容驱动尺寸**：展开布局按头部、内容条目和操作区计算高度，紧凑布局按摘要和操作区计算宽度，顶部预留（常规态 32vp、mini 态 4vp）计入各自高度；通过实际 UIContext 将 vp 换为 px，再按目标模板的宽高及比例约束选取尺寸。内容超过窗口上限时使用内部滚动或截断，不复制固定的单行高度、断点或窗口大小。
 
