@@ -35,11 +35,11 @@ const invalidEntry = await devecoFixture("invalid", { manifest: { bin: "../../ou
 await assert.rejects(resolveDevecoNodeEntry(invalidEntry.wrapper), /package\.json bin、cli\.js、dist\/cli\.js/)
 const changes = {
   schemaVersion: "1.0", page: "首页", component: "Tabs", category: "悬浮 Tab", effect: "底部悬浮材质", files: ["entry/src/main/ets/pages/Home.ets"],
-  before: { sdk: 26, compile: 26, target: 26, compatible: 23 },
+  before: { sdk: 26, compile: 26, target: 26, compatible: 26 },
   fallback: ["low-api", "unsupported", "disabled"].map((condition) => ({ condition, behavior: "保留原布局与交互", status: "passed", evidence: "测试夹具中的独立回退观察" }))
 }
 const nav = { schemaVersion: "1.0", steps: [{ stepId: "home", action: "wait", timeoutMs: 1, expectPage: { by: "id", value: "home-page" } }] }
-const inspection = { localSdk: { status: "valid", apiVersion: 26, path: root }, api: { compile: 26, target: 26, compatible: 23 }, modules: [{ name: "entry", type: "entry" }] }
+const inspection = { localSdk: { status: "valid", apiVersion: 26, path: root }, api: { compile: 26, target: 26, compatible: 26 }, modules: [{ name: "entry", type: "entry" }] }
 let calls = [], builds = 0
 const options = {
   deploymentRunner: async (_project, _run, call) => {
@@ -47,7 +47,7 @@ const options = {
     if (result.exitCode !== 0) throw new Error("fixture deployment failed")
     return { plan: {}, launchArgs: ["fixture-launch"] }
   },
-  inspector: async () => ({ inspection, compatibility: { availableRoutes: ["arkui"] }, staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
+  inspector: async () => ({ inspection, compatibility: { availableRoutes: ["arkui"], routes: { arkui: { minApi: 26 } } }, staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
   buildRunner: async () => { builds++; return { exitCode: 0, stdout: "build passed" } },
   commandRunner: async (args) => {
     calls.push(args)
@@ -158,6 +158,33 @@ const loaded = await loadCollection(request("success").output, root)
 assert.equal(loaded.collection.runs.length, 2)
 assert.ok(!loaded.collection.runs.some((r) => r.runId === "stale-run"))
 
+// Correcting a Hvigor-style module argument replaces that failed attempt.
+const moduleRetryRequest = { ...request("module-retry"), module: "entry@default", changes: { ...structuredClone(changes), id: "module-tabs", before: { ...changes.before, target: 22 } } }
+const invalidModuleRun = await verifyDevelopment(moduleRetryRequest, { ...options, buildRunner: async () => ({ exitCode: 1, stderr: "构建选择参数无效: entry@default" }) })
+const moduleRetry = await verifyDevelopment({ ...moduleRetryRequest, module: "entry", changes: { ...structuredClone(changes), id: "module-tabs" } }, options)
+const moduleReport = await readFile(moduleRetry.report, "utf8")
+assert.equal((moduleReport.match(/### 首页悬浮栏/g) ?? []).length, 1)
+assert.ok(!moduleReport.includes("构建失败"))
+assert.ok(moduleReport.includes("| target API | 22 | 26 |"))
+const moduleCache = join(cacheDirectory(moduleRetryRequest.output), "collection.json")
+const moduleCollection = JSON.parse(await readFile(moduleCache, "utf8"))
+const legacyModuleRun = { ...structuredClone(moduleCollection.runs[0]), runId: invalidModuleRun.runId, module: "entry@default" }
+moduleCollection.runs.unshift(legacyModuleRun)
+await writeFile(moduleCache, JSON.stringify(moduleCollection))
+assert.equal((await loadCollection(moduleRetryRequest.output, root)).collection.runs.length, 1, "已存在的默认 target 重复项也应合并")
+await verifyDevelopment({ ...moduleRetryRequest, module: "other-entry" }, options)
+assert.equal((await loadCollection(moduleRetryRequest.output, root)).collection.runs.length, 2, "不同模块仍分别验证")
+await verifyDevelopment({ ...moduleRetryRequest, module: "entry@tablet" }, options)
+assert.equal((await loadCollection(moduleRetryRequest.output, root)).collection.runs.length, 3, "非默认 target 不作模糊合并")
+
+// Runtime details survive regeneration for ordinary features as well.
+const detailed = await verifyDevelopment(request("runtime-details"), options)
+const detailedLog = detailed.evidence.find((e) => e.type === "runtime_log")
+const detailJudgment = { schemaVersion: "1.0", runId: detailed.runId, goal: "首页悬浮栏", runtime: { status: "passed", summary: "滚动交互已验证", evidence: refs(detailedLog), observations: [{ scenario: "scroll", note: "滚动到底部后末项按钮可点击", evidence: refs(detailedLog) }] } }
+const detailedDone = await verifyDevelopment({ project: root, output: request("runtime-details").output, resume: detailed.runId, judgment: detailJudgment }, options)
+assert.ok((await readFile(detailedDone.report, "utf8")).includes("滚动到底部后末项按钮可点击"))
+await assert.rejects(verifyDevelopment({ project: root, output: request("runtime-details").output, resume: detailed.runId, judgment: { ...detailJudgment, runtime: { ...detailJudgment.runtime, observations: [{ scenario: "scroll", note: "无效引用", evidence: [{ id: "foreign", sha256: "foreign" }] }] } } }, options), /运行观察必须引用/)
+
 const readableOptions = { ...options,
   inspector: async () => ({ ...(await options.inspector()), staticResult: { counts: { fail: 0, warn: 1 }, checks: [{ id: "scrollable-tab-tail-clearance", status: "warn", message: "RAW_ENGLISH_STATIC_DETAIL", evidence: [{ path: "Home.ets", line: 12 }] }] } }),
   commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ name: "测试手机", serial: "RAW_SERIAL", osVersion: "API 26" }) } : options.commandRunner(args)
@@ -231,12 +258,13 @@ await assert.rejects(navigate(actionNavigation, async () => ({ exitCode: 0, stdo
 const tamper = await verifyDevelopment(request("tamper"), options)
 const tamperShot = tamper.evidence.find((e) => e.type === "screenshot")
 await writeFile(tamperShot.path, "modified")
-await assert.rejects(verifyDevelopment({ project: root, output: request("tamper").output, resume: tamper.runId, judgment: { ...judgment, runId: tamper.runId, visual: { ...judgment.visual, evidence: refs(tamperShot) } } }, options), /哈希/)
+await assert.rejects(verifyDevelopment({ project: root, output: request("tamper").output, resume: tamper.runId, judgment: { ...judgment, runId: tamper.runId, visual: { ...judgment.visual, evidence: refs(tamperShot) } } }, options), /文件已丢失或内容不符/)
 
 // Smart-reach visual verification is real-device only; developer real-device screenshots import as visual evidence.
 const devShot = join(root, "dev-shot.png")
 await writeFile(devShot, png)
 assert.deepEqual(parseDevelopmentArgs(["--import-screenshot", "a.png", "--import-screenshot", "b.png"]).importScreenshot, ["a.png", "b.png"])
+assert.equal(parseDevelopmentArgs(["--import-screenshot", "a.png", "--screenshot-purpose", "fallback"]).screenshotPurpose, "fallback")
 assert.throws(() => parseDevelopmentArgs(["--device", "a", "--device", "b"]), /重复参数/)
 const smartBase = { project: root, feature: "smart-reach", route: "holding-hand", goal: "侧边悬浮按钮握持手", changes: structuredClone(changes) }
 const smartInspection = { ...inspection, api: { compile: 23, target: 23, compatible: 20 } }
@@ -252,6 +280,9 @@ let smartReport = await readFile(emulatorRun.report, "utf8")
 assert.ok(smartReport.includes("只能使用真机"))
 assert.ok(smartReport.includes("（模拟器）"))
 await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, importScreenshot: [devShot] }, emulatorOptions), /真机/)
+const fallbackOnEmulator = await verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, importScreenshot: [devShot], screenshotPurpose: "fallback" }, emulatorOptions)
+assert.equal((await loadCollection(join(root, "sr-emulator"), root)).collection.runs[0].checks.visual.status, "not_run", "回退导入不改变模拟器不能验收握姿效果的事实")
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, judgment: { schemaVersion: "1.0", runId: emulatorRun.runId, goal: smartBase.goal, visual: { status: "passed", summary: "误用模拟器回退截图", evidence: refs(fallbackOnEmulator.evidence.find((e) => e.purpose === "fallback")) } } }, emulatorOptions), /回退环境截图/)
 const physicalOptions = { ...emulatorOptions, commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ device: { name: "Mate 真机", osVersion: "API 23" } }), stderr: "" } : options.commandRunner(args) }
 assert.equal(parseDevelopmentArgs(["--screenshot-scenario", "左手"]).screenshotScenario, "左手")
 let scenarioShot = 0

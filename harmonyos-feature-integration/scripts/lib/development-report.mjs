@@ -11,7 +11,10 @@ export const statusLabel = (status) => ({ passed: "通过", failed: "失败", no
 const escape = (value) => String(value ?? "未记录").replace(/[&<>|\[\]`*_]/g, (c) => `&#${c.charCodeAt(0)};`).replace(/\r?\n/g, "<br>")
 
 export function sameTarget(a, b) {
-  if (!["feature", "route", "product", "buildMode", "module"].every((key) => a[key] === b[key])) return false
+  if (!["feature", "route", "product", "buildMode"].every((key) => a[key] === b[key])) return false
+  // 旧运行可能误用 Hvigor 的默认 target 写法；更正模块参数仍是同一改造项。
+  const moduleName = (value) => typeof value === "string" ? value.replace(/@default$/, "") : value
+  if (moduleName(a.module) !== moduleName(b.module)) return false
   if (a.changes.id && b.changes.id) {
     if (a.changes.id === b.changes.id) return true
     return a.goal === b.goal && ["page", "component", "category", "effect"].every((key) => a.changes[key].trim() === b.changes[key].trim()) &&
@@ -152,6 +155,10 @@ export async function saveReport(output, directory, collection) {
     lines.push(`### ${escape(r.goal)}`, "", `页面 / 组件：${escape(r.changes.page)} / ${escape(r.changes.component)}。`, "", `视觉结果：**${statusLabel(r.checks.visual.status)}**。${escape(r.checks.visual.summary)}`, "", deviceLabel(r), "", `验证时间：${escape(r.createdAt)}；整体结果：${statusLabel(deriveVerdict(r))}。`, "", "| 验证阶段 | 结果 | 说明 |", "|---|---|---|")
     const names = { static: "静态检查", sdk: "SDK", build: "构建", install: "安装启动", navigation: "目标页导航", runtime: "运行观察", visual: "视觉验证", fallback: "兼容方案回退" }
     for (const [key, value] of Object.entries(r.checks).filter(([key]) => key !== "visual")) lines.push(`| ${names[key]} | ${statusLabel(value.status)} | ${escape(stageSummary(key, value))} |`)
+    if (r.checks.runtime.observations?.length) {
+      lines.push("", "运行观察明细：", "")
+      for (const observation of r.checks.runtime.observations) lines.push(`- ${escape(observation.note)}`)
+    }
     const findings = r.staticFindings ?? []
     if (findings.length || !["passed", "not_applicable"].includes(r.checks.static.status)) {
       lines.push("", findings.some((f) => !f.review) ? "待处理事项：" : "静态复核结论：", "")
@@ -172,8 +179,9 @@ export async function saveReport(output, directory, collection) {
       if (resolve(e.path) !== resolve(dest)) await copyFile(e.path, dest)
       e.path = dest
       if (e.scenario) lines.push("", `截图场景：${escape(e.scenario)}。`)
+      if (e.purpose === "fallback") lines.push("", "截图用途：兼容方案回退，环境与结论见兼容方案回退阶段。")
       lines.push("", `<img src="evidence/${filename}" alt="目标页面截图" width="270" />`, "")
-      if (e.origin === "developer") lines.push("", `截图来源：开发者按引导在真机采集并导入。`)
+      if (e.origin === "developer") lines.push("", e.purpose === "fallback" ? "截图来源：回退环境采集并导入。" : "截图来源：开发者按引导在真机采集并导入。")
       if (e.origin === "manual") lines.push("", `截图来源：本轮手动验证采集并导入，具体结论见验证结果。`)
     }
   }

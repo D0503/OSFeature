@@ -76,7 +76,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 3. 修改范围保持在用户请求与已确认路线内，复用工程现有架构与类型；
 4. 按能力包 `fallbackPolicy` 为旧版本、不支持设备、未授权和特性关闭路径保留接入前的源程序状态；只在满足条件的增强分支接入新特性；
 5. 按[验证闭环](references/workflows/verification.md)运行 `verify-development.mjs`，自动执行具备条件的静态检查、SDK 检查和构建。本次接入引起的检查或编译错误，由 AI 分析检查结果和日志、最小修改并重新验证构建；只有遇到无法自行解决的阻断时才报告具体原因。通过后明确设备并继续安装、导航和截图。智感握姿视觉验证仅真机：先引导开发者完成握姿动作，再采集截图或导入开发者真机截图，模拟器一律不判定；
-6. 按[验证闭环](references/workflows/verification.md)完成证据补录、判定与交付一致性核对，并按[输出契约](references/shared/output-contracts.md)交付报告及截图。
+6. 按[验证闭环](references/workflows/verification.md)完成证据补录、判定与交付一致性核对：手动验证先导入证据再补录判定，回退截图使用 `--screenshot-purpose fallback`；报告由结构化记录生成，不直接修改正文补结论。同一改造项重试沿用稳定标识与输出目录。按[输出契约](references/shared/output-contracts.md)交付报告及截图。
 
 ### 故障排查
 

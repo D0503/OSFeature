@@ -19,7 +19,7 @@
 工程 compatible API 低于所选路线 minApi（存在低版本兼容分支），或能力包声明了设备不支持、特性关闭回退路径时，验证闭环必须包含回退实测，不得以 staticReview 复核、代码走查或“构建通过”替代。
 - 在满足回退条件的环境安装**本轮构建的同一产物**实测：低版本回退使用 API 低于路线门槛的真机或模拟器（回退实测验证的是“增强不启用、源基线保持”，不依赖特性识别硬件，允许使用模拟器）；设备不支持、特性关闭路径按能力包的触发方式构造。
 - 逐项核对改造记录 `fallback` 声明的保留行为：增强入口不出现或不生效、接入前布局/功能/交互/状态逐项一致、无报错崩溃；采集回退环境运行截图与日志，截图至少体现目标页在回退环境下的实际表现。
-- 证据与判定：回退环境截图用 `--import-screenshot` 导入（或按“手动验证证据补录”导入手动证据）后，用 `--judgment` 的 `fallback` 字段补录（condition + status + summary + evidence）；`summary` 必须写明回退环境（真机/模拟器与系统 API 版本）与实际观察结论，`passed` 必须引用回退环境运行截图。`low-api/unsupported/disabled` 可分别补录，`passed/failed` 会同步到报告“升级与兼容”回退表。
+- 证据与判定：回退环境截图用 `--import-screenshot <路径> --screenshot-purpose fallback` 导入，再用 `--judgment` 的 `fallback` 字段补录（condition + status + summary + evidence）。回退截图单独标注用途，不改变原设备的安装、导航、运行和视觉结论；允许来自低版本模拟器，不能用于目标特性的视觉验收。`summary` 必须写明回退环境（真机/模拟器与系统 API 版本）与实际观察结论，`passed` 必须引用回退环境运行截图。`low-api/unsupported/disabled` 可分别补录，`passed/failed` 会同步到报告“升级与兼容”回退表。
 - 无法获得回退环境（如无 API 低于门槛的设备或模拟器）时，报告保留未验证并写明具体阻断原因与所需条件；不得默认跳过，也不得据此宣称兼容方案有效。能力包的效果验证设备限制与低版本回退实测分别适用。
 
 ## 失败修复与重验
@@ -41,8 +41,9 @@ node scripts/verify-development.mjs --project <工程> --feature immersive-light
 ```
 
 - `--route` 明确为 `arkui` 或 `hds`，组合路线和多个目标顺序执行，汇总到同一报告。
-- `--product`、`--build-mode` 默认 `default`、`debug`，执行前核对工程。运行验证始终构建并部署当前产品的完整本地运行模块集，`--module` 指定其中的启动模块，省略时须存在唯一 entry 模块。`--ability` 指定启动模块中实际声明的 Ability，`--bundle` 限定运行日志所属应用。
+- `--product`、`--build-mode` 默认 `default`、`debug`，执行前核对工程。运行验证始终构建并部署当前产品的完整本地运行模块集，`--module` 指定其中的启动模块，只填模块名（如 `entry`），不填 Hvigor 的 `entry@default`；省略时须存在唯一 entry 模块。`--ability` 指定启动模块中实际声明的 Ability，`--bundle` 限定运行日志所属应用。
 - `--import-screenshot <路径>` 可重复传入开发者按引导在真机采集的 PNG/JPEG 截图，随新运行或与 `--resume` 组合为已有运行补挂截图；导入后仍须由 AI 实际阅读并补录视觉判定。
+- `--screenshot-purpose target|fallback` 与 `--import-screenshot` 配合使用，默认 `target`。目标截图导入后视觉状态变为未确认，须重新判图；回退截图用 `fallback`，在同一 `runId` 下导入并补录回退判定，保留原设备的效果结论。
 - 同一改造项需要基线、左手、右手等多张执行器截图时，首次运行用 `--capture-screenshot --screenshot-scenario <场景>`；保持该次 `runId`，开发者切换到下一姿态并等待稳定后，用 `--resume <runId> --capture-screenshot --screenshot-scenario <新场景>` 补采。补采沿用已安装并导航通过的设备，不重新构建或安装；同名场景重采会替换该场景旧图。全部截图作为同一运行的证据写入报告。不要为每种握姿创建新的同改造项运行，否则新运行仍会替换旧运行。
 - SDK 自动定位规则沿用现有工程检查；无法定位时显式指定 `--sdk`。
 - 未传执行开关仅检查并报告。实施代理须主动传入具备条件的执行开关；运行只使用本轮成功构建的产物，不使用旧包绕过失败。
@@ -102,7 +103,7 @@ node scripts/verify-development.mjs --project <工程> --feature immersive-light
   "runId": "本次运行ID",
   "goal": "与本次目标完全一致",
   "visual": { "status": "passed", "summary": "实际观察到的目标特性效果及对应检查项", "evidence": [{ "id": "截图证据ID", "sha256": "本次截图哈希" }] },
-  "runtime": { "status": "inconclusive", "summary": "已观察的交互和仍待确认项", "evidence": [{ "id": "运行日志或组件树证据ID", "sha256": "本次证据哈希" }] },
+  "runtime": { "status": "inconclusive", "summary": "已观察的交互和仍待确认项", "evidence": [{ "id": "运行日志或组件树证据ID", "sha256": "本次证据哈希" }], "observations": [{ "scenario": "实际验证场景", "note": "该场景的实际操作与观察结果", "evidence": [{ "id": "运行日志或组件树证据ID", "sha256": "本次证据哈希" }] }] },
   "fallback": { "condition": "low-api", "status": "passed", "summary": "回退环境（真机/模拟器与系统 API 版本）及逐项核对的保留行为结论", "evidence": [{ "id": "回退环境运行截图或日志证据ID", "sha256": "本次证据哈希" }] },
   "staticReview": { "results": [{ "id": "静态warn项ID", "status": "passed", "note": "复核结论与代码依据" }] }
 }
@@ -114,7 +115,9 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --judgme
 
 补录判定只更新报告，不执行构建或设备操作；`--resume` 也可以补采当前设备截图、导入开发者真机截图或下文的手动验证证据。补采执行器截图要求本轮安装和目标页导航已通过；智感握姿每次补采均再次确认真机。视觉判定必须引用本轮截图；运行判定须引用本轮日志或交互组件树。过期运行、其他目标或哈希不符的证据均拒绝。状态允许 `passed`、`failed`、`inconclusive`，没有实际依据时保持未确认。视觉通过不能覆盖静态 `warn`。构建未通过时不能补录任何效果判定；安装与导航未通过时，可以补录全部引用导入真机截图的视觉判定，以及全部引用手动证据且为 `inconclusive` 的有限运行观察，不能补录运行通过。
 
-`fallback` 补录要求本轮构建已通过（回退实测使用同一构建产物，但不要求本轮安装与导航设备一致）；回退环境截图、日志经 `--import-screenshot` 或 `--manual-evidence` 导入后，以返回的新证据 `id`/`sha256` 引用。`condition` 只允许 `low-api`、`unsupported`、`disabled`，可多次 `--resume` 分别补录；`passed`/`failed` 会同步更新改造记录 `fallback` 对应条件项与报告“升级与兼容”回退表，`inconclusive` 保持回退表未验证并保留观察记录。`summary` 必须写明回退环境（真机/模拟器与系统 API 版本）；静态复核结论（`staticReview`）不能代替 `fallback` 实测。
+`fallback` 补录要求本轮构建已通过（回退实测使用同一构建产物，但不要求本轮安装与导航设备一致）；回退环境截图经 `--import-screenshot --screenshot-purpose fallback` 导入后，以返回的新证据 `id`/`sha256` 引用。同设备手动采集的日志可按下文 `--manual-evidence` 规则导入，不能以其他设备的安装、导航状态覆盖原设备。`condition` 只允许 `low-api`、`unsupported`、`disabled`，可多次 `--resume` 分别补录；`passed`/`failed` 会同步更新改造记录 `fallback` 对应条件项与报告“升级与兼容”回退表，`inconclusive` 保持回退表未验证并保留观察记录。`summary` 必须写明回退环境（真机/模拟器与系统 API 版本）；静态复核结论（`staticReview`）不能代替 `fallback` 实测。
+
+`runtime.observations` 用于保存逐场景运行观察，内容写入报告“运行观察明细”。每项提供非空 `scenario`、`note`，并引用该次 `runtime.evidence` 中的日志或组件树；能力包另有必验场景时仍须完整覆盖。不通过手改 Markdown 补充这些明细。
 
 `staticReview` 用于补录静态 `warn` 项的复核结论：`id` 必须是本次报告中存在的 warn 检查项，`status` 只允许 `passed`（复核无问题）或 `failed`（确认缺陷，需修复后重验），`note` 必填并写明代码依据。复核按检查项 ID 在整个工程的所有改造项上生效并在此后重验中继承；`fail` 级发现不接受复核补录，必须修复。仅包含 `staticReview` 的补录不要求构建或安装已通过。所有 warn 项复核通过后静态检查才标记通过。
 
@@ -165,7 +168,8 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --manual
 
 - 最终只交付改造汇总、特性类别或路线与模式、视觉验证结果、升级与兼容四部分组成的 `integration-report.md`，以及它引用的 `evidence/*.png`。不生成 JSON 汇总报告。
 - 日志、组件树和合并状态存放在系统临时目录 `harmonyos-os-feature-verification/`。清理临时记录后 MD 与截图仍可独立阅读，但不能补录原运行；需要重验时指定新输出目录，避免覆盖无法合并的旧报告。
-- 同工程、特性、路线、产品、构建模式、模块下，按稳定改造项标识更新当前结果，目标标题变化不会创建重复项；不同标识但目标标题、页面、组件、类别、效果和修改文件完全相同的重复记录也合并。保留首次已知改造前版本，其他改造项保留。同一运行的各场景截图一并引用；不再引用的执行器截图自动清理。
+- 同工程、特性、路线、产品、构建模式、模块下，按稳定改造项标识更新当前结果，目标标题变化不会创建重复项；不同标识但目标标题、页面、组件、类别、效果和修改文件完全相同的重复记录也合并。历史记录误填 `entry@default` 后更正为 `entry` 时按同一模块合并，其他模块或非默认 target 不作模糊合并。保留首次已知改造前版本，其他改造项保留。同一运行的各场景截图一并引用；不再引用的执行器截图自动清理。
 - 最终报告只呈现当前结果，不并列保留同一改造项的历史失败与重验成功。已实施配置、运行验证、视觉验证分列；阶段结果用简短中文，静态提示转为待处理事项并附代码位置，已复核项注明复核结论，完整原始日志留在临时目录。版本任一侧不完整时明确无法确认升级。升级与兼容按整个工程输出一份：版本对照一份，回退表按条件合并所有改造项的保留行为。
 - 只有必需阶段及回退检查均通过才标记整体通过；回退检查包含低版本等回退路径的实测（或确认不适用），不以 staticReview 复核替代。缺条件、未判图或未覆盖场景时保留未确认，未完成的回退实测在报告中列明阻断原因与所需条件。
+- 报告正文每次从结构化记录重建，不能通过直接编辑 `integration-report.md` 补充验证结论；这种编辑不会写入运行记录，后续补录会将其覆盖。手动结果通过 `--manual-evidence` 和 `--judgment` 落盘，修复代码后重新构建产生新运行，不能继承旧运行的效果通过。
 - 交付前读取最终生成的报告，逐项核对聊天总结中的静态复核、构建、安装、运行、视觉及回退结论。手动验证须先导入证据、补录判定并重新生成报告，仅保存文件或在聊天中声称通过不算更新完成。总结不得高于报告中的实际结果；仍有未确认、未验证或目标不一致时明确列出，不宣称“全部验证完成”。补录受阻时说明具体限制，不以另一份手动总结代替统一报告。

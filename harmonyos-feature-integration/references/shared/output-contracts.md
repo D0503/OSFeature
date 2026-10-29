@@ -13,6 +13,7 @@
 涉及受限权限的能力，最终交付说明执行对应能力包的提醒要求：[窗球权限](../features/float-view-ball/compatibility.md#权限声明acl-与用户授权)、[防窥权限](../features/dlp-anti-peep/compatibility.md#权限声明与-acl)。
 
 报告更新及最终总结的一致性要求见[验证闭环：结果与存储](../workflows/verification.md#结果与存储)。
+验证结论与运行观察明细须经结构化补录生成；不直接编辑报告正文补结论。同一改造项重试只展示当前结果，回退实测截图按用途导入，保留原设备的功能与视觉结论。
 
 ## 故障排查
 

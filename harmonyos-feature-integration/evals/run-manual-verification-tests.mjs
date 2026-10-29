@@ -12,7 +12,7 @@ const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 const secondPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64")
 const calls = []
 const options = {
-  inspector: async () => ({ inspection: { localSdk: { status: "valid", apiVersion: 26 }, api: { compile: 26, target: 26, compatible: 20 }, modules: [] }, compatibility: { availableRoutes: ["function-component"] }, staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
+  inspector: async () => ({ inspection: { localSdk: { status: "valid", apiVersion: 26 }, api: { compile: 26, target: 26, compatible: 20 }, modules: [] }, compatibility: { availableRoutes: ["function-component"], routes: { "function-component": { minApi: 20 } } }, staticResult: { counts: { fail: 0, warn: 0 }, checks: [] } }),
   buildRunner: async () => ({ exitCode: 0, stdout: "fixture build" }),
   commandRunner: async (args) => { calls.push(args); throw new Error("unexpected device call") }
 }
@@ -27,7 +27,13 @@ assert.equal(detectAgentDeviceKind({ deviceType: "phone" }, "device-1"), "unknow
 
 // 手动取证必须关联已有构建；导入与最终验收是两个独立步骤。
 const manualReq = { ...request("manual"), executeRun: false }
-const manualRun = await verifyDevelopment(manualReq, options)
+manualReq.changes.before.compatible = 15
+manualReq.changes.fallback[0] = { condition: "low-api", behavior: "保留原布局与交互", status: "not_run" }
+const manualRun = await verifyDevelopment(manualReq, { ...options, inspector: async () => {
+  const result = await options.inspector()
+  result.inspection.api.compatible = 15
+  return result
+} })
 const manualResume = { project, output: manualReq.output, resume: manualRun.runId }
 const manualFiles = []
 for (const [key, type, content] of [
@@ -74,10 +80,39 @@ const manualJudgment = {
   runtime: { status: "passed", summary: "夹具交互逐项确认", evidence: [ref(importedLog)], observations: ["entry-clicked", "dialog-opened", "dialog-closed"].map((scenario) => ({ scenario, note: "夹具观察", evidence: [ref(importedLog)] })) }
 }
 const manualDone = await verifyDevelopment({ ...manualResume, judgment: manualJudgment }, options)
-assert.equal(manualDone.status, "passed")
+assert.equal(manualDone.status, "inconclusive", "目标效果通过不能代替尚未完成的低版本回退实测")
 const manualReport = await readFile(manualDone.report, "utf8")
 assert.match(manualReport, /手动验证：夹具安装与启动/)
 assert.match(manualReport, /本轮手动验证采集并导入/)
+assert.match(manualReport, /运行观察明细/)
+
+// A subsequent fallback import/judgment must preserve the phone's acceptance.
+const targetBeforeFallback = structuredClone((await loadCollection(manualReq.output, project)).collection.runs[0])
+const fallbackImage = join(work, "fallback.png")
+await writeFile(fallbackImage, png)
+const fallbackImported = await verifyDevelopment({ ...manualResume, importScreenshot: [fallbackImage], screenshotPurpose: "fallback" }, options)
+const fallbackEvidence = fallbackImported.evidence.find((e) => e.purpose === "fallback")
+const afterFallbackImport = (await loadCollection(manualReq.output, project)).collection.runs[0]
+for (const key of ["install", "navigation", "runtime", "visual"]) assert.deepEqual(afterFallbackImport.checks[key], targetBeforeFallback.checks[key])
+const fallbackDone = await verifyDevelopment({ ...manualResume, judgment: { schemaVersion: "1.0", runId: manualRun.runId, goal: manualReq.goal, fallback: { condition: "low-api", status: "passed", summary: "API 15 模拟器实测保留原布局与交互", evidence: [ref(fallbackEvidence)] } } }, options)
+assert.equal(fallbackDone.status, "passed")
+const regenerated = await readFile(fallbackDone.report, "utf8")
+for (const result of ["夹具安装与启动", "夹具目标页断言", "夹具交互逐项确认", "已读取夹具入口和对话框", "运行观察明细", "API 15 模拟器实测保留原布局与交互", "截图用途：兼容方案回退"]) assert.ok(regenerated.includes(result), result)
+assert.equal((regenerated.match(/### 首页智能体/g) ?? []).length, 1)
+await assert.rejects(verifyDevelopment({ ...manualResume, judgment: { schemaVersion: "1.0", runId: manualRun.runId, goal: manualReq.goal, visual: { status: "passed", summary: "误用回退截图", evidence: [ref(fallbackEvidence)] } } }, options), /回退环境截图/)
+await assert.rejects(verifyDevelopment({ ...manualResume, screenshotPurpose: "fallback" }, options), /import-screenshot/)
+await assert.rejects(verifyDevelopment({ ...manualResume, importScreenshot: [fallbackImage], screenshotPurpose: "invalid" }, options), /target\/fallback/)
+
+// Default target imports still require a fresh visual judgment.
+await verifyDevelopment({ ...manualResume, importScreenshot: [fallbackImage] }, options)
+assert.equal((await loadCollection(manualReq.output, project)).collection.runs[0].checks.visual.status, "inconclusive")
+
+// Device snapshot JPEG data can be imported even when its source suffix is PNG.
+const jpegPath = join(work, "snapshot.png")
+await writeFile(jpegPath, Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9]))
+const jpegManifest = { ...manual, files: [{ key: "jpeg", type: "screenshot", path: jpegPath, sha256: await fileHash(jpegPath) }], deviceInfo: undefined, stages: {} }
+const jpegImport = await verifyDevelopment({ ...manualResume, manualEvidence: jpegManifest }, options)
+assert.ok(jpegImport.evidence.some((e) => e.origin === "manual" && e.sha256 === jpegManifest.files[0].sha256))
 
 const pendingReq = request("manual-pending-checks")
 pendingReq.changes.fallback[0] = { condition: "low-api", behavior: "保留原状态", status: "not_run" }

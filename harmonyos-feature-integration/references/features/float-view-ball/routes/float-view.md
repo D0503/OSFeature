@@ -211,7 +211,7 @@ export struct FloatViewContent {
             .onClick(() => { this.changeLayout(false); })
         }
         .width('100%')
-        .padding({ left: this.leftAvoidWidth, right: this.rightAvoidWidth })
+        .padding({ left: this.leftAvoidWidth + 6, right: this.rightAvoidWidth + 6 })
         .onAreaChange(() => { this.updateAvoidArea(); })
       } else {
         Column() {
@@ -237,7 +237,7 @@ export struct FloatViewContent {
 }
 ```
 
-片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；页面根容器按当前形态预留顶部避让：常规态（展开矩形）padding 32vp、mini 态（紧凑横条）padding 4vp，随 compact 状态在 switchTemplate 成功后同步切换，mini 态还需在内容容器（包含摘要及展开按钮）设置左右 padding，分别取 `avoidArea.leftRect.width`、`avoidArea.rightRect.width` 经 `px2vp` 转换后的值；不能固定写成相同数值，也不要在父子容器重复累加。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
+片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；页面根容器按当前形态预留顶部避让：常规态（展开矩形）padding 32vp、mini 态（紧凑横条）padding 4vp，随 compact 状态在 switchTemplate 成功后同步切换，mini 态还需在内容容器（包含摘要及展开按钮）设置左右 padding，分别取 `avoidArea.leftRect.width`、`avoidArea.rightRect.width` 经 `px2vp` 转换后的值，再各加 6vp 内容留白。6vp 是页面留白，不属于系统 avoidArea；不要在父子容器重复累加。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
 
 `avoidArea` 内的组件不响应手势，左右留白也必须覆盖展开按钮，不能只给文本加 padding。属性须在窗口有效后读取；页面加载期间返回 undefined 时暂不更新，并在 STARTED 后通过业务现有状态通知触发首次读取。片段在内容布局、模板切换成功和窗口矩形变化后刷新；页面退出仅退订自己的 rectChanged 回调。若工程已通过创建时的 onRectChange 统一分发矩形变化，复用该回调刷新上述状态，不重复注册。左右 padding 是页面内部避让，不额外增加已设置的窗口外部宽度。
 

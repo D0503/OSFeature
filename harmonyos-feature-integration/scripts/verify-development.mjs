@@ -124,7 +124,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
   const imported = new Map()
   for (const [key, item] of files) {
     const id = nextEvidenceId(run)
-    const ext = item.type === "screenshot" ? (imageExt(content) ?? "png") : "log"
+    const ext = item.type === "screenshot" ? imageExt(item.content) : "log"
     const path = join(runDirectory, `${id}.${ext}`)
     await writeFile(path, item.content)
     const evidence = { id, type: item.type, path, sha256: item.sha256, origin: "manual", scenario: key }
@@ -138,10 +138,12 @@ async function importManualEvidence(run, runDirectory, manifest) {
   if ([...files.values()].some((e) => ["runtime_log", "component_tree"].includes(e.type))) run.checks.runtime = check("inconclusive", "已导入手动运行证据，等待 AI 阅读并补录判定")
 }
 
-async function importDeveloperScreenshots(run, runDirectory, paths) {
+async function importDeveloperScreenshots(run, runDirectory, paths, purpose = "target") {
   if (!Array.isArray(paths) || !paths.length) return
-  requireAgentPhysical(run)
-  if (run.feature === "smart-reach" && run.deviceKind === "emulator") throw new Error("智感握姿视觉验证只能使用真机，不能在模拟器运行中导入截图")
+  if (purpose === "target") {
+    requireAgentPhysical(run)
+    if (run.feature === "smart-reach" && run.deviceKind === "emulator") throw new Error("智感握姿视觉验证只能使用真机，不能在模拟器运行中导入截图")
+  }
   for (const item of paths) {
     const source = resolve(item)
     if (!await exists(source)) throw new Error(`导入截图不存在：${item}`)
@@ -151,9 +153,9 @@ async function importDeveloperScreenshots(run, runDirectory, paths) {
     const id = nextEvidenceId(run)
     const path = join(runDirectory, `${id}.${ext}`)
     await writeFile(path, content)
-    run.evidence.push({ id, type: "screenshot", origin: "developer", path, sha256: hash(content) })
+    run.evidence.push({ id, type: "screenshot", origin: "developer", purpose, path, sha256: hash(content) })
   }
-  run.checks.visual = check("inconclusive", `已导入开发者提供的真机截图 ${paths.length} 张，等待 AI 实际阅读并补录判定`)
+  if (purpose === "target") run.checks.visual = check("inconclusive", `已导入开发者提供的真机截图 ${paths.length} 张，等待 AI 实际阅读并补录判定`)
 }
 
 export async function inspectVerification(request) {
@@ -220,6 +222,7 @@ export async function applyJudgment(run, judgment, runs = [run]) {
       evidence.push(e)
     }
     if (level === "visual" && !evidence.some((v) => v.type === "screenshot")) throw new Error("视觉判定必须引用本次目标页面截图")
+    if (level === "visual" && evidence.some((v) => v.purpose === "fallback")) throw new Error("回退环境截图只能用于兼容方案回退判定，不能用于目标特性的视觉验收")
     if (level === "runtime" && !evidence.some((v) => ["runtime_log", "component_tree"].includes(v.type))) throw new Error("运行判定需要日志或交互组件树证据")
     validateWindowPrivacyJudgment(run, level, item, evidence)
     if (run.feature === "agent-framework-kit" && item.status === "passed") {
@@ -235,8 +238,16 @@ export async function applyJudgment(run, judgment, runs = [run]) {
         }
       }
     }
-    run.checks[level] = check(item.status, item.summary)
-    if ((run.feature === "agent-framework-kit" || WINDOW_PRIVACY_FEATURES.includes(run.feature)) && level === "runtime" && item.observations) run.checks.runtime.observations = structuredClone(item.observations)
+    if (level === "runtime" && item.observations !== undefined) {
+      if (!Array.isArray(item.observations)) throw new Error("runtime.observations 必须是数组")
+      for (const observation of item.observations) {
+        requiredText(observation.scenario, "运行观察场景")
+        requiredText(observation.note, "运行观察说明")
+        if (!Array.isArray(observation.evidence) || !observation.evidence.length || observation.evidence.some((ref) => !evidence.some((e) => e.id === ref.id && e.sha256 === ref.sha256 && ["runtime_log", "component_tree"].includes(e.type)))) throw new Error("运行观察必须引用本轮 runtime.evidence 中的日志或组件树")
+      }
+    }
+    run.checks[level] = { ...check(item.status, item.summary), evidence: structuredClone(item.evidence) }
+    if (level === "runtime" && item.observations) run.checks.runtime.observations = structuredClone(item.observations)
   }
   if (judgment.fallback) {
     if (run.checks.build.status !== "passed") throw new Error("构建未通过，不能补录兼容方案回退判定")
@@ -274,6 +285,7 @@ export async function verifyDevelopment(request, options = {}) {
   try { await mkdir(lock) } catch { throw new Error("同一报告已有验证正在执行，请等待其结束") }
   try {
     const { collection } = await loadCollection(output, request.project)
+    if (request.screenshotPurpose !== undefined && (!["target", "fallback"].includes(request.screenshotPurpose) || !request.importScreenshot?.length)) throw new Error("screenshot-purpose 仅支持 target/fallback，且须同时提供 import-screenshot")
     if (request.screenshotScenario !== undefined && (typeof request.screenshotScenario !== "string" || !request.screenshotScenario.trim() || request.screenshotScenario.length > 80 || /[\r\n]/.test(request.screenshotScenario))) throw new Error("screenshot-scenario 必须是 1–80 字的单行场景名")
     if (request.screenshotScenario && !request.captureScreenshot) throw new Error("screenshot-scenario 需要同时使用 capture-screenshot")
     if (request.resume) {
@@ -305,7 +317,7 @@ export async function verifyDevelopment(request, options = {}) {
         try { await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
         catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
       }
-      await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot)
+      await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot, request.screenshotPurpose)
       if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
       const report = await saveReport(output, directory, collection)
       return { runId: run.runId, report, status: deriveVerdict(run), evidence: run.evidence }
@@ -422,7 +434,7 @@ export async function verifyDevelopment(request, options = {}) {
       run.checks.runtime.summary = `未完成目标页验证：${run.checks.navigation.summary}`
       run.checks.visual.summary = `未完成目标页视觉验证：${run.checks.build.status !== "passed" ? run.checks.build.summary : run.checks.install.status !== "passed" ? run.checks.install.summary : run.checks.navigation.summary}`
     }
-    await importDeveloperScreenshots(run, runDirectory, request.importScreenshot)
+    await importDeveloperScreenshots(run, runDirectory, request.importScreenshot, request.screenshotPurpose)
     const previous = collection.runs.find((r) => sameTarget(r, run))
     if (previous) {
       for (const key of ["sdk", "compile", "target", "compatible"]) {
@@ -438,7 +450,7 @@ export async function verifyDevelopment(request, options = {}) {
 
 export function parseDevelopmentArgs(argv) {
   const flags = new Set(["execute-build", "execute-run", "capture-screenshot", "capture-layout"])
-  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-scenario", "manual-evidence"])
+  const values = new Set(["project", "feature", "route", "goal", "changes", "sdk", "product", "module", "ability", "bundle", "build-mode", "device", "navigate", "output", "resume", "judgment", "import-screenshot", "screenshot-purpose", "screenshot-scenario", "manual-evidence"])
   const repeatable = new Set(["import-screenshot"])
   const args = {}
   for (let i = 0; i < argv.length; i++) {

@@ -218,6 +218,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 
 `--route` 每次明确一条，组合路线与多个目标依次执行并汇总。`--resume` 仅补录判定、导入或补采截图，不重新构建、安装或导航；修复代码后须重新执行完整验证。截图和运行证据经 AI 实际读取后，通过 `--resume <runId> --judgment <判定.json>` 补录，证据 ID 与 SHA-256 须匹配本轮记录。退出码 0 仅表示没有确定失败，仍可能存在未验证或未确认项。
 
+手动验证先用 `--manual-evidence` 导入安装、导航与运行证据，再按返回的证据 ID 补录判定；逐场景明细放在 `runtime.observations`。报告正文从结构化记录生成，不直接修改正文补结论。低版本回退截图使用 `--import-screenshot <路径> --screenshot-purpose fallback`，随后补录 `fallback` 判定，保留原设备的运行与视觉结论。`--module` 只填模块名，如 `entry`。
+
 最终交付默认位于 `<工程>/os-feature-integration/`，包含一份 `integration-report.md` 及其引用的 `evidence/*.png`；报告覆盖改造汇总、类别或路线与模式、视觉验证结果、升级与兼容。过程日志、组件树与合并状态保存在系统临时目录，不生成额外 JSON 汇总报告。重验更新同一改造项当前结果，保留首次已知的接入前版本。
 
 ## Skill 维护
