@@ -64,6 +64,7 @@ assert.equal(success.status, "inconclusive", "截图不自动通过")
 assert.equal(builds, 1)
 assert.ok(calls.some((a) => a[0] === "fixture-deployment"))
 const screenshot = success.evidence.find((e) => e.type === "screenshot")
+assert.equal(screenshot.purpose, "target", "执行器采集的效果截图应明确标记用途")
 const log = success.evidence.find((e) => e.type === "runtime_log")
 const refs = (e) => [{ id: e.id, sha256: e.sha256 }]
 const judgment = { schemaVersion: "1.0", runId: success.runId, goal: "首页悬浮栏", visual: { status: "passed", summary: "测试观察通过", evidence: refs(screenshot) }, runtime: { status: "passed", summary: "测试交互通过", evidence: refs(log) } }

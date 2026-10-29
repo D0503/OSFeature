@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import { detectAgentDeviceKind, verifyDevelopment } from "../scripts/verify-development.mjs"
+import { applyJudgment, detectAgentDeviceKind, verifyDevelopment } from "../scripts/verify-development.mjs"
 import { fileHash, loadCollection } from "../scripts/lib/development-report.mjs"
 
 const work = await mkdtemp(join(tmpdir(), "manual-verification-test-"))
@@ -85,6 +85,7 @@ const imported = await verifyDevelopment({ ...manualResume, manualEvidence: manu
 assert.equal(calls.length, priorCalls, "手动补录不执行设备命令")
 assert.equal(imported.status, "inconclusive", "导入不自动验收")
 const importedLog = imported.evidence.find((e) => e.origin === "manual" && e.type === "runtime_log")
+assert.ok(imported.evidence.filter((e) => e.type === "screenshot").every((e) => e.purpose === "target"))
 const manualJudgment = {
   schemaVersion: "1.0", runId: manualRun.runId, goal: manualReq.goal,
   visual: { status: "passed", summary: "已读取夹具入口和对话框", evidence: imported.evidence.filter((e) => e.type === "screenshot").map(ref) },
@@ -105,7 +106,20 @@ const fallbackImported = await verifyDevelopment({ ...manualResume, importScreen
 const fallbackEvidence = fallbackImported.evidence.find((e) => e.purpose === "fallback")
 const afterFallbackImport = (await loadCollection(manualReq.output, project)).collection.runs[0]
 for (const key of ["install", "navigation", "runtime", "visual"]) assert.deepEqual(afterFallbackImport.checks[key], targetBeforeFallback.checks[key])
-const fallbackDone = await verifyDevelopment({ ...manualResume, judgment: { schemaVersion: "1.0", runId: manualRun.runId, goal: manualReq.goal, fallback: { condition: "low-api", status: "passed", summary: "API 15 模拟器实测保留原布局与交互", evidence: [ref(fallbackEvidence)] } } }, options)
+const fallbackJudgment = { schemaVersion: "1.0", runId: manualRun.runId, goal: manualReq.goal, fallback: { condition: "low-api", status: "passed", summary: "API 15 模拟器实测保留原布局与交互", evidence: [ref(fallbackEvidence)] } }
+const targetScreenshot = targetBeforeFallback.evidence.find((e) => e.type === "screenshot")
+for (const evidence of [[ref(targetScreenshot)], [ref(fallbackEvidence), ref(targetScreenshot)]]) {
+  await assert.rejects(verifyDevelopment({ ...manualResume, judgment: { ...fallbackJudgment, fallback: { ...fallbackJudgment.fallback, evidence } } }, options), /目标效果截图不能/)
+}
+assert.equal((await loadCollection(manualReq.output, project)).collection.runs[0].changes.fallback[0].status, "not_run", "用途不符的判定不能改变已保存的回退结论")
+const legacyRun = structuredClone(targetBeforeFallback)
+delete legacyRun.evidence.find((e) => e.id === targetScreenshot.id).purpose
+const legacyJudgment = { ...fallbackJudgment, fallback: { ...fallbackJudgment.fallback, evidence: [ref(targetScreenshot)] } }
+await assert.rejects(applyJudgment(legacyRun, legacyJudgment), /未标记用途的旧截图/)
+await applyJudgment(legacyRun, { ...legacyJudgment, fallback: { ...legacyJudgment.fallback, status: "inconclusive" } })
+assert.equal(legacyRun.checks.fallback.status, "inconclusive", "旧截图仍可记录未确认观察")
+assert.equal(legacyRun.changes.fallback[0].status, "not_run")
+const fallbackDone = await verifyDevelopment({ ...manualResume, judgment: fallbackJudgment }, options)
 assert.equal(fallbackDone.status, "passed")
 const regenerated = await readFile(fallbackDone.report, "utf8")
 for (const result of ["夹具安装与启动", "夹具目标页断言", "夹具交互逐项确认", "已读取夹具入口和对话框", "运行观察明细", "API 15 模拟器实测保留原布局与交互", "截图用途：兼容方案回退"]) assert.ok(regenerated.includes(result), result)

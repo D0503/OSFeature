@@ -104,7 +104,7 @@ node scripts/verify-development.mjs --project <工程> --feature immersive-light
   "goal": "与本次目标完全一致",
   "visual": { "status": "passed", "summary": "实际观察到的目标特性效果及对应检查项", "evidence": [{ "id": "截图证据ID", "sha256": "本次截图哈希" }] },
   "runtime": { "status": "inconclusive", "summary": "已观察的交互和仍待确认项", "evidence": [{ "id": "运行日志或组件树证据ID", "sha256": "本次证据哈希" }], "observations": [{ "scenario": "实际验证场景", "note": "该场景的实际操作与观察结果", "evidence": [{ "id": "运行日志或组件树证据ID", "sha256": "本次证据哈希" }] }] },
-  "fallback": { "condition": "low-api", "status": "passed", "summary": "回退环境（真机/模拟器与系统 API 版本）及逐项核对的保留行为结论", "evidence": [{ "id": "回退环境运行截图或日志证据ID", "sha256": "本次证据哈希" }] },
+  "fallback": { "condition": "low-api", "status": "passed", "summary": "回退环境（真机/模拟器与系统 API 版本）及逐项核对的保留行为结论", "evidence": [{ "id": "purpose=fallback的回退环境截图证据ID", "sha256": "本次证据哈希" }] },
   "staticReview": { "results": [{ "id": "静态warn项ID", "status": "passed", "note": "复核结论与代码依据" }] }
 }
 ```
@@ -116,6 +116,8 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --judgme
 补录判定只更新报告，不执行构建或设备操作；`--resume` 也可以补采当前设备截图、导入开发者真机截图或下文的手动验证证据。补采执行器截图要求本轮安装和目标页导航已通过；智感握姿每次补采均再次确认真机。视觉判定必须引用本轮截图；运行判定须引用本轮日志或交互组件树。过期运行、其他目标或哈希不符的证据均拒绝。状态允许 `passed`、`failed`、`inconclusive`，没有实际依据时保持未确认。视觉通过不能覆盖静态 `warn`。构建未通过时不能补录任何效果判定；安装与导航未通过时，可以补录全部引用导入真机截图的视觉判定，以及全部引用手动证据且为 `inconclusive` 的有限运行观察，不能补录运行通过。
 
 `fallback` 补录要求本轮构建已通过（回退实测使用同一构建产物，但不要求本轮安装与导航设备一致）；回退环境截图经 `--import-screenshot --screenshot-purpose fallback` 导入后，以返回的新证据 `id`/`sha256` 引用。同设备手动采集的日志可按下文 `--manual-evidence` 规则导入，不能以其他设备的安装、导航状态覆盖原设备。`condition` 只允许 `low-api`、`unsupported`、`disabled`，可多次 `--resume` 分别补录；`passed`/`failed` 会同步更新改造记录 `fallback` 对应条件项与报告“升级与兼容”回退表，`inconclusive` 保持回退表未验证并保留观察记录。`summary` 必须写明回退环境（真机/模拟器与系统 API 版本）；静态复核结论（`staticReview`）不能代替 `fallback` 实测。
+
+截图用途双向校验：`purpose=target` 的截图不能用于回退判定，`purpose=fallback` 的截图不能用于目标效果的视觉验收；回退 `passed` 至少引用一张 `purpose=fallback` 的截图。执行器采集及 `--manual-evidence` 导入的效果截图均标记为 `target`，回退截图按上文单独导入。未标记用途的旧截图可用于未确认观察，不能单独支撑回退通过；核实其确实来自回退环境后，用 `--import-screenshot <原截图路径> --screenshot-purpose fallback` 重新导入并引用返回的新证据 ID，不能直接修改旧证据用途。环境真实性须结合设备信息、实际截图与运行证据核实，不能仅依据用途标签或 `summary` 文案。
 
 `runtime.observations` 用于保存逐场景运行观察，内容写入报告“运行观察明细”。每项提供非空 `scenario`、`note`，并引用该次 `runtime.evidence` 中的日志或组件树；能力包另有必验场景时仍须完整覆盖。不通过手改 Markdown 补充这些明细。
 

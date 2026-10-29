@@ -38,7 +38,7 @@ async function captureDeviceScreenshot(run, runDirectory, scenario, call) {
     throw new Error("截图采集失败或文件不是有效 PNG/JPEG 图片")
   }
   if (scenario) run.evidence = run.evidence.filter((e) => e.type !== "screenshot" || e.scenario !== scenario)
-  run.evidence.push({ id: nextEvidenceId(run), type: "screenshot", path, sha256: await fileHash(path), ...(scenario ? { scenario } : {}) })
+  run.evidence.push({ id: nextEvidenceId(run), type: "screenshot", purpose: "target", path, sha256: await fileHash(path), ...(scenario ? { scenario } : {}) })
   const count = run.evidence.filter((e) => e.type === "screenshot").length
   run.checks.visual = check("inconclusive", `已采集目标页截图 ${count} 张，等待 AI 实际阅读并补录判定`)
 }
@@ -142,7 +142,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
     const ext = item.type === "screenshot" ? imageExt(item.content) : "log"
     const path = join(runDirectory, `${id}.${ext}`)
     await writeFile(path, item.content)
-    const evidence = { id, type: item.type, path, sha256: item.sha256, origin: "manual", scenario: key }
+    const evidence = { id, type: item.type, path, sha256: item.sha256, origin: "manual", scenario: key, ...(item.type === "screenshot" ? { purpose: "target" } : {}) }
     run.evidence.push(evidence)
     imported.set(key, { id, sha256: item.sha256 })
   }
@@ -281,7 +281,8 @@ export async function applyJudgment(run, judgment, runs = [run]) {
       if (!await exists(e.path) || await fileHash(e.path) !== e.sha256) throw new Error(`判定引用的证据文件已丢失或内容不符：${ref.id}`)
       evidence.push(e)
     }
-    if (item.status === "passed" && !evidence.some((v) => v.type === "screenshot")) throw new Error("兼容方案回退通过必须引用低版本或回退环境的运行截图")
+    if (evidence.some((v) => v.type === "screenshot" && v.purpose === "target")) throw new Error("目标效果截图不能用于兼容方案回退判定；请核实回退环境并用 --screenshot-purpose fallback 导入实际回退截图")
+    if (item.status === "passed" && !evidence.some((v) => v.type === "screenshot" && v.purpose === "fallback")) throw new Error("兼容方案回退通过必须引用 purpose=fallback 的运行截图；未标记用途的旧截图须确认来源后用 --import-screenshot --screenshot-purpose fallback 重新导入")
     run.checks.fallback = check(item.status, item.summary)
     const entry = run.changes.fallback.find((v) => v.condition === item.condition)
     if (entry && ["passed", "failed"].includes(item.status)) {

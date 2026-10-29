@@ -100,14 +100,14 @@ for (const withClick of [false, true]) {
 }
 const ball = makeController(); env.controller = ball;
 ball.failOn = 'stateChange';
-await assert.rejects(C.createFloatingBall({ context: {} }), /platform failure/);
+await assert.rejects(C.createFloatingBall({ context: {} }), { name: 'Error', message: 'Create FloatingBall controller or listeners failed' });
 assert.equal(ball.listeners.size, 0);
 assert.equal(C.floatingBallController, undefined);
 ball.failOn = null;
 let clicked = false;
 await C.createFloatingBall({ context: {} }, () => { clicked = true; }, undefined, {});
 ball.failStart = true;
-await assert.rejects(C.startFloatingBall({}), /platform failure/);
+await assert.rejects(C.startFloatingBall({}), { name: 'Error', message: 'Start FloatingBall failed' });
 assert.equal(C.floatingBallController, ball);
 assert.equal(ball.listeners.size, 2);
 ball.failStart = false; await C.startFloatingBall({});
@@ -115,7 +115,7 @@ ball.failRestore = true; ball.listeners.get('click')();
 await new Promise(resolve => setImmediate(resolve));
 assert.equal(clicked, true);
 ball.failStop = true;
-await assert.rejects(C.stopFloatingBall(), /platform failure/);
+await assert.rejects(C.stopFloatingBall(), { name: 'Error', message: 'Stop FloatingBall failed' });
 assert.equal(C.floatingBallController, ball);
 ball.failStop = false; await C.stopFloatingBall(); ball.emit(2);
 assert.equal(C.floatingBallController, undefined);

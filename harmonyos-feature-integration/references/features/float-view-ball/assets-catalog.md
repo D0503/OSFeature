@@ -41,13 +41,15 @@ struct FloatContent {
     Column() { Text(this.content) }
     .width('100%')
     .height('100%')
+    // 内容随实际窗口高度居中：请求尺寸可能被系统按模板约束调整，不按请求值贴顶排布。
+    .justifyContent(FlexAlign.Center)
     // 顶部预留系统区避让：常规态 32vp，mini 态 4vp。
     .padding({ top: this.compact ? 4 : 32 })
   }
 }
 ```
 
-窗页面顶部必须预留固定避让：常规态（ROUNDED_RECTANGLE）top padding 32vp，mini 态（HORIZONTAL_BAR）top padding 4vp，并随模板切换同步；该预留不代替 avoidArea 核对，交互控件仍不得落入不响应区域。尺寸按 `getFloatViewLimits(templateType)`、`onLimitsChange`、`onRectChange` 的实际 px 与比例限制处理；不在通用资产中固定尺寸。跨包页面按 `setUIContextByName` 对接原工程命名路由。
+窗页面顶部必须预留固定避让：常规态（ROUNDED_RECTANGLE）top padding 32vp，mini 态（HORIZONTAL_BAR）top padding 4vp，并随模板切换同步；该预留不代替 avoidArea 核对，交互控件仍不得落入不响应区域。尺寸按 `getFloatViewLimits(templateType)`、`onLimitsChange`、`onRectChange` 的实际 px 与比例限制处理；不在通用资产中固定尺寸。内容行不写固定高度，垂直位置交给根容器居中（请求尺寸可能被系统按模板调整，见[窗路线](routes/float-view.md)的请求尺寸说明）。跨包页面按 `setUIContextByName` 对接原工程命名路由。
 
 ## 闪控球
 
