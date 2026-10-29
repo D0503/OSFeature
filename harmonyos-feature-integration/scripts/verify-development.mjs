@@ -7,7 +7,7 @@ import { evaluateCompatibility, inspectProject, loadFeature, verifyInspection } 
 import { runHvigorBuild } from "./lib/hvigor-build.mjs"
 import { navigate, runDeveco, validateNavigation } from "./lib/development-device.mjs"
 import { parseDevecoJson } from "./lib/deveco-json.mjs"
-import { deployProduct } from "./lib/development-deployment.mjs"
+import { deployProduct, discoverDeployment, planDeployment, verifyDeploymentArtifacts, verifyInstalledModules } from "./lib/development-deployment.mjs"
 import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJudgment } from "./lib/window-privacy-runtime.mjs"
 
@@ -86,7 +86,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
   if (!await exists(build.path) || await fileHash(build.path) !== build.sha256) throw new Error("本轮构建日志文件已丢失或内容哈希不符，请重新执行本轮构建验证")
   requiredText(manifest.provenance, "manualEvidence.provenance（设备、本轮构建产物与采集过程的关联依据）")
   if (!Array.isArray(manifest.files) || !manifest.files.length) throw new Error("manualEvidence.files 必须非空")
-  const allowedTypes = new Set(["screenshot", "component_tree", "runtime_log", "install_log", "navigation_log", "device_info"])
+  const allowedTypes = new Set(["screenshot", "component_tree", "runtime_log", "install_log", "navigation_log", "device_info", "installed_modules"])
   const files = new Map()
   for (const item of manifest.files) {
     requiredText(item.key, "手动证据 key")
@@ -110,14 +110,29 @@ async function importManualEvidence(run, runDirectory, manifest) {
   requireAgentPhysical(run)
   if (run.feature === "smart-reach" && run.deviceKind !== "physical") throw new Error("智感握姿手动验证仅允许已确认的真机")
   const stages = manifest.stages ?? {}
+  let deploymentVerified = false
   for (const [key, stage] of Object.entries(stages)) {
     if (!["install", "navigation"].includes(key) || !["passed", "failed", "inconclusive"].includes(stage.status)) throw new Error(`手动阶段 key 仅支持 install/navigation（status 仅支持 passed/failed/inconclusive），收到：${key}/${stage.status}；运行观察结论不写在 stages 中，请在 --manual-evidence 导入后用 --judgment 的 runtime/visual 补录`)
     requiredText(stage.summary, `manualEvidence.stages.${key}.summary`)
     if (!Array.isArray(stage.evidence) || !stage.evidence.length || stage.evidence.some((id) => !files.has(id))) throw new Error("手动阶段缺少本次导入的证据引用")
     const types = stage.evidence.map((id) => files.get(id).type)
-    if (stage.status === "passed" && key === "install" && !types.includes("install_log")) throw new Error("手动安装启动通过必须引用安装与启动日志，截图不能证明安装本轮产物")
+    if (stage.status === "passed" && key === "install") {
+      if (!types.includes("install_log")) throw new Error("手动安装启动通过必须引用安装与启动日志，截图不能证明安装本轮产物")
+      if (run.buildScope !== "product" || !run.deployment) throw new Error("手动安装通过需要本轮完整产品构建及部署产物清单，模块级构建或旧运行须重新执行完整验证")
+      const ref = manifest.deploymentEvidence
+      const saved = run.evidence.find((e) => e.type === "deployment_manifest" && e.id === ref?.id && e.sha256 === ref?.sha256)
+      if (!saved || !await exists(saved.path) || await fileHash(saved.path) !== saved.sha256) throw new Error("手动安装必须引用本轮有效的 deployment_manifest 证据 id 与 sha256")
+      const plan = JSON.parse(await readFile(saved.path, "utf8"))
+      if (JSON.stringify(plan) !== JSON.stringify(run.deployment)) throw new Error("本轮部署清单与运行记录不一致，须重新构建验证")
+      await verifyDeploymentArtifacts(run.project, run, plan)
+      const info = files.get(manifest.installedModules)
+      if (info?.type !== "installed_modules" || !stage.evidence.includes(manifest.installedModules)) throw new Error("手动安装通过须引用安装后设备应用信息 JSON（installed_modules），并通过 installedModules 指定其 key")
+      verifyInstalledModules(plan, parseDevecoJson(info.content.toString("utf8"), "app"))
+      deploymentVerified = true
+    }
     if (stage.status === "passed" && key === "navigation") {
       if ((stages.install?.status ?? run.checks.install.status) !== "passed") throw new Error("安装启动未通过，不能将手动导航标记通过")
+      if (stages.install?.status !== "passed" && !run.deploymentVerified) throw new Error("部署完整性尚未核验，不能将手动导航标记通过")
       if (!types.some((type) => ["component_tree", "navigation_log"].includes(type))) throw new Error("手动导航通过须引用页面断言日志或组件树")
     }
   }
@@ -132,6 +147,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
     imported.set(key, { id, sha256: item.sha256 })
   }
   run.manualVerification = { provenance: manifest.provenance, buildEvidence: manifest.buildEvidence }
+  if (deploymentVerified) run.deploymentVerified = true
   for (const [key, stage] of Object.entries(stages)) run.checks[key] = { ...check(stage.status, `手动验证：${stage.summary}`), origin: "manual", evidence: stage.evidence.map((id) => imported.get(id)) }
   // 新证据需重新判定，旧的效果通过不能覆盖尚未阅读的证据。
   if ([...files.values()].some((e) => e.type === "screenshot")) run.checks.visual = check("inconclusive", "已导入手动截图，等待 AI 阅读并补录判定")
@@ -204,6 +220,7 @@ export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment.visual || judgment.runtime) {
     requireAgentPhysical(run)
     if (run.checks.build.status !== "passed") throw new Error("构建未通过，不能补录效果判定")
+    if (judgment.runtime?.status === "passed" && run.checks.install.origin === "manual" && !run.deploymentVerified) throw new Error("手动部署完整性尚未核验，不能补录运行通过；请补齐本轮产物及设备模块清单")
     const partialManualRuntime = judgment.runtime?.status === "inconclusive" && run.manualVerification && judgment.runtime.evidence?.length && judgment.runtime.evidence.every((ref) => run.evidence.find((e) => e.id === ref.id && e.sha256 === ref.sha256)?.origin === "manual")
     if ((judgment.runtime && !partialManualRuntime) || (judgment.visual && !developerOnlyVisual(judgment, run))) for (const key of ["install", "navigation"]) if (run.checks[key].status !== "passed") throw new Error("安装或目标页导航未通过，不能补录效果通过；手动证据可补录未确认的运行观察及真机截图判定")
   }
@@ -375,15 +392,33 @@ export async function verifyDevelopment(request, options = {}) {
     if (run.checks.sdk.status === "failed" || run.checks.static.status === "failed") run.checks.build.summary = "SDK 或静态门禁失败，未构建"
     else if (request.executeBuild) {
       let result
-      try { result = await (options.buildRunner ?? runHvigorBuild)(request.project, { product: run.product, buildMode: run.buildMode, module: request.executeRun ? undefined : run.module, modules: inspection.modules, sdkPath: inspection.localSdk.path }) }
-      catch (error) { result = { exitCode: null, stderr: error.message } }
-      await record("build_log", `${result.stdout ?? ""}\n${result.stderr ?? ""}`)
+      let phase = "deployment discovery"
+      run.buildScope = request.executeRun || !run.module ? "product" : "module"
+      try {
+        if (run.buildScope === "product") {
+          run.expectedDeployment = await (options.deploymentDiscoverer ?? discoverDeployment)(request.project, run)
+          await record("deployment_targets", JSON.stringify(run.expectedDeployment, null, 2), "json")
+        }
+        phase = "build"
+        result = await (options.buildRunner ?? runHvigorBuild)(request.project, { product: run.product, buildMode: run.buildMode, module: request.executeRun ? undefined : run.module, modules: inspection.modules, sdkPath: inspection.localSdk.path })
+      }
+      catch (error) { result = { exitCode: null, stderr: error.message, failedStage: phase === "deployment discovery" ? phase : undefined } }
+      await record(result.failedStage === "deployment discovery" ? "deployment_failure" : "build_log", `${result.stdout ?? ""}\n${result.stderr ?? ""}`)
       run.checks.build = check(result.exitCode === 0 ? "passed" : "failed", result.exitCode === 0 ? "ohpm、Hvigor 同步与打包通过" : `构建失败：${result.failedStage ?? "工具或构建阶段"}；${(result.stderr || result.stdout || "无输出").slice(-1800)}`)
       if (result.exitCode !== 0) run.checks.build.reportSummary = `构建失败，停止于${{ "ohpm install": "依赖安装", "hvigor sync": "工程同步", "hvigor build": "HAP 打包" }[result.failedStage] ?? "构建工具执行阶段"}；未继续安装，修复后需重验`
+      if (result.failedStage === "deployment discovery") run.checks.build.reportSummary = `部署范围核验失败：${result.stderr}；未执行构建或安装`
+      if (result.exitCode === 0 && run.buildScope === "product") {
+        try {
+          // 构建后立即冻结产物；签名资格在确认设备类型后、安装或手动验收前核验。
+          run.deployment = await (options.deploymentPlanner ?? planDeployment)(request.project, run, { allowUnsigned: true, expected: run.expectedDeployment })
+          run.deploymentEvidence = await record("deployment_manifest", JSON.stringify(run.deployment, null, 2), "json")
+        } catch (error) { run.deploymentError = `完整部署产物核验失败：${error.message}` }
+      }
     }
     let launchArgs = []
     run.checks.install.summary = !request.executeRun ? "未请求安装运行" : !request.device ? "未指定目标设备，需先选择设备" : "本轮构建未通过，未安装运行"
-    if (request.executeRun && request.device && run.checks.build.status === "passed") {
+    if (run.deploymentError) run.checks.install = check("failed", run.deploymentError)
+    if (request.executeRun && request.device && run.checks.build.status === "passed" && !run.deploymentError) {
       const info = await call(["device", "view", "--target", request.device, "--format", "json"])
       run.deviceInfo = info.exitCode === 0 ? info.stdout.trim() : "系统信息采集失败"
       let deviceError
@@ -404,6 +439,7 @@ export async function verifyDevelopment(request, options = {}) {
           const deployment = await (options.deploymentRunner ?? deployProduct)(request.project, run, call, record)
           launchArgs = deployment.launchArgs
           run.deployment = deployment.plan
+          run.deploymentVerified = true
           run.checks.install = check("passed", "本轮 HAP/HSP 已安装，设备模块与版本核验通过，应用已启动")
         } catch (error) {
           run.checks.install = { ...check("failed", error.message), reportSummary: error.message }

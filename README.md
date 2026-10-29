@@ -220,6 +220,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 
 手动验证先用 `--manual-evidence` 导入安装、导航与运行证据，再按返回的证据 ID 补录判定；逐场景明细放在 `runtime.observations`。报告正文从结构化记录生成，不直接修改正文补结论。低版本回退截图使用 `--import-screenshot <路径> --screenshot-purpose fallback`，随后补录 `fallback` 判定，保留原设备的运行与视觉结论。`--module` 只填模块名，如 `entry`。
 
+运行验证默认走执行器的完整产品构建与 HAP/HSP 部署，只有明确工具阻断才转手动。手动安装通过须引用本轮构建后生成的 `deployment_manifest`（`deploymentEvidence`），并导入安装后设备应用信息 JSON（`installedModules` 指向 `installed_modules` 文件），由自动、手动共用的校验器核对应用版本及模块完整性；单模块构建、缺 HSP、产物变化或只有安装成功日志均不能补录通过。具体格式见[手动验证证据补录](harmonyos-feature-integration/references/workflows/verification.md#手动验证证据补录)。
+
 最终交付默认位于 `<工程>/os-feature-integration/`，包含一份 `integration-report.md` 及其引用的 `evidence/*.png`；报告覆盖改造汇总、类别或路线与模式、视觉验证结果、升级与兼容。过程日志、组件树与合并状态保存在系统临时目录，不生成额外 JSON 汇总报告。重验更新同一改造项当前结果，保留首次已知的接入前版本。
 
 ## Skill 维护

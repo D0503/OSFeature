@@ -42,6 +42,8 @@ const nav = { schemaVersion: "1.0", steps: [{ stepId: "home", action: "wait", ti
 const inspection = { localSdk: { status: "valid", apiVersion: 26, path: root }, api: { compile: 26, target: 26, compatible: 26 }, modules: [{ name: "entry", type: "entry" }] }
 let calls = [], builds = 0
 const options = {
+  deploymentDiscoverer: async () => ({ modules: [] }),
+  deploymentPlanner: async () => ({ modules: [] }),
   deploymentRunner: async (_project, _run, call) => {
     const result = await call(["fixture-deployment"])
     if (result.exitCode !== 0) throw new Error("fixture deployment failed")

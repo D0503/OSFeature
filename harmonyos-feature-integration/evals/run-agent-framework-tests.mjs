@@ -123,6 +123,8 @@ const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 const secondPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64")
 let shots = 0, calls = []
 const options = {
+  deploymentDiscoverer: async () => ({ modules: [] }),
+  deploymentPlanner: async () => ({ modules: [] }),
   deploymentRunner: async (_project, _run, call) => {
     const result = await call(["fixture-deployment"])
     if (result.exitCode !== 0) throw new Error("fixture deployment failed")
@@ -177,7 +179,7 @@ const wrong = structuredClone(judgment)
 wrong.runtime.observations[2].evidence[0].sha256 = "wrong"
 await assert.rejects(verifyDevelopment({ ...resume, judgment: wrong }, options), /dialog-closed/)
 const success = await verifyDevelopment({ ...resume, judgment }, options)
-assert.equal(success.status, "passed")
+assert.equal(success.status, "inconclusive", "低版本回退尚未实测时，效果通过仍不能代表整体通过")
 assert.match(await readFile(success.report, "utf8"), /智能体框架服务/)
 
 for (const [script, args] of [

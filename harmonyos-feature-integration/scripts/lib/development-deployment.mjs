@@ -1,4 +1,4 @@
-import { readFile, realpath } from "node:fs/promises"
+import { access, readFile, realpath } from "node:fs/promises"
 import { basename, isAbsolute, join, relative, resolve } from "node:path"
 import { createHash } from "node:crypto"
 import { readManifest } from "./easygo-tools.mjs"
@@ -16,7 +16,7 @@ async function inside(root, path) {
 }
 
 // Select the product's complete local runtime module set, including dynamically routed HSPs.
-export async function planDeployment(project, run) {
+export async function discoverDeployment(project, run) {
   const root = await realpath(project)
   const profile = await read(join(root, "build-profile.json5"))
   const product = profile.app?.products?.find((p) => p.name === run.product)
@@ -36,20 +36,7 @@ export async function planDeployment(project, run) {
     if (targets.length !== 1 || !safeName(targets[0].name)) throw new Error(`模块 ${item.name} 在产品 ${run.product} 下的 target 不唯一或无效，需明确部署配置`)
     if (!safeName(manifest.name)) throw new Error(`模块 ${item.name} 的 module.name 无效`)
     const target = targets[0].name
-    const shared = manifest.type === "shared"
-    const metadataPath = await inside(root, join(directory, "build", run.product, "intermediates", shared ? "hsp_metadata" : "hap_metadata", target, "output_metadata.json"))
-    const metadata = await read(metadataPath)
-    const entries = Array.isArray(metadata) ? metadata : [metadata]
-    const names = [...new Set(entries.map((e) => e[shared ? "hspName" : "hapName"]).filter(Boolean))]
-    if (entries.some((e) => e.dependRemoteHsps?.length)) throw new Error(`模块 ${item.name} 包含外部 HSP；尚不能核实外部模块部署清单，停止安装，需明确对应产物与模块身份`)
-    if (names.length !== 1 || basename(names[0]) !== names[0] || !names[0].endsWith(shared ? ".hsp" : ".hap")) throw new Error(`模块 ${item.name} 的产物元数据不唯一或无效`)
-    let packageName = names[0]
-    if (packageName.includes("-unsigned.") && run.deviceKind !== "emulator") packageName = packageName.replace("-unsigned.", "-signed.")
-    if (run.deviceKind !== "emulator" && !entries.some((e) => e.isSigned === true) && !packageName.includes("-signed.")) throw new Error(`模块 ${item.name} 缺少已签名部署产物`)
-    const path = await inside(root, join(directory, "build", run.product, "outputs", target, packageName))
-    const content = await readFile(path)
-    if (!content.length) throw new Error(`模块 ${item.name} 的部署产物为空`)
-    modules.push({ name: manifest.name, projectName: item.name, type: manifest.type, target, path, sha256: digest(content), metadataPath, abilities: manifest.abilities ?? [], mainElement: manifest.mainElement })
+    modules.push({ name: manifest.name, projectName: item.name, type: manifest.type, target, directory, abilities: manifest.abilities ?? [], mainElement: manifest.mainElement })
   }
   if (!modules.length || new Set(modules.map((m) => m.name)).size !== modules.length) throw new Error("部署模块清单为空或 module.name 重复")
   const candidates = run.module ? modules.filter((m) => m.projectName === run.module && m.type !== "shared") : modules.filter((m) => m.type === "entry")
@@ -59,6 +46,40 @@ export async function planDeployment(project, run) {
   if (!ability || !selected.abilities.some((a) => a.name === ability)) throw new Error(`模块 ${selected.projectName} 的启动 Ability 无法确认`)
   if (modules.filter((m) => m.abilities.some((a) => a.name === ability)).length !== 1) throw new Error(`启动 Ability ${ability} 在部署模块中重名，无法唯一启动目标页面`)
   return { product: run.product, buildMode: run.buildMode, bundle, versionCode: app.versionCode, ability, launchModule: selected.name, modules }
+}
+
+export async function planDeployment(project, run, { allowUnsigned = false, expected } = {}) {
+  const root = await realpath(project)
+  const plan = await discoverDeployment(project, run)
+  if (expected && JSON.stringify(plan) !== JSON.stringify(expected)) throw new Error("部署范围已变化，与构建前的产品模块清单不一致；请重新执行完整构建验证")
+  const modules = []
+  for (const item of plan.modules) {
+    const { directory, target } = item
+    const shared = item.type === "shared"
+    const metadataPath = await inside(root, join(directory, "build", run.product, "intermediates", shared ? "hsp_metadata" : "hap_metadata", target, "output_metadata.json"))
+    const metadata = await read(metadataPath)
+    const entries = Array.isArray(metadata) ? metadata : [metadata]
+    const names = [...new Set(entries.map((e) => e[shared ? "hspName" : "hapName"]).filter(Boolean))]
+    if (entries.some((e) => e.dependRemoteHsps?.length)) throw new Error(`模块 ${item.projectName} 包含外部 HSP；尚不能核实外部模块部署清单，停止安装，需明确对应产物与模块身份`)
+    if (names.length !== 1 || basename(names[0]) !== names[0] || !names[0].endsWith(shared ? ".hsp" : ".hap")) throw new Error(`模块 ${item.projectName} 的产物元数据不唯一或无效`)
+    let packageName = names[0]
+    if (packageName.includes("-unsigned.")) {
+      const signed = packageName.replace("-unsigned.", "-signed.")
+      try { await access(join(directory, "build", run.product, "outputs", target, signed)); packageName = signed } catch {}
+    }
+    if (!allowUnsigned && run.deviceKind !== "emulator" && !entries.some((e) => e.isSigned === true) && !packageName.includes("-signed.")) throw new Error(`模块 ${item.projectName} 缺少已签名部署产物`)
+    const path = await inside(root, join(directory, "build", run.product, "outputs", target, packageName))
+    const content = await readFile(path)
+    if (!content.length) throw new Error(`模块 ${item.name} 的部署产物为空`)
+    const { directory: _directory, ...identity } = item
+    modules.push({ ...identity, path, sha256: digest(content), metadataPath })
+  }
+  return { ...plan, modules }
+}
+
+export async function verifyDeploymentArtifacts(project, run, plan) {
+  const current = await planDeployment(project, run, { expected: run.expectedDeployment })
+  if (JSON.stringify(current) !== JSON.stringify(plan)) throw new Error("部署范围或产物已变化，与本轮构建清单不一致；请重新执行完整产品构建验证")
 }
 
 export function verifyInstalledModules(plan, info) {
@@ -76,8 +97,10 @@ export function verifyInstalledModules(plan, info) {
 }
 
 export async function deployProduct(project, run, call, record) {
-  const plan = await planDeployment(project, run)
-  await record("deployment_manifest", JSON.stringify(plan, null, 2), "json")
+  const plan = run.deployment ?? await planDeployment(project, run)
+  await verifyDeploymentArtifacts(project, run, plan)
+  run.deployment = plan
+  if (!run.deploymentEvidence) run.deploymentEvidence = await record("deployment_manifest", JSON.stringify(plan, null, 2), "json")
   for (const module of plan.modules) {
     if (digest(await readFile(module.path)) !== module.sha256) throw new Error(`部署产物已变化：${module.name}，请重新构建验证`)
   }

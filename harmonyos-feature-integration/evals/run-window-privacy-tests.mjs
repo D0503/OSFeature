@@ -157,6 +157,8 @@ const changes = {
 }
 const request = (feature, route, name) => ({ project, output: join(work, name), feature, route, goal: name, changes, executeBuild: true, executeRun: true, device: "phone-1", navigate: { schemaVersion: "1.0", steps: [{ stepId: "page", action: "wait", timeoutMs: 1, expectPage: { by: "id", value: "window-page" } }] } })
 const options = {
+  deploymentDiscoverer: async () => ({ modules: [] }),
+  deploymentPlanner: async () => ({ modules: [] }),
   deploymentRunner: async (_project, _run, call) => {
     const result = await call(["fixture-deployment"])
     if (result.exitCode !== 0) throw new Error("fixture deployment failed")

@@ -4,10 +4,10 @@
 
 1. 保存改造前 SDK、compile/target/compatible API 和源程序状态证据；按实际修改填写改造记录，不从接入后工程反推改造前版本。按页面与组件拆分改造项，整体接入按能力包的覆盖清单逐项记录与验收。
 2. 运行 `verify-development.mjs`，内部复用现有静态检查。SDK 或静态检查明确失败时停止本轮构建，并进入下方“失败修复与重验”；`warn` 保留为待核验项，不写成通过。
-3. 自动传入 `--execute-build`，按现有 product/build-mode 运行 ohpm 和 Hvigor，同步与打包使用 `--no-daemon`。运行验证使用 `assembleApp` 构建当前产品，`--module` 仅选择启动模块，不能缩小构建范围而遗漏 HSP；只编译不运行时仍可指定模块级构建。失败保留首个失败阶段与日志，由 AI 按下方流程分析、修复并重新构建。允许修正本次接入引起的错误配置，不得通过删除必要检查、降低已确认的路线要求或绕过签名来掩盖失败。
+3. 自动传入 `--execute-build`，按现有 product/build-mode 运行 ohpm 和 Hvigor，同步与打包使用 `--no-daemon`。完整产品构建前，执行器从工程配置生成 `deployment_targets`，明确当前产品的 entry/feature/shared 模块与 target，包括未被 entry 显式依赖的动态路由 HSP，HAR 不单独部署；发现不依赖已有构建产物。运行验证使用 `assembleApp` 构建当前产品，`--module` 仅选择启动模块，不能缩小构建范围而遗漏 HSP。构建成功后立即保存 `deployment_manifest`，记录完整产物路径与哈希；缺包时阻断部署。只编译不运行时仍可指定模块级构建，但该运行不能补录安装通过；转入手动安装前须重新执行完整产品构建。失败保留首个失败阶段与日志，由 AI 按下方流程分析、修复并重新构建。允许修正本次接入引起的错误配置，不得通过删除必要检查、降低已确认的路线要求或绕过签名来掩盖失败。
 4. 目标设备明确时自动传入 `--execute-run --device <设备>`。执行器依据当前产品的 `targets/applyToProducts` 收集全部本地 entry/feature/shared 模块（包括动态路由 HSP，HAR 不单独安装），按各 target 的 `output_metadata.json` 选择产物（真机要求签名，模拟器沿用原签名要求）并保存路径、哈希与部署清单；不从其他 product/target 或任意旧目录捡包。先一次安装完整 HAP/HSP 集，再查询设备应用信息，核对 bundle、versionCode 和模块集合，最后启动指定 Ability。缺包、漏装、版本不符、残留其他产品模块时停止导航并报告具体原因；先修正产物或部署条件，再重验，不将空白页直接归因于业务代码。多 target 无法唯一选择或元数据包含尚不能核实的外部 HSP 时明确阻断，不静默漏装；不自动卸载应用或清除数据。未指定设备时先查询可用设备，多设备需明确选择，不任意安装，不创建或下载模拟器。效果验证的设备限制按能力包执行。
 5. 根据实际导航填写步骤，最后一步必须断言目标页独有的业务文本或控件，不能仅断言 NavDestination 等容器；到达后采集截图、组件树和运行日志。导航失败不得使用其他页面截图判定目标效果。空壳页面即使存在导航容器也不能验收。
-6. 执行器安装、启动或导航受阻且无法由代理自动解决时（如多模块部署限制、设备锁屏需人工解锁、系统弹窗或账号授权需真人交互、无障碍采集被安全策略限制），转入手动验证模式：保持本轮构建与设备不变，由开发者或代理在同一设备上手动完成剩余操作，同步采集截图、组件树与运行日志，再按“手动验证证据补录”将全部证据纳入同一份报告。手动验证同样必须采集截图：效果类改造至少采集操作前与操作后（或保护前与保护后）两张不同的屏幕截图，截图格式支持 PNG 与 JPEG（设备 `snapshot_display` 输出的 JPEG 可直接使用），不得因格式问题省略截图。
+6. 具备条件时使用执行器完成构建与部署，不能因命令简单而改走单包安装。执行器安装、启动或导航受阻且无法由代理自动解决时（如设备锁屏需人工解锁、系统弹窗或账号授权需真人交互、无障碍采集被安全策略限制），记录具体阻断原因后转入手动验证：保持本轮构建与设备不变，只手动完成受阻步骤；部署已核验时不重新单包覆盖安装。手动安装同样必须安装清单内全部 HAP/HSP、查询安装后的设备应用信息，并由同一校验器核对模块集合与版本，缺包、查询失败或缺少证据时不标记安装和运行通过。同步采集截图、组件树与运行日志，再按“手动验证证据补录”纳入同一份报告。效果类改造至少采集操作前与操作后（或保护前与保护后）两张不同截图，支持 PNG 与 JPEG，不得因格式问题省略。
 7. 按[回退路径实测](#回退路径实测)验证兼容方案，并结合能力包列出的门槛、触发条件和保留行为补录判定。
 8. AI 实际读取证据并对照能力包后补录判定。能力查询启动时机、滚动末项可达、交互回退等动态行为需要运行观察，单张静态图不能证明。手动验证导入的截图同样必须由 AI 实际阅读后再补录视觉判定。
    必须尝试用当前可用的图片读取工具打开截图后再判定；读取失败时准确记录失败原因。截图中的几何布局、实际材质观感与动态交互分开判断；没有错误日志只能作为辅助信息，不能推导材质生效或作用域合法。一个页面的截图不能验收其他页面、未弹出的浮层或未操作的列表。
@@ -127,9 +127,11 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --judgme
 
 执行器受工具格式或命令限制时，允许在已授权的同一设备上手动验证，但须将结果纳入同一份报告；转入时机与截图要求见“执行顺序”第 6 条。真机核验可依据 devecocli 的 `kind: device/emulator`；`deviceType` 仅说明设备形态，特性支持范围以能力包为准，未知设备和明确模拟器不得按真机验收。
 
+手动安装通过要求本轮成功执行完整产品构建并已生成 `deployment_manifest`。具备条件时仍使用 `--execute-build --execute-run`；确有工具阻断而需只构建后手动部署时，使用 `--execute-build` 且省略 `--module` 完成产品级构建，保留原 `--device`、product、build-mode 与输出目录；多入口无法唯一确定时先明确启动配置，不能用单模块编译绕过。模块级构建或没有产物快照的旧运行须重新完整构建，不能仅凭旧构建日志补录通过。
+
 手动验证补录分两步执行，顺序不可颠倒：
 
-1. **先导入证据**：`--manual-evidence` 只登记文件与 `install`/`navigation` 两个阶段结论；`buildEvidence` 的 id 与 sha256 必须从本轮运行输出（或 collection.json）复制，不可手填或引用其他轮次。导入成功后，**以命令返回的 `origin: manual` 证据列表为准**——其中每条的新 `id` 是后续判定的唯一合法引用，清单里的 `key` 不会出现在判定引用中。
+1. **先导入证据**：`--manual-evidence` 登记文件并校验 `install`/`navigation` 阶段；`buildEvidence`、安装通过所需的 `deploymentEvidence` 的 id 与 sha256 均从本轮输出复制，分别引用 `build_log` 和 `deployment_manifest`，不可引用其他轮次。导入成功后，**以命令返回的 `origin: manual` 证据列表为准**——其中每条的新 `id` 是后续判定的唯一合法引用，清单里的 `key` 不会出现在判定引用中。
 2. **再补录判定**：用上一步返回的新证据 `id`/`sha256` 填写 `--judgment` 的 `runtime`/`visual` 与 `observations`；引用导入前预估的 id 会被拒绝。
 
 先将清单写入临时目录，再执行：
@@ -147,21 +149,24 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --manual
   "goal": "与本次目标一致",
   "device": "本次设备ID",
   "buildEvidence": { "id": "本轮build_log证据ID", "sha256": "该证据哈希" },
-  "provenance": "说明采集设备、安装产物与本轮构建的关联依据及实际采集过程",
+  "deploymentEvidence": { "id": "本轮deployment_manifest证据ID", "sha256": "该证据哈希" },
+  "installedModules": "modules",
+  "provenance": "说明转入手动的具体阻断、采集设备、完整安装产物与本轮构建的关联依据及实际采集过程",
   "files": [
     { "key": "install", "type": "install_log", "path": "安装与启动日志绝对路径", "sha256": "实际哈希" },
+    { "key": "modules", "type": "installed_modules", "path": "安装后从该设备查询的应用信息原始JSON绝对路径", "sha256": "实际哈希" },
     { "key": "home", "type": "component_tree", "path": "目标页组件树绝对路径", "sha256": "实际哈希" },
     { "key": "dialog", "type": "screenshot", "path": "打开状态截图绝对路径（PNG 或 JPEG）", "sha256": "实际哈希" }
   ],
   "stages": {
-    "install": { "status": "passed", "summary": "实际安装产物、设备与启动结果", "evidence": ["install"] },
+    "install": { "status": "passed", "summary": "完整安装产物、设备模块核验与启动结果", "evidence": ["install", "modules"] },
     "navigation": { "status": "passed", "summary": "实际目标页断言与定位依据", "evidence": ["home"] }
   }
 }
 ```
 
-- `files` 支持 `screenshot`、`component_tree`、`runtime_log`、`install_log`、`navigation_log`、`device_info`。`key` 唯一；文件哈希须匹配。截图接受 PNG 与 JPEG（设备端 `snapshot_display`/`uitest` 采集的 JPEG 可直接提供，脚本按实际格式校验与保存）。效果类改造须包含操作前与操作后（或保护前与保护后）至少两张不同截图，不得因格式或采集不便省略。需要补充设备身份时，用可选 `deviceInfo` 引用 `device_info` 的 key，内容须为原始设备查询 JSON，序列号须与本轮设备一致；不得用补录覆盖明确模拟器事实。
-- 先阅读日志、组件树和截图，核实同设备、同目标及本轮构建产物的关联，再填写清单。`stages` 可省略或仅包含有证据的阶段；`passed`、`failed`、`inconclusive` 均需说明和文件引用。安装启动通过须有安装及启动日志；导航通过须安装通过并有页面断言日志或组件树。缺原始日志时如实保留未确认，不根据聊天总结补造成功日志。
+- `files` 支持 `screenshot`、`component_tree`、`runtime_log`、`install_log`、`navigation_log`、`device_info`、`installed_modules`。`key` 唯一；文件哈希须匹配。截图接受 PNG 与 JPEG（设备端 `snapshot_display`/`uitest` 采集的 JPEG 可直接提供，脚本按实际格式校验与保存）。效果类改造须包含操作前与操作后（或保护前与保护后）至少两张不同截图，不得因格式或采集不便省略。需要补充设备身份时，用可选 `deviceInfo` 引用 `device_info` 的 key，内容须为原始设备查询 JSON，序列号须与本轮设备一致；不得用补录覆盖明确模拟器事实。
+- 先阅读日志、组件树和截图，核实同设备、同目标及本轮构建产物的关联，再填写清单。`stages` 可省略或仅包含有证据的阶段；`passed`、`failed`、`inconclusive` 均需说明和文件引用。安装通过须引用安装及启动日志，并以 `installedModules` 指定同次导入的设备应用信息 JSON（在该阶段的 `evidence` 中引用）。执行器验证本轮产物清单的哈希与当前文件一致，再复用 `verifyInstalledModules` 核对 bundle、versionCode、完整模块集合及设备返回的模块版本；缺 HSP、版本不符、旧模块残留或无法解析时拒绝安装通过。仅有构建日志哈希、`install successfully` 或首页截图不满足要求。导航通过须安装已通过完整部署核验并有页面断言日志或组件树。缺原始证据时保留未确认，不根据聊天总结补造成功日志。
 - 导入仅记录阶段及证据，截图和运行日志不会自动生成效果通过。使用返回的证据 ID/哈希，按上文 `--judgment` 补录运行、视觉和静态复核结论。能力包要求的场景和目标一致性仍须逐项验证。截图证明的现象与未覆盖的回退、平台条件分别记录。
 
 ## 结果与存储

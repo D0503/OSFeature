@@ -1,13 +1,20 @@
 import assert from "node:assert/strict"
 import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
-import { join } from "node:path"
+import { dirname, join } from "node:path"
 import { detectAgentDeviceKind, verifyDevelopment } from "../scripts/verify-development.mjs"
 import { fileHash, loadCollection } from "../scripts/lib/development-report.mjs"
 
 const work = await mkdtemp(join(tmpdir(), "manual-verification-test-"))
 const project = join(work, "project")
 await mkdir(project)
+const put = async (path, data) => { await mkdir(dirname(path), { recursive: true }); await writeFile(path, JSON.stringify(data)) }
+await put(join(project, "build-profile.json5"), { app: { products: [{ name: "default" }] }, modules: [{ name: "entry", srcPath: "./entry", targets: [{ name: "default" }] }] })
+await put(join(project, "AppScope/app.json5"), { app: { bundleName: "com.example.manual", versionCode: 1 } })
+await put(join(project, "entry/src/main/module.json5"), { module: { name: "entry", type: "entry", mainElement: "MainAbility", abilities: [{ name: "MainAbility" }] } })
+await put(join(project, "entry/build/default/intermediates/hap_metadata/default/output_metadata.json"), [{ hapName: "entry-signed.hap", isSigned: true }])
+await put(join(project, "entry/build/default/outputs/default/entry-signed.hap"), "fixture HAP")
+const installed = { name: "com.example.manual", versionCode: 1, hapModuleInfos: [{ name: "entry", versionCode: 1 }] }
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64")
 const secondPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64")
 const calls = []
@@ -39,6 +46,7 @@ const manualFiles = []
 for (const [key, type, content] of [
   ["device", "device_info", JSON.stringify({ kind: "device", deviceType: "phone", serial: "device-1" })],
   ["install", "install_log", "fixture: installed current HAP and started ability"],
+  ["modules", "installed_modules", JSON.stringify(installed)],
   ["home", "component_tree", JSON.stringify({ id: "agent-page" })],
   ["runtime", "runtime_log", "fixture: clicked, dialog opened and closed"],
   ["entry", "screenshot", png], ["dialog", "screenshot", secondPng]
@@ -49,14 +57,17 @@ for (const [key, type, content] of [
 }
 const manual = {
   schemaVersion: "1.0", runId: manualRun.runId, goal: manualReq.goal, device: manualReq.device,
-  buildEvidence: ref(manualRun.evidence.find((e) => e.type === "build_log")), provenance: "本测试夹具的同一设备和构建", deviceInfo: "device", files: manualFiles,
-  stages: { install: { status: "passed", summary: "夹具安装与启动", evidence: ["install"] }, navigation: { status: "passed", summary: "夹具目标页断言", evidence: ["home"] } }
+  buildEvidence: ref(manualRun.evidence.find((e) => e.type === "build_log")), deploymentEvidence: ref(manualRun.evidence.find((e) => e.type === "deployment_manifest")), installedModules: "modules", provenance: "本测试夹具的同一设备和构建", deviceInfo: "device", files: manualFiles,
+  stages: { install: { status: "passed", summary: "夹具安装与启动", evidence: ["install", "modules"] }, navigation: { status: "passed", summary: "夹具目标页断言", evidence: ["home"] } }
 }
 for (const mutate of [
   (m) => { m.device = "other-device" },
   (m) => { m.goal = "other-goal" },
   (m) => { m.runId = "old-run" },
   (m) => { m.buildEvidence.sha256 = "wrong" },
+  (m) => { delete m.deploymentEvidence },
+  (m) => { m.deploymentEvidence.sha256 = "wrong" },
+  (m) => { delete m.installedModules },
   (m) => { m.files[1].sha256 = "wrong" },
   (m) => { m.stages.install.evidence = ["entry"] },
   (m) => { delete m.stages.install }
@@ -119,7 +130,7 @@ pendingReq.changes.fallback[0] = { condition: "low-api", behavior: "保留原状
 const pendingOptions = { ...options, inspector: async () => ({ ...await options.inspector(), staticResult: { counts: { fail: 0, warn: 1 }, checks: [{ id: "agent-framework-pending", status: "warn", message: "待核对平台状态" }] } }) }
 const pending = await verifyDevelopment(pendingReq, pendingOptions)
 const pendingResume = { project, output: pendingReq.output, resume: pending.runId }
-const pendingImport = await verifyDevelopment({ ...pendingResume, manualEvidence: { ...manual, runId: pending.runId, buildEvidence: ref(pending.evidence.find((e) => e.type === "build_log")) } }, options)
+const pendingImport = await verifyDevelopment({ ...pendingResume, manualEvidence: { ...manual, runId: pending.runId, buildEvidence: ref(pending.evidence.find((e) => e.type === "build_log")), deploymentEvidence: ref(pending.evidence.find((e) => e.type === "deployment_manifest")) } }, options)
 const pendingLog = pendingImport.evidence.find((e) => e.origin === "manual" && e.type === "runtime_log")
 const pendingJudgment = { ...manualJudgment, runId: pending.runId, visual: { ...manualJudgment.visual, evidence: pendingImport.evidence.filter((e) => e.type === "screenshot").map(ref) }, runtime: { ...manualJudgment.runtime, evidence: [ref(pendingLog)], observations: manualJudgment.runtime.observations.map((o) => ({ ...o, evidence: [ref(pendingLog)] })) } }
 assert.equal((await verifyDevelopment({ ...pendingResume, judgment: pendingJudgment }, options)).status, "inconclusive", "运行与视觉通过不覆盖静态待复核和回退未验证")
