@@ -324,7 +324,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-feature-integration")
-assert.equal(evals.evals.length, 62)
+assert.equal(evals.evals.length, 65)
 assert.equal(new Set(evals.evals.map((item) => item.id)).size, evals.evals.length)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)

@@ -14,3 +14,13 @@
 ## 工程扫描
 
 平行视界使用 `easyGo` 扫描结果：各模块顶层引用、全部资源变体、pages 页面表、Router/Navigation 信号、页面名称和 id 候选；无法解析的清单和动态名称必须保留待核验。
+
+展示配置清单前，沿启动和路由逻辑识别实际业务主页，区分广告、隐私、登录等前置页面，再按所选路线确定 homePage：
+
+| 路线与主页承载方式 | homePage |
+|---|---|
+| Router 页面 | module.pages 引用的页面表中的实际路径，如 `pages/Home`，结合 push/replace 跳转核对 |
+| Navigation 首页内容区（含其中的 Tabs 或自定义组件） | `navBar` |
+| Navigation 的 NavDestination（含其中的 Tabs） | 实际入栈的路由 name，结合路由表和构建映射核对 |
+
+说明建议值及简短依据，不用文件名、组件名或模板值代替分析。多个主页候选时确认业务选择；标识无法确定时保留待核实，不猜测填写。

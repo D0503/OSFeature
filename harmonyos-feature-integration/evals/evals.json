@@ -746,6 +746,27 @@
         "不误命中",
         "不扩展能力"
       ]
+    },
+    {
+      "id": 63,
+      "prompt": "接入平行视界，先分析 homePage。业务首页直接在 Navigation(stack) { MallHome() } 内容区，MallHome 不是 NavDestination；详情通过 stack.pushPath({name: 'ProductDetail'}) 进入。",
+      "expected_output": "判定业务主页在 Navigation 首页内容区，建议 homePage=navBar，说明内容结构与详情入栈证据。",
+      "files": [],
+      "expectations": ["展示主页用途、承载方式、代码证据和建议值", "homePage 为 navBar", "不使用 MallHome 或 ProductDetail 作为主页标识"]
+    },
+    {
+      "id": 64,
+      "prompt": "分析平行视界主页：Navigation 内容区为空，首页用 stack.pushPath({name: HOME_ROUTE}) 进入，HOME_ROUTE='MallRoot'，构建映射 MallRoot 对应含 NavDestination 的 HomeScreen，标题是商城。",
+      "expected_output": "追踪常量与构建映射，判定主页为 NavDestination，homePage=MallRoot。",
+      "files": [],
+      "expectations": ["homePage 为 MallRoot", "不填 navBar、HomeScreen 或商城", "提供入栈 name 与构建映射依据"]
+    },
+    {
+      "id": 65,
+      "prompt": "接入 Router 平行视界并分析 homePage：module.pages 的 src 包含 pages/Splash、pages/Login、pages/Home；启动经过 Splash 和 Login 后 router.replaceUrl({url:'pages/Home'}) 进入商城主页，主页组件叫 MallScreen。",
+      "expected_output": "结合启动跳转和页面表，建议 homePage=pages/Home，并说明依据。",
+      "files": [],
+      "expectations": ["homePage 为 pages/Home", "不填 navBar、MallScreen 或 .ets 文件路径", "不将启动或登录页当作业务主页"]
     }
   ]
 }
