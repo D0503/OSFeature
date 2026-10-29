@@ -268,9 +268,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
    | 平行视界 | 综合商城模板 | 请使用harmonyos-feature-integration，对当前工程实现平行视界 |
    | 智感握姿 | 综合新闻模板 | 请使用harmonyos-feature-integration，为首页发表按钮接入智感握姿。悬浮球本身随握持手左右换侧，保留支持纵向拖拽，横向拖拽去除，不新增按钮 |
    | 智能体框架服务 | 综合商城模板，已准备真实 Agent | 请使用 harmonyos-feature-integration，在首页搜索按钮旁接入“购物助手”智能体按钮，使用我提供的真实 agentId，并在 Phone/Tablet 真机验证点击、打开和关闭。 |
-   | 闪控窗 | 已有业务页面的 Stage 工程 | 请使用 harmonyos-feature-integration，为当前业务页面接入独立闪控窗，使用 float-view 路线，先核对 API26、ACL 和用户授权。 |
-   | 闪控球 | 已有业务内容的 Stage 工程 | 请使用 harmonyos-feature-integration，为当前业务接入独立闪控球，使用 floating-ball 路线，保留原页面与操作路径。 |
-   | 窗球绑定 | 已有业务页面的 Stage 工程 | 请使用 harmonyos-feature-integration，为当前业务接入窗球绑定切换，选择 binding 路线，先展示窗，并验证双端停止与清理。 |
+   | 闪控球 | 记账模板 | 请使用harmonyos-feature-integration，在明细页面添加一个按钮，点击创建添加闪控球，点击闪控球可以快速拉起应用明细页面，并打开记账面板。 |
+   | 窗球绑定 | 金融理财模板 | 请使用harmonyos-feature-integration，在产品详情页【加自选】按钮旁新增操作图标：加入悬浮对比 / 取消悬浮对比。a.点击「加入悬浮对比」：创建常规态闪控窗，将当前产品加入闪控对比列表并在窗内展示；点击「取消悬浮对比」，将该产品从闪控窗对比列表中移除。b. 闪控窗尺寸规则：随对比产品数量增加自动撑开，达到配置最大高度后不再继续增高。c. 模板切换：闪控窗配备切换箭头，支持在两种展示模板间切换：Mini 态：横向多产品一行排布，仅展示产品名称、七日年化；数量较多时启用跑马灯滚动。常规态：单品分行展示，呈现产品更多信息。d. 闪控窗与闪控球绑定联动，支持互相切换唤起；闪控球默认展示对比列表里第一个产品的名称与七日年化信息。 |
    | 防窥保护 | 记账模板，支持防窥的 Phone 真机与普通应用工程 | 请使用harmonyos-feature-integration，为资产页面接入防窥保护，当非机主窥视时，资产页面所有金额变为*号。 |
    | 防窥保护 | 金融理财模板，支持防窥的 Phone 真机与普通应用工程 | 请使用harmonyos-feature-integration，在理财购买页面接入防窥保护，当非机主窥视时，页面剩余额度和可用额度变为*号，并在推荐人代码下增加一行防窥蒙层的开关，点击开启后，当非机主窥视时，拉起防窥蒙层。 |
 
