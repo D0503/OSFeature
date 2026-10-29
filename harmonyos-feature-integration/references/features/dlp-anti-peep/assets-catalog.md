@@ -13,7 +13,7 @@
 | `AntiPeepCallback` | `onStatusChanged(status): Promise<void>` | 通知与初始状态共用同一处理方法 |
 | `canUseAntiPeep()` | 返回是否支持 SysCap | 不支持时提示并结束初始化 |
 | `isAntiPeepOn()` | `Promise<boolean>`；关闭、不支持或异常返回 false | 不继续订阅，具体原因查看日志 |
-| `getAntiPeepInfo()` | 同步返回窥视状态；不支持或异常返回 -1 | PASS 恢复内容，HIDE 隐藏内容，-1 保留既有显示策略 |
+| `getAntiPeepInfo()` | 同步返回窥视状态枚举；不支持或异常返回 `undefined` | PASS 恢复内容，HIDE 隐藏内容，`undefined` 保留既有显示策略 |
 | `listenOnAntiPeepStatus(antiPeepCB)` | 成功返回 true，失败或不支持返回 false | 用返回值更新订阅标志，避免重复注册 |
 | `listenOffAntiPeepStatus()` | 无返回值，内部捕获异常并记录日志 | 退出时调用；取消该事件全部回调 |
 | `showSystemMaskLayer(windowId)` | `Promise<boolean>`；输入为目标窗口的正整数 ID | API21 起，按返回值记录是否成功触发 |

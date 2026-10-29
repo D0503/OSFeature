@@ -66,7 +66,7 @@ PASS=0，HIDE=1。机主独自注视时为非窥视，机主与非机主共同�
 以下处理内容的隐藏和恢复，在 HIDE 分支隐藏内容后预留系统蒙层接入位置。需要覆盖窗口时，按第 6 步补充完整分支及其导入、字段。状态变更必须对应实际目标控件的渲染。
 
 ```typescript
-private async handleAntiPeepStatus(status: dlpAntiPeep.DlpAntiPeepStatus): Promise<void> {
+private async handleAntiPeepStatus(status: dlpAntiPeep.DlpAntiPeepStatus | undefined): Promise<void> {
   if (!this.isPageVisible || deviceInfo.sdkApiVersion < 20 || !canUseAntiPeep()) {
     return;
   }
@@ -79,7 +79,7 @@ private async handleAntiPeepStatus(status: dlpAntiPeep.DlpAntiPeepStatus): Promi
       // 系统蒙层的可选接入位置，完整分支见第 6 步。
       break;
     default:
-      hilog.warn(0x0000, 'AntiPeepUtils', '无法确认窥视状态：%{public}d', status);
+      hilog.warn(0x0000, 'AntiPeepUtils', '无法确认窥视状态：%{public}s', String(status));
       break;
   }
 }
@@ -126,7 +126,7 @@ private async initAntiPeepStatus(): Promise<void> {
 
 `isAntiPeepOn()` 在开关关闭、不支持或查询异常时均返回 `false`，具体原因查看工具日志。页面隐藏后不继续处理已返回的开关查询结果。需要应用内设置时，在上述 `if (!opened)` 分支的标注位置接入后面的可选代码；已开启分支和后续状态读取、订阅逻辑保持不变。
 
-确认开关开启后，`getAntiPeepInfo()` 获取初始状态并交给第 3 步，随后在尚未订阅时注册监听。状态查询失败返回的 `-1` 不作为 PASS，仍可订阅后续通知。`isListenOn` 直接保存订阅函数的返回值，失败原因由工具日志记录。
+确认开关开启后，`getAntiPeepInfo()` 获取初始状态并交给第 3 步，随后在尚未订阅时注册监听。不支持或状态查询失败时返回 `undefined`，保留当前显示策略，仍可订阅后续通知。`isListenOn` 直接保存订阅函数的返回值，失败原因由工具日志记录。
 
 ## 5. 页面展示时启动初始化
 

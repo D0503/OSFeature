@@ -10,10 +10,17 @@ const temporaryRoot = resolve(tmpdir())
 const work = await mkdtemp(join(temporaryRoot, "anti-peep-utils-tests-"))
 try {
   const source = await readFile(join(root, "references/features/dlp-anti-peep/assets/AntiPeepUtils.ets"), "utf8")
-  await writeFile(join(work, "utils.ts"), "import { dlpAntiPeep, hilog } from './mock.mjs';\n" + source.replace(/^import .*;\r?\n/gm, ""))
+  await writeFile(join(work, "utils.ts"), "import { canIUse, dlpAntiPeep, hilog } from './mock.mjs';\n" + source.replace(/^import .*;\r?\n/gm, ""))
   await writeFile(join(work, "mock.mjs"), `
-export const state = { result: 0, error: null, synchronous: false, context: null, logs: [] };
+export const state = { result: 0, error: null, synchronous: false, context: null, logs: [], supported: true, queryStatus: 0, queryError: null, queryCalls: 0 };
+export const canIUse = () => state.supported;
 export const dlpAntiPeep = {
+  DlpAntiPeepStatus: { PASS: 0, HIDE: 1 },
+  getDlpAntiPeepInfo() {
+    state.queryCalls++;
+    if (state.queryError) throw state.queryError;
+    return state.queryStatus;
+  },
   AntiPeepOptionsResult: { SUCCESS: 0, FAIL: 1, ALREADY_ON: 2 },
   requestAntiPeepOptions(context) {
     state.context = context;
@@ -29,11 +36,25 @@ export const hilog = Object.fromEntries(['info', 'warn', 'error'].map(level =>
 `)
   await writeFile(join(work, "test.mjs"), `
 import assert from 'node:assert/strict';
-import { requestAntiPeepOptions } from './utils.ts';
+import { getAntiPeepInfo, requestAntiPeepOptions } from './utils.ts';
 import { dlpAntiPeep, state } from './mock.mjs';
 
 const context = { owner: 'settings-entry' };
 let cases = 0;
+for (const status of Object.values(dlpAntiPeep.DlpAntiPeepStatus)) {
+  Object.assign(state, { queryStatus: status, queryError: null, supported: true, queryCalls: 0 });
+  assert.equal(getAntiPeepInfo(), status);
+  assert.equal(state.queryCalls, 1);
+  cases++;
+}
+Object.assign(state, { supported: false, queryCalls: 0 });
+assert.equal(getAntiPeepInfo(), undefined);
+assert.equal(state.queryCalls, 0, '不支持时不能调用平台查询接口');
+cases++;
+Object.assign(state, { supported: true, queryError: { code: 801, message: 'mock query failure' }, logs: [] });
+assert.equal(getAntiPeepInfo(), undefined);
+assert.ok(state.logs.some(log => log.args[2].includes('mock query failure')));
+cases++;
 for (const result of Object.values(dlpAntiPeep.AntiPeepOptionsResult)) {
   Object.assign(state, { result, error: null, synchronous: false, logs: [] });
   assert.equal(await requestAntiPeepOptions(context), result);

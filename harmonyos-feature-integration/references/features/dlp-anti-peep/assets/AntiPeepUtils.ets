@@ -53,18 +53,18 @@ export async function isAntiPeepOn(): Promise<boolean> {
 /**
  * get current screen privacy status
  * */
-export function getAntiPeepInfo(): dlpAntiPeep.DlpAntiPeepStatus {
+export function getAntiPeepInfo(): dlpAntiPeep.DlpAntiPeepStatus | undefined {
   try {
     if (canUseAntiPeep()) {
       let dlpAntiPeepStatus = dlpAntiPeep.getDlpAntiPeepInfo();
       hilog.info(0x0000, TAG, `getDlpHideInfo success. ${JSON.stringify(dlpAntiPeepStatus)}`);
       return dlpAntiPeepStatus;
     } else {
-      return -1;
+      return undefined;
     }
   } catch (err) {
     hilog.info(0x0000, TAG, `getDlpHideInfo failed. ${JSON.stringify(err)}`);
-    return -1;
+    return undefined;
   }
 }
 
@@ -94,7 +94,7 @@ export function listenOnAntiPeepStatus(antiPeepCB: AntiPeepCallback): boolean {
   }
 }
 
-/**a
+/**
  * listen off screen privacy
  * */
 export function listenOffAntiPeepStatus() {
