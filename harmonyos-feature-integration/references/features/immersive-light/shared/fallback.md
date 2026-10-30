@@ -32,7 +32,7 @@ HDS 与 ArkUI 的悬浮 Tabs 增强分支所需的底部间距和滚动页尾部
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { uiMaterial } from '@kit.ArkUI';
 
-if (deviceInfo.sdkApiVersion >= 26) {
+if (deviceInfo.apiAvailable('26.0.0')) {
   if (uiMaterial.isImmersiveMaterialSupported() &&
     uiMaterial.getMaterialInfo().state !== uiMaterial.MaterialState.DISABLE) {
     const material = new uiMaterial.ImmersiveMaterial({

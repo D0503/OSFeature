@@ -8,7 +8,7 @@
 
 ### 运行 API 与前置条件
 
-- **应用**：本机 SDK、compile 至少 API 20（HarmonyOS 6.0.0），`minAgentApi` 使用 20；**元服务**：本机 SDK、compile 至少 API 21（HarmonyOS 6.0.1），将 `minAgentApi` 设置为 21。若使用 `ICON_ABOVE_TITLE`，应用也须使用 API 21 门槛。运行判断读取 `deviceInfo.sdkApiVersion`，不以编译版本代替运行版本。
+- **应用**：本机 SDK、compile 至少 API 20（HarmonyOS 6.0.0），`minAgentApi` 使用 20；**元服务**：本机 SDK、compile 至少 API 21（HarmonyOS 6.0.1），将 `minAgentApi` 设置为 21。若使用 `ICON_ABOVE_TITLE`，应用也须使用 API 21 门槛。以下示例使用 SDK 26.0.0+ 编译，以 `deviceInfo.apiAvailable` 检查运行设备版本；路线本身的运行门槛不变。旧编译 SDK 可沿用 `deviceInfo.sdkApiVersion` 判断。
 - 使用 Stage 工程，页面由 UIAbility 承载，可取得有效的 UIAbilityContext；按工程现有页面路由方式注册并进入该页面。宿主本身需支持示例所用的 ComponentV2 状态管理；既有页面使用其他状态管理方式时按原架构合并逻辑，不整页替换。
 - 在支持 `SystemCapability.AI.Agent.AgentKit` 的 Phone/Tablet 真机运行，适用地区为中国境内（不含港澳台）；模拟器不支持。SysCap 检查不能代替设备、地区及服务条件核验。
 - 在 `agentId` 中填写真实且已关联当前应用的 Agent ID（1–64 字符）。默认空值不创建控制器、不查询，也不显示 Function 入口。根据实际业务调整 title/queryText。
@@ -26,7 +26,7 @@ FunctionComponent 参数仅在初始化时生效；运行中切换 Agent 或业�
 只需要用户主动点击拉起、不需要预查询和事件监听时，直接在现有页面嵌入 FunctionComponent，无需创建 FunctionController。以下片段合并进现有 build；页面导入 FunctionComponent、BusinessError、deviceInfo 和 hilog，定义 `agentId` 及 `minAgentApi`（应用 20，元服务 21）。
 
 ```typescript
-if (deviceInfo.sdkApiVersion >= this.minAgentApi &&
+if (deviceInfo.apiAvailable(this.minAgentApi) &&
   this.agentId.length > 0 && this.agentId.length <= 64) {
   FunctionComponent({
     agentId: this.agentId,

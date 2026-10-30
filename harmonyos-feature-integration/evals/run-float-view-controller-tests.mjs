@@ -15,7 +15,7 @@ try {
   await writeFile(join(work, 'mock.mjs'), `
 export const logs = [];
 export const hilog = { debug(...args) { logs.push(["debug", ...args]); }, error(...args) { logs.push(["error", ...args]); } };
-export const deviceInfo = { sdkApiVersion: 26 };
+export const deviceInfo = { sdkApiVersion: 26, apiAvailable(version) { return this.sdkApiVersion >= (typeof version === 'number' ? version : Number(version.split('.')[0])); } };
 export const env = { supported: true, enabledCalls: 0, controller: null };
 export const abilityAccessCtrl = { createAtManager() {
   return { async requestPermissionsFromUser(context, permissions) {

@@ -10,7 +10,7 @@
 | HDS 沉浸光感材质接口 | HarmonyOS 6.1.0、API 23 | `hdsMaterial`、`systemMaterialEffect`、`barFloatingStyle` 等能力从此版本可用；Stage 模型 |
 | ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26，且 `targetAPIVersion >= 26.0.0` | 用于原生 Navigation/Tabs、支持通用属性的组件、弹窗和交互组件；Stage 模型 |
 | API 26 应用级开关 | ArkUI 路线门禁已满足 | 额外要求配置位于 `entry` 类型 module 的 `module.json5` |
-| API 26 跨版本调用 | `compatibleSdkVersion < 26` | 使用低版本可用的 `deviceInfo.sdkApiVersion >= 26` 保护新增接口调用和配置；涉及组件、布局或导航结构变化时使用组件树分支，进入 API 26 路径后再做材质能力判断 |
+| API 26 跨版本调用 | `compatibleSdkVersion < 26` | 使用 `deviceInfo.apiAvailable('26.0.0')` 保护新增接口调用和配置；涉及组件、布局或导航结构变化时使用组件树分支，进入 API 26 路径后再做材质能力判断 |
 | 升级接入（通用） | 工程低于路线门槛时 | 安装或切换本机 SDK，并将 `targetSdkVersion` 升至 23（HDS）或 26（ArkUI），无需显式配置 `compileSdkVersion`，`compatibleSdkVersion` 保持不变；低版本设备需运行时保护，并保留源程序接入前的布局、交互和普通视觉样式；是否升级与路线由用户决定 |
 
 这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担 HDS 导航，并用 ArkUI `uiMaterial` 改造原生 Navigation/Tabs、普通组件、弹窗和交互组件。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
@@ -39,7 +39,7 @@
 | HDS 标题栏 | `scrollEffectOpts` | `GRADIENT_BLUR` 或 `IMMERSIVE_GRADIENT_BLUR` 滚动渐变模糊 |
 | HDS 底部页签 | `barFloatingStyle.miniBar` | 可折叠 MiniBar，可与沉浸光感组合 |
 
-MiniBar 核心能力从 API 23 起可用，但 `barLayoutMode` 及 `HdsBarLayoutMode` 从 API 24 起才可用。工程需要兼容 API 23 时，可以使用 MiniBar，但必须省略 `barLayoutMode`；若同时需要自定义 MiniBar 与 TabBar 的横向或纵向排列，则用 `deviceInfo.sdkApiVersion >= 24` 建立单独的运行时分支。MiniBar 在 TV 设备上不生效，不能把它作为关键操作的唯一入口。
+MiniBar 核心能力从 API 23 起可用，但 `barLayoutMode` 及 `HdsBarLayoutMode` 从 API 24 起才可用。工程需要兼容 API 23 时，可以使用 MiniBar，但必须省略 `barLayoutMode`；若同时需要自定义 MiniBar 与 TabBar 的横向或纵向排列，则用 `deviceInfo.apiAvailable(24)` 建立单独的运行时分支。MiniBar 在 TV 设备上不生效，不能把它作为关键操作的唯一入口。
 
 HDS 材质接口覆盖 Phone、Tablet、PC/2in1。默认优先使用 `ADAPTIVE` 材质类型和等级；自定义档位前先调用 `hdsMaterial.getSystemMaterialTypes()` 查询设备能力。
 
@@ -91,7 +91,7 @@ API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；�
 ## 特殊限制
 
 - `compatibleSdkVersion` 低于 23 时，HDS 组件在低版本设备不可用，需要按运行时判断做整树条件降级，而不只是属性级保护。
-- 整树降级的运行时判断必须使用低版本即可用的 API（`deviceInfo.sdkApiVersion`，@since 8）；`deviceInfo.apiAvailable` 自 API 26 起存在，在低版本设备上调用会崩溃，禁止用作 API 26 以下的降级开关。
+- SDK 26.0.0+ 编译时，整树降级优先使用 `deviceInfo.apiAvailable` 检查运行设备版本：API 26+ 使用完整版本字符串，API 26 以下的公共接口使用数字 API 等级。该接口的编译 SDK 门槛不等于运行设备门槛；旧 SDK 无此声明时才沿用 `sdkApiVersion`，或确认升级编译 SDK。
 - 低版本整树分支必须保留源程序接入前的体验，不能用一个固定底部普通 `Tabs` 取代原有响应式导航。源程序若在不同断点、横竖屏或窗口模式下切换 `vertical`、`barPosition`、`barWidth`、`barHeight`、`divider` 等属性，降级分支继续沿用原有判断和值，并保留原控制器、自定义 TabBar、页签顺序和事件。
 - API 23 及以前 SDK 的 Web 同层渲染场景中，内嵌 ArkUI 控件开启光感可能变透明；关闭该控件光感或关闭同层渲染。
 - 应用级开关不能配置在非 `entry` module 后期待生效。

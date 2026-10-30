@@ -2,6 +2,8 @@
 
 兼容性判断同时考虑本机 SDK 根清单 API、工程 compile/compatible/target API、应用模型、module 类型、组件体系、设备能力和运行时开关。
 
+运行版本保护：SDK 26.0.0+ 编译时优先使用 `deviceInfo.apiAvailable`。API 26 及以上使用完整版本字面量，例如 `deviceInfo.apiAvailable('26.0.0')`；API 26 以下的公共接口使用数字等级，例如 `deviceInfo.apiAvailable(20)`、`deviceInfo.apiAvailable(23)`。SDK 26.0.0 是该检查接口的编译门槛，不要求运行设备也达到 26，不据此提高特性本身的运行门槛、target 或 compatible。旧编译 SDK 尚无该接口时可保留 `deviceInfo.sdkApiVersion`，或按已有授权升级编译 SDK。版本判断后仍须核验设备能力与开关。接口依据：[设备信息](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-device-info)。
+
 - `supported`：所选路线全部必要条件有工程证据。
 - `conditional`：基础路线可用，但目标用法仍有明确条件。
 - `upgrade_available`：工程 API 低于所有路线门槛，但可通过升级接入满足；不是终止结论。

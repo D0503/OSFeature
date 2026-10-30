@@ -418,10 +418,10 @@ const SIGNALS = [
   { id: "miniBar", regex: /\bminiBar\s*:/ },
   { id: "miniBarBuilder", regex: /\bminiBarBuilder\s*:/ },
   { id: "barLayoutMode", regex: /\bbarLayoutMode\s*:/ },
-  { id: "sdkApiVersion24Guard", regex: /\bsdkApiVersion\s*>=\s*24(?:\.0)?\b/ },
+  { id: "sdkApiVersion24Guard", regex: /\bsdkApiVersion\s*>=\s*24(?:\.0)?\b|\bapiAvailable\s*\(\s*24\s*\)/ },
   { id: "standardTabs", regex: /\bTabs\s*\(/ },
-  { id: "sdkApiVersion", regex: /\bsdkApiVersion\b/ },
-  { id: "sdkApiVersion26Guard", regex: /\bsdkApiVersion\s*>=\s*26(?:\.0)?\b/ },
+  { id: "sdkApiVersion", regex: /\bsdkApiVersion\b|\bapiAvailable\s*\(/ },
+  { id: "sdkApiVersion26Guard", regex: /\bsdkApiVersion\s*>=\s*26(?:\.0)?\b|\bapiAvailable\s*\(\s*['"]26\.0\.0['"]\s*\)/ },
   { id: "adaptiveMaterial", regex: /\b(?:MaterialType|MaterialLevel)\.ADAPTIVE\b|\bADAPTIVE\b/ },
   { id: "hdsMaterialEffect", regex: /\bsystemMaterialEffect\b/ },
   { id: "uiMaterial", regex: /\buiMaterial\b|@kit\.ArkUI.*uiMaterial|@ohos\.arkui\.uiMaterial/ },
@@ -810,7 +810,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       [...s.barLayoutMode.evidence, ...s.sdkApiVersion24Guard.evidence],
       !needsMiniBarLayoutGuard
         ? "barLayoutMode is absent or compatibleSdkVersion is API 24 or later"
-        : "barLayoutMode starts at API 24; guard it with deviceInfo.sdkApiVersion >= 24 or omit it from the API 23 branch"
+        : "barLayoutMode starts at API 24; with SDK 26+ use deviceInfo.apiAvailable(24), or use sdkApiVersion >= 24 on older SDKs; omit it from the API 23 branch"
     ))
     const needsLowerVersionTree = compatibleApi !== null && compatibleApi < 23
     checks.push(check(
@@ -818,7 +818,7 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
       "HDS lower-version guard",
       !needsLowerVersionTree ? "not_applicable" : s.sdkApiVersion.detected ? "pass" : "fail",
       s.sdkApiVersion.evidence,
-      !needsLowerVersionTree ? "compatibleSdkVersion is API 23 or later" : "Use deviceInfo.sdkApiVersion for the API 23 HDS tree guard"
+      !needsLowerVersionTree ? "compatibleSdkVersion is API 23 or later" : "With SDK 26+ use deviceInfo.apiAvailable(23) for the HDS tree guard; older SDKs may use sdkApiVersion"
     ))
     checks.push(check(
       "source-tabs-fallback",

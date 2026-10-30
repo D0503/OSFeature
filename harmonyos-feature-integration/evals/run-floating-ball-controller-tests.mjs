@@ -14,7 +14,7 @@ try {
   await writeFile(join(work, "mock.mjs"), `
 export const logs = [];
 export const hilog = { debug(...args) { logs.push(["debug", ...args]); }, error(...args) { logs.push(["error", ...args]); } };
-export const deviceInfo = { sdkApiVersion: 20 };
+export const deviceInfo = { sdkApiVersion: 20, apiAvailable(version) { return this.sdkApiVersion >= (typeof version === 'number' ? version : Number(version.split('.')[0])); } };
 export const env = { syscap: true, enabledCalls: 0, controller: null };
 export const canIUse = () => env.syscap;
 export const floatingBall = {

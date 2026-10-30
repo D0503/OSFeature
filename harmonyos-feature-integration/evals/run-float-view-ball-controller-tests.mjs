@@ -18,7 +18,7 @@ try {
   await writeFile(join(work, 'mock.mjs'), `
 export const calls = [], logs = [];
 export const env = { fail: '', view: null, ball: null };
-export const deviceInfo = { sdkApiVersion: 26 };
+export const deviceInfo = { sdkApiVersion: 26, apiAvailable(version) { return this.sdkApiVersion >= (typeof version === 'number' ? version : Number(version.split('.')[0])); } };
 export const canIUse = () => true;
 export const hilog = { debug(...args) { logs.push(args); }, error(...args) { logs.push(args); } };
 export const abilityAccessCtrl = {};

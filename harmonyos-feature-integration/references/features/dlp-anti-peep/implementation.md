@@ -67,7 +67,7 @@ PASS=0，HIDE=1。机主独自注视时为非窥视，机主与非机主共同�
 
 ```typescript
 private async handleAntiPeepStatus(status: dlpAntiPeep.DlpAntiPeepStatus | undefined): Promise<void> {
-  if (!this.isPageVisible || deviceInfo.sdkApiVersion < 20 || !canUseAntiPeep()) {
+  if (!this.isPageVisible || !deviceInfo.apiAvailable(20) || !canUseAntiPeep()) {
     return;
   }
   switch (status) {
@@ -97,7 +97,7 @@ private async initAntiPeepStatus(): Promise<void> {
     if (!this.isPageVisible) {
       return;
     }
-    if (deviceInfo.sdkApiVersion < 20 || !canUseAntiPeep()) {
+    if (!deviceInfo.apiAvailable(20) || !canUseAntiPeep()) {
       this.getUIContext().getPromptAction().showToast({ message: '当前设备不支持防窥保护' });
       return;
     }
@@ -164,7 +164,7 @@ private isMaskRequesting: boolean = false;
 case dlpAntiPeep.DlpAntiPeepStatus.HIDE:
   this.isPrivacyHidden = true;
 
-  if (deviceInfo.sdkApiVersion < 21) {
+  if (!deviceInfo.apiAvailable(21)) {
     break;
   }
   if (this.isSystemLayerTriggered || this.isMaskRequesting) {
@@ -229,7 +229,7 @@ if (!opened) {
     listenOffAntiPeepStatus();
     this.isListenOn = false;
   }
-  if (deviceInfo.sdkApiVersion >= 23) {
+  if (deviceInfo.apiAvailable(23)) {
     if (this.isRequestingAntiPeep) {
       return;
     }

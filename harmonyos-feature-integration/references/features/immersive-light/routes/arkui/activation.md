@@ -13,7 +13,7 @@ ArkUI 沉浸光感的构建门禁是：
 
 无需新增 `compileSdkVersion`。上述 API 26 指版本等级；写入 `build-profile.json5` 前，按[兼容性模型](../../../../shared/compatibility-model.md)核实目标 SDK 及配套构建工具的配置规范。`"26.0.0"` 是 API 26 的格式示例，实际字段类型和值以对应版本规范为准。`compatibleSdkVersion` 按已确认的最低兼容要求保留。
 
-`targetSdkVersion >= 26` 适用于 ArkUI 整条路线，不只适用于应用级 metadata。`compatibleSdkVersion < 26` 时，用低版本可用的 `deviceInfo.sdkApiVersion` 保护新增接口调用和配置；仅材质变化时复用原组件，涉及组件、布局或导航结构变化时才使用组件树分支。`compatibleSdkVersion >= 26` 时无需增加 API 26 版本分支。具体写法见[共享回退策略](../../shared/fallback.md)。不要把 API 26 才存在的 `deviceInfo.apiAvailable` 当作 API 26 以下设备的最外层保护。
+`targetSdkVersion >= 26` 适用于 ArkUI 整条路线，不只适用于应用级 metadata。`compatibleSdkVersion < 26` 时，在 SDK 26.0.0+ 编译环境中用 `deviceInfo.apiAvailable` 保护新增接口调用和配置；仅材质变化时复用原组件，涉及组件、布局或导航结构变化时才使用组件树分支。`compatibleSdkVersion >= 26` 时无需增加 API 26 版本分支。具体写法见[共享回退策略](../../shared/fallback.md)。`apiAvailable` 的 SDK 26.0.0 门槛是编译要求，可用于检查低版本运行设备。
 
 应用启动完成、退出启动加载页且满足 API 26 运行版本条件后，再调用：
 

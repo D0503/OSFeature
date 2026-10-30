@@ -17,13 +17,13 @@ systemMaterialEffect: {
 }
 ```
 
-`compatibleSdkVersion >= 23` 时无需增加 API 23 版本分支；低于 23 时，用低版本可用的 `deviceInfo.sdkApiVersion` 保护 HDS 材质配置和调用。普通 ArkTS 方法内的最小示例：
+`compatibleSdkVersion >= 23` 时无需增加 API 23 版本分支；低于 23 时，在 SDK 26.0.0+ 编译环境中用 `deviceInfo.apiAvailable` 保护 HDS 材质配置和调用。普通 ArkTS 方法内的最小示例：
 
 ```typescript
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { hdsMaterial, SystemMaterialParams } from '@kit.UIDesignKit';
 
-if (deviceInfo.sdkApiVersion >= 23) {
+if (deviceInfo.apiAvailable(23)) {
   const materialParams: SystemMaterialParams = {
     materialType: hdsMaterial.MaterialType.ADAPTIVE,
     materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
@@ -32,7 +32,7 @@ if (deviceInfo.sdkApiVersion >= 23) {
 }
 ```
 
-版本判断只说明接口版本可用，不代表设备支持所有材质档位；不能用 API 26 才可用的 `deviceInfo.apiAvailable` 保护低版本。页面从原生组件迁移到 HDS 时，在受影响组件范围保留低版本原组件分支，继续复用原状态、控制器调用和业务内容；HDS 专属枚举、配置和对象构造不得提前在分支外求值。
+版本判断只说明接口版本可用，不代表设备支持所有材质档位；SDK 26.0.0+ 编译时推荐使用 `deviceInfo.apiAvailable` 保护低版本。页面从原生组件迁移到 HDS 时，在受影响组件范围保留低版本原组件分支，继续复用原状态、控制器调用和业务内容；HDS 专属枚举、配置和对象构造不得提前在分支外求值。
 
 如果业务必须自定义档位，先查询设备支持类型：
 
@@ -317,7 +317,7 @@ HdsTabs({
 
 默认不设置 `miniBarWidth`，让 HDS 先按窗口自适应；确需约束时再用 `smallWidth`、`mediumWidth`、`largeWidth` 分段配置，并结合真实文案、字体放大、多语言、窗口尺寸和快捷操作数量校准。若需要由应用主动折叠或展开，可调用 `controller.applyMiniBarStyle(HdsBarStyle.COLLAPSE | HdsBarStyle.EXPAND)`，并确保切换不改变当前页签、播放/编辑状态或既有事件语义。
 
-`barLayoutMode` 需要单独处理：它和 `HdsBarLayoutMode.HORIZONTAL` / `VERTICAL` 从 API 24 起才可用，不属于 API 23 MiniBar 基线。当 `compatibleSdkVersion < 24` 时，只能在 `deviceInfo.sdkApiVersion >= 24` 的运行时分支中引用并配置 `barLayoutMode`；API 23 分支应省略该属性，继续使用 MiniBar 的默认排列。不要使用从 API 26 才可用的 `apiAvailable` 保护 API 24 接口，也不要把 API 24 属性放进两个分支共用、会被提前求值的配置对象。
+`barLayoutMode` 需要单独处理：它和 `HdsBarLayoutMode.HORIZONTAL` / `VERTICAL` 从 API 24 起才可用，不属于 API 23 MiniBar 基线。当 `compatibleSdkVersion < 24` 时，只能在 `deviceInfo.apiAvailable(24)` 的运行时分支中引用并配置 `barLayoutMode`；API 23 分支应省略该属性，继续使用 MiniBar 的默认排列。使用 `apiAvailable(24)` 需要 SDK 26.0.0+ 编译；不要把 API 24 属性放进两个分支共用、会被提前求值的配置对象。
 
 MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等于设备横竖屏；切换排列时仍要保留源程序已有的断点、方向、窗口模式、控制器、状态和操作。电视设备上 MiniBar 不生效，应按能力包的通用回退策略保留接入前组件树与交互。
 

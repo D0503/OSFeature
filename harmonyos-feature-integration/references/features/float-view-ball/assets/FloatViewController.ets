@@ -48,7 +48,7 @@ export class FloatViewController {
 
   public static canUseFloatView(): boolean {
     try {
-      if (deviceInfo.sdkApiVersion < 26) { return false; }
+      if (!deviceInfo.apiAvailable('26.0.0')) { return false; }
       if (!canIUse('SystemCapability.Window.SessionManager')) { return false; }
       return floatView.isFloatViewEnabled();
     } catch (err) {

@@ -2,7 +2,7 @@
 
 | 文件 | 用途 | 使用边界 |
 |---|---|---|
-| [ImmersiveMaterialGuard.ets](../../assets/ImmersiveMaterialGuard.ets) | `sdkApiVersion >= 26` 版本门禁、设备能力判断、通用场景材质工厂 | 不用于 Toggle Switch、Slider 等内部预设视觉参数的组件 |
+| [ImmersiveMaterialGuard.ets](../../assets/ImmersiveMaterialGuard.ets) | `apiAvailable('26.0.0')` 版本门禁、设备能力判断、通用场景材质工厂 | 不用于 Toggle Switch、Slider 等内部预设视觉参数的组件 |
 
 原生标题栏、悬浮 Tabs 的配置组合与栏宽规则见[导航类组件](components/navigation.md)；版本保护的粒度与最小示例见[共享回退策略](../../shared/fallback.md)。接入时在原工程组件中应用相应配置，并保留既有状态与交互。
 

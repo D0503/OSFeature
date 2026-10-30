@@ -32,7 +32,7 @@ export class FloatingBallController {
 
   public static canUseFloatingBall(): boolean {
     try {
-      if (deviceInfo.sdkApiVersion < 20) { return false; }
+      if (!deviceInfo.apiAvailable(20)) { return false; }
       if (!canIUse('SystemCapability.Window.SessionManager')) { return false; }
       return floatingBall.isFloatingBallEnabled();
     } catch (err) {

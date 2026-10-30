@@ -14,9 +14,8 @@ import { uiMaterial } from '@kit.ArkUI';
  * - uiMaterial 模块、ImmersiveMaterial、isImmersiveMaterialSupported：@since 26.0.0，
  *   @stagemodelonly。API 23～25 工程不得引用本资产，应走 HDS 路线。
  * - targetSdkVersion 与有效 compile API 必须达到 26（compileSdkVersion 无需显式配置，未配置时取已验证的活动 SDK API）；compatibleSdkVersion 可以更低。
- * - 兼容 API 26 以下时使用低版本可用的 deviceInfo.sdkApiVersion 保护新增调用，
- *   仅材质变化时复用原组件；组件、布局或导航结构变化时使用组件树分支，
- *   不把 API 26 才存在的 apiAvailable 作为最外层保护。
+ * - 使用 SDK 26.0.0+ 编译，以 deviceInfo.apiAvailable 判断运行设备版本并保护新增调用。
+ *   仅材质变化时复用原组件；组件、布局或导航结构变化时使用组件树分支。
  * - isImmersiveMaterialSupported() / getGlobalMaterialLevel() 由设备决定，
  *   应用运行后不会改变：在应用启动完成、退出启动加载页后查询一次并复用，不必逐帧调用。
  *   不得在模块加载、静态/成员字段初始化或启动加载页中提前查询。
@@ -35,12 +34,12 @@ export class ImmersiveMaterialGuard {
 
   /** 当前运行设备是否已达到 ArkUI 沉浸光感接口版本。 */
   public static isRuntimeApiAvailable(): boolean {
-    return deviceInfo.sdkApiVersion >= ImmersiveMaterialGuard.ARKUI_MIN_API_VERSION;
+    return deviceInfo.apiAvailable('26.0.0');
   }
 
   /**
    * 当前设备是否可用 ArkUI 沉浸式系统材质。
-   * 版本（sdkApiVersion）与设备能力（isImmersiveMaterialSupported）双重判断；
+   * 版本（apiAvailable）与设备能力（isImmersiveMaterialSupported）双重判断；
    * 调用方须确认应用已启动完成且已退出启动加载页；本方法只检查版本与能力，
    * 不检测启动就绪状态。就绪后调用一次并复用结果。
    */

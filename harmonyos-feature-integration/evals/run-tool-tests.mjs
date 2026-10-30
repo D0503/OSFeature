@@ -35,6 +35,14 @@ function run(script, args, expectedCode = 0) {
 }
 
 const inspection23 = await inspectProject(fixture23, { sdkPath: sdk23 })
+const apiAvailableProject = await mkdtemp(resolve(tmpdir(), "os-feature-api-available-"))
+await cp(fixture26, apiAvailableProject, { recursive: true })
+const apiAvailableSource = resolve(apiAvailableProject, "entry/src/main/ets/pages/Index.ets")
+await writeFile(apiAvailableSource, `${await readFile(apiAvailableSource, "utf8")}\nif (deviceInfo.apiAvailable(24)) {}\nif (deviceInfo.apiAvailable('26.0.0')) {}\n`)
+const apiAvailableInspection = await inspectProject(apiAvailableProject, { sdkPath: sdk26 })
+equal(apiAvailableInspection.signals.sdkApiVersion24Guard.detected, true)
+equal(apiAvailableInspection.signals.sdkApiVersion26Guard.detected, true)
+equal(apiAvailableInspection.signals.apiAvailable26.detected, true)
 equal(inspection23.model, "stage")
 equal(inspection23.api.compatible, 23)
 equal(inspection23.api.target, 23)

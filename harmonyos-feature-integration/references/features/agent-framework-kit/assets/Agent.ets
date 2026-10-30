@@ -14,7 +14,7 @@ export struct Agent {
   private agentId: string = ''; // 填写已关联当前应用的真实 Agent ID。
 
   private isRuntimeSupported(): boolean {
-    return deviceInfo.sdkApiVersion >= this.minAgentApi && canIUse('SystemCapability.AI.Agent.AgentKit');
+    return deviceInfo.apiAvailable(this.minAgentApi) && canIUse('SystemCapability.AI.Agent.AgentKit');
   }
 
   aboutToAppear(): void {

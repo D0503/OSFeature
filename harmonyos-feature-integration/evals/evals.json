@@ -143,10 +143,10 @@
     {
       "id": 12,
       "prompt": "工程 compatibleSdkVersion 是 20、targetSdkVersion 是 24。接入后 API 23 以上使用底部悬浮 HdsTabs；源程序在手机竖屏使用底部普通 Tabs，在 LG/XL 和横屏使用左侧纵向 Tabs。API 20～22 的降级分支可以统一写成底部普通 Tabs 吗？",
-      "expected_output": "不可以。使用 deviceInfo.sdkApiVersion 做 API 23 HDS 整树门禁；API 23 以上按已确认方案使用底部悬浮 HdsTabs，API 20～22 的普通 Tabs 分支则保留源程序原有体验，继续沿用原断点、横竖屏和窗口模式条件，在手机竖屏保持底部横向栏，在 LG/XL 与原有横屏场景保持左侧纵向栏。保留原 vertical、barPosition、barWidth、barHeight、divider、控制器、自定义 TabBar、页签顺序及事件，并按旧版本设备矩阵逐项对照，不能把 HDS 分支的统一底部配置复制给低版本分支。",
+      "expected_output": "不可以。SDK 26+ 使用 deviceInfo.apiAvailable(23) 做 API 23 HDS 整树门禁，旧 SDK 可使用 sdkApiVersion；API 23 以上按已确认方案使用底部悬浮 HdsTabs，API 20～22 的普通 Tabs 分支则保留源程序原有体验，继续沿用原断点、横竖屏和窗口模式条件，在手机竖屏保持底部横向栏，在 LG/XL 与原有横屏场景保持左侧纵向栏。保留原 vertical、barPosition、barWidth、barHeight、divider、控制器、自定义 TabBar、页签顺序及事件，并按旧版本设备矩阵逐项对照，不能把 HDS 分支的统一底部配置复制给低版本分支。",
       "files": [],
       "expectations": [
-        "明确使用 deviceInfo.sdkApiVersion 做 API 23 HDS 整树门禁",
+        "SDK 26+ 使用 deviceInfo.apiAvailable(23) 做 HDS 整树门禁；旧 SDK 可使用 sdkApiVersion",
         "明确低版本是保留源程序原有体验，不是重新设计或统一为底部 Tabs",
         "保留原有断点、横竖屏和窗口模式判断以及底部/侧边形态",
         "保留 vertical、barPosition、栏宽栏高、divider、控制器、自定义 TabBar 和事件",
@@ -156,15 +156,15 @@
     {
       "id": 13,
       "prompt": "工程 compatibleSdkVersion 是 23、targetSdkVersion 是 24，想在悬浮 HdsTabs 加 MiniBar，并用 barLayoutMode 控制它和 TabBar 横排。如何兼容 API 23？",
-      "expected_output": "先确认本机 SDK 与有效 compile API。MiniBar 核心接口从 API 23 起可用，miniBarBuilder 必填；继续使用 BarPosition.End、vertical(false)、barOverlap(true) 和 barFloatingStyle，并让 MiniBar 复用源程序状态与操作。barLayoutMode 和 HdsBarLayoutMode 从 API 24 起可用，因此用 deviceInfo.sdkApiVersion >= 24 建立单独分支；API 23 分支省略 barLayoutMode 并使用默认排列。不要使用从 API 26 才可用的 apiAvailable 保护 API 24 接口，也不要把 API 24 属性放入两个分支共用的提前求值对象。",
+      "expected_output": "先确认本机 SDK 与有效 compile API。MiniBar 核心接口从 API 23 起可用，miniBarBuilder 必填；继续使用 BarPosition.End、vertical(false)、barOverlap(true) 和 barFloatingStyle，并让 MiniBar 复用源程序状态与操作。barLayoutMode 和 HdsBarLayoutMode 从 API 24 起可用，因此用 deviceInfo.apiAvailable(24)（SDK 26+ 编译） 建立单独分支；API 23 分支省略 barLayoutMode 并使用默认排列。apiAvailable 的 SDK 26 门槛是编译约束，可用于保护 API 24 接口，也不要把 API 24 属性放入两个分支共用的提前求值对象。",
       "files": [],
       "expectations": [
         "区分 MiniBar 核心能力 API 23 与 barLayoutMode API 24",
         "说明 miniBarBuilder 必填且业务状态和操作来自源程序",
         "包含 BarPosition.End、vertical(false)、barOverlap(true) 和 barFloatingStyle",
-        "使用 deviceInfo.sdkApiVersion >= 24 保护 API 24 分支",
+        "使用 deviceInfo.apiAvailable(24)（SDK 26+ 编译） 保护 API 24 分支",
         "API 23 分支省略 barLayoutMode，而不是移除整个 MiniBar",
-        "不使用 API 26 才可用的 apiAvailable 保护 API 24 接口"
+        "区分 apiAvailable 的编译 SDK 26 门槛与被保护接口的运行 API 24 门槛"
       ]
     },
     {
