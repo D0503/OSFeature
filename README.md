@@ -279,3 +279,14 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 
 4. **结果验收**：每个场景完成后核对是否产出 `<工程>/os-feature-integration/integration-report.md` 及其引用截图，并逐项核对 SDK、静态、构建、安装、目标页导航、运行、视觉和回退结果。构建通过不代表视觉通过，未完成的项标注未验证或未确认；组合路线分别验收，绑定使用 `binding` 验证两端与切换生命周期，权限提醒与最终报告保持一致。
 
+
+## 已接入新特性的兼容性扫描
+
+支持自动发现已注册新特性，核对各 product 的 `compatibleSdkVersion` 和实际 SDK 声明 `@since`，由脚本定位候选、AI 追踪调用链，判断版本与能力守卫及回退是否完整。仅扫描不修改工程；明确要求修复时才补齐代码。
+
+```sh
+node harmonyos-feature-integration/scripts/audit-compatibility.mjs --project <工程路径> --sdk <实际编译SDK路径>
+node harmonyos-feature-integration/scripts/audit-compatibility.mjs --project <工程路径> --feature immersive-light --product default --format markdown
+```
+
+命令支持 `--feature`、`--sdk`、`--product`、`--format json|markdown` 和 `--review <复核记录.json>`。默认 JSON 输出为待复核候选，不是兼容性通过证明；未定位 SDK 仍可扫描源码。修复复用各能力包的回退策略，保留一多适配，并完成构建及高低版本实测；设备缺失时报告验证未完成。详见[扫描与修复工作流](harmonyos-feature-integration/references/workflows/compatibility-audit.md)。

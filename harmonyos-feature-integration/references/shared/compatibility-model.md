@@ -13,7 +13,7 @@
 ## 本机 SDK 前置门禁
 
 - 先从显式 `--sdk`、工程 `local.properties` 的 `sdk.dir`/`hwsdk.dir` 或受支持环境变量定位 SDK；自动发现失败时要求提供路径，不扫描整块磁盘猜测安装位置。
-- 只读取 SDK 根目录 `sdk-pkg.json` 取得本机 SDK API 与版本，不扫描 SDK 子包、声明文件或具体接口符号。
+- 接入前路线门禁只读取 SDK 根目录 `sdk-pkg.json` 取得本机 SDK API 与版本，不扫描 SDK 子包、声明文件或具体接口符号。已接入工程的[兼容性扫描](../workflows/compatibility-audit.md)须读取实际编译 SDK 声明，定位具体接口和 `@since`，不能仅以路线门槛作结论。
 - 路线只有在本机 SDK API 和有效 compile API 均达到能力包 `routes[].minApi` 时才可进入候选集；target API 按统一接入策略至少达到 requiredApi 与 minTargetApi 的最大值（未声明 minTargetApi 时使用 requiredApi）。工程未显式声明 `compileSdkVersion` 时，有效 compile API 来自已验证的活动 SDK，并标记为 `local-sdk-default`；不要为升级接入新增该配置。已有显式配置时仍按实际值校验，低于门槛时调整既有配置。仅有 `targetSdkVersion` 或 `compatibleSdkVersion` 不能证明本机可编译。
 - `routes[].minApi` 表示“该特性路线的能力门槛”，不表示承载组件或所属组件家族的最早版本。能力包可用 `componentFamilyMinApi` 和 `componentBaselines` 记录组件事实，但这些字段不得降低特性路线门槛。例如 HDS 导航组件可早于沉浸光感材质存在。
 - 具体接口是否存在不在路线阶段判断，由实施后的源码静态验证和真实工程构建确认。
@@ -34,6 +34,8 @@ requiredApi 为所选路线 minApi 与实际使用接口版本的最大值。源
 - 存在升级选项或多条可用路线时，必须把可选接入方式、建议路线和理由列给用户，由用户决定路线；仅一条路线且无需升级时，说明建议路线和理由后继续。
 
 ## 所有特性的回退基线
+
+新接入时须保存源程序基线。对已接入且缺失原实现的工程执行兼容性修复时，按各能力包 `compatibility-audit.md` 中已确认的备选策略还原；无法确定的业务和布局选择先询问。该流程不以找不到历史代码为由跳过回退，也不自行设计替代功能。
 
 回退粒度遵循能力包的专项规则：沉浸光感悬浮 Tab 仅在运行 API 低于路线门槛时保留原组件树及其设备适配；达到门槛时不按设备类型或断点分流，材质不可用或关闭仅在升级接入分支内回退材质。以下通用基线不得扩大该专项回退范围。
 

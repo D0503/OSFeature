@@ -15,3 +15,7 @@
 应用从 API 20 开始；元服务与 `ICON_ABOVE_TITLE` 从 API 21 开始。只支持 Stage、Phone/Tablet 和中国境内（不含港澳台），不支持模拟器。SDK/compile 满足要求不代表 Agent 已可用。
 
 工程接入需定位目标页面、入口位置、真实 agentId、图标或按钮形式、可选 title/queryText，以及已有业务入口的保留方式。能从工程发现的信息先扫描；缺少真实 ID 时可完成方案和与 ID 无关的准备，不把示例 ID 写入成品，也不宣称联调通过。
+
+## 已接入工程兼容性扫描
+
+扫描或修复版本守卫与低版本回退时，读取[本特性扫描及回退策略](compatibility-audit.md)和[共享工作流](../../workflows/compatibility-audit.md)。仅检查不改工程；修复后要求高低版本实际运行验证。

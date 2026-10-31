@@ -132,6 +132,10 @@ export async function validateSkillStructure(skillRoot) {
   }
 
   const features = Array.isArray(registry?.features) ? registry.features : []
+  for (const path of ["scripts/audit-compatibility.mjs", "references/workflows/compatibility-audit.md",
+    ...features.filter(feature => feature?.status === "ready").map(feature => `references/features/${feature.id}/compatibility-audit.md`)]) {
+    add(errors, await pathExists(resolve(skillRoot, path)), path, "兼容性扫描入口或能力包回退策略不存在")
+  }
   return {
     errors,
     counts: {

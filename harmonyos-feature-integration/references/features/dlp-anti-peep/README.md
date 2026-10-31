@@ -37,3 +37,7 @@
 | [AntiPeep 官方示例](https://gitcode.com/HarmonyOS_Samples/AntiPeep) | 敏感字段状态更新、窗口 ID、生命周期和签名配置参考 |
 
 接口最低版本按 API 参考逐项判断；示例自身的 HarmonyOS/SDK 6.0.2 Release 要求不等于所有接口的起始版本。示例中的财务数据、页面、弹窗和布局不是接入要求。核心保护不依赖示例业务或本机文档路径。
+
+## 已接入工程兼容性扫描
+
+扫描或修复版本守卫与低版本回退时，读取[本特性扫描及回退策略](compatibility-audit.md)和[共享工作流](../../workflows/compatibility-audit.md)。仅检查不改工程；修复后要求高低版本实际运行验证。

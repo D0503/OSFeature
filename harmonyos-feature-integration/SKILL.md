@@ -1,11 +1,15 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别、接入设计、工程实现、兼容性处理、验证和排障。只要用户要求接入或排查已注册的新系统特性，尤其提到沉浸光感、悬浮导航Tab、Immersive Light、HDS 沉浸材质、uiMaterial、systemMaterial、平行视界、智感握姿、Smart Reach、adaptToHandedness、智能体框架服务、Agent Framework Kit、FunctionComponent、闪控窗、闪控球、floatView、floatingBall、防窥保护、DlpAntiPeep、系统防窥蒙层、setAntiPeepMaskLayer、requestAntiPeepOptions、publishAntiPeepInformation，都应使用本 Skill。当前支持沉浸光感的 API 23 HDS / API 26 ArkUI 路线，以及平行视界（easyGo、easy_go.json）的 Router / Navigation 接入、API 23 基础配置、API 24 状态查询与 API 26 增强配置；智感握姿的系统组件原生适配（如 HDS，当前实例 API 23）、操作手感知（API 15）与握持手感知（API 20）；通过 Function 组件拉起智能体（应用 API 20、元服务 API 21），开发 Agent 和关联应用等前置操作提供指导。工程 API 低于路线所需版本时，可提供升级本机 SDK（无需显式配置 compileSdkVersion）并按路线要求调整 targetSdkVersion、保持 compatibleSdkVersion 兼容旧版本的接入选项。不要用于普通 ArkUI 开发、HarmonyOS 官方文档质量审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）和防窥保护（DlpAntiPeep）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
 
-通过注册表识别 HarmonyOS 新特性，并只加载命中特性的能力包。注册表中的能力都必须具备可执行资料；不完整能力在完成前不得注册。
+通过注册表识别 HarmonyOS OS 新特性，支持新特性接入，以及已接入工程的兼容性扫描与修复。按任务加载通用工作流和命中特性的能力包。
+
+用户要求扫描兼容性、检查版本守卫、查询 SDK `@since` 或补齐低版本回退时，进入[兼容性扫描与修复](references/workflows/compatibility-audit.md)。无需预先指定特性，默认发现工程涉及的全部已注册特性及相关调用。“扫描／检查”只报告问题，“扫描并修复”才修改代码。该流程不套用新接入的升级选路流程，依据各 product 的 `compatibleSdkVersion` 和实际 SDK 声明判断；涉及修复时，须验证高低版本运行结果。
+
+注册表中的能力必须具备完整、可执行的资料；未完成能力包不得注册。
 
 结构校验和工具脚本支持 Windows、macOS、Linux，需要 Node.js 18+。实际接入需要可读取的 HarmonyOS Stage 模型工程；构建与运行能力取决于项目本身的 SDK、签名、设备和工具环境。
 
@@ -57,6 +61,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 | 任务 | 必读工作流 |
 |---|---|
 | 扫描工程 | [工程发现](references/workflows/project-discovery.md) |
+| 已接入特性兼容性扫描／修复 | [兼容性扫描与修复](references/workflows/compatibility-audit.md)，命中特性的 `compatibility-audit.md` |
 | 判断能否接入 | [可行性门禁](references/workflows/feasibility-check.md) |
 | 只设计方案 | [接入方案](references/workflows/integration-design.md) |
 | 修改工程 | [工程实施](references/workflows/implementation.md) |
@@ -104,6 +109,7 @@ description: 为 HarmonyOS / 鸿蒙 OS 新特性提供注册表驱动的识别�
 | 工程验证闭环与报告 | 按[验证闭环](references/workflows/verification.md)调用 `scripts/verify-development.mjs`，采集目标页证据并补录判定 |
 | 输出计划或报告 | [共享输出契约](references/shared/output-contracts.md) 与 `assets/templates/` |
 | 检查 Skill 结构 | 运行 `node scripts/validate-structure.mjs` |
+| 扫描已接入特性的守卫与回退 | 运行 `node scripts/audit-compatibility.mjs --project <path> [--feature <id>] [--sdk <path>] [--product <name>]`；声明及守卫候选须 AI 复核；`--format markdown --review <json>` 生成报告 |
 | 检查已注册能力包 | 运行 `node scripts/validate-feature-package.mjs --feature <id>` |
 
 ## 完成标准

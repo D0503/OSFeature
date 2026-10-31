@@ -14,3 +14,7 @@
 - 用户明确要求闪控窗防窥时，读取[防窥联动](anti-peep-integration.md)，按其中要求加载独立的[防窥能力](../dlp-anti-peep/README.md)。
 
 依据 2026-10-20 本地官方资料快照整理：[闪控窗指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/float-view-guide)、[窗 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatview)、[球指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/floatingball-guide)、[球 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatingball)。版本冲突时核对对应接口与目标 SDK 声明，不按样例工程版本反推 API 起点。
+
+## 已接入工程兼容性扫描
+
+扫描或修复版本守卫与低版本回退时，读取[本特性扫描及回退策略](compatibility-audit.md)和[共享工作流](../../workflows/compatibility-audit.md)。仅检查不改工程；修复后要求高低版本实际运行验证。
