@@ -20,6 +20,8 @@
 
 ## 按任务加载
 
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [公共实现与跟手模式](implementation.md)、候选感知路线、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；不因设计读取而实施可选功能。
+
 - 选型、权限、SDK 门禁：读 [兼容性](compatibility.md)。设备型号、元服务支持等未确认事实不得从示例推断。
 - 工程实施：读 [实施入口](implementation.md)、[回退](fallback.md)，再按 `selectedRoutes` 读对应路线的实现、资产及验证资料。
 - 自定义握持感知：按 [页面接入步骤](routes/holding-hand/implementation.md) 完成权限声明、页面监听、位置状态、转场及关闭处理。

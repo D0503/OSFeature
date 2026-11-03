@@ -2,7 +2,7 @@
 
 本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 7 类能力，包含 14 条接入路线。
 
-当用户要求接入或排查已注册的系统新特性时，按“识别特性 → 验证本机 SDK → 扫描工程 → 兼容性与 SDK 门禁 → 加载能力包 → 方案或实施 → 静态验证 → 构建 → 安装启动 → 目标页导航 → 运行与视觉验证 → 交付报告”的数据流执行，每一步保留文件证据。仅设计方案或诊断问题时，不修改工程。
+先识别任务和全部相关特性，读取能力入口/profile，再按[任务读取表](harmonyos-feature-integration/references/shared/document-loading.md#任务读取表)加载公共与路线资料。新接入先完成工程发现、SDK 核验与可行性；只设计或诊断时交付对应结论并停止，已授权实施/修复或运行验证时再构建、完整部署和取证。单独查询接口版本无需无关工程，验证已有接入不反推历史基线。
 
 - 运行环境：Windows / macOS / Linux，Node.js 18+
 - 实际接入还需要：可读取的 HarmonyOS Stage 模型工程、本机 HarmonyOS SDK（含可验证的 `sdk-pkg.json`）、可用的签名与设备环境
@@ -228,7 +228,7 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 
 运行验证默认走执行器的完整产品构建与 HAP/HSP 部署，只有明确工具阻断才转手动。手动安装通过须引用本轮构建后生成的 `deployment_manifest`（`deploymentEvidence`），并导入安装后设备应用信息 JSON（`installedModules` 指向 `installed_modules` 文件），由自动、手动共用的校验器核对应用版本及模块完整性；单模块构建、缺 HSP、产物变化或只有安装成功日志均不能补录通过。具体格式见[手动验证证据补录](harmonyos-feature-integration/references/workflows/verification.md#手动验证证据补录)。
 
-最终交付默认位于 `<工程>/os-feature-integration/`，包含一份 `integration-report.md` 及其引用的 `evidence/*.png`；报告覆盖改造汇总、类别或路线与模式、视觉验证结果、升级与兼容。过程日志、组件树与合并状态保存在系统临时目录，不生成额外 JSON 汇总报告。重验更新同一改造项当前结果，保留首次已知的接入前版本。
+最终交付默认位于 `<工程>/os-feature-integration/`，包含一份 `integration-report.md` 及其引用的 `evidence/*.png` 或 `evidence/*.jpg`；报告覆盖改造汇总、类别或路线与模式、视觉验证结果、升级与兼容。过程日志、组件树与合并状态保存在系统临时目录，不生成额外 JSON 汇总报告。重验更新同一改造项当前结果，保留首次已知的接入前版本。
 
 ## Skill 维护
 
@@ -241,6 +241,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 | Skill 结构校验 | `node scripts/validate-structure.mjs` |
 | 能力包校验 | `node scripts/validate-feature-package.mjs --feature <特性ID>` |
 | 冒烟测试 | `node evals/run-smoke-tests.mjs` |
+| 文档链接与读取可达性测试 | `node evals/run-document-links-tests.mjs` |
+| 执行器门禁与报告回归 | `node evals/run-executor-regression-tests.mjs` |
 | 智感握姿专项测试 | `node evals/run-smart-reach-tests.mjs` |
 | 平行视界专项测试 | `node evals/run-easygo-tests.mjs` |
 | 智能体框架服务专项测试 | `node evals/run-agent-framework-tests.mjs` |

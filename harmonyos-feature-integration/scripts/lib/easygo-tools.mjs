@@ -135,7 +135,7 @@ export function evaluateEasyGo(inspection, profile) {
     routeSelectionMode: "exclusive", fallbackPolicy: profile.fallbackPolicy,
     fallbackRequirements: ["preserve-pre-integration-source-state", "verify-device-window-and-system-setting", ...(inspection.easyGo?.stateQueries?.length ? ["guard-isEasySplit-api24"] : [])],
     applicationLevel: { eligible: false, reasons: [] }, missingConditions: [],
-    sdk: { status: sdkValid ? "valid" : "insufficient_context", sdkStatus: sdk?.status ?? "missing", sdkPath: sdk?.path ?? null, apiVersion: sdk?.apiVersion ?? "unknown", routes: Object.fromEntries(profile.routes.map((r) => [r.id, sdkValid && sdk.apiVersion >= requiredApi])) }
+    sdk: { status: sdkValid ? "valid" : "insufficient_context", sdkStatus: sdk?.status ?? "missing", sdkPath: sdk?.path ?? null, apiVersion: sdk?.apiVersion ?? "unknown", routes: Object.fromEntries(profile.routes.map((r) => [r.id, { minApi: r.minApi, requiredApi, apiSatisfied: sdkValid && sdk.apiVersion >= requiredApi, status: !sdkValid ? "insufficient_context" : sdk.apiVersion >= requiredApi ? "supported" : "sdk_too_old" }])) }
   }
   if (!sdkValid) { base.missingConditions.push("本机 SDK 根清单未验证；使用 --sdk 指定 SDK"); return base }
   if (inspection.model !== "stage") { base.status = inspection.model === "fa" ? "unsupported" : "insufficient_context"; base.missingConditions.push("需要 Stage 工程"); return base }

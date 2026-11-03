@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import { access, copyFile, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises"
-import { join, resolve } from "node:path"
+import { basename, join, resolve } from "node:path"
+import { imageExt } from "./image-format.mjs"
 import { tmpdir } from "node:os"
 import { parseDevecoJson } from "./deveco-json.mjs"
 
@@ -142,8 +143,8 @@ export async function saveReport(output, directory, collection) {
   await mkdir(output, { recursive: true })
   const reportPath = join(output, "integration-report.md")
   const previous = await exists(reportPath) ? await readFile(reportPath, "utf8") : ""
-  const previousImages = [...previous.matchAll(/<img src="evidence\/([a-f0-9]{64}\.png)" alt="目标页面截图" width="270" \/>/g), ...previous.matchAll(/!\[目标页面截图\]\(<evidence\/([a-f0-9]{64}\.png)>\)/g)].map((m) => m[1])
-  const featureNames = [...new Set(collection.runs.map((r) => r.featureName ?? ({ "immersive-light": "沉浸光感", "easygo-parallel": "平行视界", "smart-reach": "智感握姿", "agent-framework-kit": "智能体框架服务", "gestures-share": "隔空传送" })[r.feature] ?? r.feature))]
+  const previousImages = [...previous.matchAll(/<img src="evidence\/([a-f0-9]{64}\.(?:png|jpe?g))" alt="目标页面截图" width="270" \/>/g), ...previous.matchAll(/!\[目标页面截图\]\(<evidence\/([a-f0-9]{64}\.(?:png|jpe?g))>\)/g)].map((m) => m[1])
+  const featureNames = [...new Set(collection.runs.map((r) => r.featureName ?? ({ "immersive-light": "沉浸光感", "easygo-parallel": "平行视界", "smart-reach": "智感握姿", "agent-framework-kit": "智能体框架服务", "float-view-ball": "闪控窗／球", "dlp-anti-peep": "防窥保护", "gestures-share": "隔空传送" })[r.feature] ?? r.feature))]
   const featureTitle = featureNames.join(" / ") || "系统特性"
   const onlyMaterial = collection.runs.every((r) => r.feature === "immersive-light")
   const lines = [`# ${escape(featureTitle)}接入汇总报告`, "", `工程：${escape(collection.project)}`, "", `## ${escape(featureTitle)}改造汇总`, "", "以下为已实施的代码配置；实际效果以逐项验证结果为准。", "", "| 改造项 | 页面 / 组件 | 已实施配置 | 修改文件 | 运行验证 | 视觉验证 |", "|---|---|---|---|---|---|"]
@@ -172,9 +173,11 @@ export async function saveReport(output, directory, collection) {
       }
     }
     for (const e of r.evidence.filter((v) => v.type === "screenshot")) {
-      const filename = `${e.sha256}.png`
-      const dest = join(output, "evidence", filename)
       if (!await exists(e.path) || await fileHash(e.path) !== e.sha256) throw new Error(`截图丢失或已改变: ${e.path}`)
+      const extension = imageExt(await readFile(e.path))
+      if (!extension) throw new Error(`截图不是有效 PNG/JPEG 图片: ${e.path}`)
+      const filename = `${e.sha256}.${extension}`
+      const dest = join(output, "evidence", filename)
       await mkdir(join(output, "evidence"), { recursive: true })
       if (resolve(e.path) !== resolve(dest)) await copyFile(e.path, dest)
       e.path = dest
@@ -206,10 +209,10 @@ export async function saveReport(output, directory, collection) {
   await copyFile(join(directory, "report.tmp"), reportPath)
   await writeFile(join(directory, "collection.tmp"), JSON.stringify(collection, null, 2), "utf8")
   await rename(join(directory, "collection.tmp"), join(directory, "collection.json"))
-  const currentImages = new Set(collection.runs.flatMap((r) => r.evidence.filter((e) => e.type === "screenshot").map((e) => `${e.sha256}.png`)))
+  const currentImages = new Set(collection.runs.flatMap((r) => r.evidence.filter((e) => e.type === "screenshot").map((e) => basename(e.path))))
   for (const name of previousImages) {
     const path = join(output, "evidence", name)
-    if (!currentImages.has(name) && await exists(path) && await fileHash(path) === name.slice(0, -4)) await unlink(path)
+    if (!currentImages.has(name) && await exists(path) && await fileHash(path) === name.replace(/\.(?:png|jpe?g)$/, "")) await unlink(path)
   }
   return reportPath
 }

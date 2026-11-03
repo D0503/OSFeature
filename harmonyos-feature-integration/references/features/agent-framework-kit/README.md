@@ -6,6 +6,8 @@
 
 ## 按任务加载
 
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [前置条件](prerequisites.md)、[实现约束](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；不因设计读取而实施可选功能。
+
 - SDK、应用类型与设备门禁：[兼容性](compatibility.md)。
 - 尚未创建 Agent、缺少 ID 或未关联应用：[前置操作指引](prerequisites.md)。不要求开发者把平台凭据或签名私钥交给 Skill。
 - 工程实施：[实施](implementation.md)、[回退](fallback.md)和[代码资产](assets-catalog.md)。

@@ -3,6 +3,7 @@
 import { access, readFile } from "node:fs/promises"
 import { dirname, isAbsolute, relative, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { validateDocumentLinks } from "./lib/document-links.mjs"
 
 const EXPECTED_SKILL_NAME = "harmonyos-feature-integration"
 const REGISTRY_VERSION = "1.0"
@@ -132,6 +133,7 @@ export async function validateSkillStructure(skillRoot) {
   }
 
   const features = Array.isArray(registry?.features) ? registry.features : []
+  errors.push(...await validateDocumentLinks(skillRoot, features.filter((feature) => feature?.status === "ready" && typeof feature.entry === "string").map((feature) => feature.entry)))
   for (const path of ["scripts/audit-compatibility.mjs", "references/workflows/compatibility-audit.md",
     ...features.filter(feature => feature?.status === "ready").map(feature => `references/features/${feature.id}/compatibility-audit.md`)]) {
     add(errors, await pathExists(resolve(skillRoot, path)), path, "兼容性扫描入口或能力包回退策略不存在")

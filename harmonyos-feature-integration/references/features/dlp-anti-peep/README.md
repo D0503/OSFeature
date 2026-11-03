@@ -4,6 +4,10 @@
 
 **防窥保护不支持元服务。** 接入前核对目标应用形态；目标为元服务时，明确告知不支持并停止防窥接入，不能因使用 Stage 模型或满足 API 版本就认定可用。设备和其他前提见[兼容性](compatibility.md)。
 
+## 按任务加载
+
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [场景](scenarios.md)、[实现约束](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；设置与风险提示仅在涉及时读取[专项资料](settings-and-information.md)；不因设计读取而实施可选功能。
+
 - 门禁、权限和设备：[兼容性](compatibility.md)。
 - 金融、短视频和即时通讯等目标：[场景选择](scenarios.md)，只实施用户要求的保护内容。
 - 实施：[开发步骤](implementation.md)，状态感知按主流程接入，系统蒙层按第 6 步选配。

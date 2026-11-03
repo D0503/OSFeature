@@ -10,6 +10,8 @@
 
 ## 按任务加载
 
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [实现约束](implementation.md)、[回退](fallback.md)和[双端验证](performance-validation.md)；链接直达涉及时另读[App Linking](app-linking.md)；不因设计读取而实施可选功能。
+
 | 任务 | 资料 |
 |---|---|
 | 版本、设备、开关、权限与账号 | [兼容性与前置条件](compatibility.md) |

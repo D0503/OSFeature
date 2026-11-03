@@ -6,6 +6,8 @@
 
 ## 按任务加载
 
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [公共实现](implementation.md)、候选路线、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；防窥联动仅在明确要求时加载；不因设计读取而实施可选功能。
+
 - SDK、权限、设备与版本：[兼容性](compatibility.md)。
 - 实施：[实施入口](implementation.md)，再按 selectedRoutes 读取 [闪控窗](routes/float-view.md) 、[闪控球](routes/floating-ball.md) 或 [绑定](routes/binding.md)。
 - 路线 ID：`float-view` 为独立窗，`floating-ball` 为独立球，`binding` 为[窗球绑定](routes/binding.md)。绑定只选 binding，内部复用两端能力；两个独立实现同时出现不等于绑定。

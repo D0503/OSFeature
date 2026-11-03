@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url"
 import { verifyDevelopment, parseDevelopmentArgs, inspectVerification } from "../scripts/verify-development.mjs"
 import { buildStages, runHvigorBuild } from "../scripts/lib/hvigor-build.mjs"
 import { navigate, resolveDevecoNodeEntry, validateNavigation } from "../scripts/lib/development-device.mjs"
-import { cacheDirectory, loadCollection, validateChanges } from "../scripts/lib/development-report.mjs"
+import { cacheDirectory, fileHash, loadCollection, validateChanges } from "../scripts/lib/development-report.mjs"
 import { parseDevecoJson } from "../scripts/lib/deveco-json.mjs"
 
 const root = await mkdtemp(join(tmpdir(), "os-feature-tests-"))
@@ -285,8 +285,8 @@ assert.ok(smartReport.includes("（模拟器）"))
 await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, importScreenshot: [devShot] }, emulatorOptions), /真机/)
 const fallbackOnEmulator = await verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, importScreenshot: [devShot], screenshotPurpose: "fallback" }, emulatorOptions)
 assert.equal((await loadCollection(join(root, "sr-emulator"), root)).collection.runs[0].checks.visual.status, "not_run", "回退导入不改变模拟器不能验收握姿效果的事实")
-await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, judgment: { schemaVersion: "1.0", runId: emulatorRun.runId, goal: smartBase.goal, visual: { status: "passed", summary: "误用模拟器回退截图", evidence: refs(fallbackOnEmulator.evidence.find((e) => e.purpose === "fallback")) } } }, emulatorOptions), /回退环境截图/)
-const physicalOptions = { ...emulatorOptions, commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ device: { name: "Mate 真机", osVersion: "API 23" } }), stderr: "" } : options.commandRunner(args) }
+await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, judgment: { schemaVersion: "1.0", runId: emulatorRun.runId, goal: smartBase.goal, visual: { status: "passed", summary: "误用模拟器回退截图", evidence: refs(fallbackOnEmulator.evidence.find((e) => e.purpose === "fallback")) } } }, emulatorOptions), /真机/)
+const physicalOptions = { ...emulatorOptions, commandRunner: async (args) => args[0] === "device" ? { exitCode: 0, stdout: JSON.stringify({ device: { name: "Mate 真机", kind: "device", osVersion: "API 23" } }), stderr: "" } : options.commandRunner(args) }
 assert.equal(parseDevelopmentArgs(["--screenshot-scenario", "左手"]).screenshotScenario, "左手")
 let scenarioShot = 0
 const scenarioOptions = { ...physicalOptions, commandRunner: async (args) => {
@@ -312,7 +312,11 @@ assert.equal((await readdir(join(scenarioOutput, "evidence"))).length, 3)
 assert.ok(!(await readdir(join(scenarioOutput, "evidence"))).includes(`${oldLeft}.png`), "同场景重采清理旧截图")
 await assert.rejects(verifyDevelopment({ project: root, output: scenarioOutput, resume: scenarioRun.runId, captureScreenshot: true, screenshotScenario: "左手", device: "other-phone" }, scenarioOptions), /设备必须/)
 await assert.rejects(verifyDevelopment({ project: root, output: join(root, "sr-emulator"), resume: emulatorRun.runId, captureScreenshot: true, screenshotScenario: "左手" }, emulatorOptions), /安装和目标页导航|真机/)
-const manualRun = await verifyDevelopment({ ...smartBase, output: join(root, "sr-manual"), executeBuild: true, importScreenshot: [devShot, devShot] }, physicalOptions)
+const manualBuilt = await verifyDevelopment({ ...smartBase, output: join(root, "sr-manual"), device: "phone-1", executeBuild: true }, physicalOptions)
+const manualDevicePath = join(root, "sr-manual-device.json")
+await writeFile(manualDevicePath, JSON.stringify({ device: { serial: "phone-1", kind: "device", deviceType: "phone" } }))
+const manualDevice = { schemaVersion: "1.0", runId: manualBuilt.runId, goal: smartBase.goal, device: "phone-1", buildEvidence: refs(manualBuilt.evidence.find((e) => e.type === "build_log"))[0], provenance: "同一手机的原始设备查询信息", deviceInfo: "device", files: [{ key: "device", type: "device_info", path: manualDevicePath, sha256: await fileHash(manualDevicePath) }] }
+const manualRun = await verifyDevelopment({ project: root, output: join(root, "sr-manual"), resume: manualBuilt.runId, manualEvidence: manualDevice, importScreenshot: [devShot, devShot] }, physicalOptions)
 const manualShots = manualRun.evidence.filter((e) => e.type === "screenshot")
 assert.equal(manualShots.length, 2, "可重复导入开发者真机截图")
 assert.ok(manualShots.every((e) => e.origin === "developer"))

@@ -1,5 +1,7 @@
 # 可行性门禁工作流
 
+先按[任务读取表](../shared/document-loading.md#任务读取表)加载本任务的能力包公共资料和相关路线资料；专项场景继续遵循能力入口。
+
 1. 完整读取命中特性的 `profile.json` 与兼容性文档。
 2. 运行 `node scripts/check-compatibility.mjs --project <path> --feature <id> [--sdk <path>]`。先读取输出中的 `sdk`：每条候选路线必须同时满足 SDK 根清单 API、工程有效 compile API 和 `profile.json` 的 `minApi` 门槛；按统一接入策略，target 还须达到 requiredApi 与 minTargetApi 的最大值；计划新增接口也计入 requiredApi。
 3. 将结果解释为：

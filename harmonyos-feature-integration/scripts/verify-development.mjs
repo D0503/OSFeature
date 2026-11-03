@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { randomUUID } from "node:crypto"
-import { mkdir, readFile, rmdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rename, rmdir, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { evaluateCompatibility, inspectProject, loadFeature, verifyInspection } from "./lib/project-tools.mjs"
@@ -10,18 +10,11 @@ import { parseDevecoJson } from "./lib/deveco-json.mjs"
 import { deployProduct, discoverDeployment, planDeployment, verifyDeploymentArtifacts, verifyInstalledModules } from "./lib/development-deployment.mjs"
 import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJudgment } from "./lib/window-privacy-runtime.mjs"
+import { imageExt } from "./lib/image-format.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
 const requiredText = (v, name) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${name} 必填`) }
-const PNG_MAGIC = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
-const JPEG_MAGIC = Buffer.from([0xff, 0xd8, 0xff])
-
-function imageExt(content) {
-  if (content.subarray(0, 8).equals(PNG_MAGIC)) return "png"
-  if (content.subarray(0, 3).equals(JPEG_MAGIC)) return "jpg"
-  return null
-}
 
 function commandEvidence(args, result) {
   return `${JSON.stringify(args)}\nexitCode: ${result.exitCode ?? "unknown"}\n--- stdout ---\n${result.stdout ?? ""}\n--- stderr ---\n${result.stderr ?? ""}`
@@ -32,10 +25,16 @@ function nextEvidenceId(run) {
 }
 
 async function captureDeviceScreenshot(run, runDirectory, scenario, call) {
-  const path = join(runDirectory, `target-${randomUUID()}.png`)
+  let path = join(runDirectory, `target-${randomUUID()}.png`)
   const result = await call(["ui", "screenshot", "--device", run.device, "--path", path])
   if (result.exitCode !== 0 || !await exists(path) || !imageExt(await readFile(path))) {
     throw new Error("截图采集失败或文件不是有效 PNG/JPEG 图片")
+  }
+  const extension = imageExt(await readFile(path))
+  if (extension !== "png") {
+    const destination = path.replace(/\.png$/, `.${extension}`)
+    await rename(path, destination)
+    path = destination
   }
   if (scenario) run.evidence = run.evidence.filter((e) => e.type !== "screenshot" || e.scenario !== scenario)
   run.evidence.push({ id: nextEvidenceId(run), type: "screenshot", purpose: "target", path, sha256: await fileHash(path), ...(scenario ? { scenario } : {}) })
@@ -43,12 +42,13 @@ async function captureDeviceScreenshot(run, runDirectory, scenario, call) {
   run.checks.visual = check("inconclusive", `已采集目标页截图 ${count} 张，等待 AI 实际阅读并补录判定`)
 }
 
-function detectDeviceKind(deviceInfo, target) {
+export function detectDeviceKind(deviceInfo, target) {
   let info = deviceInfo
   if (typeof info === "string") { try { info = parseDevecoJson(info, "device") } catch { return "unknown" } }
   const candidate = info?.device ?? info?.data ?? info
-  const fields = [target, candidate?.name, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.connectType]
-  return fields.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v.trim()))) ? "emulator" : "physical"
+  const fields = [target, candidate?.name, candidate?.model, candidate?.serial ?? candidate?.serialNumber, candidate?.deviceType ?? candidate?.type, candidate?.connectType, candidate?.kind, candidate?.deviceKind]
+  if (candidate?.isEmulator === true || fields.some((v) => typeof v === "string" && (/emulator|模拟器|simulator/i.test(v) || /^127\.0\.0\.1:\d+$/.test(v.trim())))) return "emulator"
+  return candidate?.isEmulator === false || /^(physical|real|真机)$/i.test(candidate?.deviceKind ?? "") || /^device$/i.test(candidate?.kind ?? "") || /^usb$/i.test(candidate?.connectType ?? "") ? "physical" : "unknown"
 }
 
 export function detectAgentDeviceKind(deviceInfo, target) {
@@ -63,7 +63,8 @@ export function detectAgentDeviceKind(deviceInfo, target) {
   return supported && physical ? "physical" : "unknown"
 }
 
-function requireAgentPhysical(run) {
+function requirePhysicalDevice(run) {
+  if (run.feature === "smart-reach" && (run.deviceKind === "emulator" || detectDeviceKind(run.deviceInfo, run.device) !== "physical")) throw new Error("智感握姿效果验证仅允许已确认的真机，模拟器或设备类型未知不能验收")
   if (run.feature === "gestures-share" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("隔空传送验收需要已确认的 Phone/Tablet/PC/2in1 真机，并补录双端传送证据")
   if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") throw new Error("Agent Framework Kit 运行与视觉验证需要已确认的 Phone/Tablet 真机，模拟器或设备类型未知不能验收")
   if (run.feature === "dlp-anti-peep" && detectPrivacyDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("防窥保护效果验证需要已确认的 Phone 真机，模拟器或设备类型未知不能验收")
@@ -79,7 +80,7 @@ export function detectGesturesDeviceKind(deviceInfo, target) {
 
 export function validateGesturesShareJudgment(run, level, item, evidence) {
   if (run.feature !== "gestures-share" || item.status !== "passed") return
-  requireAgentPhysical(run)
+  requirePhysicalDevice(run)
   if (level === "visual" && new Set(evidence.filter(e => e.type === "screenshot").map(e => e.sha256)).size < 2) throw new Error("隔空传送视觉通过须引用发送与接收两端的不同截图")
   if (level === "runtime") {
     for (const scenario of ["sender-grab", "receiver-content", "background-cleanup"]) {
@@ -127,10 +128,9 @@ async function importManualEvidence(run, runDirectory, manifest) {
     if ((device?.serial ?? device?.serialNumber) !== run.device) throw new Error("手动设备信息与本轮 device 不一致")
     if (run.deviceKind === "emulator") throw new Error("不能用手动证据覆盖本轮模拟器事实")
     run.deviceInfo = data
-    run.deviceKind = detectAgentDeviceKind(data, run.device)
+    run.deviceKind = run.feature === "smart-reach" ? detectDeviceKind(data, run.device) : detectAgentDeviceKind(data, run.device)
   }
-  requireAgentPhysical(run)
-  if (run.feature === "smart-reach" && run.deviceKind !== "physical") throw new Error("智感握姿手动验证仅允许已确认的真机")
+  requirePhysicalDevice(run)
   const stages = manifest.stages ?? {}
   let deploymentVerified = false
   for (const [key, stage] of Object.entries(stages)) {
@@ -179,8 +179,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
 async function importDeveloperScreenshots(run, runDirectory, paths, purpose = "target") {
   if (!Array.isArray(paths) || !paths.length) return
   if (purpose === "target") {
-    requireAgentPhysical(run)
-    if (run.feature === "smart-reach" && run.deviceKind === "emulator") throw new Error("智感握姿视觉验证只能使用真机，不能在模拟器运行中导入截图")
+    requirePhysicalDevice(run)
   }
   for (const item of paths) {
     const source = resolve(item)
@@ -240,7 +239,7 @@ function developerOnlyVisual(judgment, run) {
 export async function applyJudgment(run, judgment, runs = [run]) {
   if (judgment?.schemaVersion !== "1.0" || judgment.runId !== run.runId || judgment.goal !== run.goal) throw new Error("判定必须绑定本次 runId 与 goal")
   if (judgment.visual || judgment.runtime) {
-    requireAgentPhysical(run)
+    requirePhysicalDevice(run)
     if (run.checks.build.status !== "passed") throw new Error("构建未通过，不能补录效果判定")
     if (judgment.runtime?.status === "passed" && run.checks.install.origin === "manual" && !run.deploymentVerified) throw new Error("手动部署完整性尚未核验，不能补录运行通过；请补齐本轮产物及设备模块清单")
     const partialManualRuntime = judgment.runtime?.status === "inconclusive" && run.manualVerification && judgment.runtime.evidence?.length && judgment.runtime.evidence.every((ref) => run.evidence.find((e) => e.id === ref.id && e.sha256 === ref.sha256)?.origin === "manual")
@@ -335,6 +334,7 @@ export async function verifyDevelopment(request, options = {}) {
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
       if (run.feature === "gestures-share") run.deviceKind = detectGesturesDeviceKind(run.deviceInfo, run.device)
+      if (run.feature === "smart-reach" && run.deviceKind !== "emulator") run.deviceKind = detectDeviceKind(run.deviceInfo, run.device)
       if (run.feature === "agent-framework-kit" && run.deviceKind !== "emulator") run.deviceKind = detectAgentDeviceKind(run.deviceInfo, run.device)
       if (request.manualEvidence) await importManualEvidence(run, join(directory, run.runId), request.manualEvidence)
       if (request.captureScreenshot) {
@@ -357,7 +357,7 @@ export async function verifyDevelopment(request, options = {}) {
           run.deviceInfo = data
         }
         try { await captureDeviceScreenshot(run, join(directory, run.runId), request.screenshotScenario, (args) => (options.commandRunner ?? runDeveco)(args, request.project)) }
-        catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
+        catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG/JPEG，未完成视觉验证") }
       }
       await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot, request.screenshotPurpose)
       if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
@@ -400,13 +400,14 @@ export async function verifyDevelopment(request, options = {}) {
     run.after = { sdk: inspection.localSdk.apiVersion ?? "unknown", compile: inspection.api.compile, target: inspection.api.target, compatible: inspection.api.compatible }
     await record("static", JSON.stringify({ inspection, compatibility, staticResult }, null, 2), "json")
     run.checks.sdk = compatibility.availableRoutes?.includes(run.route) && inspection.localSdk.status === "valid" ? check("passed", `本机 SDK API ${run.after.sdk}，${run.route} 路线可用`) : check("failed", "本机 SDK 或工程版本不满足所选路线，需先完成版本门禁")
-    const routeMinApi = compatibility.routes?.[run.route]?.minApi ?? compatibility.sdk?.routes?.[run.route]?.minApi
+    const selectedRoute = profile.routes.find((route) => route.id === run.route)
+    const routeMinApi = Math.max(selectedRoute.minApi, compatibility.routeRequirements?.[run.route] ?? compatibility.sdk?.routes?.[run.route]?.requiredApi ?? compatibility.requiredApi ?? selectedRoute.minApi)
     if (Number.isInteger(routeMinApi) && Number.isInteger(run.after.compatible) && routeMinApi > run.after.compatible) {
-      run.checks.fallback = check("not_run", `存在低版本兼容分支（compatible API ${run.after.compatible} < 路线门槛 ${routeMinApi}），需在低版本环境实测回退表现后补录判定`)
+      run.checks.fallback = check("not_run", `存在低版本兼容分支（compatible API ${run.after.compatible} < 本次能力门槛 ${routeMinApi}），需在低版本环境实测回退表现后补录判定`)
     } else if (!Number.isInteger(run.after.compatible) || !Number.isInteger(routeMinApi)) {
-      run.checks.fallback = check("not_run", "路线门槛或最低兼容 API 未知，需先确认版本关系再判断是否存在低版本回退分支")
+      run.checks.fallback = check("not_run", "能力门槛或最低兼容 API 未知，需先确认版本关系再判断是否存在低版本回退分支")
     } else {
-      run.checks.fallback = check("not_applicable", `工程最低兼容 API ${run.after.compatible} 不低于所选路线门槛 ${routeMinApi}，无低版本回退分支`)
+      run.checks.fallback = check("not_applicable", `工程最低兼容 API ${run.after.compatible} 不低于所选本次能力门槛 ${routeMinApi}，无低版本回退分支`)
     }
     run.staticFindings = staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status))
     const priorReviews = new Map(collection.runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.review).map((f) => [f.id, f.review])))
@@ -487,11 +488,11 @@ export async function verifyDevelopment(request, options = {}) {
       await call(logArgs, "runtime_log")
       if (request.captureLayout) await call(["ui", "layout", "--device", request.device, "--format", "json", "--mode", "full", "--depth", "0"], "component_tree")
       run.checks.visual = check("not_run", "尚未采集截图或提供视觉判定")
-      if (profile.featureId === "smart-reach" && run.deviceKind === "emulator") {
-        run.checks.visual = check("not_run", "智感握姿视觉验证只能使用真机；检测到目标设备为模拟器，未采集截图")
+      if (profile.featureId === "smart-reach" && run.deviceKind !== "physical") {
+        run.checks.visual = check("not_run", "智感握姿视觉验证只能使用真机；模拟器或未知设备不采集截图")
       } else if (request.captureScreenshot) {
         try { await captureDeviceScreenshot(run, runDirectory, request.screenshotScenario, call) }
-        catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG，未完成视觉验证") }
+        catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG/JPEG，未完成视觉验证") }
       }
     } else {
       run.checks.runtime.summary = `未完成目标页验证：${run.checks.navigation.summary}`

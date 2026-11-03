@@ -4,6 +4,8 @@
 
 ## 按需加载
 
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [配置确认](configuration-confirmation.md)、[配置规则](configuration.md)、候选路线、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；不因设计读取而实施可选功能。
+
 | 任务 | 读取资料 |
 |---|---|
 | 任意平行视界请求 | [profile.json](profile.json)、[兼容性](compatibility.md) |

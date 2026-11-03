@@ -46,6 +46,12 @@
 
 资料未知时显式标记待确认，不以模型记忆填充。版本、权限、设备支持和外部条件必须能回溯到来源。
 
+## 读取链路校验
+
+入口按[任务读取表](shared/document-loading.md#任务读取表)明确设计、实施、验证、扫描和诊断的必读资料与条件加载。公共文档与路线文档合并，索引须能到达正文，同文件承担多个角色合法。
+
+`validate-structure.mjs` 检查 references 下 Markdown 的本地链接、章节锚点、主入口可达性及各能力 README 在包内的可达性；能力包校验复用该检查。profile 声明不代替 README 的读取路径。运行 `node evals/run-document-links-tests.mjs` 验证断链、失效锚点、孤立资料及循环引用；结构通过不证明文档语义完整或 Agent 已实际读取，仍须按任务走查。
+
 ## 注册流程
 
 1. 为新特性选择稳定 ID，在 `references/features/<id>/` 中完成自包含能力包与 `profile.json`。
