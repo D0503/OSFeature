@@ -89,6 +89,11 @@ await C.createFloatView(config, info => {
 assert.equal(env.config, config);
 await assert.rejects(C.createFloatView(config), /already exists/);
 assert.throws(() => C.getWindowProperties(), /not available/);
+for (const state of [undefined, 3, 6]) {
+  C.state = state;
+  assert.equal(C.getFloatViewProperties(), undefined, '页面加载、STOPPED、ERROR 时安全读取保留布局');
+}
+C.state = undefined;
 await assert.rejects(C.restoreMainWindow(), /STARTED/);
 const size = { width: 200, height: 100 }, storage = {};
 failPage = true;

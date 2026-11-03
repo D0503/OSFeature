@@ -136,7 +136,7 @@ await FloatViewController.switchTemplate(property);
 
 switchTemplate 只改变系统模板和窗口尺寸，页面还需同步改变自己的展开／紧凑布局状态；等待接口成功后再提交页面状态，失败保留原布局。切回原模板时重新读取目标模板的限制。条目数量、显示区域、onLimitsChange 变化，以及原工程既有断点或屏幕尺寸机制的更新（见[屏幕尺寸与断点响应](#屏幕尺寸与断点响应借用原工程既有机制)），都按当前模板重算尺寸；设计尺寸从 vp 转成 px 后再校验宽高和比例限制，实际布局参考 onRectChange 与 avoidArea。详细流程见[绑定场景的更新与替换](binding.md#4-系统切换与业务更新)，这些窗更新步骤也可独立使用。
 
-片段放入现有异步错误处理入口，按实际状态控制操作；控制器不存在时方法抛出异常。窗页面顶部必须预留固定避让空间：常规态（ROUNDED_RECTANGLE 展开矩形）top padding 32vp，mini 态（HORIZONTAL_BAR 紧凑横条）top padding 4vp，模板切换时随布局状态同步。再根据 `FloatViewController.getWindowProperties().avoidArea` 布局，避免交互控件落入不响应区域，不固定为某款手机的尺寸。
+片段放入现有异步错误处理入口，按实际状态控制操作；控制器不存在时更新方法抛出异常。窗页面顶部必须预留固定避让空间：常规态（ROUNDED_RECTANGLE 展开矩形）top padding 32vp，mini 态（HORIZONTAL_BAR 紧凑横条）top padding 4vp，模板切换时随布局状态同步。布局属性通过 `FloatViewController.getFloatViewProperties()` 读取，返回 undefined 时保留当前布局；取得属性后根据 `properties.avoidArea` 避让，避免交互控件落入不响应区域，不固定为某款手机的尺寸。
 
 ### 展开／收起页面片段
 
@@ -242,7 +242,7 @@ export struct FloatViewContent {
 
 **请求尺寸不是保证值**：系统可能按模板约束调整请求的宽高（横条模板的实际高度常小于请求高度），最终矩形以 `onRectChange` 为准。因此内容行**不写固定 height**，由内容自适应高度，垂直位置交给根容器 `justifyContent(FlexAlign.Center)`——窗口无论实际多高内容都居中，不会偏下或底部裁剪（上方片段即此写法）。确需固定视觉行高的少数场景，才从 `onRectChange` 的 `windowRect.height` 换算实际高度并收敛行高，不凭请求值设定。
 
-`avoidArea` 内的组件不响应手势，左右留白也必须覆盖展开按钮，不能只给文本加 padding。属性须在窗口有效后读取；页面加载期间返回 undefined 时暂不更新，并在 STARTED 后通过业务现有状态通知触发首次读取。片段在内容布局、模板切换成功和窗口矩形变化后刷新；页面退出仅退订自己的 rectChanged 回调。若工程已通过创建时的 onRectChange 统一分发矩形变化，复用该回调刷新上述状态，不重复注册。左右 padding 是页面内部避让，不额外增加已设置的窗口外部宽度。
+`avoidArea` 内的组件不响应手势，左右留白也必须覆盖展开按钮，不能只给文本加 padding。通过 `getFloatViewProperties()` 读取有效窗口属性；页面加载期间返回 undefined 时暂不更新，并在 STARTED 后通过业务现有状态通知触发首次读取。片段在内容布局、模板切换成功和窗口矩形变化后刷新；页面退出仅退订自己的 rectChanged 回调。若工程已通过创建时的 onRectChange 统一分发矩形变化，复用该回调刷新上述状态，不重复注册。左右 padding 是页面内部避让，不额外增加已设置的窗口外部宽度。
 
 **内容驱动尺寸**：展开布局按头部、内容条目和操作区计算高度，紧凑布局按摘要和操作区计算宽度，顶部预留（常规态 32vp、mini 态 4vp）计入各自高度；通过实际 UIContext 将 vp 换为 px，再按目标模板的宽高及比例约束选取尺寸。内容超过窗口上限时使用内部滚动或截断，不复制固定的单行高度、断点或窗口大小；计算值仅用于请求尺寸，页面布局不绑定它（见上文「请求尺寸不是保证值」）。
 

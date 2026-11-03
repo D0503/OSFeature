@@ -13,12 +13,16 @@ export struct Agent {
   // 当前示例为普通应用的默认按钮入口，最低运行 API 为 20。
   private readonly minAgentApi: number = 20;
   private agentId: string = ''; // 填写已关联当前应用的真实 Agent ID。
+  private isPageVisible: boolean = false;
+  private supportRequestId: number = 0;
 
   private isRuntimeSupported(): boolean {
     return deviceInfo.apiAvailable(this.minAgentApi) && canIUse('SystemCapability.AI.Agent.AgentKit');
   }
 
   aboutToAppear(): void {
+    this.isPageVisible = true;
+    this.supportRequestId++;
     this.isAgentSupport = false;
     if (!this.isRuntimeSupported() || this.agentId.length === 0 || this.agentId.length > 64) {
       return;
@@ -36,8 +40,10 @@ export struct Agent {
   }
 
   async checkAgentSupport(uiContext: UIContext): Promise<void> {
+    const requestId = ++this.supportRequestId;
     const controller = this.controller;
-    if (!this.isRuntimeSupported() || !controller) {
+    const agentId = this.agentId;
+    if (!this.isPageVisible || !this.isRuntimeSupported() || !controller) {
       return;
     }
     try {
@@ -45,9 +51,16 @@ export struct Agent {
       if (!context) {
         return;
       }
-      this.isAgentSupport = await controller.isAgentSupport(context, this.agentId);
+      const supported = await controller.isAgentSupport(context, agentId);
+      if (this.isPageVisible && requestId === this.supportRequestId &&
+        controller === this.controller && agentId === this.agentId) {
+        this.isAgentSupport = supported;
+      }
     } catch (err) {
-      this.isAgentSupport = false;
+      if (this.isPageVisible && requestId === this.supportRequestId &&
+        controller === this.controller && agentId === this.agentId) {
+        this.isAgentSupport = false;
+      }
       const error = err as BusinessError;
       hilog.error(0x0000, 'AgentExample', 'check agent support failed, code: %{public}d, message: %{public}s', error.code, error.message);
     }
@@ -79,6 +92,8 @@ export struct Agent {
   };
 
   aboutToDisappear(): void {
+    this.isPageVisible = false;
+    this.supportRequestId++;
     this.isAgentSupport = false;
     const controller = this.controller;
     if (!this.isRuntimeSupported() || !controller) {

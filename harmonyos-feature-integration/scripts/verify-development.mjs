@@ -11,6 +11,7 @@ import { deployProduct, discoverDeployment, planDeployment, verifyDeploymentArti
 import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJudgment } from "./lib/window-privacy-runtime.mjs"
 import { imageExt } from "./lib/image-format.mjs"
+import { readJsonFile } from "./lib/json-file.mjs"
 import { assertVerificationInputs, moduleArtifactHashes, projectInputHash } from "./lib/verification-inputs.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -546,7 +547,7 @@ export function parseDevelopmentArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const request = parseDevelopmentArgs(process.argv.slice(2))
-    for (const key of ["changes", "navigate", "judgment", "manualEvidence"]) if (request[key]) request[key] = JSON.parse(await readFile(request[key], "utf8"))
+    for (const key of ["changes", "navigate", "judgment", "manualEvidence"]) if (request[key]) request[key] = await readJsonFile(request[key])
     const result = await verifyDevelopment(request)
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
     if (result.status === "failed") process.exitCode = 1

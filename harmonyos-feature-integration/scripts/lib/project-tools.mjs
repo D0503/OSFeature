@@ -360,8 +360,9 @@ function inspectModules(files) {
   for (const file of files.filter((item) => /(?:^|\/)module\.json5$/.test(item.path))) {
     const name = parseScalar(file.content, "name")
     const type = parseScalar(file.content, "type")
-    const metadataMaterial = /ohos\.arkui\.UIMaterial\.state/.exec(file.content)
-    const applicationMaterialState = metadataMaterial ? parseScalar(file.content.slice(metadataMaterial.index), "value").value ?? "present" : null
+    const searchable = maskComments(file.content)
+    const metadataMaterial = /ohos\.arkui\.UIMaterial\.state/.exec(searchable)
+    const applicationMaterialState = metadataMaterial ? parseScalar(searchable.slice(metadataMaterial.index), "value").value ?? "present" : null
     const effectiveApplicationMaterialState = applicationMaterialState === null
       ? "default"
       : ["default", "enable", "disable"].includes(applicationMaterialState)
