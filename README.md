@@ -243,6 +243,7 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 | 冒烟测试 | `node evals/run-smoke-tests.mjs` |
 | 文档链接与读取可达性测试 | `node evals/run-document-links-tests.mjs` |
 | 执行器门禁与报告回归 | `node evals/run-executor-regression-tests.mjs` |
+| 清单解析器边界测试 | `node evals/run-manifest-parser-tests.mjs` |
 | 智感握姿专项测试 | `node evals/run-smart-reach-tests.mjs` |
 | 平行视界专项测试 | `node evals/run-easygo-tests.mjs` |
 | 智能体框架服务专项测试 | `node evals/run-agent-framework-tests.mjs` |
@@ -256,6 +257,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 | 窗球绑定控制器测试 | `node evals/run-float-view-ball-controller-tests.mjs` |
 | 防窥工具资产测试 | `node evals/run-anti-peep-utils-tests.mjs` |
 | 手动验证证据测试 | `node evals/run-manual-verification-tests.mjs` |
+
+`readManifest` 解析工程清单的 JSON5 子集：支持注释、单/双引号、字符串转义与续行、嵌套对象/数组、尾逗号和有限十进制/十六进制数。未加引号的键限定 ASCII 标识符；Unicode 键可加引号。重复键、非有限数、表达式及不支持语法报错，不执行配置代码；不承诺完整 JSON5 语法。
 
 `evals.json` 是行为评测定义，场景数量和脚本退出成功不能替代目标工程的构建、真机交互与视觉验收。
 

@@ -409,4 +409,4 @@ await FloatViewController.startFloatView();
 
 `registerStateChangeCallback(state, callback)` 为指定状态设置业务回调，同状态再次注册会覆盖；`unRegisterStateChangeCallback()` 清除这些业务回调，保留内部状态更新和 STOPPED 清理。创建时传入的 onStateChange 不受该方法影响。
 
-尺寸限制使用 `registerLimitsChangeCallback(callback)` / `UnRegisterLimitsChangeCallback(callback?)`；矩形变化使用 `onRectChangeCallback(callback)` / `offRectChangeCallback(callback?)`。传原回调只退订该回调，不传则退订该类全部监听，包括创建时注册的监听。STOPPED 统一清理，后续创建时重新注册。
+尺寸限制使用 `registerLimitsChangeCallback(callback)` / `unRegisterLimitsChangeCallback(callback?)`；矩形变化使用 `onRectChangeCallback(callback)` / `offRectChangeCallback(callback?)`。传原回调只退订该回调，不传则退订该类全部监听，包括创建时注册的监听。STOPPED 统一清理，后续创建时重新注册。

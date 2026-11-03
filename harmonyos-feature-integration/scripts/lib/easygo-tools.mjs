@@ -2,13 +2,14 @@
 const object = (v) => v !== null && typeof v === "object" && !Array.isArray(v)
 const own = (v, k) => Object.prototype.hasOwnProperty.call(v, k)
 
-// Read the JSON5 subset used by module manifests without evaluating application code.
+// Manifest subset: ASCII unquoted keys, finite numbers, comments and trailing commas.
+// Reject unsupported syntax and duplicate keys; never evaluate application code.
 export function readManifest(text) {
   let i = 0
   const skip = () => {
     while (i < text.length) {
       if (/\s/.test(text[i])) { i++; continue }
-      if (text.slice(i, i + 2) === "//") { while (i < text.length && text[i] !== "\n") i++; continue }
+      if (text.slice(i, i + 2) === "//") { while (i < text.length && !/[\n\r\u2028\u2029]/.test(text[i])) i++; continue }
       if (text.slice(i, i + 2) === "/*") {
         const end = text.indexOf("*/", i + 2)
         if (end < 0) throw new Error("Unterminated comment")
@@ -23,13 +24,20 @@ export function readManifest(text) {
     while (i < text.length) {
       const c = text[i++]
       if (c === quote) return result
+      if (c === "\n" || c === "\r") throw new Error("Unescaped line break in string")
       if (c !== "\\") { result += c; continue }
+      if (i >= text.length) throw new Error("Unterminated string escape")
       const e = text[i++]
+      if (/[\n\r\u2028\u2029]/.test(e)) {
+        if (e === "\r" && text[i] === "\n") i++
+        continue
+      }
+      if (/[1-9]/.test(e) || (e === "0" && /[0-9]/.test(text[i] ?? ""))) throw new Error("Invalid numeric escape")
       if (e === "u" || e === "x") {
         const n = e === "u" ? 4 : 2, hex = text.slice(i, i + n)
         if (!new RegExp(`^[a-fA-F0-9]{${n}}$`).test(hex)) throw new Error("Invalid escape")
         result += String.fromCharCode(parseInt(hex, 16)); i += n
-      } else result += ({ n: "\n", r: "\r", t: "\t", b: "\b", f: "\f" })[e] ?? e
+      } else result += ({ n: "\n", r: "\r", t: "\t", b: "\b", f: "\f", v: "\v", 0: "\0" })[e] ?? e
     }
     throw new Error("Unterminated string")
   }
@@ -58,10 +66,14 @@ export function readManifest(text) {
       }
       i++; return out
     }
-    const m = /^(?:true|false|null|-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)/.exec(text.slice(i))
+    const m = /^(?:true|false|null|[+-]?(?:0[xX][a-fA-F0-9]+|(?:(?:0|[1-9]\d*)(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?))/.exec(text.slice(i))
     if (!m) throw new Error("Unsupported manifest value")
     i += m[0].length
-    return m[0] === "null" ? null : m[0] === "true" ? true : m[0] === "false" ? false : Number(m[0])
+    if (m[0] === "null") return null
+    if (m[0] === "true" || m[0] === "false") return m[0] === "true"
+    const number = /^[+-]?0[xX]/.test(m[0]) ? (m[0][0] === "-" ? -1 : 1) * parseInt(m[0].replace(/^[+-]/, ""), 16) : Number(m[0])
+    if (!Number.isFinite(number)) throw new Error("Unsupported non-finite manifest number")
+    return number
   }
   const result = value(); skip()
   if (i !== text.length) throw new Error("Unexpected manifest suffix")

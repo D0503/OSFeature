@@ -77,6 +77,8 @@ export class FloatViewBallController {
 
   public static async stop(): Promise<void> {
     try {
+      // 绑定后停止任一端会由系统结束双端，只向一端发送停止请求。
+      // 请求完成不代表双端均已 STOPPED，释放引用前仍需等待两端终态。
       if (FloatViewController.state !== floatView.FloatViewState.STOPPED) {
         await FloatViewController.stopFloatView();
       } else if (FloatingBallController.state !== floatingBall.FloatingBallState.STOPPED) {

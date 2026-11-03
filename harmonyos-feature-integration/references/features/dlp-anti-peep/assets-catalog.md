@@ -21,7 +21,7 @@
 
 `listenOnAntiPeepStatus` 在内部创建转发回调。需要与其他订阅者共存时，应保存实际注册的回调并使用 API 的可选 callback 参数退订，不能将页面外层的 `AntiPeepCallback` 对象作为底层回调直接传入。
 
-`showSystemMaskLayer` 的 Promise 拒绝分支先返回 false，后续 `then` 仍可能输出成功日志；应以返回值判断结果，不以成功日志认定蒙层生效。蒙层失败不恢复已隐藏的内容。
+`showSystemMaskLayer` 在平台接口完成时返回 true；不支持、接口拒绝或同步抛出异常时返回 false，异常使用 error 级别日志记录。页面以返回值判断调用结果，实际蒙层效果仍需真机验证；蒙层失败不恢复已隐藏的内容。
 
 ## API23 用户设置入口
 

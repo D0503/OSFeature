@@ -20,8 +20,13 @@ function commandEvidence(args, result) {
   return `${JSON.stringify(args)}\nexitCode: ${result.exitCode ?? "unknown"}\n--- stdout ---\n${result.stdout ?? ""}\n--- stderr ---\n${result.stderr ?? ""}`
 }
 
-function nextEvidenceId(run) {
-  return `E${Math.max(0, ...run.evidence.map((e) => Number(/^E(\d+)$/.exec(e.id)?.[1] ?? 0))) + 1}`
+export function nextEvidenceId(run) {
+  let maximum = 0
+  for (const evidence of run.evidence) {
+    const number = Number(/^E(\d+)$/.exec(evidence.id)?.[1] ?? 0)
+    if (number > maximum) maximum = number
+  }
+  return `E${maximum + 1}`
 }
 
 async function captureDeviceScreenshot(run, runDirectory, scenario, call) {

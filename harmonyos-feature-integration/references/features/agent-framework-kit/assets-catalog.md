@@ -6,6 +6,8 @@
 
 同一个控制器用于查询、组件绑定及对话框事件。页面进入时查询可用性并订阅事件，离开时以同一回调分别退订。
 
+当前页面示例面向普通应用，使用默认按钮，`minAgentApi` 固定为 20。接入时根据目标工程类型和按钮配置选择门槛：普通应用的默认按钮使用 20，元服务或使用 `ICON_ABOVE_TITLE` 的入口使用 21；示例不会自动识别这些场景。
+
 ### 运行 API 与前置条件
 
 - **应用**：本机 SDK、compile 至少 API 20（HarmonyOS 6.0.0），`minAgentApi` 使用 20；**元服务**：本机 SDK、compile 至少 API 21（HarmonyOS 6.0.1），将 `minAgentApi` 设置为 21。若使用 `ICON_ABOVE_TITLE`，应用也须使用 API 21 门槛。以下示例使用 SDK 26.0.0+ 编译，以 `deviceInfo.apiAvailable` 检查运行设备版本；路线本身的运行门槛不变。旧编译 SDK 可沿用 `deviceInfo.sdkApiVersion` 判断。

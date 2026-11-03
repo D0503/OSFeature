@@ -57,13 +57,13 @@ export function getAntiPeepInfo(): dlpAntiPeep.DlpAntiPeepStatus | undefined {
   try {
     if (canUseAntiPeep()) {
       let dlpAntiPeepStatus = dlpAntiPeep.getDlpAntiPeepInfo();
-      hilog.info(0x0000, TAG, `getDlpHideInfo success. ${JSON.stringify(dlpAntiPeepStatus)}`);
+      hilog.info(0x0000, TAG, `getDlpAntiPeepInfo success. ${JSON.stringify(dlpAntiPeepStatus)}`);
       return dlpAntiPeepStatus;
     } else {
       return undefined;
     }
   } catch (err) {
-    hilog.info(0x0000, TAG, `getDlpHideInfo failed. ${JSON.stringify(err)}`);
+    hilog.error(0x0000, TAG, `getDlpAntiPeepInfo failed. ${JSON.stringify(err)}`);
     return undefined;
   }
 }
@@ -117,13 +117,13 @@ export function showSystemMaskLayer(windowId: number): Promise<boolean> {
   return new Promise((resolve) => {
     try {
       if (canUseAntiPeep()) {
-        dlpAntiPeep.setAntiPeepMaskLayer(windowId).catch((err: BusinessError) => {
-          hilog.error(0x0000, TAG, `Execute setAntiPeepMaskLayer failed. error code:${err.code}, error message:${err.message}`);
-          resolve(false);
-        }).then(() => {
+        dlpAntiPeep.setAntiPeepMaskLayer(windowId).then(() => {
           hilog.info(0x0000, TAG, `setAntiPeepMaskLayer success`);
           resolve(true);
-        })
+        }).catch((err: BusinessError) => {
+          hilog.error(0x0000, TAG, `Execute setAntiPeepMaskLayer failed. error code:${err.code}, error message:${err.message}`);
+          resolve(false);
+        });
       } else {
         resolve(false);
       }

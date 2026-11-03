@@ -4,7 +4,7 @@ import { tmpdir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
-import { applyJudgment, detectDeviceKind, verifyDevelopment } from "../scripts/verify-development.mjs"
+import { applyJudgment, detectDeviceKind, nextEvidenceId, verifyDevelopment } from "../scripts/verify-development.mjs"
 import { cacheDirectory, exists, fileHash, loadCollection, saveReport } from "../scripts/lib/development-report.mjs"
 import { evaluateCompatibility, inspectProject, loadFeature } from "../scripts/lib/project-tools.mjs"
 
@@ -13,6 +13,13 @@ const work = await mkdtemp(join(tmpdir(), "feature-executor-regression-"))
 const fixture = (name) => join(root, "evals/fixtures", name)
 const output = join(work, "report"), project = fixture("easygo-router-api23")
 try {
+  assert.equal(nextEvidenceId({ evidence: [] }), "E1")
+  assert.equal(nextEvidenceId({ evidence: [{ id: "E9" }, { id: "other" }, { id: "E2" }, { id: "E9" }] }), "E10")
+  const largeEvidence = Array.from({ length: 300_000 }, (_, index) => ({ id: `E${index + 1}` }))
+  largeEvidence[1] = { id: "E900000" }
+  assert.equal(nextEvidenceId({ evidence: largeEvidence }), "E900001", "大量证据按最大编号分配 ID，不受函数参数数量限制")
+  assert.equal(largeEvidence.length, 300_000)
+  assert.equal(largeEvidence[1].id, "E900000", "分配 ID 不修改已有证据")
   const { profile } = await loadFeature(root, "easygo-parallel")
   const inspection = await inspectProject(project, { sdkPath: fixture("sdk-api23") })
   const compatibility = evaluateCompatibility(inspection, profile)

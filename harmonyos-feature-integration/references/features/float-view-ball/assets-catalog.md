@@ -19,7 +19,7 @@
 | `getFloatViewLimits(template)` | 获取模板尺寸限制，失败记录日志并返回 null |
 | `getFloatViewProperties()` | 获取有效窗口属性，失败记录日志并返回 undefined |
 | `registerStateChangeCallback(state, callback)` / `unRegisterStateChangeCallback()` | 按指定状态注册业务回调；同状态覆盖，退订全部此类业务回调 |
-| `registerLimitsChangeCallback(callback)` / `UnRegisterLimitsChangeCallback(callback?)` | 注册尺寸限制回调，按原回调或全部退订 |
+| `registerLimitsChangeCallback(callback)` / `unRegisterLimitsChangeCallback(callback?)` | 注册尺寸限制回调，按原回调或全部退订 |
 | `onRectChangeCallback(callback)` / `offRectChangeCallback(callback?)` | 注册矩形变化回调，按原回调或全部退订 |
 | `getWindowProperties()` | 同步读取有效窗口的属性；未启动、停止或异常状态抛错 |
 | `stopFloatView()` | 发出停止请求，STOPPED 时退订并清空引用 |

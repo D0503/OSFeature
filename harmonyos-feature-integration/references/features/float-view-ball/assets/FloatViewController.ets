@@ -152,7 +152,7 @@ export class FloatViewController {
     }
   }
 
-  public static UnRegisterLimitsChangeCallback(callback?: (info: floatView.FloatViewLimits) => void): void {
+  public static unRegisterLimitsChangeCallback(callback?: (info: floatView.FloatViewLimits) => void): void {
     const controller = FloatViewController.floatViewController;
     if (!controller) { throw new Error('Float view controller is not initialized'); }
     try {

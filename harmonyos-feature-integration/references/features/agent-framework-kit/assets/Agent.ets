@@ -10,7 +10,8 @@ import { UIContext } from '@ohos.arkui.UIContext';
 export struct Agent {
   @Local isAgentSupport: boolean = false;
   private controller: FunctionController | undefined = undefined;
-  private readonly minAgentApi: number = 20; // 元服务或 ICON_ABOVE_TITLE 改为 21。
+  // 当前示例为普通应用的默认按钮入口，最低运行 API 为 20。
+  private readonly minAgentApi: number = 20;
   private agentId: string = ''; // 填写已关联当前应用的真实 Agent ID。
 
   private isRuntimeSupported(): boolean {
