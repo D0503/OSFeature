@@ -200,7 +200,7 @@ assert.ok(!content.includes("RAW_ENGLISH_STATIC_DETAIL") && !content.includes("R
 assert.ok(content.includes("等待 AI 实际阅读"), "未判读的截图不能通过")
 assert.equal((content.match(/等待 AI 实际阅读/g) ?? []).length, 1, "不重复输出视觉结论")
 
-// Static review judgments resolve warn findings project-wide and persist across runs.
+// Static reviews belong to one run; every new target requires its own review.
 const reviewJudgment = { schemaVersion: "1.0", runId: readable.runId, goal: "首页悬浮栏", staticReview: { results: [{ id: "scrollable-tab-tail-clearance", status: "passed", note: "已逐页确认补偿归属唯一滚动容器" }] } }
 const reviewed = await verifyDevelopment({ project: root, output: request("readable").output, resume: readable.runId, judgment: reviewJudgment }, readableOptions)
 content = await readFile(reviewed.report, "utf8")
@@ -209,8 +209,9 @@ assert.ok(content.includes("静态检查通过，warn 项已全部复核"))
 assert.ok(!content.includes("待核对"))
 const inherited = await verifyDevelopment({ ...request("readable"), goal: "弹窗材质", changes: popupChanges }, readableOptions)
 content = await readFile(inherited.report, "utf8")
-assert.ok(content.includes("已复核通过"), "静态复核按检查项在工程内继承")
-assert.ok(!content.includes("待核对"))
+assert.ok(content.includes("已复核通过"), "报告保留原目标已完成的复核")
+assert.ok(content.includes("待核对"), "新增目标不能继承原目标的复核")
+assert.equal((await loadCollection(request("readable").output, root)).collection.runs.find(r => r.runId === inherited.runId).checks.static.status, "inconclusive")
 await assert.rejects(verifyDevelopment({ project: root, output: request("readable").output, resume: inherited.runId, judgment: { ...reviewJudgment, runId: inherited.runId, goal: "弹窗材质", staticReview: { results: [{ id: "version-guard", status: "passed", note: "不存在" }] } } }, readableOptions), /不存在或不是 warn/)
 const failedRun = await verifyDevelopment(request("review-failed"), readableOptions)
 await assert.rejects(verifyDevelopment({ project: root, output: request("review-failed").output, resume: failedRun.runId, judgment: { schemaVersion: "1.0", runId: failedRun.runId, goal: "首页悬浮栏", staticReview: { results: [{ id: "scrollable-tab-tail-clearance", status: "passed" }] } } }, readableOptions), /note/)

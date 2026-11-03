@@ -11,6 +11,7 @@ import { deployProduct, discoverDeployment, planDeployment, verifyDeploymentArti
 import { cacheDirectory, deriveVerdict, exists, fileHash, hash, loadCollection, sameTarget, saveReport, validateChanges } from "./lib/development-report.mjs"
 import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJudgment } from "./lib/window-privacy-runtime.mjs"
 import { imageExt } from "./lib/image-format.mjs"
+import { assertVerificationInputs, moduleArtifactHashes, projectInputHash } from "./lib/verification-inputs.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
@@ -202,7 +203,7 @@ async function importDeveloperScreenshots(run, runDirectory, paths, purpose = "t
 
 export async function inspectVerification(request) {
   const { profile } = await loadFeature(skillRoot, request.feature)
-  const inspection = await inspectProject(request.project, { sdkPath: request.sdk })
+  const inspection = await inspectProject(request.project, { sdkPath: request.sdk, product: request.product ?? "default" })
   const compatibility = evaluateCompatibility(inspection, profile)
   return { inspection, compatibility, staticResult: verifyInspection(inspection, compatibility, request.route) }
 }
@@ -214,10 +215,11 @@ export function recomputeStaticCheck(run) {
   else run.checks.static = check("passed", findings.some((f) => f.review) ? "静态检查通过，warn 项已全部复核" : "静态检查通过")
 }
 
-function applyStaticReview(runs, review) {
+function applyStaticReview(run, review) {
   const results = review?.results
   if (!Array.isArray(results) || !results.length) throw new Error("staticReview.results 必须是非空数组")
-  const warnIds = new Set(runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.status === "warn").map((f) => f.id)))
+  const findings = run.staticFindings ?? []
+  const warnIds = new Set(findings.filter((f) => f.status === "warn").map((f) => f.id))
   const byId = new Map()
   for (const item of results) {
     if (!item || typeof item.id !== "string" || !item.id.trim()) throw new Error("staticReview.results[].id 必填")
@@ -227,12 +229,8 @@ function applyStaticReview(runs, review) {
     requiredText(item.note, `staticReview 结果 ${item.id} 的 note`)
     byId.set(item.id, { status: item.status, note: item.note })
   }
-  for (const run of runs) {
-    const findings = run.staticFindings ?? []
-    if (!findings.some((f) => f.status === "warn" && byId.has(f.id))) continue
-    for (const finding of findings) if (finding.status === "warn" && byId.has(finding.id)) finding.review = structuredClone(byId.get(finding.id))
-    recomputeStaticCheck(run)
-  }
+  for (const finding of findings) if (finding.status === "warn" && byId.has(finding.id)) finding.review = structuredClone(byId.get(finding.id))
+  recomputeStaticCheck(run)
 }
 
 function developerOnlyVisual(judgment, run) {
@@ -241,7 +239,7 @@ function developerOnlyVisual(judgment, run) {
   return refs.every((ref) => ["developer", "manual"].includes(run.evidence.find((v) => v.id === ref.id && v.sha256 === ref.sha256)?.origin))
 }
 
-export async function applyJudgment(run, judgment, runs = [run]) {
+export async function applyJudgment(run, judgment) {
   if (judgment?.schemaVersion !== "1.0" || judgment.runId !== run.runId || judgment.goal !== run.goal) throw new Error("判定必须绑定本次 runId 与 goal")
   if (judgment.visual || judgment.runtime) {
     requirePhysicalDevice(run)
@@ -318,7 +316,7 @@ export async function applyJudgment(run, judgment, runs = [run]) {
     }
   }
   if (!judgment.visual && !judgment.runtime && !judgment.staticReview && !judgment.fallback) throw new Error("判定文件没有 fallback、visual、runtime 或 staticReview 结论")
-  if (judgment.staticReview) applyStaticReview(runs, judgment.staticReview)
+  if (judgment.staticReview) applyStaticReview(run, judgment.staticReview)
 }
 
 export async function verifyDevelopment(request, options = {}) {
@@ -338,6 +336,7 @@ export async function verifyDevelopment(request, options = {}) {
       if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot && !request.manualEvidence) throw new Error("resume 需要提供 judgment、手动证据、导入截图或采集截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
+      await assertVerificationInputs(run, output)
       if (run.feature === "gestures-share") run.deviceKind = detectGesturesDeviceKind(run.deviceInfo, run.device)
       if (run.feature === "smart-reach" && run.deviceKind !== "emulator") run.deviceKind = detectDeviceKind(run.deviceInfo, run.device)
       if (run.feature === "agent-framework-kit" && run.deviceKind !== "emulator") run.deviceKind = detectAgentDeviceKind(run.deviceInfo, run.device)
@@ -365,7 +364,8 @@ export async function verifyDevelopment(request, options = {}) {
         catch { run.checks.visual = check("not_run", "截图采集失败或文件不是有效 PNG/JPEG，未完成视觉验证") }
       }
       await importDeveloperScreenshots(run, join(directory, run.runId), request.importScreenshot, request.screenshotPurpose)
-      if (request.judgment) await applyJudgment(run, request.judgment, collection.runs)
+      if (request.judgment) await applyJudgment(run, request.judgment)
+      await assertVerificationInputs(run, output)
       const report = await saveReport(output, directory, collection)
       return { runId: run.runId, report, status: deriveVerdict(run), evidence: run.evidence }
     }
@@ -385,6 +385,7 @@ export async function verifyDevelopment(request, options = {}) {
       changes: structuredClone(request.changes), createdAt: new Date().toISOString(), device: request.device ?? null, evidence: [],
       checks: Object.fromEntries(["static", "sdk", "build", "install", "navigation", "runtime", "visual", "fallback"].map((key) => [key, check("not_run", "尚未执行")]))
     }
+    run.inputHash = await projectInputHash(request.project, output)
     const record = async (type, content, extension = "log") => {
       const id = `E${run.evidence.length + 1}`
       const path = join(runDirectory, `${id}.${extension}`)
@@ -415,8 +416,6 @@ export async function verifyDevelopment(request, options = {}) {
       run.checks.fallback = check("not_applicable", `工程最低兼容 API ${run.after.compatible} 不低于所选本次能力门槛 ${routeMinApi}，无低版本回退分支`)
     }
     run.staticFindings = staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status))
-    const priorReviews = new Map(collection.runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.review).map((f) => [f.id, f.review])))
-    for (const finding of run.staticFindings) if (run.feature !== "gestures-share" && run.feature !== "agent-framework-kit" && !WINDOW_PRIVACY_FEATURES.includes(run.feature) && finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
     recomputeStaticCheck(run)
     if (staticResult.counts.fail && run.checks.static.status !== "failed") run.checks.static = check("failed", "静态门禁失败")
     run.checks.build = check("not_run", "未请求构建")
@@ -443,9 +442,15 @@ export async function verifyDevelopment(request, options = {}) {
           // 构建后立即冻结产物；签名资格在确认设备类型后、安装或手动验收前核验。
           run.deployment = await (options.deploymentPlanner ?? planDeployment)(request.project, run, { allowUnsigned: true, expected: run.expectedDeployment })
           run.deploymentEvidence = await record("deployment_manifest", JSON.stringify(run.deployment, null, 2), "json")
+          run.artifacts = (run.deployment.modules ?? []).map(({ path, sha256 }) => ({ path, sha256 }))
         } catch (error) { run.deploymentError = `完整部署产物核验失败：${error.message}` }
       }
+      if (result.exitCode === 0 && run.buildScope === "module") {
+        run.artifacts = await moduleArtifactHashes(request.project, run, inspection.modules)
+      }
     }
+    try { await assertVerificationInputs(run, output) }
+    catch (error) { run.deploymentError ??= error.message }
     let launchArgs = []
     run.checks.install.summary = !request.executeRun ? "未请求安装运行" : !request.device ? "未指定目标设备，需先选择设备" : "本轮构建未通过，未安装运行"
     if (run.deploymentError) run.checks.install = check("failed", run.deploymentError)
@@ -504,6 +509,8 @@ export async function verifyDevelopment(request, options = {}) {
       run.checks.visual.summary = `未完成目标页视觉验证：${run.checks.build.status !== "passed" ? run.checks.build.summary : run.checks.install.status !== "passed" ? run.checks.install.summary : run.checks.navigation.summary}`
     }
     await importDeveloperScreenshots(run, runDirectory, request.importScreenshot, request.screenshotPurpose)
+    try { await assertVerificationInputs(run, output) }
+    catch (error) { run.checks.static = check("failed", error.message) }
     const previous = collection.runs.find((r) => sameTarget(r, run))
     if (previous) {
       for (const key of ["sdk", "compile", "target", "compatible"]) {

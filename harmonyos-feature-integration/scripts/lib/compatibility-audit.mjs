@@ -80,7 +80,7 @@ export async function auditProject(skillRoot, options) {
   const configPath = resolve(root, 'build-profile.json5')
   const config = readManifest(await readFile(configPath, 'utf8'))
   const products = productContexts(config, options.product)
-  const inspection = await inspectProject(root, { sdkPath: options.sdk })
+  const inspection = await inspectProject(root, { sdkPath: options.sdk, product: options.product ?? products[0]?.product })
   const files = await walk(root, name => /\.(ets|ts|json5?)$/.test(name) && !/\.d\.(ts|ets)$/.test(name))
   const features = []
   for (const feature of registry.features.filter(f => !options.feature || f.id === options.feature)) {

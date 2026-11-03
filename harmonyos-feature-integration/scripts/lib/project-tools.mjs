@@ -7,6 +7,7 @@ import { inspectSmartReach, evaluateSmartReach, verifySmartReach } from "./smart
 import { inspectAgentFramework, evaluateAgentFramework, verifyAgentFramework } from "./agent-framework-tools.mjs"
 import { inspectWindowPrivacy, evaluateWindowPrivacy, verifyWindowPrivacy } from "./window-privacy-tools.mjs"
 import { inspectMaterialInventory } from "./material-inventory.mjs"
+import { readManifest } from "./easygo-tools.mjs"
 
 const SKIP_DIRECTORIES = new Set([".git", ".idea", ".hvigor", "build", "node_modules", "oh_modules"])
 const TEXT_EXTENSIONS = new Set([".ets", ".ts", ".json", ".json5"])
@@ -335,27 +336,23 @@ async function collectProjectFiles(projectRoot) {
   return files
 }
 
-function firstConfigValue(files, key) {
-  const candidates = []
-  for (const file of files.filter((item) => /(?:^|\/)build-profile\.json5$/.test(item.path))) {
-    const searchable = maskComments(file.content)
-    for (const match of searchable.matchAll(scalarMatcher(key, "gi"))) {
-      const api = parseApiLevel(match[1] ?? match[2] ?? match[3] ?? null)
-      if (api === null) continue
-      candidates.push({
-        value: api,
-        evidence: {
-          kind: key,
-          path: file.path,
-          line: lineNumber(file.content, match.index ?? 0),
-          excerpt: excerpt(file.content, match.index ?? 0)
-        }
-      })
-    }
-  }
-  const values = new Set(candidates.map((candidate) => candidate.value))
-  if (values.size !== 1) return { value: null, evidence: null, conflictingValues: [...values] }
-  return { ...candidates[0], conflictingValues: [] }
+function productConfiguration(files, selected) {
+  const file = files.find((item) => item.path === "build-profile.json5")
+  const app = file ? readManifest(file.content).app ?? {} : {}
+  const products = app.products ?? []
+  const name = selected ?? (products.some((p) => p.name === "default") ? "default" : products.length === 1 ? products[0].name : products.length ? null : "default")
+  if (!name) throw new Error("多个 product 且无 default，请通过 --product 明确选择")
+  const matches = products.filter((p) => p.name === name)
+  if (products.length && matches.length !== 1) throw new Error(`product 不存在或重名：${name}`)
+  if (!products.length && name !== "default") throw new Error(`product 不存在：${name}`)
+  const product = matches[0] ?? {}
+  const values = Object.fromEntries(["compatibleSdkVersion", "targetSdkVersion", "compileSdkVersion"].map((key) => {
+    const owner = Object.hasOwn(product, key) ? product : app
+    const configured = Object.hasOwn(owner, key)
+    return [key, { value: configured ? parseApiLevel(owner[key]) : null, configured,
+      evidence: configured ? { kind: key, path: file.path, property: owner === product ? `app.products[${name}].${key}` : `app.${key}`, value: owner[key] } : null }]
+  }))
+  return { name, ...values }
 }
 
 function inspectModules(files) {
@@ -472,11 +469,12 @@ export async function inspectProject(projectPath, options = {}) {
 
   const files = await collectProjectFiles(projectRoot)
   const modules = inspectModules(files)
-  const compatible = firstConfigValue(files, "compatibleSdkVersion")
-  const target = firstConfigValue(files, "targetSdkVersion")
-  const compile = firstConfigValue(files, "compileSdkVersion")
+  const configuration = productConfiguration(files, options.product)
+  const compatible = configuration.compatibleSdkVersion
+  const target = configuration.targetSdkVersion
+  const compile = configuration.compileSdkVersion
   const localSdk = await inspectLocalSdk(projectRoot, options.sdkPath, compile.value)
-  const effectiveCompile = compile.value ?? (localSdk.status === "valid" ? localSdk.apiVersion : null)
+  const effectiveCompile = compile.configured ? compile.value : (localSdk.status === "valid" ? localSdk.apiVersion : null)
   const hasStageConfig = modules.length > 0
   const hasFaConfig = files.some((file) => /(?:^|\/)config\.json$/.test(file.path))
   const model = hasStageConfig && !hasFaConfig ? "stage" : hasFaConfig && !hasStageConfig ? "fa" : "unknown"
@@ -492,12 +490,13 @@ export async function inspectProject(projectPath, options = {}) {
   return {
     schemaVersion: "1.0",
     projectRoot: slash(projectRoot),
+    product: configuration.name,
     model,
     api: {
       compatible: compatible.value ?? "unknown",
       target: target.value ?? "unknown",
       compile: effectiveCompile ?? "unknown",
-      compileSource: compile.value === null ? (localSdk.status === "valid" ? "local-sdk-default" : "unknown") : "build-profile"
+      compileSource: compile.configured ? "build-profile" : (localSdk.status === "valid" ? "local-sdk-default" : "unknown")
     },
     localSdk,
     modules,
