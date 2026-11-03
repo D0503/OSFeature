@@ -64,8 +64,30 @@ export function detectAgentDeviceKind(deviceInfo, target) {
 }
 
 function requireAgentPhysical(run) {
+  if (run.feature === "gestures-share" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("隔空传送验收需要已确认的 Phone/Tablet/PC/2in1 真机，并补录双端传送证据")
   if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") throw new Error("Agent Framework Kit 运行与视觉验证需要已确认的 Phone/Tablet 真机，模拟器或设备类型未知不能验收")
   if (run.feature === "dlp-anti-peep" && detectPrivacyDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("防窥保护效果验证需要已确认的 Phone 真机，模拟器或设备类型未知不能验收")
+}
+
+export function detectGesturesDeviceKind(deviceInfo, target) {
+  let info = deviceInfo
+  if (typeof info === "string") { try { info = parseDevecoJson(info, "device") } catch { return "unknown" } }
+  const device = info?.device ?? info?.data ?? info
+  if (!/^(phone|tablet|pc|2in1)$/i.test(device?.deviceType ?? device?.type ?? "")) return "unknown"
+  return detectAgentDeviceKind({ ...device, deviceType: "phone" }, target)
+}
+
+export function validateGesturesShareJudgment(run, level, item, evidence) {
+  if (run.feature !== "gestures-share" || item.status !== "passed") return
+  requireAgentPhysical(run)
+  if (level === "visual" && new Set(evidence.filter(e => e.type === "screenshot").map(e => e.sha256)).size < 2) throw new Error("隔空传送视觉通过须引用发送与接收两端的不同截图")
+  if (level === "runtime") {
+    for (const scenario of ["sender-grab", "receiver-content", "background-cleanup"]) {
+      const observation = item.observations?.find(v => v.scenario === scenario)
+      requiredText(observation?.note, `隔空传送 ${scenario} 观察说明（含双端设备及当前内容）`)
+      if (!observation.evidence?.length || observation.evidence.some(ref => !evidence.some(e => e.id === ref.id && e.sha256 === ref.sha256 && ["runtime_log", "component_tree"].includes(e.type)))) throw new Error(`隔空传送 ${scenario} 须引用本轮运行日志证据`)
+    }
+  }
 }
 
 export function detectPrivacyDeviceKind(deviceInfo, target) {
@@ -242,6 +264,7 @@ export async function applyJudgment(run, judgment, runs = [run]) {
     if (level === "visual" && evidence.some((v) => v.purpose === "fallback")) throw new Error("回退环境截图只能用于兼容方案回退判定，不能用于目标特性的视觉验收")
     if (level === "runtime" && !evidence.some((v) => ["runtime_log", "component_tree"].includes(v.type))) throw new Error("运行判定需要日志或交互组件树证据")
     validateWindowPrivacyJudgment(run, level, item, evidence)
+    validateGesturesShareJudgment(run, level, item, evidence)
     if (run.feature === "agent-framework-kit" && item.status === "passed") {
       if (level === "visual" && new Set(evidence.filter((e) => e.type === "screenshot").map((e) => e.sha256)).size < 2) throw new Error("Function 视觉通过需要入口与对话框打开状态两张不同截图")
       if (level === "runtime") {
@@ -311,13 +334,14 @@ export async function verifyDevelopment(request, options = {}) {
       if (!request.judgment && !request.importScreenshot?.length && !request.captureScreenshot && !request.manualEvidence) throw new Error("resume 需要提供 judgment、手动证据、导入截图或采集截图")
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
+      if (run.feature === "gestures-share") run.deviceKind = detectGesturesDeviceKind(run.deviceInfo, run.device)
       if (run.feature === "agent-framework-kit" && run.deviceKind !== "emulator") run.deviceKind = detectAgentDeviceKind(run.deviceInfo, run.device)
       if (request.manualEvidence) await importManualEvidence(run, join(directory, run.runId), request.manualEvidence)
       if (request.captureScreenshot) {
         requiredText(request.screenshotScenario, "screenshot-scenario")
         if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
         if (!run.device || run.checks.install.status !== "passed" || run.checks.navigation.status !== "passed") throw new Error("补采截图需要本轮安装和目标页导航已通过")
-        if (run.feature === "smart-reach" || run.feature === "agent-framework-kit" || run.feature === "dlp-anti-peep") {
+        if (run.feature === "smart-reach" || run.feature === "agent-framework-kit" || run.feature === "dlp-anti-peep" || run.feature === "gestures-share") {
           const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
           const queryId = nextEvidenceId(run)
           const queryPath = join(directory, run.runId, `${queryId}.log`)
@@ -327,7 +351,7 @@ export async function verifyDevelopment(request, options = {}) {
           await saveReport(output, directory, collection)
           if (info.exitCode !== 0) throw new Error(`设备信息查询命令失败（退出码：${info.exitCode ?? "未知"}）；证据：${queryPath}`)
           const data = parseDevecoJson(info.stdout, "device")
-          const kind = run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
+          const kind = run.feature === "gestures-share" ? detectGesturesDeviceKind(data, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
           if (kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
           run.deviceKind = kind
           run.deviceInfo = data
@@ -386,7 +410,7 @@ export async function verifyDevelopment(request, options = {}) {
     }
     run.staticFindings = staticResult.checks.filter((v) => ["fail", "warn"].includes(v.status))
     const priorReviews = new Map(collection.runs.flatMap((r) => (r.staticFindings ?? []).filter((f) => f.review).map((f) => [f.id, f.review])))
-    for (const finding of run.staticFindings) if (run.feature !== "agent-framework-kit" && !WINDOW_PRIVACY_FEATURES.includes(run.feature) && finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
+    for (const finding of run.staticFindings) if (run.feature !== "gestures-share" && run.feature !== "agent-framework-kit" && !WINDOW_PRIVACY_FEATURES.includes(run.feature) && finding.status === "warn" && priorReviews.has(finding.id)) finding.review = structuredClone(priorReviews.get(finding.id))
     recomputeStaticCheck(run)
     if (staticResult.counts.fail && run.checks.static.status !== "failed") run.checks.static = check("failed", "静态门禁失败")
     run.checks.build = check("not_run", "未请求构建")
@@ -428,9 +452,11 @@ export async function verifyDevelopment(request, options = {}) {
         try { run.deviceInfo = parseDevecoJson(info.stdout, "device") }
         catch (error) { deviceError = error.message }
       }
-      if (info.exitCode === 0) run.deviceKind = run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(run.deviceInfo, request.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
+      if (info.exitCode === 0) run.deviceKind = run.feature === "gestures-share" ? detectGesturesDeviceKind(run.deviceInfo, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(run.deviceInfo, request.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
       if (deviceError) {
         run.checks.install = { ...check("failed", deviceError), reportSummary: deviceError }
+      } else if (run.feature === "gestures-share" && run.deviceKind !== "physical") {
+        run.checks.install = check("not_run", "隔空传送需要已确认的双端真机，未执行安装运行")
       } else if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "Agent Framework Kit 需要已确认的 Phone/Tablet 真机，未执行安装运行")
       } else if (run.feature === "dlp-anti-peep" && run.deviceKind !== "physical") {

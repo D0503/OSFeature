@@ -10,7 +10,7 @@
 6. 具备条件时使用执行器完成构建与部署，不能因命令简单而改走单包安装。执行器安装、启动或导航受阻且无法由代理自动解决时（如设备锁屏需人工解锁、系统弹窗或账号授权需真人交互、无障碍采集被安全策略限制），记录具体阻断原因后转入手动验证：保持本轮构建与设备不变，只手动完成受阻步骤；部署已核验时不重新单包覆盖安装。手动安装同样必须安装清单内全部 HAP/HSP、查询安装后的设备应用信息，并由同一校验器核对模块集合与版本，缺包、查询失败或缺少证据时不标记安装和运行通过。同步采集截图、组件树与运行日志，再按“手动验证证据补录”纳入同一份报告。效果类改造至少采集操作前与操作后（或保护前与保护后）两张不同截图，支持 PNG 与 JPEG，不得因格式问题省略。
 7. 按[回退路径实测](#回退路径实测)验证兼容方案，并结合能力包列出的门槛、触发条件和保留行为补录判定。
 8. AI 实际读取证据并对照能力包后补录判定。能力查询启动时机、滚动末项可达、交互回退等动态行为需要运行观察，单张静态图不能证明。手动验证导入的截图同样必须由 AI 实际阅读后再补录视觉判定。
-   必须尝试用当前可用的图片读取工具打开截图后再判定；读取失败时准确记录失败原因。截图中的几何布局、实际材质观感与动态交互分开判断；没有错误日志只能作为辅助信息，不能推导材质生效或作用域合法。一个页面的截图不能验收其他页面、未弹出的浮层或未操作的列表。
+   必须尝试用当前可用的图片读取工具打开截图后再判定；读取失败时准确记录失败原因。截图中的几何布局、目标视觉效果与动态交互分开判断；没有错误日志只能作为辅助信息，不能推导目标特性已生效或作用范围正确。一个页面的截图不能验收其他页面、未弹出的浮层或未操作的列表。
    按能力包的运行矩阵验证每个目标和窗口条件，判定规则见所选路线的验证资料。
 9. 输出一份 Markdown 与其截图附件。编译通过不代表视觉通过；低版本、不支持、关闭、设备算力、系统设置和性能未覆盖时明确标记未验证，所有回退条件与实施前源程序状态基线逐项对照。
 
@@ -37,10 +37,10 @@
 ## 命令
 
 ```text
-node scripts/verify-development.mjs --project <工程> --feature immersive-light --route arkui --goal <目标> --changes <改造记录.json> --sdk <SDK目录> --product <产品名> --module <模块名> --build-mode debug --execute-build --execute-run --device <设备> --navigate <导航.json> --capture-screenshot --capture-layout
+node scripts/verify-development.mjs --project <工程> --feature <特性ID> --route <路线ID> --goal <目标> --changes <改造记录.json> --sdk <SDK目录> --product <产品名> --module <模块名> --build-mode debug --execute-build --execute-run --device <设备> --navigate <导航.json> --capture-screenshot --capture-layout
 ```
 
-- `--route` 明确为 `arkui` 或 `hds`，组合路线和多个目标顺序执行，汇总到同一报告。
+- `--feature` 使用注册表中的特性 ID，`--route` 明确为该能力包 `profile.json` 中的选中路线 ID；组合路线和多个目标顺序执行，汇总到同一报告。
 - `--product`、`--build-mode` 默认 `default`、`debug`，执行前核对工程。运行验证始终构建并部署当前产品的完整本地运行模块集，`--module` 指定其中的启动模块，只填模块名（如 `entry`），不填 Hvigor 的 `entry@default`；省略时须存在唯一 entry 模块。`--ability` 指定启动模块中实际声明的 Ability，`--bundle` 限定运行日志所属应用。
 - `--import-screenshot <路径>` 可重复传入开发者按引导在真机采集的 PNG/JPEG 截图，随新运行或与 `--resume` 组合为已有运行补挂截图；导入后仍须由 AI 实际阅读并补录视觉判定。
 - `--screenshot-purpose target|fallback` 与 `--import-screenshot` 配合使用，默认 `target`。目标截图导入后视觉状态变为未确认，须重新判图；回退截图用 `fallback`，在同一 `runId` 下导入并补录回退判定，保留原设备的效果结论。
@@ -57,11 +57,11 @@ node scripts/verify-development.mjs --project <工程> --feature immersive-light
 ```json
 {
   "schemaVersion": "1.0",
-  "id": "home-floating-tabs",
+  "id": "home-feature-entry",
   "page": "首页",
-  "component": "Tabs",
-  "category": "悬浮 Tab",
-  "effect": "底部 Tabs 配置悬浮样式与系统默认材质",
+  "component": "目标组件",
+  "category": "本次特性类别",
+  "effect": "目标组件已按所选路线接入系统特性，实际效果待验证",
   "files": ["entry/src/main/ets/pages/Home.ets"],
   "before": { "sdk": 26, "compile": 26, "target": 26, "compatible": 23 },
   "fallback": [
@@ -72,7 +72,7 @@ node scripts/verify-development.mjs --project <工程> --feature immersive-light
 }
 ```
 
-每条记录只覆盖一个可独立验证的页面/组件改造项，列出该项实际修改文件。`effect` 只描述已经实施的代码配置，例如“列表已添加尾部补偿，滚动效果待验证”，不得把预期效果写成验证结论。应用级 ENABLE 单独作为配置记录；具体组件是否生效仍需分别验证，不能据此宣称全量覆盖。
+每条记录只覆盖一个可独立验证的页面/组件改造项，列出该项实际修改文件。`effect` 只描述已经实施的代码配置，不得把预期效果写成验证结论。涉及应用级配置时单独记录；具体组件是否生效仍需分别验证，不能据此宣称全量覆盖。
 
 `fallback` 各条件的 `status` 反映实测进度：存在低版本兼容分支（compatible 低于路线 minApi）时，`low-api` 不得停留在 `not_run` 交付——要么按[回退路径实测](#回退路径实测)完成回退实测并填写 `evidence`，要么在报告待处理事项中写明无法获得回退环境的具体阻断；工程最低兼容 API 不低于路线门槛时该项填 `not_applicable` 并说明依据。`unsupported`、`disabled` 同理按能力包声明的回退路径处理。
 
@@ -123,7 +123,7 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --judgme
 
 `staticReview` 用于补录静态 `warn` 项的复核结论：`id` 必须是本次报告中存在的 warn 检查项，`status` 只允许 `passed`（复核无问题）或 `failed`（确认缺陷，需修复后重验），`note` 必填并写明代码依据。复核按检查项 ID 在整个工程的所有改造项上生效并在此后重验中继承；`fail` 级发现不接受复核补录，必须修复。仅包含 `staticReview` 的补录不要求构建或安装已通过。所有 warn 项复核通过后静态检查才标记通过。
 
-`summary` 用简短中文说明本改造项实际观察到的结果、尚未覆盖的内容及限制；证据 ID 和哈希只放在 `evidence` 字段，正文不堆放 E 编号、日志原文或设备 JSON。几何参数仅支持布局结论，材质观感需实际判图；存在未验证要求时不得整体写成通过。
+`summary` 用简短中文说明本改造项实际观察到的结果、尚未覆盖的内容及限制；证据 ID 和哈希只放在 `evidence` 字段，正文不堆放 E 编号、日志原文或设备 JSON。几何参数仅支持布局结论，目标视觉效果需实际判图；存在未验证要求时不得整体写成通过。
 
 ## 手动验证证据补录
 

@@ -1,3 +1,4 @@
+import { inspectGesturesShare, evaluateGesturesShare, verifyGesturesShare } from "./gestures-share-tools.mjs"
 import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
@@ -512,6 +513,7 @@ export async function inspectProject(projectPath, options = {}) {
     signals,
     easyGo: inspectEasyGo(files, maskComments),
     smartReach: inspectSmartReach(files, maskComments),
+    gesturesShare: inspectGesturesShare(files, maskComments),
     agentFramework: inspectAgentFramework(files, maskComments),
     ...inspectWindowPrivacy(files, maskComments),
     materialInventory: await inspectMaterialInventory(files, maskComments),
@@ -525,6 +527,7 @@ export async function inspectProject(projectPath, options = {}) {
 }
 
 export function evaluateCompatibility(inspection, profile) {
+  if (profile.featureId === "gestures-share") return evaluateGesturesShare(inspection, profile)
   if (["float-view-ball", "dlp-anti-peep"].includes(profile.featureId)) return evaluateWindowPrivacy(inspection, profile)
   if (profile.featureId === "agent-framework-kit") return evaluateAgentFramework(inspection, profile)
   if (profile.featureId === "smart-reach") return evaluateSmartReach(inspection, profile)
@@ -719,6 +722,7 @@ function effectiveArkuiMaterialState(inspection) {
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
+  if (compatibility.featureId === "gestures-share") return verifyGesturesShare(inspection, compatibility, routeOption)
   if (["float-view-ball", "dlp-anti-peep"].includes(compatibility.featureId)) return verifyWindowPrivacy(inspection, compatibility, routeOption)
   if (compatibility.featureId === "agent-framework-kit") return verifyAgentFramework(inspection, compatibility, routeOption)
   if (compatibility.featureId === "smart-reach") return verifySmartReach(inspection, compatibility, routeOption)

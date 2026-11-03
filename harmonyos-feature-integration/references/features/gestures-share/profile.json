@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "gestures-share",
+  "displayName": "隔空传送",
+  "routeComposition": {
+    "mode": "exclusive",
+    "selectionField": "selectedRoutes",
+    "allowed": [
+      "gestures-share"
+    ]
+  },
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": [
+      "runtime-version-unsupported",
+      "device-capability-unsupported",
+      "feature-disabled",
+      "trust-denied",
+      "content-unavailable",
+      "service-failed"
+    ],
+    "preserve": [
+      "component-tree-or-existing-code-path",
+      "responsive-layout-orientation-and-window-mode",
+      "state-data-controllers-events-and-lifecycle",
+      "existing-error-denial-and-unavailable-behavior",
+      "ordinary-visual-style"
+    ]
+  },
+  "routes": [
+    {
+      "id": "gestures-share",
+      "displayName": "隔空传送文件与链接",
+      "minApi": 20,
+      "requiresStage": true,
+      "moduleTypes": [
+        "entry",
+        "feature"
+      ],
+      "components": [
+        "harmonyShare"
+      ],
+      "documents": {
+        "implementation": "implementation.md",
+        "assets": "implementation.md",
+        "validation": "performance-validation.md"
+      }
+    }
+  ],
+  "documents": {
+    "entry": "README.md",
+    "compatibility": "compatibility.md",
+    "implementation": "implementation.md",
+    "validation": "performance-validation.md",
+    "assets": "implementation.md",
+    "fallback": "fallback.md",
+    "sharedValidation": "performance-validation.md",
+    "troubleshooting": "troubleshooting.md",
+    "compatibilityAudit": "compatibility-audit.md",
+    "appLinking": "app-linking.md"
+  },
+  "evidence": {
+    "policy": "snapshot-first-verify-on-change-or-conflict"
+  }
+}

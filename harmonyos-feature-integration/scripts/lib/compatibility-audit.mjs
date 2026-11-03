@@ -7,6 +7,7 @@ const skip = new Set(['.git', '.idea', '.hvigor', 'build', 'node_modules', 'oh_m
 const slash = s => s.replaceAll('\\', '/')
 const line = (s, i) => s.slice(0, i).split('\n').length
 const anchors = {
+  'gestures-share': /(?!)/g,
   'immersive-light': /\b(?:HdsNavigation|HdsNavDestination|HdsTabs|uiMaterial|systemMaterial|barFloatingStyle|miniBar|miniBarBuilder|miniBarWidth|applyMiniBarStyle|HdsBarStyle|HdsBarLayoutMode)\b/g,
   'easygo-parallel': /\b(?:isEasySplit|easyGo)\b/g,
   'smart-reach': /\b(?:adaptToHandedness|operatingHandChanged|holdingHandChanged|getRecentOperatingHandStatus)\b/g,
@@ -92,6 +93,10 @@ export async function auditProject(skillRoot, options) {
       // Aliased imports and motion event strings cannot be located using masked identifiers alone.
       const imported = imports.some(i => new RegExp(anchors[feature.id]?.source ?? '(?!)').test(i.text))
       const eventHits = feature.id === 'smart-reach' ? [...file.content.matchAll(/['"](?:operatingHandChanged|holdingHandChanged)['"]/g)].filter(m => /\b(?:on|off)\s*\(\s*$/.test(code.slice(Math.max(0, m.index - 30), m.index))) : []
+      if (feature.id === 'gestures-share') {
+        const events = (inspection.gesturesShare?.usages ?? []).filter(u => u.path === slash(relative(root, file.path)))
+        for (const u of events) eventHits.push({ index: file.content.split('\n').slice(0, u.line - 1).reduce((n, s) => n + s.length + 1, 0), 0: u.operation })
+      }
       const configuration = feature.id === 'easygo-parallel' && (/easy_go\.json$/.test(file.path) || /\beasyGo\s*:/.test(code))
       if (!hits.length && !imported && !eventHits.length && !configuration) continue
       const positions = [...hits, ...eventHits]

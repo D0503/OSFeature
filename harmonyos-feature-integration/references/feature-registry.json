@@ -91,6 +91,18 @@
       "status": "ready",
       "entry": "references/features/dlp-anti-peep/README.md",
       "profile": "references/features/dlp-anti-peep/profile.json"
+    },
+    {
+      "id": "gestures-share",
+      "displayName": "隔空传送",
+      "aliases": [
+        "Gestures Share",
+        "gesturesShare",
+        "隔空传送接入"
+      ],
+      "status": "ready",
+      "entry": "references/features/gestures-share/README.md",
+      "profile": "references/features/gestures-share/profile.json"
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）和防窥保护（DlpAntiPeep）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）和隔空传送（Gestures Share、gesturesShare）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -29,8 +29,6 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 2. 用用户输入匹配特性的 `id`、`displayName` 或 `aliases`。中文名称允许出现在较长请求中；ASCII 名称忽略大小写并去除首尾空白。
 3. 不得依靠技术猜测把未命中名称映射到已注册能力。
 4. 命中后完整读取注册项的 `entry`，再按入口文件的任务路由加载所需资料。
-
-场景入口：用户要求“内容区滚动时，内容标题固定到标题栏”“分类栏滚入标题栏”或沉浸光感标题栏滚动吸顶时，按注册别名进入 `immersive-light`，加载[滚动内容切换到标题栏](references/features/immersive-light/routes/arkui/components/navigation.md#可选滚动内容切换到标题栏)及其 ArkUI 前置门禁。已在沉浸光感改造上下文中时，后续同义请求沿用该路由。此入口针对标题栏接替显示；普通列表内部吸顶、sticky 分组不据此触发，也不因命中场景自动扩大到全工程材质改造。
 
 注册项的 `status` 必须为 `ready`。结构校验失败代表 Skill 资料损坏，应报告校验错误并停止，而不是绕过入口拼装实现。
 
@@ -90,13 +88,15 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 
 ## 当前已注册能力
 
-当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球和防窥保护能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护和隔空传送能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
 [智能体框架服务](references/features/agent-framework-kit/README.md)仅实现 Function 组件拉起智能体；开发 Agent、关联应用与测试发布等前置操作按能力包提供指导。A2A、AgentExtensionAbility 或后端开发请求即使命中 Kit 名称，也不属于当前实现范围；普通 Agent/Function 请求不能据此自动命中。其运行与视觉验证必须使用已确认的 Phone/Tablet 真机，按能力包采集点击、打开及关闭证据，不能以按钮显示替代拉起成功。
 
 闪控窗／球提供 float-view、floating-ball、binding 三条路线；绑定只选 binding，内部检查两端能力，同时选择窗球独立路线不代表绑定。用户明确要求闪控窗防窥时，从[闪控窗能力包](references/features/float-view-ball/README.md)加载防窥联动资料，各自门禁分别核验。防窥保护是独立能力，按能力包选择金融字段、短视频、即时通讯等业务状态响应、系统蒙层及可选设置与风险提示。普通全局悬浮窗、悬浮按钮、画中画、防截屏或隐私遮罩不自动映射到这两个能力。防窥效果只接受已确认的 Phone 真机证据；闪控球按能力包的模拟器条件验证，不推定闪控窗或绑定支持模拟器。
 
 防窥接入需求模糊或可选能力未明确时，必须先按[接入前澄清](references/features/dlp-anti-peep/README.md#接入前澄清)主动询问保护目标、是否需要系统蒙层及设置弹窗，并说明对应版本条件；只补问缺失项，确认接入范围后再实施。
+
+[隔空传送](references/features/gestures-share/README.md)通过 API20 起的 gesturesShare 事件分享文件或 App Linking 链接。仅在目标可分享页面前台可见时监听，退出及后台精确退订，恢复时按当前页面重新注册；双端真机验证抓取、释放和接收内容，可选链接按接收目标分别验证应用域名关联/手动签名，或元服务平台链接/有效期/参数接收，并验证冷暖启动。接入完成后先按[手机设置指引](references/features/gestures-share/compatibility.md#系统设置和信任)展示华为分享、隔空传送开关路径、双端信任及真机动作步骤；选择链接直达时，再按[开发者配置指导](references/features/gestures-share/app-linking.md#接入完成后向开发者展示)展示对应配置步骤、官网链接及 App Linking 的手动签名限制；隔空传送本身沿用工程原有签名方式。普通手势、隔空截屏、碰一碰、系统分享或单独 App Linking 不自动映射到本能力。
 
 ## 资源加载表
 

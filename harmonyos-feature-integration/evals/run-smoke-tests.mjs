@@ -13,10 +13,10 @@ const featureDir = resolve(skillRoot, "references", "features", "immersive-light
 
 const structure = await validateSkillStructure(skillRoot)
 assert.deepEqual(structure.errors, [])
-assert.deepEqual(structure.counts, { features: 6, ready: 6 })
+assert.deepEqual(structure.counts, { features: 7, ready: 7 })
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"))
-assert.equal(registry.features.length, 6)
+assert.equal(registry.features.length, 7)
 assert.deepEqual({ ...registry.features[0], aliases: [...registry.features[0].aliases].sort() }, {
   id: "immersive-light",
   displayName: "沉浸光感",
@@ -69,7 +69,7 @@ assert.match(skill, /注册项的 `status` 必须为 `ready`/)
 assert.match(skill, /命中后完整读取注册项的 `entry`/)
 assert.match(skill, /未注册特性/)
 assert.match(skill, /窗口沉浸式.*不是.*沉浸光感/)
-assert.match(skill, /官方文档质量审查/)
+assert.match(skill, /官方文档(?:质量)?审查/)
 assert.match(skill, /普通 ArkUI/)
 assert.match(skill, /悬浮导航Tab/)
 assert.match(skill, /验证本机 SDK/)
@@ -324,7 +324,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-feature-integration")
-assert.equal(evals.evals.length, 65)
+assert.equal(evals.evals.length, 72)
 assert.equal(new Set(evals.evals.map((item) => item.id)).size, evals.evals.length)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)

@@ -767,6 +767,90 @@
       "expected_output": "结合启动跳转和页面表，建议 homePage=pages/Home，并说明依据。",
       "files": [],
       "expectations": ["homePage 为 pages/Home", "不填 navBar、MallScreen 或 .ets 文件路径", "不将启动或登录页当作业务主页"]
+    },
+    {
+      "id": 66,
+      "prompt": "为新闻详情页接入隔空传送，发送当前新闻链接，保留现有分享。",
+      "expected_output": "路由 gestures-share，按API20与Stage普通应用检查；在现有页面或VM中保存窗口ID与实际注册回调；复用现有链接，核对域名关联、手动签名、冷暖启动，不新增按钮。接入完成后向开发者展示双端华为分享、手机隔空传送开关路径、信任确认和真机动作指引，再展示配置步骤、官网链接，并明确手动签名限制属于App Linking，隔空传送沿用工程原有签名方式；待配置和待验证项如实说明。",
+      "files": [],
+      "expectations": [
+        "正确路由",
+        "沿用现有页面或VM",
+        "原分享保留",
+        "当前内容与App Linking",
+        "接入后展示配置步骤与官网链接",
+        "提醒手机设置具体路径、双端华为分享与信任确认",
+        "仅App Linking要求手动签名，隔空传送沿用原签名",
+        "冷暖启动共用处理入口，后续实现方式可沿用工程"
+      ]
+    },
+    {
+      "id": 67,
+      "prompt": "给当前文件选择页接入隔空传送，只传选中的文件。",
+      "expected_output": "使用同一路线构造多条SharedRecord，UTD和文件URI对应当前选择，预备数据并在回调建议3秒内share；不要求App Linking，也不增加手动签名要求。",
+      "files": [],
+      "expectations": [
+        "无虚假文件/链接路线",
+        "不强加域名",
+        "空选择拒绝",
+        "元数据大小与条数"
+      ]
+    },
+    {
+      "id": 68,
+      "prompt": "SDK和compile都是19，想接隔空传送，compatible必须保持19。",
+      "expected_output": "提供API20升级选项由用户确认，保留compatible19，并对运行API20及SysCap守卫，不以SharableTarget API12放行。",
+      "files": [],
+      "expectations": [
+        "升级选项",
+        "compatible保留",
+        "运行守卫",
+        "无示例版本硬编码"
+      ]
+    },
+    {
+      "id": 69,
+      "prompt": "注册时使用匿名函数转发回调，退订时传入外层回调，这样可以吗？",
+      "expected_output": "识别匿名包装回调与外层callback身份不一致，保存实际回调精确退订；补齐后台/缓存页面清理与前台恢复；若已有异步窗口查询，复用页面可见状态判断。",
+      "files": [],
+      "expectations": [
+        "回调身份",
+        "后台清理",
+        "复用页面状态",
+        "不全局清空"
+      ]
+    },
+    {
+      "id": 70,
+      "prompt": "隔空传送卡片显示了，模拟器截图也有，可以验收了吗？",
+      "expected_output": "不能，记录未验证；需要双端支持设备的真机由开发者完成抓取释放并确认接收内容，链接还须验证冷暖启动。",
+      "files": [],
+      "expectations": [
+        "双端真机",
+        "不以卡片截图通过",
+        "接收内容证据"
+      ]
+    },
+    {
+      "id": 71,
+      "prompt": "我只需要隔空截屏和普通系统分享，不要接隔空传送。",
+      "expected_output": "不自动命中隔空传送，不注册gesturesShare，不新增权限。",
+      "files": [],
+      "expectations": [
+        "相邻边界",
+        "不扩展范围"
+      ]
+    },
+    {
+      "id": 72,
+      "prompt": "隔空传送已接入，只检查版本守卫，不修改工程。",
+      "expected_output": "扫描gesturesShare具体on/off重载、SDK since、宿主和每product compatible，沿封装复核前台与回退；仅报告。",
+      "files": [],
+      "expectations": [
+        "只读",
+        "重载API20",
+        "别名与封装追踪"
+      ]
     }
   ]
 }

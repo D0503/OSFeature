@@ -1,6 +1,6 @@
 # harmonyos-feature-integration —— HarmonyOS OS 新特性接入 Skill
 
-本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 6 类能力，包含 13 条接入路线。
+本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 7 类能力，包含 14 条接入路线。
 
 当用户要求接入或排查已注册的系统新特性时，按“识别特性 → 验证本机 SDK → 扫描工程 → 兼容性与 SDK 门禁 → 加载能力包 → 方案或实施 → 静态验证 → 构建 → 安装启动 → 目标页导航 → 运行与视觉验证 → 交付报告”的数据流执行，每一步保留文件证据。仅设计方案或诊断问题时，不修改工程。
 
@@ -82,6 +82,12 @@
 接入前确认保护目标、是否需要系统蒙层以及是否需要引导开启防窥的设置弹窗，只补问未明确项。`ohos.permission.DLP_GET_HIDE_STATUS` 是受限 ACL 权限：本地调试在自动签名时同意权限申请，上架使用须向开发者中心[申请 ACL](https://developer.huawei.com/consumer/cn/doc/doccenter-getting-started/agc-help-apply-acl-0000002394212138)；两种场景均须声明权限并核对签名 profile。实施前与最终交付均须说明这些要求，设置弹窗不能替代 ACL 申请。
 
 能力包包含场景选型、逐项版本门禁、状态未知与异常处理、每次页面进入的蒙层去重、订阅清理及真机验收。普通防截屏或自定义隐私遮罩不自动命中。详见 [防窥保护能力包](harmonyos-feature-integration/references/features/dlp-anti-peep/README.md)。
+
+### 7. 隔空传送（gestures-share）
+
+通过 Share Kit 的 `gesturesShare` 事件实现“一抓一放”跨端传送。唯一接入路线 `gestures-share`（API20），覆盖文件单选/多选与 App Linking 链接；可选链接直达按接收目标分别配置应用域名关联或元服务平台链接，并核对对应签名、参数接收与冷暖启动。进入可分享页面监听，页面隐藏与应用后台退订，恢复时重新注册；双端真机核对传送内容、信任关系与失败回退。
+
+普通手势、隔空截屏、碰一碰、系统分享面板或单独 App Linking 不自动命中。详见[隔空传送能力包](harmonyos-feature-integration/references/features/gestures-share/README.md)。
 
 ### 通用能力
 
@@ -242,6 +248,7 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 | 验证执行器测试 | `node evals/run-development-tests.mjs` |
 | 统一 target 升级策略测试 | `node evals/run-target-upgrade-tests.mjs` |
 | 窗球与防窥专项测试 | `node evals/run-window-privacy-tests.mjs` |
+| 隔空传送专项测试 | `node evals/run-gestures-share-tests.mjs` |
 | 闪控窗控制器测试 | `node evals/run-float-view-controller-tests.mjs` |
 | 闪控球控制器测试 | `node evals/run-floating-ball-controller-tests.mjs` |
 | 窗球绑定控制器测试 | `node evals/run-float-view-ball-controller-tests.mjs` |
@@ -274,6 +281,7 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
    | 智能体框架服务 | 综合商城模板，已准备真实 Agent | 请使用 harmonyos-feature-integration，在首页搜索按钮旁接入“购物助手”智能体按钮，使用我提供的真实 agentId，并在 Phone/Tablet 真机验证点击、打开和关闭。 |
    | 闪控球 | 记账模板 | 请使用harmonyos-feature-integration，在明细页面添加一个按钮，点击创建添加闪控球，点击闪控球可以快速拉起应用明细页面，并打开记账面板。 |
    | 窗球绑定 | 金融理财模板 | 请使用harmonyos-feature-integration，在产品详情页【加自选】按钮旁新增操作图标：加入悬浮对比 / 取消悬浮对比。a.点击「加入悬浮对比」：创建常规态闪控窗，将当前产品加入闪控对比列表并在窗内展示；点击「取消悬浮对比」，将该产品从闪控窗对比列表中移除。b. 闪控窗尺寸规则：随对比产品数量增加自动撑开，达到配置最大高度后不再继续增高。c. 模板切换：闪控窗配备切换箭头，支持在两种展示模板间切换：Mini 态：横向多产品一行排布，仅展示产品名称、七日年化；数量较多时启用跑马灯滚动。常规态：单品分行展示，呈现产品更多信息。d. 闪控窗与闪控球绑定联动，支持互相切换唤起；闪控球默认展示对比列表里第一个产品的名称与七日年化信息。 |
+   | 隔空传送 | 综合新闻模板与双端支持隔空传送的真机 | 请使用 harmonyos-feature-integration，为新闻详情页接入隔空传送，分享当前新闻的真实 App Linking 链接，并保留现有分享入口。 |
    | 防窥保护 | 记账模板，支持防窥的 Phone 真机与普通应用工程 | 请使用harmonyos-feature-integration，为资产页面接入防窥保护，当非机主窥视时，资产页面所有金额变为*号。 |
    | 防窥保护 | 金融理财模板，支持防窥的 Phone 真机与普通应用工程 | 请使用harmonyos-feature-integration，在理财购买页面接入防窥保护，当非机主窥视时，页面剩余额度和可用额度变为*号，并在推荐人代码下增加一行防窥蒙层的开关，点击开启后，当非机主窥视时，拉起防窥蒙层。 |
 

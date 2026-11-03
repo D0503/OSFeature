@@ -57,6 +57,8 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 | 用户任务 | 必读文件 |
 |---|---|
 | 工程整体接入与候选盘点 | [工程发现与覆盖](shared/validation.md#工程发现) |
+| 工程整体接入方案设计 | 先完成工程发现与候选盘点，再完整读取[整体接入方案](shared/validation.md#整体接入方案) |
+| 工程整体接入完成后复核 | 完整读取[整体接入复核](shared/validation.md#整体接入复核)，与实施前逐实例清单核对 |
 | 版本判断、路线选择、前置检查 | [compatibility.md](compatibility.md) |
 | 所有实现与回退 | [共享回退](shared/fallback.md)，再按下列 HDS/ArkUI 行加载实际选中路线 |
 | 内容区滚动时标题固定到标题栏、分类栏滚入标题栏、沉浸光感标题栏滚动吸顶 | [ArkUI 接入入口](routes/arkui/implementation.md)及[滚动内容切换到标题栏](routes/arkui/components/navigation.md#可选滚动内容切换到标题栏)；仅按用户要求实施该交互，普通列表内部吸顶不适用 |
@@ -65,6 +67,8 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 | 示例资产选择入口 | 按 `selectedRoutes` 读取 [HDS 资产](routes/hds/assets.md)或 [ArkUI 资产](routes/arkui/assets.md) |
 | 性能评审、测试与验收 | [共享验证](shared/validation.md)，以及选中路线的 [HDS 验证](routes/hds/validation.md)／[ArkUI 验证](routes/arkui/validation.md) |
 | 材质无效、透明、卡顿或样式冲突排查 | [compatibility.md](compatibility.md)、[shared/validation.md](shared/validation.md)及选中路线的验证文件 |
+
+标题栏滚动吸顶场景针对内容标题或分类栏由标题栏接替显示，按上表读取 ArkUI 接入入口及滚动内容切换文档，完成 ArkUI 前置门禁后再实施。已在沉浸光感改造上下文中时，后续同义请求沿用该场景路由。普通列表内部吸顶、sticky 分组不据此触发；命中该场景不扩大为全工程材质改造。
 
 资产不能整文件覆盖业务页面；复制或改写前核对本机 SDK、工程版本、现有组件树和共享回退，接入后执行真实工程构建。组合路线分别应用各自门禁、导入和能力判断，不把两代接口封装成一个动态类型接口；共享资料只读取一次。
 

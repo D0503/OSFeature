@@ -105,6 +105,11 @@ try {
       }
       issue(errors, Array.isArray(profile.routeComposition?.allowed) && profile.routeComposition.allowed.length === routeIds.size, "profile.routeComposition.allowed", "allowed 必须覆盖全部路线")
       issue(errors, (profile.routeComposition?.allowed ?? []).every((id) => routeIds.has(id)), "profile.routeComposition.allowed", "allowed 包含未知路线")
+      if (feature.id === "gestures-share") {
+        issue(errors, profile.routeComposition?.mode === "exclusive" && routeIds.size === 1 && routeIds.has("gestures-share"), "profile.routes", "隔空传送使用唯一事件接入路线，文件与链接为数据场景")
+        issue(errors, profile.routes[0]?.minApi === 20 && profile.routes[0]?.minTargetApi === undefined, "profile.routes.gestures-share", "隔空传送事件从 API20 起，不由 SharableTarget 的起始版本降低门槛")
+        for (const key of ["troubleshooting", "compatibilityAudit", "appLinking"]) issue(errors, typeof profile.documents?.[key] === "string", `profile.documents.${key}`, "缺少排障、审计或链接直达资料")
+      }
       if (feature.id === "immersive-light") {
         const hds = profile.routes?.find((route) => route.id === "hds")
         const arkui = profile.routes?.find((route) => route.id === "arkui")
