@@ -112,7 +112,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 | 闪控窗／球 | `binding` | 26 | 明确窗球绑定时只选此路线，内部复用两端；不同时选择两条独立路线代替绑定 |
 | [防窥保护](harmonyos-feature-integration/references/features/dlp-anti-peep/README.md) | `status-observation` | 20 | 与 `system-mask` 可组合；仅支持具备能力的 Phone 真机，不支持元服务 |
 | 防窥保护 | `system-mask` | 21 | 系统蒙层；设置和再次风险提示为 API23 可选能力 |
-| [隔空传送](harmonyos-feature-integration/references/features/gestures-share/README.md) | `gestures-share` | 20 | 单路线；验证发送、接收双端和实际内容，链接直达按接收目标追加配置 |
+| [隔空传送](harmonyos-feature-integration/references/features/gestures-share/README.md) | `gestures-share` | 20 | 单路线；验证发送、接收双端和实际内容，链接直达追加应用 App Linking 配置 |
 
 `routeComposition.mode` 表示能力内部允许的组合方式。`recommendedRoute` 是建议项，`selectedRoutes` 表示选中的路线集合；执行器一次接收一个 `--route`，组合路线由 AI 分别执行并汇总。
 
@@ -126,7 +126,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 | 智能体框架服务 | Phone/Tablet 真机、中国境内不含港澳台；需 Agent 关联、账号、网络、签名及测试发布等条件 |
 | 闪控窗／球 | 球的设备和模拟器支持按版本与能力包核对；窗和绑定不推定模拟器可用；`FLOAT_VIEW`、`USE_FLOAT_BALL` 均有 ACL 要求，窗另需用户授权 |
 | 防窥保护 | Phone 真机、人脸识别和系统/应用开关；`DLP_GET_HIDE_STATUS` 为受限 ACL 权限 |
-| 隔空传送 | API 资料涉及 Phone、Tablet、PC/2in1，但实际型号能力仍需确认；模拟器不能验收隔空传送；元服务接收链接不证明其可作为发送端订阅事件 |
+| 隔空传送 | API 资料涉及 Phone、Tablet、PC/2in1，但实际型号能力仍需确认；模拟器不能验收隔空传送；不支持元服务；元服务链接配置仅作为独立场景的补充知识 |
 
 ## 4. 核心流程
 
@@ -642,7 +642,7 @@ Agent 示例在页面显示和消失时更新可见标志及请求序号。查�
 
 窗球资产以系统状态回调确认停止，停止请求完成不等于已到 STOPPED；绑定释放需满足双端终态约束。闪控窗 `getWindowProperties()` 在未就绪、STOPPED 或 ERROR 时抛错；页面布局使用 `getFloatViewProperties()` 安全包装并判空，在有效状态后刷新避让区。相关实现见[Agent 资产](harmonyos-feature-integration/references/features/agent-framework-kit/assets/Agent.ets)和[闪控窗资产](harmonyos-feature-integration/references/features/float-view-ball/assets/FloatViewController.ets)。
 
-## 9. 测试与扩展维护
+## 9. 测试与扩展维护（不参与运行时）
 
 ### 9.1 测试分层与覆盖
 

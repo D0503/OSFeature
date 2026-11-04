@@ -134,7 +134,7 @@ private getGestureShareData(): systemShare.SharedData | undefined {
 }
 ```
 
-链接场景同样从 `@kit.ArkData` 导入 `uniformTypeDescriptor`。链接域名、路径和参数必须对应实际业务。如需接收端直达应用或元服务内内容，再按[可选 App Linking 配置](app-linking.md)接入。已有分享按钮继续使用原业务；隔空回调通过 `target.share` 发出数据。
+链接场景同样从 `@kit.ArkData` 导入 `uniformTypeDescriptor`。链接域名、路径和参数必须对应实际业务。如需接收端直达应用内内容，再按[可选 App Linking 配置](app-linking.md)接入。已有分享按钮继续使用原业务；隔空回调通过 `target.share` 发出数据。
 
 同步异常和 share/reject Promise 拒绝均须处理，日志不输出敏感内容或令牌。分享失败保持原业务，不能写成“已发送”；已发起的传输不伪造取消 API。按[验证方案](performance-validation.md)完成静态、构建与双端验收，输出统一报告。
 

@@ -41,7 +41,8 @@ export function evaluateGesturesShare(inspection, profile) {
   result.sdk.routes[ROUTE] = { minApi: requiredApi, requiredApi, apiSatisfied: sdk.apiVersion >= requiredApi, status: sdk.apiVersion >= requiredApi ? 'supported' : 'sdk_too_old' }
   if (inspection.model !== 'stage') { result.status = inspection.model === 'fa' ? 'unsupported' : 'insufficient_context'; result.missingConditions.push('需要 Stage 工程'); return result }
   const type = inspection.agentFramework?.application?.type
-  if (type !== 'app') { result.missingConditions.push('当前资料覆盖普通应用；元服务或应用类型未知时须补充适用性证据，不推定支持'); return result }
+  if (type === 'atomicService') { result.status = 'unsupported'; result.missingConditions.push('隔空传送不支持元服务，不能通过 App Linking 接入元服务接收端'); return result }
+  if (type !== 'app') { result.missingConditions.push('应用类型待确认，需定位实际普通应用产物；隔空传送不支持元服务'); return result }
   if (!inspection.modules.some(m => ['entry', 'feature'].includes(m.type))) { result.missingConditions.push('需定位实际承载的 entry/feature HAP'); return result }
   if (![inspection.api.compile, inspection.api.target, inspection.api.compatible].every(Number.isInteger)) { result.missingConditions.push('工程 compile/target/compatible API 待确认'); return result }
   if (sdk.apiVersion < requiredApi || inspection.api.compile < requiredApi || inspection.api.target < requiredApi) {
@@ -50,7 +51,7 @@ export function evaluateGesturesShare(inspection, profile) {
   } else {
     result.status = 'conditional'; result.availableRoutes = [ROUTE]; result.selectedRoutes = [ROUTE]; result.recommendedRoute = ROUTE
   }
-  result.missingConditions.push('双端真机、硬件支持、系统隔空传送开关与信任关系需实测；链接直达按接收目标核实应用域名关联/手动签名，或元服务平台链接/有效期/参数接收，分别验证冷暖启动')
+  result.missingConditions.push('双端真机、硬件支持、系统隔空传送开关与信任关系需实测；选择链接直达时核实应用域名关联、App Linking 手动签名与参数接收，验证冷暖启动')
   return result
 }
 

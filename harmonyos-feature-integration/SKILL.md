@@ -98,7 +98,7 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 
 防窥接入需求模糊或可选能力未明确时，必须先按[接入前澄清](references/features/dlp-anti-peep/README.md#接入前澄清)主动询问保护目标、是否需要系统蒙层及设置弹窗，并说明对应版本条件；只补问缺失项，确认接入范围后再实施。
 
-[隔空传送](references/features/gestures-share/README.md)通过 API20 起的 gesturesShare 事件分享文件或 App Linking 链接。仅在目标可分享页面前台可见时监听，退出及后台精确退订，恢复时按当前页面重新注册；双端真机验证抓取、释放和接收内容，可选链接按接收目标分别验证应用域名关联/手动签名，或元服务平台链接/有效期/参数接收，并验证冷暖启动。接入完成后先按[手机设置指引](references/features/gestures-share/compatibility.md#系统设置和信任)展示华为分享、隔空传送开关路径、双端信任及真机动作步骤；选择链接直达时，再按[开发者配置指导](references/features/gestures-share/app-linking.md#接入完成后向开发者展示)展示对应配置步骤、官网链接及 App Linking 的手动签名限制；隔空传送本身沿用工程原有签名方式。普通手势、隔空截屏、碰一碰、系统分享或单独 App Linking 不自动映射到本能力。
+[隔空传送](references/features/gestures-share/README.md)通过 API20 起的 gesturesShare 事件分享文件或 App Linking 链接。仅在目标可分享页面前台可见时监听，退出及后台精确退订，恢复时按当前页面重新注册；双端真机验证抓取、释放和接收内容，隔空传送不支持元服务；可选链接直达验证应用域名关联、手动签名、参数接收与冷暖启动。接入完成后先按[手机设置指引](references/features/gestures-share/compatibility.md#系统设置和信任)展示华为分享、隔空传送开关路径、双端信任及真机动作步骤；选择链接直达时，再按[开发者配置指导](references/features/gestures-share/app-linking.md#接入完成后向开发者展示)展示对应配置步骤、官网链接及 App Linking 的手动签名限制；隔空传送本身沿用工程原有签名方式。普通手势、隔空截屏、碰一碰、系统分享或单独 App Linking 不自动映射到本能力。
 
 ## 资源加载表
 

@@ -9,7 +9,6 @@
 | 错误内容/重复分享 | 检查当前 VM 数据、切页状态、重复 start；匿名包装回调与传给 off 的外层 callback 身份不同会退订失败 |
 | 后台仍有监听/回来失效 | 查页面 hide、NavDestination/Tab 可见、Ability 后台事件和恢复；aboutToDisappear 不足以覆盖后台；若工程异步获取窗口，检查返回时页面是否仍可分享 |
 | 应用链接在浏览器打开 | 检查已安装、HTTPS host/path、独立 browsable/viewData skill、domainVerify、exported、AGC关联发布和手动签名身份 |
-| 元服务链接未打开目标内容 | 按[元服务链接配置](app-linking.md#元服务配置)核对目标、发布状态和有效期；静态参数查 Want.parameters、动态参数查 Want.uri；浏览器/ArkWeb 入口不支持动态参数且先到档案页 |
 | 打开首页/旧详情 | 检查 onCreate 与 onNewWant 均解析 Want.uri，等导航栈就绪、校验业务ID并去重；不可只处理冷启动 |
 | 不同账号被确认弹窗拦住 | 双端按系统信任流程确认或取消；1小时信任窗口不等于永久授权，不在应用内绕过 |
 

@@ -33,7 +33,11 @@ assert.equal(compat(low).status, 'upgrade_available')
 assert.equal(compat({ ...inspection, localSdk: { status: 'missing' } }).status, 'insufficient_context')
 assert.equal(compat({ ...inspection, model: 'fa' }).status, 'unsupported')
 const atomic = structuredClone(inspection); atomic.agentFramework.application.type = 'atomicService'
-assert.equal(compat(atomic).status, 'insufficient_context')
+assert.equal(compat(atomic).status, 'unsupported')
+assert.deepEqual(compat(atomic).availableRoutes, [])
+assert.equal(verifyInspection(atomic, compat(atomic), 'auto').status, 'failed')
+const unknownType = structuredClone(inspection); unknownType.agentFramework.application.type = 'unknown'
+assert.equal(compat(unknownType).status, 'insufficient_context')
 assert.equal(verifyInspection(inspection, compat(inspection), 'file-share').status, 'failed')
 
 const work = await mkdtemp(join(tmpdir(), 'gestures-share-tests-')), project = join(work, 'project')

@@ -41,6 +41,7 @@
         "SmartReach",
         "智感握姿接入",
         "组件跟手",
+        "左右手感知",
         "adaptToHandedness"
       ],
       "status": "ready",
@@ -98,7 +99,8 @@
       "aliases": [
         "Gestures Share",
         "gesturesShare",
-        "隔空传送接入"
+        "隔空传送接入",
+        "一抓一放"
       ],
       "status": "ready",
       "entry": "references/features/gestures-share/README.md",
