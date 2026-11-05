@@ -1,6 +1,6 @@
 # harmonyos-feature-integration —— HarmonyOS OS 新特性接入 Skill
 
-本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 7 类能力，包含 14 条接入路线。
+本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 8 类能力，包含 16 条接入路线。
 
 先识别任务和全部相关特性，读取能力入口/profile，再按[任务读取表](harmonyos-feature-integration/references/shared/document-loading.md#任务读取表)加载公共与路线资料。新接入先完成工程发现、SDK 核验与可行性；只设计或诊断时交付对应结论并停止，已授权实施/修复或运行验证时再构建、完整部署和取证。单独查询接口版本无需无关工程，验证已有接入不反推历史基线。
 
@@ -88,6 +88,12 @@
 通过 Share Kit 的 `gesturesShare` 事件实现“一抓一放”跨端传送。唯一接入路线 `gestures-share`（API20），覆盖文件单选/多选与 App Linking 链接；可选链接直达按接收目标分别配置应用域名关联或元服务平台链接，并核对对应签名、参数接收与冷暖启动。进入可分享页面监听，页面隐藏与应用后台退订，恢复时重新注册；双端真机核对传送内容、信任关系与失败回退。
 
 普通手势、隔空截屏、碰一碰、系统分享面板或单独 App Linking 不自动命中。详见[隔空传送能力包](harmonyos-feature-integration/references/features/gestures-share/README.md)。
+
+### 8. 桌面快捷方式（desktop-shortcuts）
+
+提供两条可组合路线：`static-shortcut` 配置固定入口，供长按应用图标查看或拖动加桌；`dynamic-shortcut` 在应用内预校验，经用户点击与系统确认加桌，包含预置资源和自定义资源两种方式。静态快捷方式基于 API9 Stage 模型配置，通过 wants.parameters 携带业务参数；动态基础 API14。显示隐藏与配置查询 API20，已加桌查询／删除 API24，设备支持查询 API26，均按需实施。
+
+合并现有资源和 UIAbility 配置，冷暖启动复用原业务路由；动态路线仅在 Phone、Tablet、PC/2in1 真机验收。区分静态入口最多展示4个与应用内加桌最多2个。详见[桌面快捷方式能力包](harmonyos-feature-integration/references/features/desktop-shortcuts/README.md)。
 
 ### 通用能力
 
@@ -185,13 +191,15 @@ Skill 由 AI 编排、机器契约与执行脚本协作：AI 按注册表识别�
     │   ├── feature-package-contract.md    # 能力包契约
     │   ├── workflows/                     # 发现、门禁、设计、实施、验证、排障
     │   ├── shared/                        # 兼容性、设备、证据与输出契约
-    │   └── features/                      # 六个能力包
+    │   └── features/                      # 八个能力包
     │       ├── immersive-light/           # hds / arkui
     │       ├── easygo-parallel/           # router / navigation
     │       ├── smart-reach/               # native-component / operating-hand / holding-hand
     │       ├── agent-framework-kit/       # function-component
     │       ├── float-view-ball/           # float-view / floating-ball / binding
-    │       └── dlp-anti-peep/             # status-observation / system-mask
+    │       ├── dlp-anti-peep/             # status-observation / system-mask
+    │       ├── gestures-share/            # gestures-share
+    │       └── desktop-shortcuts/         # static-shortcut / dynamic-shortcut
     └── scripts/
         ├── inspect-project.mjs           # SDK 与工程扫描
         ├── check-compatibility.mjs       # 兼容性与升级选项
@@ -251,6 +259,7 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 | 验证执行器测试 | `node evals/run-development-tests.mjs` |
 | 统一 target 升级策略测试 | `node evals/run-target-upgrade-tests.mjs` |
 | 窗球与防窥专项测试 | `node evals/run-window-privacy-tests.mjs` |
+| 桌面快捷方式专项测试 | `node evals/run-desktop-shortcuts-tests.mjs` |
 | 隔空传送专项测试 | `node evals/run-gestures-share-tests.mjs` |
 | 闪控窗控制器测试 | `node evals/run-float-view-controller-tests.mjs` |
 | 闪控球控制器测试 | `node evals/run-floating-ball-controller-tests.mjs` |

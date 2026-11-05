@@ -105,6 +105,22 @@
       "status": "ready",
       "entry": "references/features/gestures-share/README.md",
       "profile": "references/features/gestures-share/profile.json"
+    },
+    {
+      "id": "desktop-shortcuts",
+      "displayName": "桌面快捷方式",
+      "aliases": [
+        "Desktop Shortcuts",
+        "静态快捷方式",
+        "动态快捷方式",
+        "应用内快捷方式",
+        "checkPinShortcutPermitted",
+        "requestNewPinShortcut",
+        "shortcutManager"
+      ],
+      "status": "ready",
+      "entry": "references/features/desktop-shortcuts/README.md",
+      "profile": "references/features/desktop-shortcuts/profile.json"
     }
   ]
 }

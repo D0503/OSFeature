@@ -13,6 +13,7 @@ import { WINDOW_PRIVACY_FEATURES, windowPrivacyScenarios, validateWindowPrivacyJ
 import { imageExt } from "./lib/image-format.mjs"
 import { readJsonFile } from "./lib/json-file.mjs"
 import { assertVerificationInputs, moduleArtifactHashes, projectInputHash } from "./lib/verification-inputs.mjs"
+import { desktopShortcutManagementOperations } from "./lib/desktop-shortcuts-tools.mjs"
 
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
@@ -71,6 +72,7 @@ export function detectAgentDeviceKind(deviceInfo, target) {
 }
 
 function requirePhysicalDevice(run) {
+  if (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("动态快捷方式验收需要已确认的 Phone/Tablet/PC/2in1 真机")
   if (run.feature === "smart-reach" && (run.deviceKind === "emulator" || detectDeviceKind(run.deviceInfo, run.device) !== "physical")) throw new Error("智感握姿效果验证仅允许已确认的真机，模拟器或设备类型未知不能验收")
   if (run.feature === "gestures-share" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("隔空传送验收需要已确认的 Phone/Tablet/PC/2in1 真机，并补录双端传送证据")
   if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") throw new Error("Agent Framework Kit 运行与视觉验证需要已确认的 Phone/Tablet 真机，模拟器或设备类型未知不能验收")
@@ -96,6 +98,26 @@ export function validateGesturesShareJudgment(run, level, item, evidence) {
       if (!observation.evidence?.length || observation.evidence.some(ref => !evidence.some(e => e.id === ref.id && e.sha256 === ref.sha256 && ["runtime_log", "component_tree"].includes(e.type)))) throw new Error(`隔空传送 ${scenario} 须引用本轮运行日志证据`)
     }
   }
+}
+
+export function validateDesktopShortcutJudgment(run, level, item, evidence) {
+  if (run.feature !== "desktop-shortcuts" || item.status !== "passed") return
+  requirePhysicalDevice(run)
+  const entry = run.route === "dynamic-shortcut" ? "pin-confirmation" : "static-menu"
+  const management = run.shortcutManagementOperations?.length > 0
+  const scenarios = management ? (level === "visual" ? ["management-result"] : run.shortcutManagementOperations) : level === "visual" ? [entry, "desktop-icon", "target-page"] : [entry, "desktop-icon", "cold-start", "warm-start"]
+  const hashes = new Set()
+  for (const scenario of scenarios) {
+    const observation = item.observations?.find(v => v.scenario === scenario)
+    requiredText(observation?.note, `桌面快捷方式 ${scenario} 观察说明`)
+    if (!Array.isArray(observation.evidence) || !observation.evidence.length) throw new Error(`桌面快捷方式 ${scenario} 缺少本轮证据`)
+    for (const ref of observation.evidence) {
+      const found = evidence.find(e => e.id === ref.id && e.sha256 === ref.sha256 && (level === "visual" ? e.type === "screenshot" : ["runtime_log", "component_tree"].includes(e.type)))
+      if (!found) throw new Error(`桌面快捷方式 ${scenario} 必须引用本轮 ${level} 证据`)
+      hashes.add(found.sha256)
+    }
+  }
+  if (level === "visual" && hashes.size < (management ? 1 : 3)) throw new Error("快捷方式视觉验收需要所选范围的实际截图；加桌须含入口或确认框、桌面图标、业务目标三张不同截图")
 }
 
 export function detectPrivacyDeviceKind(deviceInfo, target) {
@@ -268,6 +290,7 @@ export async function applyJudgment(run, judgment) {
     if (level === "runtime" && !evidence.some((v) => ["runtime_log", "component_tree"].includes(v.type))) throw new Error("运行判定需要日志或交互组件树证据")
     validateWindowPrivacyJudgment(run, level, item, evidence)
     validateGesturesShareJudgment(run, level, item, evidence)
+    validateDesktopShortcutJudgment(run, level, item, evidence)
     if (run.feature === "agent-framework-kit" && item.status === "passed") {
       if (level === "visual" && new Set(evidence.filter((e) => e.type === "screenshot").map((e) => e.sha256)).size < 2) throw new Error("Function 视觉通过需要入口与对话框打开状态两张不同截图")
       if (level === "runtime") {
@@ -346,7 +369,7 @@ export async function verifyDevelopment(request, options = {}) {
         requiredText(request.screenshotScenario, "screenshot-scenario")
         if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
         if (!run.device || run.checks.install.status !== "passed" || run.checks.navigation.status !== "passed") throw new Error("补采截图需要本轮安装和目标页导航已通过")
-        if (run.feature === "smart-reach" || run.feature === "agent-framework-kit" || run.feature === "dlp-anti-peep" || run.feature === "gestures-share") {
+        if (run.feature === "smart-reach" || run.feature === "agent-framework-kit" || run.feature === "dlp-anti-peep" || run.feature === "gestures-share" || (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut")) {
           const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
           const queryId = nextEvidenceId(run)
           const queryPath = join(directory, run.runId, `${queryId}.log`)
@@ -356,7 +379,7 @@ export async function verifyDevelopment(request, options = {}) {
           await saveReport(output, directory, collection)
           if (info.exitCode !== 0) throw new Error(`设备信息查询命令失败（退出码：${info.exitCode ?? "未知"}）；证据：${queryPath}`)
           const data = parseDevecoJson(info.stdout, "device")
-          const kind = run.feature === "gestures-share" ? detectGesturesDeviceKind(data, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
+          const kind = ["gestures-share", "desktop-shortcuts"].includes(run.feature) ? detectGesturesDeviceKind(data, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
           if (kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
           run.deviceKind = kind
           run.deviceInfo = data
@@ -403,6 +426,7 @@ export async function verifyDevelopment(request, options = {}) {
       return result
     }
     const { inspection, compatibility, staticResult } = await (options.inspector ?? inspectVerification)(request)
+    if (run.feature === "desktop-shortcuts") run.shortcutManagementOperations = desktopShortcutManagementOperations(inspection, run.route)
     if (WINDOW_PRIVACY_FEATURES.includes(run.feature)) run.requiredRuntimeScenarios = windowPrivacyScenarios(run.feature, run.route, inspection)
     run.after = { sdk: inspection.localSdk.apiVersion ?? "unknown", compile: inspection.api.compile, target: inspection.api.target, compatible: inspection.api.compatible }
     await record("static", JSON.stringify({ inspection, compatibility, staticResult }, null, 2), "json")
@@ -467,6 +491,8 @@ export async function verifyDevelopment(request, options = {}) {
       if (info.exitCode === 0) run.deviceKind = run.feature === "gestures-share" ? detectGesturesDeviceKind(run.deviceInfo, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(run.deviceInfo, request.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
       if (deviceError) {
         run.checks.install = { ...check("failed", deviceError), reportSummary: deviceError }
+      } else if (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") {
+        run.checks.install = check("not_run", "动态快捷方式需要已确认的 Phone/Tablet/PC/2in1 真机，未执行安装运行")
       } else if (run.feature === "gestures-share" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "隔空传送需要已确认的双端真机，未执行安装运行")
       } else if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") {

@@ -7,6 +7,7 @@ const skip = new Set(['.git', '.idea', '.hvigor', 'build', 'node_modules', 'oh_m
 const slash = s => s.replaceAll('\\', '/')
 const line = (s, i) => s.slice(0, i).split('\n').length
 const anchors = {
+  'desktop-shortcuts': /(?!)/g,
   'gestures-share': /(?!)/g,
   'immersive-light': /\b(?:HdsNavigation|HdsNavDestination|HdsTabs|uiMaterial|systemMaterial|barFloatingStyle|miniBar|miniBarBuilder|miniBarWidth|applyMiniBarStyle|HdsBarStyle|HdsBarLayoutMode)\b/g,
   'easygo-parallel': /\b(?:isEasySplit|easyGo)\b/g,
@@ -96,6 +97,12 @@ export async function auditProject(skillRoot, options) {
       if (feature.id === 'gestures-share') {
         const events = (inspection.gesturesShare?.usages ?? []).filter(u => u.path === slash(relative(root, file.path)))
         for (const u of events) eventHits.push({ index: file.content.split('\n').slice(0, u.line - 1).reduce((n, s) => n + s.length + 1, 0), 0: u.operation })
+      }
+      if (feature.id === 'desktop-shortcuts') {
+        const scan = inspection.desktopShortcuts
+        const relativePath = slash(relative(root, file.path))
+        for (const u of scan.usages.filter(u => u.path === relativePath)) eventHits.push({ index: file.content.split('\n').slice(0, u.line - 1).reduce((n, s) => n + s.length + 1, 0), 0: u.operation })
+        for (const c of scan.configurations.filter(c => c.path === relativePath || c.profilePath === relativePath)) eventHits.push({ index: 0, 0: 'ohos.ability.shortcuts' })
       }
       const configuration = feature.id === 'easygo-parallel' && (/easy_go\.json$/.test(file.path) || /\beasyGo\s*:/.test(code))
       if (!hits.length && !imported && !eventHits.length && !configuration) continue

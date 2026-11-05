@@ -1,6 +1,6 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）和隔空传送（Gestures Share、gesturesShare）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）、隔空传送（Gestures Share、gesturesShare）和桌面快捷方式（静态快捷方式、动态快捷方式）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -90,7 +90,7 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 
 ## 当前已注册能力
 
-当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护和隔空传送能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护、隔空传送和桌面快捷方式能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
 [智能体框架服务](references/features/agent-framework-kit/README.md)仅实现 Function 组件拉起智能体；开发 Agent、关联应用与测试发布等前置操作按能力包提供指导。A2A、AgentExtensionAbility 或后端开发请求即使命中 Kit 名称，也不属于当前实现范围；普通 Agent/Function 请求不能据此自动命中。其运行与视觉验证必须使用已确认的 Phone/Tablet 真机，按能力包采集点击、打开及关闭证据，不能以按钮显示替代拉起成功。
 
@@ -99,6 +99,8 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 防窥接入需求模糊或可选能力未明确时，必须先按[接入前澄清](references/features/dlp-anti-peep/README.md#接入前澄清)主动询问保护目标、是否需要系统蒙层及设置弹窗，并说明对应版本条件；只补问缺失项，确认接入范围后再实施。
 
 [隔空传送](references/features/gestures-share/README.md)通过 API20 起的 gesturesShare 事件分享文件或 App Linking 链接。仅在目标可分享页面前台可见时监听，退出及后台精确退订，恢复时按当前页面重新注册；双端真机验证抓取、释放和接收内容，隔空传送不支持元服务；可选链接直达验证应用域名关联、手动签名、参数接收与冷暖启动。接入完成后先按[手机设置指引](references/features/gestures-share/compatibility.md#系统设置和信任)展示华为分享、隔空传送开关路径、双端信任及真机动作步骤；选择链接直达时，再按[开发者配置指导](references/features/gestures-share/app-linking.md#接入完成后向开发者展示)展示对应配置步骤、官网链接及 App Linking 的手动签名限制；隔空传送本身沿用工程原有签名方式。普通手势、隔空截屏、碰一碰、系统分享或单独 App Linking 不自动映射到本能力。
+
+[桌面快捷方式](references/features/desktop-shortcuts/README.md)提供 static-shortcut、dynamic-shortcut 两条可组合路线；动态路线含预置与自定义资源方式，管理能力按需加载。先确认真实业务目标、名称图标和路线，不默认创建管理页面。基础配置、参数与管理接口按能力包分别门禁；动态加桌仅用支持的真机验收，系统确认、桌面图标和点击目标须分别取证。普通键盘快捷键、安装图标、Form Kit 卡片或单独 App Linking 不自动映射到本能力。
 
 ## 资源加载表
 

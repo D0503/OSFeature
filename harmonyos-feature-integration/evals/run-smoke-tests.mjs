@@ -13,10 +13,10 @@ const featureDir = resolve(skillRoot, "references", "features", "immersive-light
 
 const structure = await validateSkillStructure(skillRoot)
 assert.deepEqual(structure.errors, [])
-assert.deepEqual(structure.counts, { features: 7, ready: 7 })
+assert.deepEqual(structure.counts, { features: 8, ready: 8 })
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"))
-assert.equal(registry.features.length, 7)
+assert.equal(registry.features.length, 8)
 assert.deepEqual({ ...registry.features[0], aliases: [...registry.features[0].aliases].sort() }, {
   id: "immersive-light",
   displayName: "沉浸光感",
@@ -324,7 +324,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-feature-integration")
-assert.equal(evals.evals.length, 72)
+assert.equal(evals.evals.length, 80)
 assert.equal(new Set(evals.evals.map((item) => item.id)).size, evals.evals.length)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)

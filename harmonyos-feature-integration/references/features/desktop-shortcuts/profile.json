@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "featureId": "desktop-shortcuts",
+  "displayName": "桌面快捷方式",
+  "routeComposition": { "mode": "composable", "selectionField": "selectedRoutes", "allowed": ["static-shortcut", "dynamic-shortcut"] },
+  "fallbackPolicy": {
+    "baseline": "pre-integration-source-state",
+    "appliesWhen": ["runtime-version-unsupported", "device-capability-unsupported", "user-refused", "verification-expired", "service-failed", "feature-disabled"],
+    "preserve": ["component-tree-or-existing-code-path", "responsive-layout-orientation-and-window-mode", "state-data-controllers-events-and-lifecycle", "existing-error-denial-and-unavailable-behavior", "ordinary-visual-style"]
+  },
+  "routes": [
+    { "id": "static-shortcut", "displayName": "静态快捷方式", "minApi": 9, "requiresStage": true, "moduleTypes": ["entry"], "components": ["ohos.ability.shortcuts"],
+      "documents": { "implementation": "routes/static-shortcut.md", "assets": "routes/static-shortcut.md", "validation": "performance-validation.md" } },
+    { "id": "dynamic-shortcut", "displayName": "动态快捷方式", "minApi": 14, "requiresStage": true, "moduleTypes": ["entry"], "components": ["productViewManager"],
+      "documents": { "implementation": "routes/dynamic-shortcut.md", "assets": "routes/dynamic-shortcut.md", "validation": "performance-validation.md" } }
+  ],
+  "capabilities": {
+    "visible": { "sinceApi": 20, "requiresRuntimeGuard": false },
+    "getAllShortcutInfoForSelf": { "minApi": 20 },
+    "setShortcutVisibleForSelf": { "minApi": 20 },
+    "getPinShortcutInfos": { "minApi": 24 },
+    "removePinShortcut": { "minApi": 24 },
+    "isShortcutSupported": { "minApi": 26 }
+  },
+  "constraints": ["Stage", "dynamic-phone-tablet-pc-2in1-physical-only", "optional-management-on-request", "merge-existing-metadata-and-resources"],
+  "documents": {
+    "entry": "README.md", "compatibility": "compatibility.md", "implementation": "implementation.md", "assets": "assets-catalog.md",
+    "validation": "performance-validation.md", "sharedValidation": "performance-validation.md", "fallback": "fallback.md", "troubleshooting": "troubleshooting.md",
+    "compatibilityAudit": "compatibility-audit.md", "management": "management.md"
+  },
+  "evidence": { "policy": "snapshot-first-verify-on-change-or-conflict" }
+}

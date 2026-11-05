@@ -95,7 +95,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 
 ### 3.1 路线矩阵
 
-当前注册 7 类能力，共 14 条路线。下表为能力包的基础门槛；使用可选接口或配置时，实际要求可能提高。所有路线均要求 Stage，版本满足后仍须核对设备、权限和系统状态。
+当前注册 8 类能力，共 16 条路线。下表为能力包的基础门槛；使用可选接口或配置时，实际要求可能提高。所有路线均要求 Stage，版本满足后仍须核对设备、权限和系统状态。
 
 | 能力与入口 | 路线 ID | 基础 API | 组合关系及主要约束 |
 |---|---|---|---|
@@ -113,6 +113,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 | [防窥保护](harmonyos-feature-integration/references/features/dlp-anti-peep/README.md) | `status-observation` | 20 | 与 `system-mask` 可组合；仅支持具备能力的 Phone 真机，不支持元服务 |
 | 防窥保护 | `system-mask` | 21 | 系统蒙层；设置和再次风险提示为 API23 可选能力 |
 | [隔空传送](harmonyos-feature-integration/references/features/gestures-share/README.md) | `gestures-share` | 20 | 单路线；验证发送、接收双端和实际内容，链接直达追加应用 App Linking 配置 |
+| [桌面快捷方式](harmonyos-feature-integration/references/features/desktop-shortcuts/README.md) | `static-shortcut` / `dynamic-shortcut` | 9 / 14 | 可组合；静态配置基于API9 Stage模型，wants.parameters携带业务参数；可选管理API20/24/26 |
 
 `routeComposition.mode` 表示能力内部允许的组合方式。`recommendedRoute` 是建议项，`selectedRoutes` 表示选中的路线集合；执行器一次接收一个 `--route`，组合路线由 AI 分别执行并汇总。
 
@@ -127,6 +128,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 | 闪控窗／球 | 球的设备和模拟器支持按版本与能力包核对；窗和绑定不推定模拟器可用；`FLOAT_VIEW`、`USE_FLOAT_BALL` 均有 ACL 要求，窗另需用户授权 |
 | 防窥保护 | Phone 真机、人脸识别和系统/应用开关；`DLP_GET_HIDE_STATUS` 为受限 ACL 权限 |
 | 隔空传送 | API 资料涉及 Phone、Tablet、PC/2in1，但实际型号能力仍需确认；模拟器不能验收隔空传送；不支持元服务；元服务链接配置仅作为独立场景的补充知识 |
+| 桌面快捷方式 | 静态路线验证桌面入口、拖动加桌与点击启动；动态仅 Phone/Tablet/PC/2in1 真机，不支持模拟器或TV |
 
 ## 4. 核心流程
 
@@ -144,7 +146,7 @@ AI 完整读取注册表，以 `id`、`displayName`、`aliases` 匹配请求。�
 2. 定位并验证 SDK 根清单，确定本机 SDK API 与有效 compile API。
 3. 从 profile 和专项扫描结果计算路线要求，识别升级选项、未知条件及回退需求。
 4. 多条可用路线或存在升级选项时，由开发者确认；单条路线且无需升级时给出建议理由后继续。
-5. 已有及计划新增字段/API 都纳入要求。扫描只能发现已实现内容，计划新增内容由 AI 在方案中补充核验。
+5. 已有及计划新增字段/API 都按能力包声明核验版本要求，区分运行接口门槛与声明式字段的生效版本。扫描只能发现已实现内容，计划新增内容由 AI 在方案中补充核验。
 
 ### 4.3 新接入验证时序
 
@@ -254,6 +256,7 @@ SDK 定位优先显式 `--sdk`，其次为工程 `local.properties` 的 `sdk.dir
 | [agent-framework-tools](harmonyos-feature-integration/scripts/lib/agent-framework-tools.mjs) | Function 参数、应用类型、事件、版本和外部条件检查 |
 | [window-privacy-tools](harmonyos-feature-integration/scripts/lib/window-privacy-tools.mjs) | 窗、球、绑定及防窥用法、权限、版本和生命周期线索 |
 | [gestures-share-tools](harmonyos-feature-integration/scripts/lib/gestures-share-tools.mjs) | 事件订阅、文件/链接载荷和接收相关检查 |
+| [desktop-shortcuts-tools](harmonyos-feature-integration/scripts/lib/desktop-shortcuts-tools.mjs) | 实际 metadata/profile/资源、绑定API与重载候选、版本门禁及快捷方式配置检查 |
 | [compatibility-audit](harmonyos-feature-integration/scripts/lib/compatibility-audit.mjs) | 已接入特性的调用、守卫及 SDK 声明候选，人工复核报告呈现 |
 
 专项代码通过通用检查入口分派。profile 提供机器可读约束，但新增能力不是仅添加 JSON 即可执行：还需要相应的扫描、兼容性计算、静态检查及回归覆盖。
@@ -367,7 +370,7 @@ node scripts/verify-development.mjs --project <工程绝对路径> --feature eas
 | profile 身份 | `schemaVersion: "1.0"`、`featureId` 与注册 ID 对应 |
 | 路线 | `routes[].id/minApi`，按需声明 minTargetApi、requiresStage、moduleTypes 及路线文档映射 |
 | 组合 | `routeComposition.mode` 为 composable/exclusive；selectionField 为 selectedRoutes；allowed 声明路线 ID |
-| 可选能力 | `capabilities` 提供独立 minApi，由专项逻辑计算实际 requiredApi |
+| 可选能力 | `capabilities` 中运行接口的 minApi 参与 requiredApi 计算；声明式配置的 sinceApi 记录生效版本，是否需要运行守卫由专项规则声明 |
 | 回退 | `fallbackPolicy.baseline` 为 pre-integration-source-state；appliesWhen 和 preserve 描述条件及保留维度 |
 | 资料角色 | `documents` 与路线 documents 连接兼容、实施、资产、回退、验证和排障正文 |
 
@@ -633,6 +636,7 @@ audit 的 review 可含 mode、findings、verification、pending。findings 使�
 | 闪控窗／球 | 视觉通过至少两张不同截图；运行覆盖启动、更新、停止、回退和设备支持；绑定追加双向切换及 pair-stopped |
 | 防窥保护 | Phone 真机；视觉前后状态截图；运行覆盖开关、HIDE/PASS、回退、退订；按使用接口追加设置、提示、蒙层和窗口失效场景 |
 | 隔空传送 | 支持形态的真机；视觉至少两张不同截图，由 AI 确认发送/接收来源；运行覆盖 sender-grab、receiver-content、background-cleanup |
+| 桌面快捷方式 | 静态入口或动态确认、桌面图标、目标页面三张不同截图；运行分别验证入口、图标与冷暖启动，动态要求支持的真机 |
 
 设备类型识别依赖设备查询字段，未知不当作已确认真机。窗与绑定的支持限制、ACL 审批、人脸开关、双端信任等平台事实仍需按能力包核验，不能仅凭截图数量、SysCap 或观察文案确认。
 
@@ -652,7 +656,7 @@ Agent 示例在页面显示和消失时更新可见标志及请求序号。查�
 |---|---|---|
 | 基础及输入 | run-tool-tests、run-smoke-tests、run-manifest-parser-tests、run-input-boundary-tests | 工程与 SDK、路由门禁、清单子集、注释材质、BOM 和带路径的错误 |
 | 版本及兼容审计 | run-target-upgrade-tests、run-compatibility-audit-tests | 升级策略、逐产品上下文、SDK 声明及守卫候选 |
-| 能力专项 | run-easygo-tests、run-smart-reach-tests、run-agent-framework-tests、run-gestures-share-tests、run-window-privacy-tests | 各能力规则、权限、参数、路线及证据约束 |
+| 能力专项 | run-easygo-tests、run-smart-reach-tests、run-agent-framework-tests、run-gestures-share-tests、run-desktop-shortcuts-tests、run-window-privacy-tests | 各能力规则、权限、参数、路线及证据约束 |
 | 验证闭环 | run-development-tests、run-executor-regression-tests、run-deployment-tests、run-manual-verification-tests、run-verification-context-tests | 阶段状态、完整 HAP/HSP 集、手动导入、复核隔离、输入及产物失效 |
 | 资产行为 | run-agent-lifecycle-tests、run-anti-peep-utils-tests、run-float-view-controller-tests、run-floating-ball-controller-tests、run-float-view-ball-controller-tests | 迟到 Promise、异常返回、控制器和绑定生命周期 |
 | 文档关系 | run-document-links-tests | 本地链接、锚点、入口可达性和循环索引边界 |

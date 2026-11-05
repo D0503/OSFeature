@@ -752,21 +752,33 @@
       "prompt": "接入平行视界，先分析 homePage。业务首页直接在 Navigation(stack) { MallHome() } 内容区，MallHome 不是 NavDestination；详情通过 stack.pushPath({name: 'ProductDetail'}) 进入。",
       "expected_output": "判定业务主页在 Navigation 首页内容区，建议 homePage=navBar，说明内容结构与详情入栈证据。",
       "files": [],
-      "expectations": ["展示主页用途、承载方式、代码证据和建议值", "homePage 为 navBar", "不使用 MallHome 或 ProductDetail 作为主页标识"]
+      "expectations": [
+        "展示主页用途、承载方式、代码证据和建议值",
+        "homePage 为 navBar",
+        "不使用 MallHome 或 ProductDetail 作为主页标识"
+      ]
     },
     {
       "id": 64,
       "prompt": "分析平行视界主页：Navigation 内容区为空，首页用 stack.pushPath({name: HOME_ROUTE}) 进入，HOME_ROUTE='MallRoot'，构建映射 MallRoot 对应含 NavDestination 的 HomeScreen，标题是商城。",
       "expected_output": "追踪常量与构建映射，判定主页为 NavDestination，homePage=MallRoot。",
       "files": [],
-      "expectations": ["homePage 为 MallRoot", "不填 navBar、HomeScreen 或商城", "提供入栈 name 与构建映射依据"]
+      "expectations": [
+        "homePage 为 MallRoot",
+        "不填 navBar、HomeScreen 或商城",
+        "提供入栈 name 与构建映射依据"
+      ]
     },
     {
       "id": 65,
       "prompt": "接入 Router 平行视界并分析 homePage：module.pages 的 src 包含 pages/Splash、pages/Login、pages/Home；启动经过 Splash 和 Login 后 router.replaceUrl({url:'pages/Home'}) 进入商城主页，主页组件叫 MallScreen。",
       "expected_output": "结合启动跳转和页面表，建议 homePage=pages/Home，并说明依据。",
       "files": [],
-      "expectations": ["homePage 为 pages/Home", "不填 navBar、MallScreen 或 .ets 文件路径", "不将启动或登录页当作业务主页"]
+      "expectations": [
+        "homePage 为 pages/Home",
+        "不填 navBar、MallScreen 或 .ets 文件路径",
+        "不将启动或登录页当作业务主页"
+      ]
     },
     {
       "id": 66,
@@ -850,6 +862,94 @@
         "只读",
         "重载API20",
         "别名与封装追踪"
+      ]
+    },
+    {
+      "id": 73,
+      "prompt": "给现有应用增加桌面快捷方式，先告诉我有什么方式。",
+      "expected_output": "展示静态与动态路线，确认目标与资源，不直接实施。",
+      "files": [],
+      "expectations": [
+        "展示两条可组合路线",
+        "动态预置资源和自定义资源作为路线内方式",
+        "不默认增加管理页面"
+      ]
+    },
+    {
+      "id": 74,
+      "prompt": "API9 Stage 工程通过静态快捷方式启动现有 UIAbility，配置包含 visible。请设计接入方案。",
+      "expected_output": "采用 API9 Stage 静态配置，visible 直接配置并由系统处理低版本兼容，运行接口按实际使用范围独立门禁。",
+      "files": [],
+      "expectations": [
+        "使用API9 Stage模型静态快捷方式配置",
+        "visible直接配置，无需运行时版本守卫",
+        "复用已有Ability与资源"
+      ]
+    },
+    {
+      "id": 75,
+      "prompt": "API11 工程用同一 Ability 的不同参数打开两个页面。",
+      "expected_output": "通过静态快捷方式的 wants.parameters 区分两个业务目标，复用现有 UIAbility 和页面路由。",
+      "files": [],
+      "expectations": [
+        "静态路线采用API9 Stage模型基础配置",
+        "复用现有生命周期处理冷暖启动",
+        "字符串参数映射到已确认的业务目标"
+      ]
+    },
+    {
+      "id": 76,
+      "prompt": "用预置资源在应用内请求加桌，不做长按菜单路线验收。",
+      "expected_output": "选择动态路线并复用配置段落，不强制再选静态路线。",
+      "files": [],
+      "expectations": [
+        "核对ID资源Want一致",
+        "预校验后用户点击请求",
+        "tid过期及成功后失效"
+      ]
+    },
+    {
+      "id": 77,
+      "prompt": "把当前文章用自定义图标加到桌面。",
+      "expected_output": "动态自定义资源方式，复用真实业务导航与图标，独立核验参数和沙箱文件。",
+      "files": [],
+      "expectations": [
+        "不强制生成静态配置",
+        "png/webp且不超过100KB",
+        "空背景、真实Want、冷暖启动"
+      ]
+    },
+    {
+      "id": 78,
+      "prompt": "请查询已加桌图标并允许用户删除。",
+      "expected_output": "按API24使用getPinShortcutInfos与removePinShortcut，默认系统确认。",
+      "files": [],
+      "expectations": [
+        "不以配置查询替代已加桌查询",
+        "删除ID不是tid",
+        "不默认申请静默删除"
+      ]
+    },
+    {
+      "id": 79,
+      "prompt": "模拟器显示加桌弹框截图了，请标记动态快捷方式成功。",
+      "expected_output": "拒绝通过判定，动态路线需要支持真机与完整证据。",
+      "files": [],
+      "expectations": [
+        "不能只以弹框证明加桌成功",
+        "桌面图标及业务目标截图",
+        "冷暖启动运行观察"
+      ]
+    },
+    {
+      "id": 80,
+      "prompt": "请实现普通键盘快捷键，并介绍Form Kit卡片。",
+      "expected_output": "不自动路由为桌面快捷方式。",
+      "files": [],
+      "expectations": [
+        "不误命中desktop-shortcuts",
+        "不调用应用内加桌API",
+        "尊重当前功能范围"
       ]
     }
   ]

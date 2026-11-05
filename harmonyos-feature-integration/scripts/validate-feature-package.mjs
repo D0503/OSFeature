@@ -105,6 +105,12 @@ try {
       }
       issue(errors, Array.isArray(profile.routeComposition?.allowed) && profile.routeComposition.allowed.length === routeIds.size, "profile.routeComposition.allowed", "allowed 必须覆盖全部路线")
       issue(errors, (profile.routeComposition?.allowed ?? []).every((id) => routeIds.has(id)), "profile.routeComposition.allowed", "allowed 包含未知路线")
+      if (feature.id === "desktop-shortcuts") {
+        issue(errors, profile.routeComposition?.mode === "composable" && routeIds.size === 2 && routeIds.has("static-shortcut") && routeIds.has("dynamic-shortcut"), "profile.routes", "快捷方式必须包含两条可组合路线")
+        for (const route of profile.routes) issue(errors, route.minApi === (route.id === "static-shortcut" ? 9 : 14) && route.minTargetApi === undefined, `profile.routes.${route.id}`, "快捷方式基础覆盖门槛不正确")
+        issue(errors, profile.capabilities?.visible?.sinceApi === 20 && profile.capabilities.visible.requiresRuntimeGuard === false && profile.capabilities.visible.minApi === undefined, "profile.capabilities.visible", "visible 声明字段生效版本，直接配置且不参与路线版本门禁")
+        for (const [key, api] of Object.entries({ getAllShortcutInfoForSelf: 20, setShortcutVisibleForSelf: 20, getPinShortcutInfos: 24, removePinShortcut: 24, isShortcutSupported: 26 })) issue(errors, profile.capabilities?.[key]?.minApi === api, `profile.capabilities.${key}`, "快捷方式可选接口门槛错误")
+      }
       if (feature.id === "gestures-share") {
         issue(errors, profile.routeComposition?.mode === "exclusive" && routeIds.size === 1 && routeIds.has("gestures-share"), "profile.routes", "隔空传送使用唯一事件接入路线，文件与链接为数据场景")
         issue(errors, profile.routes[0]?.minApi === 20 && profile.routes[0]?.minTargetApi === undefined, "profile.routes.gestures-share", "隔空传送事件从 API20 起，不由 SharableTarget 的起始版本降低门槛")
