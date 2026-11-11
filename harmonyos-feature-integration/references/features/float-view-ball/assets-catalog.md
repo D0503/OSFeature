@@ -67,6 +67,8 @@ await FloatViewController.startFloatView();
 
 也可用 `prepareFloatView(page, size, storage)` 完成前两步后无参启动，或用 `startFloatView(page, size, storage)` 一次完成准备与启动。查询尺寸限制和窗口属性后，分别检查 `getFloatViewLimits(template)` 是否返回 `null`、`getFloatViewProperties()` 是否返回 `undefined`，再使用结果。
 
+跨包页面在资产持有的 `FloatViewController.floatViewController` 上调用 `setUIContextByName(routeName, storage)` 完成页面加载，再设置尺寸。独立窗随后无参启动。窗球绑定在 `prepare()` 内适配这一加载步骤，准备完成后再绑定。
+
 - **指定状态的业务回调**使用 `registerStateChangeCallback(state, callback)`。同一状态再次注册会覆盖旧回调。`unRegisterStateChangeCallback()` 只清除这批业务回调，资产内部的生命周期监听和创建时传入的 `onStateChange` 继续生效。
 - **尺寸限制和矩形变化**分别使用 `registerLimitsChangeCallback` 和 `onRectChangeCallback` 注册。调用 `unRegisterLimitsChangeCallback` 或 `offRectChangeCallback` 时传入原回调，只退订该回调。省略回调会清除该类型的全部监听，包括创建时注册的监听。
 - **收到 `STOPPED`** 后由资产统一退订并清除状态业务回调。新建控制器后按需重新注册。
@@ -95,7 +97,9 @@ await FloatViewController.startFloatView();
 
 使用 [FloatViewBallController.ets](assets/FloatViewBallController.ets)，复用同目录两个基础资产，按[绑定路线](routes/binding.md)分步调用：prepare → bind → start('view' 或 'ball') → stop → 双端 STOPPED → release。unbind 为可选的显式解绑操作，成功后自动释放。未绑定准备失败用 release 清理。所有操作返回 Promise<void>，使用 async/await 与 hilog。
 
-prepare 的参数为窗配置、球配置、页面路径、window.Size、可选 LocalStorage、可选 FloatViewBallCallbacks；bind 直接接收 FloatingBallParams。组合层直接使用基础资产的控制器字段，已有独立实例时先清理原流程，由业务入口防止重复点击及并发操作；不在基础窗、球资产中增加绑定依赖。尚未启动的绑定可直接 unbind，成功后自动释放引用。
+prepare 的参数为窗配置、球配置、页面路径、window.Size、可选 LocalStorage、可选 FloatViewBallCallbacks；bind 直接接收 FloatingBallParams。组合层直接使用基础资产的控制器字段，已有独立实例时先清理原流程，由业务入口防止重复点击及并发操作；不在基础窗、球资产中增加绑定依赖。
+
+两端均尚未发起启动时可直接调用 `unbind()`。已发起启动时，确认双端 `STOPPED` 后再调用。解绑成功后资产自动释放引用，失败时保留引用供重试。
 
 ## 可选高版本接口
 

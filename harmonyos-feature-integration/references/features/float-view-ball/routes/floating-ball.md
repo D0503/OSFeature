@@ -10,7 +10,9 @@
 
 ## 读取本地资产并接入
 
-按[闪控球资产索引](../assets-catalog.md#闪控球)打开 [FloatingBallController.ets](../assets/FloatingBallController.ets)，复制到工程控制器目录，以实际源码核对参数、回调和清理行为。知识库中的系统控制器创建与监听注册，对应 `FloatingBallController.createFloatingBall(...)`。启动、更新和停止沿用该封装持有的同一控制器。需要点击恢复时传入目标 `Want`，由资产发起恢复。业务回调只处理自身动作。按需接入高版本能力。
+按[闪控球资产索引](../assets-catalog.md#闪控球)打开 [FloatingBallController.ets](../assets/FloatingBallController.ets)，复制到工程控制器目录，以实际源码核对参数、回调和清理行为。
+
+采用资产时，保留知识库示例中的页面、参数和状态判断，将控制器操作映射到资产方法。每个控制器只由资产创建一次，资产统一持有控制器并管理内部监听，业务通过资产回调接入。知识库中的 `floatingBall.create()` 和内部监听注册由 `FloatingBallController.createFloatingBall(...)` 承接。需要点击恢复时传入目标 `Want`，由资产发起恢复。按需接入高版本能力。
 
 将以下片段合入现有的串行开启入口。`context` 使用实际宿主的 `UIAbilityContext`，`startParams` 按知识库正文构造，`want` 按需传入。现有实例检查只能拦截已创建的控制器，入口还须防止创建请求并发。
 

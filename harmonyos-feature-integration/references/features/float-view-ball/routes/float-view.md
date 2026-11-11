@@ -23,7 +23,9 @@
 
 ## 读取本地资产并接入
 
-按[闪控窗资产索引](../assets-catalog.md#闪控窗)读取 [FloatViewController.ets](../assets/FloatViewController.ets)，以实际源码核对参数、回调和清理行为。使用资产时保留知识库示例的页面、业务参数和状态判断，将系统调用映射到资产方法。由资产持有同一个系统控制器并注册内部监听，业务侧通过其回调接入。
+按[闪控窗资产索引](../assets-catalog.md#闪控窗)读取 [FloatViewController.ets](../assets/FloatViewController.ets)，以实际源码核对参数、回调和清理行为。
+
+采用资产时，保留知识库示例中的页面、参数和状态判断，将控制器操作映射到资产方法。每个控制器只由资产创建一次，资产统一持有控制器并管理内部监听，业务通过资产回调接入。知识库中的 `floatView.create()` 和内部监听注册由 `FloatViewController.createFloatView(...)` 承接。
 
 以下示例展示如何按知识库步骤调用本地资产。将片段合入用户开启闪控窗的处理方法，复用工程已有的防重复操作和异步错误处理。从资产导入 `FloatViewController` 和独立函数 `requestFloatViewPermission`，按知识库正文准备参数。
 
@@ -55,7 +57,7 @@ private async createWindow(): Promise<void> {
 }
 ```
 
-需要分别加载页面、设置尺寸和启动，或补充业务监听时，读取资产索引中的[分步调用与补充监听](../assets-catalog.md#分步调用与补充监听)。
+需要加载跨包页面、分步启动或补充业务监听时，读取资产索引中的[分步调用与补充监听](../assets-catalog.md#分步调用与补充监听)。
 
 工程侧负责[兼容性与权限核对](../compatibility.md)、前台检查、入口防重和业务参数准备。首次修改前和交付时按[权限提醒要求](../compatibility.md#权限声明acl-与用户授权)说明本次路线的权限条件和申请入口。
 
