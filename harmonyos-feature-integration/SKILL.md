@@ -67,6 +67,7 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 | 修改工程 | [工程实施](references/workflows/implementation.md) |
 | 验证结果 | [验证闭环](references/workflows/verification.md) |
 | 排查问题 | [故障排查](references/workflows/troubleshooting.md) |
+| 能力包按标题引用知识库正文 | [知识库查询](references/workflows/knowledge-query.md) |
 
 ### 方案设计
 

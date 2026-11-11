@@ -1,6 +1,6 @@
 # 排障
 
-`MCPXX` 是待配置的知识库 MCP 服务。接入后，通过 `searchDocuments` 查询关键词 `闪控球／窗排障`，选择标题匹配的条目，再用返回的 `identifier` 调用 `getDocumentsById` 读取正文。服务未配置或未取得正文时，将特性排障依据标记为待核验，暂停依赖该资料的工程改动。
+按[知识库查询流程](../../workflows/knowledge-query.md)读取《闪控球／窗排障》。
 
 按[通用排障工作流](../../workflows/troubleshooting.md)核对现象、失败接口、错误码和实际控制器状态。修复后回归实际接入的路线，涉及窗球绑定时覆盖双向切换和双端停止。
 

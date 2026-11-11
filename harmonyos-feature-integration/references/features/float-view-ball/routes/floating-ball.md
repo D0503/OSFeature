@@ -6,7 +6,7 @@
 
 ## 读取知识库正文
 
-`MCPXX` 是待配置的知识库 MCP 服务。接入后，通过 `searchDocuments` 查询「独立闪控球开发步骤（API 20 起）」，选择标题匹配的条目，再用返回的 `identifier` 调用 `getDocumentsById` 读取全文。结合目标工程确认模板、图标、实际宿主的 `UIAbilityContext`、点击恢复目标和结束展示的时机。服务未配置或未取得正文时，标记接入依据待核验，暂停依赖这些资料的工程改动。
+按[知识库查询流程](../../../workflows/knowledge-query.md)读取《独立闪控球开发步骤（API 20 起）》。结合目标工程确认模板、图标、实际宿主的 `UIAbilityContext`、点击恢复目标和结束展示的时机。
 
 ## 读取本地资产并接入
 
