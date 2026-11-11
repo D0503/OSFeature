@@ -24,9 +24,13 @@
 | `getWindowProperties()` | 同步读取有效窗口的属性；未启动、停止或异常状态抛错 |
 | `stopFloatView()` | 发出停止请求，STOPPED 时退订并清空引用 |
 
-创建、页面准备、启动、尺寸／模板设置、恢复和停止返回 Promise<void>，错误交给调用方处理；监听注册和退订为同步 void 方法，查询返回表中类型。启动和停止最终状态仍以 STARTED／STOPPED 为准。状态和尺寸限制监听始终注册，矩形监听按可选回调注册；STOPPED 清理完成后调用业务状态回调。业务可用独立方法补充监听；状态退订只清除 registerStateChangeCallback 注册的业务回调，保留内部生命周期监听及创建时传入的状态回调。STOPPED 时统一退订全部监听并清除状态业务回调。页面不需要另存控制器引用。
+创建、页面准备、启动、尺寸／模板设置、恢复和停止返回 `Promise<void>`，错误交给调用方处理。监听注册和退订为同步 `void` 方法，查询返回表中类型。启动和停止最终状态以 `STARTED`／`STOPPED` 为准。状态和尺寸限制监听在创建时注册，矩形监听按可选回调注册。`STOPPED` 清理完成后调用业务状态回调。页面不需要另存控制器引用。
 
 页面路径必须写入宿主 pages profile。参数不补业务默认值，尺寸由调用方根据当前模板限制选择。注册监听失败尝试退订；加载或启动失败保留控制器供重试，停止失败不清空引用。创建等操作需串行执行，具体权限、失败清理及前台条件见路线。
+
+创建成功后、发起启动前取消时，由串行开启流程的所有者确认仍是本次创建的独立实例，退订已注册的状态、限制和矩形监听，清理业务状态回调，再清空封装持有的控制器引用和状态。已经发起启动时，按实际状态处理停止或重试。
+
+加载页面、设尺寸、启动、恢复或停止的系统调用失败时，从 `hilog` 的 `FloatViewController` 标签核对平台错误。封装向调用方抛出的普通 `Error` 用于识别失败阶段。
 
 显示内容用原工程页面；独立小页可使用以下骨架，把 `content` 接到现有状态：
 
@@ -49,7 +53,23 @@ struct FloatContent {
 }
 ```
 
-窗页面顶部必须预留固定避让：常规态（ROUNDED_RECTANGLE）top padding 32vp，mini 态（HORIZONTAL_BAR）top padding 4vp，并随模板切换同步；该预留不代替 avoidArea 核对，交互控件仍不得落入不响应区域。尺寸按 `getFloatViewLimits(templateType)`、`onLimitsChange`、`onRectChange` 的实际 px 与比例限制处理；不在通用资产中固定尺寸。内容行不写固定高度，垂直位置交给根容器居中（请求尺寸可能被系统按模板调整，见[窗路线](routes/float-view.md)的请求尺寸说明）。跨包页面按 `setUIContextByName` 对接原工程命名路由。
+页面骨架的 `compact` 与当前模板同步。尺寸与避让按[闪控窗知识查询](routes/float-view.md#读取知识库正文)的「闪控窗模板切换与页面避让」处理。
+
+### 分步调用与补充监听
+
+控制器创建成功后，需要分别加载同包页面、设置尺寸和启动时，按下列顺序操作同一个控制器。页面路径使用宿主已注册的实际路径，`storage` 为可选 `LocalStorage`，`size` 为符合当前模板限制的 px 尺寸。
+
+```typescript
+await FloatViewController.setUIContent('pages/FloatViewPage', storage);
+await FloatViewController.setWindowSize(size);
+await FloatViewController.startFloatView();
+```
+
+也可用 `prepareFloatView(page, size, storage)` 完成前两步后无参启动，或用 `startFloatView(page, size, storage)` 一次完成准备与启动。查询尺寸限制和窗口属性后，分别检查 `getFloatViewLimits(template)` 是否返回 `null`、`getFloatViewProperties()` 是否返回 `undefined`，再使用结果。
+
+- **指定状态的业务回调**使用 `registerStateChangeCallback(state, callback)`。同一状态再次注册会覆盖旧回调。`unRegisterStateChangeCallback()` 只清除这批业务回调，资产内部的生命周期监听和创建时传入的 `onStateChange` 继续生效。
+- **尺寸限制和矩形变化**分别使用 `registerLimitsChangeCallback` 和 `onRectChangeCallback` 注册。调用 `unRegisterLimitsChangeCallback` 或 `offRectChangeCallback` 时传入原回调，只退订该回调。省略回调会清除该类型的全部监听，包括创建时注册的监听。
+- **收到 `STOPPED`** 后由资产统一退订并清除状态业务回调。新建控制器后按需重新注册。
 
 ## 闪控球
 
@@ -65,7 +85,11 @@ struct FloatContent {
 
 异步操作返回 Promise<void>，错误交给调用方；实际启动和停止以状态通知为准。点击时有 Want 才恢复主窗口，可选点击回调不等待恢复完成。STOPPED 清理后执行业务状态回调。注册失败尝试退订；启动或停止失败保留引用用于重试。参数验证、权限、前台条件和防重复操作由业务处理。
 
-图标解码使用[球路线中的独立资源片段](routes/floating-ball.md#5-加载图标)，与控制器生命周期分开管理。
+创建成功后、发起启动前取消时，当前封装没有单独的取消方法。由串行开启流程的所有者确认仍是本次创建的独立实例，退订该实例的 `click` 和 `stateChange` 监听，再清空封装持有的控制器引用和状态。已经发起启动时，按实际状态处理停止或重试。
+
+平台调用失败时，封装先在 `hilog` 的 `FloatingBallController` 标签下记录 `BusinessError.code` 和 `message`，再向调用方抛出普通 `Error`。排障时用调用方异常识别失败阶段，从日志核对平台错误码。
+
+图标解码使用[闪控球知识查询](routes/floating-ball.md#读取知识库正文)返回的「从应用资源加载图标」片段，与控制器生命周期分开管理。
 
 ## 绑定
 
