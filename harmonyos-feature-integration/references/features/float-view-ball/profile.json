@@ -107,7 +107,7 @@
     "assets": "assets-catalog.md",
     "fallback": "fallback.md",
     "sharedValidation": "performance-validation.md",
-    "troubleshooting": "troubleshooting.md"
+    "troubleshooting": "README.md"
   },
   "evidence": {
     "policy": "snapshot-first-verify-on-change-or-conflict"

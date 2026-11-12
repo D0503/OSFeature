@@ -83,12 +83,9 @@ const validationIndex = entry
 const assetsIndex = entry
 const hdsImplementation = await readFile(resolve(featureDir, "routes", "hds", "implementation.md"), "utf8")
 const arkuiImplementation = await readFile(resolve(featureDir, "routes", "arkui", "implementation.md"), "utf8")
-const arkuiActivation = await readFile(resolve(featureDir, "routes", "arkui", "activation.md"), "utf8")
-const arkuiCommonMaterial = await readFile(resolve(featureDir, "routes", "arkui", "common-material.md"), "utf8")
 const arkuiNavigation = await readFile(resolve(featureDir, "routes", "arkui", "components", "navigation.md"), "utf8")
 const arkuiOverlays = await readFile(resolve(featureDir, "routes", "arkui", "components", "overlays.md"), "utf8")
-const arkuiControls = await readFile(resolve(featureDir, "routes", "arkui", "components", "controls.md"), "utf8")
-const implementation = [hdsImplementation, arkuiImplementation, arkuiActivation, arkuiCommonMaterial, arkuiNavigation, arkuiOverlays, arkuiControls].join("\n")
+const implementation = [hdsImplementation, arkuiImplementation].join("\n")
 const sharedValidation = await readFile(resolve(featureDir, "shared", "validation.md"), "utf8")
 const hdsValidation = await readFile(resolve(featureDir, "routes", "hds", "validation.md"), "utf8")
 const arkuiValidation = await readFile(resolve(featureDir, "routes", "arkui", "validation.md"), "utf8")
@@ -128,10 +125,9 @@ assert.match(assetsIndex, /routes\/hds\/assets\.md/)
 assert.match(assetsIndex, /routes\/arkui\/assets\.md/)
 assert.doesNotMatch(hdsImplementation, /new uiMaterial\.ImmersiveMaterial/)
 assert.doesNotMatch(arkuiImplementation, /HdsTabs\(/)
-assert.match(arkuiImplementation, /activation\.md/)
+assert.match(arkuiImplementation, /### 能力查询时机/)
 assert.match(arkuiImplementation, /components\/navigation\.md/)
 assert.match(arkuiImplementation, /component-profile\.json/)
-assert.match(arkuiNavigation, /FloatingTabBarStyle\.systemMaterial/)
 assert.match(sharedFallback, /pre-integration-source-state/)
 
 assert.match(compatibility, /HarmonyOS 6\.1\.0、API 23/)
@@ -146,14 +142,12 @@ assert.match(compatibility, /低版本整树分支必须保留源程序接入前
 
 assert.match(implementation, /HdsNavigation/)
 assert.match(implementation, /menus: HdsNavigationMenuContentOptions[\s\S]*menu: this\.menus/)
-assert.match(implementation, /uiMaterial\.ImmersiveMaterial/)
+assert.match(arkuiGuardAsset, /uiMaterial\.ImmersiveMaterial/)
 assert.match(implementation, /deviceInfo\.apiAvailable\('26\.0\.0'\)/)
 assert.match(implementation, /uiMaterial\.isImmersiveMaterialSupported\(\)/)
-assert.match(implementation, /ohos\.arkui\.UIMaterial\.state/)
 assert.match(implementation, /barOverlap\(true\)/)
 assert.match(implementation, /barHeight\(56\)/)
 assert.match(sharedValidation, /所有断点、横竖屏和窗口尺寸均使用底部横向 Tab：`vertical\(false\)`、`BarPosition.End`/)
-assert.doesNotMatch(arkuiNavigation, /\.barWidth\(328\)|328vp|360vp/)
 assert.match(sharedValidation, /删除外层 `\.barWidth\(\.\.\.\)`/)
 assert.match(implementation, /低版本分支必须保留源程序体验/)
 assert.match(implementation, /### 可选 MiniBar/)
@@ -165,30 +159,33 @@ assert.match(implementation, /bottom: this\.useFloatingTab \? 0 : this\.vm\.wind
 assert.match(implementation, /bottom padding 只存在于某个 `TabContent`/)
 assert.match(implementation, /### 滚动 Tab 页尾部避让/)
 assert.match(implementation, /contentEndOffset\(this\.floatingTabOcclusionHeight\)/)
-assert.match(sharedValidation, /尾部空间只负责滚动内容防遮挡/)
-assert.match(arkuiActivation, /targetSdkVersion >= 26.*适用于 ArkUI 整条路线/)
-assert.match(arkuiActivation, /DISABLE[\s\S]*uiMaterial\.Material\.empty[\s\S]*undefined/)
-assert.match(arkuiActivation, /未配置或 `default`[\s\S]*不能视为“完全无变化”/)
-assert.match(arkuiNavigation, /barOverlap\(true\)[\s\S]*vertical\(false\)[\s\S]*BarPosition\.End/)
-assert.match(arkuiNavigation, /必须由工程显式配置 `barFloatingStyle`/)
-assert.match(arkuiNavigation, /系统默认启用 `THIN` 材质，不要求显式设置 `FloatingTabBarStyle\.systemMaterial`/)
-assert.match(arkuiNavigation, /### 可滚动 Tab 页尾部避让/)
-assert.match(sharedValidation, /List[\s\S]*contentEndOffset[\s\S]*Scroll[\s\S]*Column[\s\S]*WaterFlow/)
-assert.match(sharedValidation, /禁止在使用 `layoutWeight`[\s\S]*兄弟节点追加固定高度 Blank/)
+const arkuiKnowledgeEntries = [
+  [arkuiImplementation, [
+    "ArkUI 沉浸光感开启策略",
+    "ArkUI 沉浸光感通用材质",
+    "ArkUI 沉浸光感按钮、选择控件与通用组件"
+  ]],
+  [arkuiNavigation, [
+    "ArkUI 沉浸光感 Navigation 标题栏与内容避让",
+    "ArkUI 沉浸光感原生悬浮 Tabs",
+    "ArkUI 沉浸光感 AlphabetIndexer 索引提示弹窗",
+    "ArkUI 沉浸光感标题栏滚动联动正例"
+  ]],
+  [arkuiOverlays, ["ArkUI 沉浸光感弹窗与菜单组件适配"]],
+  [sharedValidation, ["沉浸光感悬浮 Tab 布局与避让"]]
+]
+for (const [entry, titles] of arkuiKnowledgeEntries) {
+  assert.match(entry, /knowledge-query\.md/)
+  for (const title of titles) {
+    assert.ok(entry.includes(`《${title}》`), `Missing knowledge title: ${title}`)
+  }
+}
+assert.match(arkuiNavigation, /「正例一：搜索框标题栏随滚动收缩」/)
+assert.match(arkuiNavigation, /「正例二：内容分类栏滚入标题栏后接替显示」/)
+assert.match(arkuiNavigation, /shared\/validation\.md#窗口沉浸状态与栏间距/)
+assert.match(sharedValidation, /## 普通与悬浮 Tab 的外层避让/)
+assert.match(sharedValidation, /## 悬浮 Tab 的滚动尾部避让/)
 assert.match(sharedValidation, /未执行逐页滚动时报告未验证/)
-assert.match(sharedValidation, /最后一个可操作项及其点击、拖拽或手势热区/)
-assert.match(sharedValidation, /同时适用于 HDS `HdsTabs` 和 ArkUI 原生 `Tabs`/)
-assert.match(sharedValidation, /最后一个真实滚动项之后增加尾部空间/)
-assert.match(sharedValidation, /barHeight \+ barBottomMargin/)
-assert.match(sharedValidation, /未设置时 HDS 默认 0、ArkUI Tabs 默认 28vp/)
-assert.match(arkuiOverlays, /ContextMenuOptions\.systemMaterial/)
-assert.doesNotMatch(arkuiOverlays, /withMenuMaterial\(options: MenuOptions\)/)
-assert.match(arkuiOverlays, /CalendarPicker.*当前不支持/)
-assert.match(arkuiControls, /ToggleType\.Checkbox|Checkbox 当前不支持/)
-assert.match(arkuiControls, /Slider.*`undefined` 恢复原 Slider/)
-assert.match(arkuiControls, /backgroundSystemMaterial.*selectedBackgroundSystemMaterial.*iconBackgroundSystemMaterial/)
-assert.match(arkuiCommonMaterial, /`lightEffect`[ -￿]*`\{\}`[ -￿]*`null`[ -￿]*`undefined`/)
-assert.match(arkuiCommonMaterial, /低算力[ -￿]*`materialColor`[ -￿]*背景色/)
 
 assert.match(assetsCatalog, /所有断点.*底部 `HdsTabs`/)
 assert.match(assetsCatalog, /56vp.*显示态基线/)
@@ -236,12 +233,12 @@ assert.equal(arkuiRoute?.minApi, 26)
 assert.equal(arkuiRoute?.minTargetApi, 26)
 assert.equal(arkuiRoute?.applicationLevel.minTargetApi, 26)
 assert.equal(arkuiRoute?.documents.implementation, "routes/arkui/implementation.md")
-assert.equal(arkuiRoute?.documents.activation, "routes/arkui/activation.md")
-assert.equal(arkuiRoute?.documents.commonMaterial, "routes/arkui/common-material.md")
+assert.equal(arkuiRoute?.documents.activation, arkuiRoute?.documents.implementation)
+assert.equal(arkuiRoute?.documents.commonMaterial, arkuiRoute?.documents.implementation)
 assert.equal(arkuiRoute?.documents.componentProfile, "routes/arkui/component-profile.json")
 assert.equal(arkuiRoute?.documents.navigation, "routes/arkui/components/navigation.md")
 assert.equal(arkuiRoute?.documents.overlays, "routes/arkui/components/overlays.md")
-assert.equal(arkuiRoute?.documents.controls, "routes/arkui/components/controls.md")
+assert.equal(arkuiRoute?.documents.controls, arkuiRoute?.documents.implementation)
 assert.equal(arkuiRoute?.documents.validation, "routes/arkui/validation.md")
 assert.equal(arkuiRoute?.documents.assets, "routes/arkui/assets.md")
 assert.ok(arkuiRoute?.components.includes("Navigation"))

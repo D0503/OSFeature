@@ -63,7 +63,7 @@ private async createWindow(): Promise<void> {
 
 ## 按状态验收
 
-业务结束时使用资产的 `stopFloatView()`。收到 `STARTED` 后确认启动，收到 `STOPPED` 后确认停止。资产清理内部监听与控制器引用，业务清理自己的订阅、定时器和页面资源。按[性能与验证](../performance-validation.md)及已加载的知识条目核对实际接入结果。失败时读取[闪控窗排障](../troubleshooting.md#闪控窗排查)，条件不满足时按[回退策略](../fallback.md)保留原业务。
+业务结束时使用资产的 `stopFloatView()`。收到 `STARTED` 后确认启动，收到 `STOPPED` 后确认停止。资产清理内部监听与控制器引用，业务清理自己的订阅、定时器和页面资源。按[性能与验证](../performance-validation.md)及已加载的知识条目核对实际接入结果。失败时按[排障](../README.md#排障)查阅窗端知识，条件不满足时按[回退策略](../fallback.md)保留原业务。
 
 静态检查通过不等于设备功能通过，缺少签名或适配设备时保留待验收状态。
 

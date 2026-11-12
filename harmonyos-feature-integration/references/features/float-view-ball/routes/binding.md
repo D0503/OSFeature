@@ -64,6 +64,6 @@ await FloatViewBallController.start(initialDisplay);
 
 ## 按状态验收
 
-按[性能与验证](../performance-validation.md)和已加载的知识库正文验证首次展示、系统切换、双端停止、失败恢复及本次涉及的更新行为。业务收尾时清理自己的订阅、定时器和页面资源。出现错误时读取[排障查询](../troubleshooting.md)，条件不满足时按[回退策略](../fallback.md)处理。
+按[性能与验证](../performance-validation.md)和已加载的知识库正文验证首次展示、系统切换、双端停止、失败恢复及本次涉及的更新行为。业务收尾时清理自己的订阅、定时器和页面资源。出现错误时按[排障](../README.md#排障)读取绑定知识，条件不满足时按[回退策略](../fallback.md)处理。
 
 交付时按[权限与提醒要求](../compatibility.md#权限声明acl-与用户授权)说明本次路线的权限条件和申请入口。

@@ -13,7 +13,7 @@ tags: ["HarmonyOS", "闪控窗", "floatView", "模板切换", "避让"]
 ## 调整尺寸和切换模板
 
 - **仅调整尺寸**时，调用 `floatView.getFloatViewLimits(templateType)` 读取当前模板的 `minSize`、`maxSize` 和 `ratioLimits`，再调用 `viewController.setWindowSize(size)`。宽高使用 px，且均须大于 0。业务布局使用 vp 时，先通过实际 `UIContext.vp2px()` 转换，再核对宽高和比例。
-- **重新计算尺寸**的触发条件包括条目数量、显示区域、`onLimitsChange` 和已有断点状态的变化。`onLimitsChange` 用于更新业务保存的尺寸约束。窗口实际位置和大小以 `onRectChange` 为准。已有屏幕尺寸响应机制时，初始和后续尺寸均可复用其状态，具体见「闪控窗屏幕尺寸与断点响应」。
+- **重新计算尺寸**的触发条件包括条目数量、显示区域、`onLimitsChange` 和已有断点状态的变化。`onLimitsChange` 用于更新业务保存的尺寸约束。窗口实际位置和大小以 `onRectChange` 为准。已有屏幕尺寸响应机制时，初始和后续尺寸均可复用其状态，具体见[闪控窗屏幕尺寸与断点响应](float-view-breakpoint-resize.md)。
 - **切换形态**时，先查询目标模板的限制，再把目标模板和尺寸作为完整的 `TemplateProperty` 传给 `viewController.switchTemplate(property)`。系统 API 改变窗口模板和尺寸，页面由自己的展开／紧凑状态控制内容布局。接口成功后提交页面状态，失败时保留原布局。切回展开态时重新查询圆角矩形模板的限制。
 
 下面单独演示切换到紧凑横条。`viewController` 使用当前窗的系统控制器。最大尺寸仅用于展示参数结构，实际值按业务内容、显示区域及目标模板约束选取。在现有异步错误处理入口中执行，控制器不可用或状态不适合切换时暂不发起请求。

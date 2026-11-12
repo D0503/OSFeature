@@ -150,7 +150,7 @@
     },
     {
       "id": "controls",
-      "document": "components/controls.md",
+      "document": "implementation.md",
       "components": [
         {
           "id": "button",

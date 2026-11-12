@@ -106,12 +106,12 @@
       },
       "documents": {
         "implementation": "routes/arkui/implementation.md",
-        "activation": "routes/arkui/activation.md",
-        "commonMaterial": "routes/arkui/common-material.md",
+        "activation": "routes/arkui/implementation.md",
+        "commonMaterial": "routes/arkui/implementation.md",
         "componentProfile": "routes/arkui/component-profile.json",
         "navigation": "routes/arkui/components/navigation.md",
         "overlays": "routes/arkui/components/overlays.md",
-        "controls": "routes/arkui/components/controls.md",
+        "controls": "routes/arkui/implementation.md",
         "validation": "routes/arkui/validation.md",
         "assets": "routes/arkui/assets.md"
       }

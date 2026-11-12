@@ -12,10 +12,16 @@
 - 实施：先读[实施入口](implementation.md)，再按 `selectedRoutes` 读取[闪控窗知识查询及本地资产接入](routes/float-view.md)、[闪控球知识查询及本地资产接入](routes/floating-ball.md)或[绑定](routes/binding.md)。
 - 路线 ID：`float-view` 为独立窗，`floating-ball` 为独立球，`binding` 为[窗球绑定](routes/binding.md)。绑定只选 binding，内部复用两端能力；两个独立实现同时出现不等于绑定。
 - 代码：[资产](assets-catalog.md)；失败和旧版本：[回退](fallback.md)。
-- 验收：[性能与验证](performance-validation.md)；诊断：按[排障查询](troubleshooting.md)读取知识库正文。
+- 验收：[性能与验证](performance-validation.md)；诊断：[排障](#排障)。
 - 用户明确要求闪控窗防窥时，读取[防窥联动](anti-peep-integration.md)，按其中要求加载独立的[防窥能力](../dlp-anti-peep/README.md)。
 
 依据 2026-10-20 本地官方资料快照整理：[闪控窗指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/float-view-guide)、[窗 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatview)、[球指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/floatingball-guide)、[球 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatingball)。版本冲突时核对对应接口与目标 SDK 声明，不按样例工程版本反推 API 起点。
+
+## 排障
+
+按[知识库查询流程](../../workflows/knowledge-query.md)读取《闪控球／窗排障》。先读「共通错误与现象」，再按实际故障读取「闪控球错误码」或「闪控窗排查」。涉及绑定时同时读取「窗球绑定排查」。
+
+按[通用排障工作流](../../workflows/troubleshooting.md)核对现象、失败接口、错误码和实际控制器状态。修复后回归实际接入的路线，涉及窗球绑定时覆盖双向切换和双端停止。
 
 ## 已接入工程兼容性扫描
 

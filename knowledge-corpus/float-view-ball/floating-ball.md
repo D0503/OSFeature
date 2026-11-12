@@ -8,7 +8,7 @@ tags: ["HarmonyOS", "闪控球", "floatingBall", "API 20", "ArkUI"]
 
 # 独立闪控球开发步骤（API 20 起）
 
-通过 `@kit.ArkUI` 的 `floatingBall` 展示应用业务信息。球在应用前台启动后可跨应用显示。接入前确定展示内容、数据来源、点击后的目标页面和结束展示的时机。需要在窗和球之间由系统切换时，使用窗球绑定流程。
+通过 `@kit.ArkUI` 的 `floatingBall` 展示应用业务信息。球在应用前台启动后可跨应用显示。接入前确定展示内容、数据来源、点击后的目标页面和结束展示的时机。需要在窗和球之间由系统切换时，参照[闪控窗／球绑定与解绑](binding.md)。
 
 ## 1. 核对权限、运行环境和用户入口
 
@@ -95,7 +95,7 @@ await ballController.startFloatingBall(startParams);
 
 球处于 `STARTED` 时，用最新业务数据构造新的 `FloatingBallParams`，沿用启动时的模板及参数边界。`STATIC` 不支持更新。确需更换模板时，先停止原实例并完成清理，再使用目标模板启动。
 
-以下接续前文 `NORMAL` 示例，`updatedTitle` 和 `updatedContent` 取自当前业务数据。
+以下接续[构造启动参数](#构造启动参数)中的 `NORMAL` 示例，`updatedTitle` 和 `updatedContent` 取自当前业务数据。
 
 ```typescript
 const updateParams: floatingBall.FloatingBallParams = {

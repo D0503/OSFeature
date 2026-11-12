@@ -8,7 +8,7 @@ tags: ["HarmonyOS", "闪控窗", "闪控球", "窗球绑定", "内容更新", "�
 
 # 闪控窗／球绑定后的内容更新
 
-以下步骤使用当前已绑定的一组系统控制器。`viewController` 由 `floatView.create` 返回，`ballController` 由 `floatingBall.create` 返回。业务状态通过两端各自的状态监听更新。首次接入和整组替换按「闪控窗／球绑定与解绑」处理。
+以下步骤使用当前已绑定的一组系统控制器。`viewController` 由 `floatView.create` 返回，`ballController` 由 `floatingBall.create` 返回。业务状态通过两端各自的状态监听更新。首次接入和整组替换按[闪控窗／球绑定与解绑](binding.md)处理。
 
 ## 共享业务数据与选择更新方式
 
@@ -40,9 +40,9 @@ await viewController.switchTemplate(property);
 // 成功后再同步窗页面的紧凑布局状态。
 ```
 
-系统模板切换完成后，页面通过自己的展开／紧凑状态更新内容布局。接口失败时保留原布局，切回展开态时重新查询展开模板的限制。过渡动画可按业务需求实现，以接口结果确认模板切换成功。完整组件与避让示例见「闪控窗模板切换与页面避让」。
+系统模板切换完成后，页面通过自己的展开／紧凑状态更新内容布局。接口失败时保留原布局，切回展开态时重新查询展开模板的限制。过渡动画可按业务需求实现，以接口结果确认模板切换成功。完整组件与避让示例见[闪控窗模板切换与页面避让](float-view-template-and-avoidance.md)。
 
-**仅调整窗尺寸**：模板保持不变时，用 `await viewController.setWindowSize(size)` 调整尺寸。条目数量、可用区域、`onLimitsChange` 和已有断点状态变化时，按当前模板重算。设计值由实际 `UIContext.vp2px()` 转为 px，再核对宽高和比例。折叠、旋转或分屏时需要跟随已有断点的场景，参照「闪控窗屏幕尺寸与断点响应」。
+**仅调整窗尺寸**：模板保持不变时，用 `await viewController.setWindowSize(size)` 调整尺寸。条目数量、可用区域、`onLimitsChange` 和已有断点状态变化时，按当前模板重算。设计值由实际 `UIContext.vp2px()` 转为 px，再核对宽高和比例。折叠、旋转或分屏时需要跟随已有断点的场景，参照[闪控窗屏幕尺寸与断点响应](float-view-breakpoint-resize.md)。
 
 `onLimitsChange` 表示限制变化。系统可能调整请求尺寸，实际矩形以 `onRectChange` 为准。紧凑态内容行按内容自适应高度，通过根容器垂直居中。内容超出窗口上限时，在页面内滚动或截断。属性查询失败时保留当前布局。
 

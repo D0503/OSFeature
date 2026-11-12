@@ -32,4 +32,4 @@ if (FloatingBallController.canUseFloatingBall() &&
 
 ## 按状态验收
 
-收到 `STARTED` 后才更新支持更新的模板，收到 `STOPPED` 后确认停止。资产清理内部监听与控制器引用，业务清理自己的订阅、定时器和图像。按[性能与验证](../performance-validation.md)及知识库正文核对实际接入结果。出现错误时读取[闪控球排障](../troubleshooting.md#闪控球错误码)，条件不满足时按[回退策略](../fallback.md)保留原业务。
+收到 `STARTED` 后才更新支持更新的模板，收到 `STOPPED` 后确认停止。资产清理内部监听与控制器引用，业务清理自己的订阅、定时器和图像。按[性能与验证](../performance-validation.md)及知识库正文核对实际接入结果。出现错误时按[排障](../README.md#排障)查阅球端错误码，条件不满足时按[回退策略](../fallback.md)保留原业务。

@@ -26,7 +26,7 @@ HDS 与 ArkUI 的悬浮 Tabs 增强分支所需的底部间距和滚动页尾部
 | `compatibleSdkVersion < 26`，仅增加材质属性 | 复用原组件，保护材质对象构造、新枚举取值、能力查询和属性调用；低版本继续使用原属性 |
 | `compatibleSdkVersion < 26`，涉及组件、布局或导航结构变化 | 在受影响的组件范围建立分支，低版本保留原组件、布局、状态与事件 |
 
-最小调用保护示例（用于应用启动完成、退出启动加载页后触发的 ArkTS 方法体；不得用于模块或字段初始化，具体见[能力查询时机](../routes/arkui/activation.md#能力查询时机)。组件配置入口按实际工程接入）：
+最小调用保护示例（用于应用启动完成、退出启动加载页后触发的 ArkTS 方法体；不得用于模块或字段初始化，具体见[能力查询时机](../routes/arkui/implementation.md#能力查询时机)。组件配置入口按实际工程接入）：
 
 ```typescript
 import { deviceInfo } from '@kit.BasicServicesKit';

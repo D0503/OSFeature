@@ -8,7 +8,7 @@ tags: ["HarmonyOS", "闪控窗", "floatView", "API 26", "生命周期"]
 
 # 独立闪控窗接入与生命周期
 
-通过 `@kit.ArkUI` 的 `floatView` 在系统闪控窗中展示应用页面。接入前确认展示内容、宿主页面、模板、用户开启入口和结束展示的时机。以下步骤适用于独立闪控窗。需要在窗与球之间由系统切换时，使用窗球绑定流程。
+通过 `@kit.ArkUI` 的 `floatView` 在系统闪控窗中展示应用页面。接入前确认展示内容、宿主页面、模板、用户开启入口和结束展示的时机。以下步骤适用于独立闪控窗。需要在窗与球之间由系统切换时，参照[闪控窗／球绑定与解绑](binding.md)。
 
 ## 1. 核对能力与权限
 
@@ -65,7 +65,7 @@ struct FloatViewPage {
 }
 ```
 
-模板选择 `ROUNDED_RECTANGLE` 或 `HORIZONTAL_BAR`。用 `floatView.getFloatViewLimits(templateType)` 获取 `minSize`、`maxSize` 和 `ratioLimits`，选取符合限制且宽高大于 0 的尺寸。窗口 API 使用 px。业务设计使用 vp 时，通过实际 `UIContext.vp2px()` 换算后再校验尺寸。页面的交互控件需避开系统返回的 `avoidArea`，模板和布局的完整处理见「闪控窗模板切换与页面避让」。
+模板选择 `ROUNDED_RECTANGLE` 或 `HORIZONTAL_BAR`。用 `floatView.getFloatViewLimits(templateType)` 获取 `minSize`、`maxSize` 和 `ratioLimits`，选取符合限制且宽高大于 0 的尺寸。窗口 API 使用 px。业务设计使用 vp 时，通过实际 `UIContext.vp2px()` 换算后再校验尺寸。页面的交互控件需避开系统返回的 `avoidArea`，模板和布局的完整处理见[闪控窗模板切换与页面避让](float-view-template-and-avoidance.md)。
 
 ## 3. 创建、监听、加载并启动
 
