@@ -25,7 +25,7 @@
 | 竖/横屏、手机/折叠屏/平板、窗口尺寸变化 | 在支持设备正常握姿下验证，沿用原断点、安全区和滚动布局 |
 | 左右移动动画 | 首次显示从实际初始侧出现，无 `x=0` 占位闪现或横穿；第一次及后续左右换手均核对退场分支从当前侧离开、入场分支从目标侧屏外进入，不能仅凭最终截图断言路径；退出/进入由框架同步过渡，无定时器空档或闪烁；贴边组件等高等边距、组内顺序/间距不变；原按钮可拖动且无新有效方向时须能停在中间；底部栏不遮末项操作区 |
 
-分别读取 [原生](routes/native-component/validation.md)、[操作手](routes/operating-hand/validation.md)、[握持手](routes/holding-hand/validation.md) 的触发条件。操作手需非边缘多次有效触控，握持手需正常接触与亮屏解锁，不能用同一套动作替代验证。
+分别读取 [原生](routes/native-component/implementation.md#原生路线验证)、[操作手](routes/operating-hand/implementation.md#操作手验证)、[握持手](routes/holding-hand/implementation.md#握持手验证) 的触发条件。操作手需非边缘多次有效触控，握持手需正常接触与亮屏解锁，不能用同一套动作替代验证。
 
 ## 真机视觉验证与开发者引导
 

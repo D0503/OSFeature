@@ -1,11 +1,20 @@
 # 系统组件原生适配（如 HDS）
 
-当前支持的实例为 HdsTabs API 23+，不能将路线名称当作全部系统组件均支持的承诺。其他组件先确认对应版本的接口支持再接入，不类推普通 ArkUI Tabs 的同名属性。
+按[知识库查询流程](../../../../workflows/knowledge-query.md)读取所需正文。
 
-已有 HdsTabs 悬浮栏时，合并 `barFloatingStyle` 中的 `adaptToHandedness: true`，保留其原有字段；配置 `barOverlap(true)`、`vertical(false)`、`barPosition(BarPosition.End)`。不是 `.adaptToHandedness(true)` 独立链式方法。底部间距、安全区和滚动尾部避让复用工程现有方案，不重复增加 padding。
+读取《智感握姿 HdsTabs 原生适配》全文。
 
-原生组件路线无需声明感知权限。内部跟随的是操作手，无需应用手动订阅 `operatingHandChanged` 或 `holdingHandChanged`。本路线不要求新增沉浸光感材质、MiniBar 或业务页。
+需要替换普通 Tabs 时先确认目标改动范围，保留原控制器语义、选中项、事件、状态和旧版本分支。API 23 门槛保护整个新增调用链。
 
-需要替换普通 Tabs 时先确认目标改动范围，保留原控制器语义、选中项、事件、状态和旧版本分支。API 23 门槛保护整个新增调用链。默认跟手值为 false；恢复原值时还要对照原布局，见 [回退](../../fallback.md)。不支持硬件可能只停止跟手而保留悬浮外观，这种差异必须实测，不虚构原生硬件能力查询。
+## 资产与接入
 
-按 [资产](assets.md) 合并最小片段，并执行 [验证](validation.md)。
+将正文中的 HdsTabs 属性片段合入目标组件，保留原有 `barFloatingStyle` 字段。按[回退](../../fallback.md)检查低版本和关闭分支，再执行[原生路线验证](#原生路线验证)。
+
+## 原生路线验证
+
+- 仅出现 HdsTabs 不算启用；确认目标实例内 adaptToHandedness 的实际值和 API 23 门槛。
+- 不要求手动 motion 订阅或材质属性。属性在另一组件、其他文件或动态对象时沿引用核对归属。
+- 支持真机上使用非边缘有效触控验证左右操作手变化，不能拿握持手单独改变作为原生路线成功判据。
+- 检查底部悬浮布局、成组平移、原选中项和滚动位置、安全区与末项可操作范围。
+- 验证 false、低版本、不支持硬件、系统关闭时行为；新增悬浮样式仍残留时不得报告完整恢复基线。
+- 复用 [共同矩阵](../../performance-validation.md#运行与视觉矩阵)，记录目标页面截图、运行与回退证据。

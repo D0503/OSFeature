@@ -1,57 +1,14 @@
 # 操作手感知
 
-SDK/compile API 15+，导入 `motion`，在调用前检查运行 API 与 `SystemCapability.MultimodalAwareness.Motion`，按 [兼容性](../../compatibility.md) 完成权限声明。API 15–19 使用 ACTIVITY_MOTION；API 20+ 可用两种权限之一。不能因为 compatible 低于 20 就只声明 DETECT_GESTURE 并继续在 15–19 调用。
+按[知识库查询流程](../../../../workflows/knowledge-query.md)读取所需正文。
 
-选用 `ACTIVITY_MOTION` 时，在首次访问操作手接口前调用 `abilityAccessCtrl.createAtManager().requestPermissionsFromUser(...)`；只有 `authResults[0] === 0` 才订阅或查询操作手。页面不可见或功能已关闭时不再启动感知，授权中避免重复请求。拒绝、授权调用异常或页面离开时保留原布局与原功能，并记录诊断；不在失败后循环弹出授权框。示意代码中的页面状态与方法名按现有工程替换：
+读取《智感握姿操作手感知》全文。
 
-```arkts
-import { abilityAccessCtrl, common, Permissions } from '@kit.AbilityKit'
-import { BusinessError } from '@kit.BasicServicesKit'
+## 操作手验证
 
-private requestOperatingHandPermission(): void {
-  if (this.permissionRequesting || this.permissionDenied || !this.pageVisible || !this.featureEnabled) {
-    return
-  }
-  this.permissionRequesting = true
-  try {
-    const context = this.getUIContext().getHostContext() as common.UIAbilityContext
-    const atManager = abilityAccessCtrl.createAtManager()
-    const permissions: Array<Permissions> = ['ohos.permission.ACTIVITY_MOTION']
-    atManager.requestPermissionsFromUser(context, permissions).then((result) => {
-      this.permissionRequesting = false
-      if (result.authResults.length > 0 && result.authResults[0] === 0) {
-        if (this.pageVisible && this.featureEnabled) {
-          this.subscribeOperatingHand()
-        }
-      } else {
-        this.permissionDenied = true
-        // 保留原布局与原功能，记录拒绝结果。
-      }
-    }).catch((err: BusinessError) => {
-      this.permissionRequesting = false
-      // 保留原布局与原功能，记录 err.code 和 err.message。
-    })
-  } catch (err) {
-    this.permissionRequesting = false
-    // 保留原布局与原功能，记录同步异常。
-  }
-}
-```
-
-在发起请求前先完成运行 API 与 Motion SysCap 检查；异步获准后，`subscribeOperatingHand()` 内仍需复核当前页面状态、版本与能力并用 `try/catch` 处理 201、801 和服务错误。仅查询最近操作手时，在获准后执行查询而非订阅。选用 `DETECT_GESTURE` 且运行 API 20+ 时只需声明，无需上述授权调用。
-
-- `motion.on('operatingHandChanged', callback)`：订阅操作手变化。
-- `motion.off('operatingHandChanged', callback)`：按[共同约束](../../implementation.md#自定义路径的共同约束)退订；仅使用 DETECT_GESTURE 的路径须守卫 API 20+，其他操作手路径守卫 API 15+。
-- `motion.getRecentOperatingHandStatus()`：同步读取最近状态，不需要先订阅；需要相同权限、版本与错误处理。单次查询路线无需为了满足检查而添加 on/off。
-
-`OperatingHandStatus`：UNKNOWN_STATUS=0、LEFT_HAND_OPERATED=1、RIGHT_HAND_OPERATED=2。只有后两者驱动左右位置，不把未知值当右手。需要首次状态时可在启用后使用最近状态，但它不是握持手状态，也不能保证是本次最新动作。
-
-按 [共同生命周期规则](../../implementation.md) 连接页面实际可见期，在所属 HAP 声明对应权限，并处理调用异常。
-
-初次或换手后的多次触控才可能上报；排除边缘 8mm、窗口旋转、多指、指关节。不可把这一路线作为握持手 API 20 的自动低版本替代。读 [资产](implementation.md#资产与接入) 和 [验证](validation.md)。
-
-## 资产与接入
-
-按 [操作手实施](implementation.md) 在实际页面组织 `operatingHandChanged` 监听或 `getRecentOperatingHandStatus()` 查询；权限声明见 [兼容性](../../compatibility.md)。
-
-单次查询无需订阅事件。事件监听使用同一回调订阅和退订；状态与业务交互由目标组件管理。验证见 [操作手验证](validation.md)。
+- API 14 走源路径，15–19 核对 ACTIVITY_MOTION 声明、reason/usedScene 与运行时授权；20+ 验证实际所选权限及声明字段，选择 ACTIVITY_MOTION 时同样先授权，选择 DETECT_GESTURE 时无需运行时授权；仅 DETECT_GESTURE 时低于 20 禁止增强。
+- ACTIVITY_MOTION 未授权前不订阅或查询；获准后仍复核页面可见、功能启用、API 与 SysCap。拒绝、请求异常及授权期间页面离开时保留原布局与原功能，不重复弹框；授权成功后只启动一份感知。
+- 连续有效触控验证 UNKNOWN/LEFT/RIGHT；初始无结果和重复值不引发跳边。测试不能只机械点击屏幕左/右坐标。
+- 订阅路线核对同一回调 on/off、重复进入、隐藏与迟到回调；复核退订成功标志、所选权限路径的 API 门槛与 SysCap 守卫。单次 getRecent 查询无需配对订阅，但必须验证异常与未知结果。
+- 201、801、401、服务异常各自保留基线；与握持手同时使用时核对目标归属。
+- 执行 [共同矩阵](../../performance-validation.md#运行与视觉矩阵)，记录实际事件、日志与目标页面截图。

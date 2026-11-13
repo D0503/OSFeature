@@ -1,169 +1,28 @@
 # 握持手感知
 
-在承载目标组件的页面中接入：监听握持手事件，更新页面的位置状态，由原组件布局和转场动画呈现变化。只改用户指定的高频、难触达操作，保留业务事件、数据、控制器和响应式布局。
+按[知识库查询流程](../../../../workflows/knowledge-query.md)读取所需正文。
 
-先按 [跟手模式](../../implementation.md#跟手模式) 确定移动原组件，还是保留原组件并新增同步入口。新增模式只调整新增组件的位置，原组件不动；两组共享页面已有业务状态和操作方法，由页面统一订阅握持手事件。
+读取《智感握姿握持手感知与订阅》全文，核对目标 HAP 的权限和运行条件，按目标页面的可见状态接入 `holdingHandChanged` 监听，并将有效的左右手状态传给位置更新逻辑。
 
-## 1. 权限与版本
-
-在所属 HAP 的 `module.json5` 声明 `ohos.permission.DETECT_GESTURE`，填写 `reason` 与 `usedScene`；此权限不需要运行时请求授权。声明示例见 [兼容性](../../compatibility.md)。
-
-SDK/compile 至少 API 20。通过 `@kit.MultimodalAwarenessKit` 导入 `motion`；运行时 API 20+ 和 `canIUse('SystemCapability.MultimodalAwareness.Motion')` 都满足后才进入新接口路径。compatible 低于 20 时保护整个新调用路径；SysCap 不能代替版本检查，也不能保证具体硬件支持。
-
-## 2. 页面状态与事件回调
-
-沿用页面现有状态管理方式：V1 页面使用 `@State`，V2 页面使用 `@Local`，不为接入特性迁移整个页面。状态按职责区分：
-
-| 状态 | 用途 |
-|---|---|
-| 原位置 | 接入前布局在当前断点、方向和窗口尺寸下的位置，关闭时据此恢复 |
-| 当前侧 | 跟手目标实际呈现的左右位置；原组件位移时初值取原布局，新增模式收到首个有效方向前不展示新增入口 |
-| 订阅成功标志 | 避免重复监听，判断是否需要退订 |
-| 页面可见与功能启用状态 | 决定是否接受事件；隐藏或关闭后忽略迟到回调 |
-| 交互状态与待应用方向 | 按压、长按、拖动期间暂缓移动，结束后再应用有效方向 |
-
-在页面定义稳定的 `handleHoldingHandChange: Callback<motion.HoldingHandStatus>` 回调，用同一函数实例订阅和退订。回调先检查页面是否可见、功能是否启用，再处理状态：
-
-| HoldingHandStatus | 处理 |
-|---|---|
-| `LEFT_HAND_HELD = 1` | 目标方向为左；与当前侧相同则不重复动画 |
-| `RIGHT_HAND_HELD = 2` | 目标方向为右；与当前侧相同则不重复动画 |
-| `NOT_HELD = 0`、`BOTH_HANDS_HELD = 3`、`UNKNOWN_STATUS = 16` | 保持当前侧；首次无有效方向时原组件保持初始位置，新增入口保持未展示 |
-
-此枚举的未知值是 16，不是操作手枚举中的 0。暂时无回调也保持当前侧，不能通过超时归位或推断系统关闭。首次订阅可返回当前握持状态，不添加不存在的 `getRecentHoldingHandStatus()`。
-
-目标正在操作时不立即移动，暂存最后一个有效方向；交互结束后仅在页面可见、功能仍启用时应用。关闭或错误时清空待应用方向。回调只更新必要状态，不重建业务数据。
-
-## 3. 订阅与页面生命周期
-
-1. 页面出现且满足启用条件时，在 `try/catch` 内调用 `motion.on('holdingHandChanged', this.handleHoldingHandChange)`；仅调用成功后设置订阅标志。已有有效订阅时不重复调用。
-2. 页面消失时按[共同约束](../../implementation.md#自定义路径的共同约束)清理 `holdingHandChanged` 订阅；此路线的 off 门槛为 API 20+。
-3. `aboutToAppear` / `aboutToDisappear` 适用于组件出现和消失；缓存页面、Tab 切换、前后台场景须结合工程实际可见性处理，不能假设切换页面一定触发组件销毁。
-4. 页面隐藏或进入后台时停止感知、忽略迟到回调，不更新隐藏页面。缓存页面保留位置状态，重新可见且功能启用后恢复监听；新建页面以原布局初始化。
-
-以下片段合并到已有页面。`canUseHoldingHand()` 由工程实现，同时检查运行 API 20+ 与 `canIUse('SystemCapability.MultimodalAwareness.Motion')`；`holdingSubscribed` 仅在 on/off 成功后改变。页面出现时先设为可见再调用 `startHoldingHand()`，`aboutToDisappear` 先设为不可见再调用 `stopHoldingHand()`：
-
-```arkts
-import { motion } from '@kit.MultimodalAwarenessKit'
-
-handleHoldingHandChange: Callback<motion.HoldingHandStatus> = (status) => {
-  if (!this.canUseHoldingHand()) return
-  if (status === motion.HoldingHandStatus.LEFT_HAND_HELD) {
-    this.applyHoldingSide(false)
-  } else if (status === motion.HoldingHandStatus.RIGHT_HAND_HELD) {
-    this.applyHoldingSide(true)
-  }
-}
-
-private startHoldingHand(): void {
-  if (this.holdingSubscribed || !this.canUseHoldingHand()) return
-  try {
-    motion.on('holdingHandChanged', this.handleHoldingHandChange)
-    this.holdingSubscribed = true
-  } catch (error) {
-    // 记录 201、801 或服务错误，恢复接入前布局与功能。
-  }
-}
-
-private stopHoldingHand(): void {
-  if (!this.holdingSubscribed || !this.canUseHoldingHand()) return
-  try {
-    motion.off('holdingHandChanged', this.handleHoldingHandChange)
-    this.holdingSubscribed = false
-  } catch (error) {
-    // 记录退订错误并保留订阅标志，避免下一次重复 on。
-  }
-}
-```
-
-`applyHoldingSide` 仅对新的有效方向移位，正在操作目标时先缓存方向；未知、双手、未握持状态不进入该方法。功能关闭时同样调用受守卫保护的 `stopHoldingHand()`，并恢复原位置；退订失败的后续处理按[共同约束](../../implementation.md#自定义路径的共同约束)。
-
-## 4. 左右布局与转场
-
-侧边悬浮按钮在现有容器中设置左右对齐；容器适合时，可采用 `RelativeContainer` 内的左右条件分支，分别设置 `HorizontalAlign.Start/End`，底部对齐保持一致。
-
-侧边切换使用 `TransitionEffect.move(TransitionEdge.START/END)` 从对应屏外进出，避免按钮横穿内容区域。曲线参数按[共同约束](../../implementation.md#自定义路径的共同约束)选择。首次出场标志放在页面状态中，不因条件分支重建而重复触发首次动画。
-
-若窗口尺寸异步取得，先计算接入前初始位置并写入初始分支，再打开渲染门禁；不能让坐标仍为 `0` 的占位分支先出现，否则首次会从错误侧滑入。换侧前分别设置入场分支的目标坐标和 `START/END`，退场分支保留自己的坐标和边直到离场结束。Builder 内的位置属性直接读取该分支的响应式位置状态，不依赖一次性传入的普通数值参数；原按钮可手动拖动时，拖动只更新当前分支，未收到新有效方向时保持用户放置的位置，同侧重复结果不把它吸回预置侧。
-
-以下片段并入现有 V2 页面；V1 页面将 `@Local` 换成原有状态管理方式。先用当前窗口布局算出 `initialX`、`top` 和原按钮所在侧，再调用 `initButtonPosition()`；计算失败时仍须用接入前位置显示原按钮。`targetX` 由当前容器宽度、按钮宽度和原有边距计算，不写死示例坐标。按钮内容、点击和触摸事件沿用原组件：
-
-```arkts
-import { curves } from '@kit.ArkUI'
-
-@Local positionReady: boolean = false
-@Local showingA: boolean = false
-@Local branchAX: number = 0
-@Local branchBX: number = 0
-@Local branchAEdge: TransitionEdge = TransitionEdge.START
-@Local branchBEdge: TransitionEdge = TransitionEdge.END
-@Local buttonTop: number = 0
-@Local hasAppeared: boolean = false
-private currentRight: boolean = true
-
-private initButtonPosition(initialX: number, top: number, right: boolean): void {
-  this.branchBX = initialX
-  this.branchBEdge = right ? TransitionEdge.END : TransitionEdge.START
-  this.buttonTop = top
-  this.currentRight = right
-  this.positionReady = true
-}
-
-private moveToSide(right: boolean, targetX: number): void {
-  if (right === this.currentRight) return
-  if (this.showingA) {
-    this.branchBX = targetX
-    this.branchBEdge = right ? TransitionEdge.END : TransitionEdge.START
-  } else {
-    this.branchAX = targetX
-    this.branchAEdge = right ? TransitionEdge.END : TransitionEdge.START
-  }
-  this.currentRight = right
-  this.showingA = !this.showingA
-}
-
-build() {
-  if (this.positionReady) {
-    if (this.showingA) {
-      this.buttonBranch(true)
-    } else {
-      this.buttonBranch(false)
-    }
-  }
-}
-
-@Builder
-private buttonBranch(a: boolean) {
-  Column() {
-    // 放入原按钮内容，保留原业务事件。
-  }
-  .position({ x: a ? this.branchAX : this.branchBX, y: this.buttonTop })
-  .transition(TransitionEffect.move(a ? this.branchAEdge : this.branchBEdge)
-  .animation({
-    curve: this.hasAppeared ? curves.interpolatingSpring(0, 1, 170, 17) : curves.interpolatingSpring(0, 1, 200, 17)
-  }))
-  .onAppear(() => { this.hasAppeared = true })
-}
-```
-
-通过 `if/else` 切换左右分支时，退出分支中的组件沿当前侧滑出，进入分支中的组件从对侧滑入。分别为分支配置 `TransitionEffect.move(...).animation({ curve: ... })`，两个过渡由框架同步执行，无需手动编排先后时序。转场须挂在实际按钮节点上，核对定位坐标系和父容器宽度，确保 `START/END` 对应可视区域的屏外，而非只离开局部容器。不要用定时器串联“隐藏、等待、再显示”，也不要在两段动画之间插入空白状态。这里的退出/进入组件是同一跟手目标的左右呈现，不是新增模式中持续保留的原入口；原入口不参加这次换侧动画。
-
-沿用原按钮尺寸、安全区、垂直高度及断点边距，左右边距保持一致，不直接复制固定底部间距。条件分支共享原业务状态和事件，避免切换时重置输入、选中态或控制器。底部成组组件则整体平移，保持组内顺序和间距。
-
-## 5. 关闭、暂时无结果与失败
-
-明确关闭时停止感知、屏蔽迟到回调、清空待应用方向。原组件位移模式恢复当前布局下的接入前位置；新增模式撤去新增入口，保留原组件与共享业务状态。若目标正在操作，安排在不打断操作的安全时机恢复或移除。暂时识别不到时保持当前侧。
-
-低版本、不支持、首次订阅失败保留原布局和功能；201、801 及服务错误按 [回退规则](../../fallback.md) 处理。没有系统关闭通知的可靠依据时，不编造查询或监听接口。
-
-## 6. 组合与验证
-
-自定义按钮由 `holdingHandChanged` 控制；如同时接入 HdsTabs，其位置交给 `adaptToHandedness`，不得用两种信号争抢同一组件。单独接入握持手感知不要求引入 HdsTabs、沉浸材质、新闻页面、引导弹窗或持久化逻辑。
-
-按 [握持手验证](validation.md) 检查声明、构建、生命周期、交互保护和退化行为，并引导开发者在支持真机上完成实际握姿操作与取证。静态检查、模拟事件或构建通过均不能替代真实识别效果。
+读取《智感握姿握持手布局与转场》全文，按原布局计算初始位置和左右目标位置，为目标组件配置从对应屏外进出的转场。
 
 ## 资产与接入
 
-按本页的接入步骤组织 `holdingHandChanged` 监听、位置状态和转场；将逻辑合并到已有页面与目标组件，沿用工程状态管理方式。权限声明见 [兼容性](../../compatibility.md)。
+按知识库示例和本页的生命周期步骤组织 `holdingHandChanged` 监听、位置状态和转场；将逻辑合并到已有页面与目标组件，沿用工程状态管理方式。权限声明见 [兼容性](../../compatibility.md)。
 
-使用同一回调订阅和退订，明确区分左右手与其他状态。验证见 [握持手验证](validation.md)。
+使用同一回调订阅和退订，明确区分左右手与其他状态。验证见 [握持手验证](#握持手验证)。
+
+## 握持手验证
+
+检查声明、构建、生命周期、交互保护和退化行为，并引导开发者在支持真机上完成实际握姿操作与取证。静态检查、模拟事件或构建通过均不能替代真实识别效果。
+
+- API 19 及以下不执行 holdingHandChanged，API 20+ 核对所属 HAP 的 DETECT_GESTURE 声明、reason 资源、usedScene 的实际 Ability 与 inuse，以及运行 SysCap；无需运行时授权，可调用不等于具体机型支持。工程 compatible 低于 20 时，须在 API 低于 20 的环境安装本轮构建产物实测低版本回退表现（不订阅、增强不出现、源基线保持）并留存截图证据，经 `--judgment` 的 `fallback`（condition `low-api`）补录；该实测验证“增强不启用”，允许使用低版本模拟器，不受跟手效果仅真机的限制。
+- 支持真机正常姿态下验证左、右、双手、未握持和 UNKNOWN_STATUS=16；设备非静止时未握持不保证识别，不把没有结果归因于应用缺陷。
+- 分别从左侧、右侧进入未知、双手、未握持或暂时无回调状态，确认保持当前侧；首次无结果保持初始位置。随后明确关闭，确认恢复当前布局下的接入前位置，迟到回调不再移动组件。
+- 排查时检查开关、亮屏解锁、壳厚、手套、掌心/手指接触、朝向及外物接触；模拟状态只用于 UI 分支测试。
+- 页面反复进出、缓存 Tab 切换和前后台切换时不重复 on、不全局 off；复核退订成功标志、API 20+ 与 SysCap 守卫及失败后的标志保留。隐藏后回调不更新页面，重新可见只恢复一份监听；订阅失败、退订失败、权限错误和 801 按各自错误路径验证。
+- 换手时按压中的按钮不移动，结束后仅应用有效方向；同一按钮不被操作手事件抢占。
+- 新增模式下检查原入口始终保留且不跟手；两组共享业务状态与处理入口，分别操作任一组及连续操作两组，确认反馈同步、不重复提交。首次无有效方向不展示新增入口，已有方向后暂时无结果保持当前侧，关闭或失败只撤去新增入口。
+- 验证左右转场从对应屏外进出，垂直高度与左右边距一致；横竖屏和断点变化后仍沿用原布局。条件分支切换不重置业务状态、控制器或事件，首次出场动画不反复重播。
+- 验证退出分支沿当前侧离场、进入分支从对侧入场，两段由框架同步执行；没有额外定时器等待或空白状态造成的闪烁。新增模式中原入口不参与换侧转场。
+- 执行 [共同矩阵](../../performance-validation.md#运行与视觉矩阵)，记录实际事件、动画、原功能与回退表现。
