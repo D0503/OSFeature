@@ -2,337 +2,53 @@
 
 先按[兼容性与选型](../../compatibility.md)确定路线，并读取[共享回退策略](../../shared/fallback.md)。示例用于说明接口组合；修改真实工程时应复用项目现有组件、类型、主题资源和状态管理方式。
 
-悬浮导航Tab（底部悬浮胶囊页签）的工程迁移参考见[HDS 迁移参考](assets.md)。按本文短示例修改目标工程的实际组件和配置入口，保留既有页面结构与业务行为。
+悬浮导航Tab（底部悬浮胶囊页签）按[复用流程](#复用流程)迁移。按所选章节的知识库示例修改目标工程的实际组件和配置入口，保留既有页面结构与业务行为。
+
+按[知识库查询流程](../../../../workflows/knowledge-query.md)逐节读取当前任务所需正文。
 
 ## HDS 沉浸光感材质路线：API 23+
 
-`HdsNavigation`/`HdsNavDestination` 从 API 18 起可用，`HdsTabs` 从 API 20 起可用；下面使用的 `hdsMaterial`、`systemMaterialEffect` 和悬浮页签 `barFloatingStyle` 则从 API 23 起可用。已有旧版 HDS 组件不等于已经具备沉浸光感能力，不能把组件的 since 版本当作本路线门槛。
-
-标题栏或底部导航优先使用系统自适应材质：
-
-```typescript
-systemMaterialEffect: {
-  materialType: hdsMaterial.MaterialType.ADAPTIVE,
-  materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-}
-```
-
-`compatibleSdkVersion >= 23` 时无需增加 API 23 版本分支；低于 23 时，在 SDK 26.0.0+ 编译环境中用 `deviceInfo.apiAvailable` 保护 HDS 材质配置和调用。普通 ArkTS 方法内的最小示例：
-
-```typescript
-import { deviceInfo } from '@kit.BasicServicesKit';
-import { hdsMaterial, SystemMaterialParams } from '@kit.UIDesignKit';
-
-if (deviceInfo.apiAvailable(23)) {
-  const materialParams: SystemMaterialParams = {
-    materialType: hdsMaterial.MaterialType.ADAPTIVE,
-    materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-  };
-  // 在目标组件支持的配置入口使用 materialParams。
-}
-```
-
-版本判断只说明接口版本可用，不代表设备支持所有材质档位；SDK 26.0.0+ 编译时推荐使用 `deviceInfo.apiAvailable` 保护低版本。页面从原生组件迁移到 HDS 时，在受影响组件范围保留低版本原组件分支，继续复用原状态、控制器调用和业务内容；HDS 专属枚举、配置和对象构造不得提前在分支外求值。
-
-如果业务必须自定义档位，先查询设备支持类型：
-
-```typescript
-  // 获取系统支持的材质类型，用于根据设备能力选择合适的材质等级
-  let materialTypes: Array<hdsMaterial.MaterialType> = hdsMaterial.getSystemMaterialTypes();
-  if (materialTypes.indexOf(hdsMaterial.MaterialType.IMMERSIVE) < 0) {
-    // 当前设备不支持IMMERSIVE材质类型，则使用SMOOTH效果以优化性能，降低卡顿和发热风险
-    this.customMaterialLevel = hdsMaterial.MaterialLevel.SMOOTH;
-  }
-```
-
-- 支持 `IMMERSIVE` 时可选择 `EXQUISITE` 或 `GENTLE`；
-- 不支持时降级为 `SMOOTH`；
-- 普通业务继续优先选择 `ADAPTIVE + ADAPTIVE`。
-
-导航框架中的职责要分开：
-
-- `systemMaterialEffect` 设置材质；
-- `scrollEffectOpts` 设置滚动渐变模糊；
-- `dynamicHideTitleBar` 控制标题栏和状态栏随滚动显隐；
-- `bindToScrollable` 把效果与内容滚动组件关联。
+按知识库查询流程读取《HDS 沉浸光感材质路线与版本保护》的「HDS 沉浸光感材质路线：API 23+」。
 
 ### 滚动绑定与过渡配置
 
-单层滚动使用 `bindToScrollable`；真实嵌套滚动使用 `bindToNestedScrollable`，`child` 必须是 `parent` 的后代且参与嵌套滚动，不能仅因文件中同时出现 Scroll、List 就绑定。多个容器绑定同一导航组件时，任一个滚动均可能触发标题栏显隐，到顶或到底也可能触发显示；避免同时驱动多个容器，验证滚动交接。
-
-以下为页面组件内的接入片段：`scroller`、`listScroller` 分别是页面持有的 `Scroller`、`ListScroller` 实例，`headerContent` 为工程已有 Builder，`listViewportHeight` 为实际列表视口高度。不要为套用示例而新增嵌套滚动。
-
-```typescript
-HdsNavigation() {
-  Scroll(this.scroller) {
-    Column() {
-      this.headerContent()
-      List({ scroller: this.listScroller }) {
-        // 保留业务 ListItem
-      }
-      .height(this.listViewportHeight)
-      .nestedScroll({
-        scrollForward: NestedScrollMode.PARENT_FIRST,
-        scrollBackward: NestedScrollMode.SELF_FIRST
-      })
-    }
-  }
-  .height('100%')
-}
-.bindToNestedScrollable([{ parent: this.scroller, child: this.listScroller }])
-```
-
-`scrollEffectOpts.enableScrollEffect: true` 表示按滚动总偏移从 `originalStyle` 过渡到 `scrollEffectStyle`；为 false 时仅使用 `originalStyle`。需要调整区间时配置 `blurEffectiveStartOffset`、`blurEffectiveEndOffset`，两者均非负且终点不小于起点。两端样式的可配置范围须结合模糊类型、材质配置和目标 SDK 核对。
-
-| HDS ScrollEffectType | 起始 API | 用途 |
-|---|---|---|
-| `COMMON_BLUR` | 18 | 通用均匀模糊，适用于非沉浸式列表 |
-| `GRADUAL_BLUR` | 20 | 过渡模糊，标题栏内容颜色或状态随滚动线性变化 |
-| `GRADIENT_BLUR` | 20 | 空间渐变模糊，适用于列表型非沉浸式场景 |
-| `IMMERSIVE_GRADIENT_BLUR` | 23 | 沉浸式渐变模糊，适用于沉浸式图文场景 |
-
-模糊枚举的起始版本不降低本路线材质的 API 23 门槛。下例使用 `GRADUAL_BLUR`，不作为 HDS 全路线默认值；从 `@kit.ArkUI` 导入 `LengthMetrics`，从 `@kit.UIDesignKit` 导入 `ScrollEffectType`、`hdsMaterial`，将片段合并到已有 `titleBar.style`：
-
-```typescript
-style: {
-  scrollEffectOpts: {
-    enableScrollEffect: true,
-    scrollEffectType: ScrollEffectType.GRADUAL_BLUR,
-    blurEffectiveStartOffset: LengthMetrics.vp(0),
-    blurEffectiveEndOffset: LengthMetrics.vp(56)
-  },
-  originalStyle: {
-    contentStyle: {
-      titleStyle: { mainTitleColor: $r('sys.color.font_on_primary') }
-    }
-  },
-  scrollEffectStyle: {
-    contentStyle: {
-      titleStyle: { mainTitleColor: $r('sys.color.font_primary') }
-    }
-  },
-  systemMaterialEffect: {
-    materialType: hdsMaterial.MaterialType.ADAPTIVE,
-    materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-  }
-}
-```
-
-需配合真实滚动绑定；距离和前景色按页面背景及主题选择，不固定套用示例值。菜单、返回按钮颜色如需联动，在对应 `contentStyle` 中补齐，验证两端可读性。滚动模糊不替代材质配置，不重复调用 `titleBar` 覆盖原有菜单和样式。
+按知识库查询流程读取《HDS 沉浸光感标题栏滚动绑定与过渡》的「滚动绑定与过渡配置」。
 
 ### 自定义区域、组件级安全区与显隐
 
-- `titleBar.content.stackBuilder` 设置标题栏顶部自定义区域；`bottomBuilder` 设置底部自定义区域，`height` 应与真实内容一致（默认 56vp，不支持百分比）。`showType` 可选 `BottomBuilderShowType.DIRECTLY_SHOW` 或 `OVERDRAG_SHOW`，仅在 `HideMode.SCROLL_UP_TO` 下生效。
-- `titleBar.enableComponentSafeArea` 从 API 20 起可用，默认 false；为 true 时将标题栏设为组件级安全区。它不是向系统安全区延伸的 `expandSafeArea`，不作为沉浸光感默认开启项。按需启用时，与 `contentStartOffset` 或内部占位只补偿一次，验证内容仍能滚入标题栏下方。
-- `dynamicHideTitleBar.hideStatusBar` 仅在 `hideTitleArea: true` 时生效；`hideBottomBuilder` 单独控制底部自定义区域。`HdsNavigationTitleMode.MODAL` 下动态显隐无效，显隐过程中不动态切换配置，不因接入材质而自动隐藏状态栏。
+按知识库查询流程读取《HDS 沉浸光感标题栏自定义区域与显隐》的「自定义区域、组件级安全区与显隐」。
 
-从 `@kit.UIDesignKit` 导入 `BottomBuilderShowType`、`HideMode`。下面的 `headerOverlay`、`filterBar` 复用工程已有 Builder，`filterBarHeight` 与实际高度一致；无对应区域时省略字段，不创建空区域：
-
-```typescript
-HdsNavigation() {
-  // 保留已绑定 this.scroller 的滚动内容
-}
-.titleBar({
-  content: {
-    title: { mainTitle: '列表' },
-    stackBuilder: (): void => this.headerOverlay(),
-    bottomBuilder: {
-      builder: (): void => this.filterBar(),
-      height: this.filterBarHeight,
-      showType: BottomBuilderShowType.DIRECTLY_SHOW
-    }
-  }
-})
-.dynamicHideTitleBar({
-  hideTitleArea: true,
-  hideBottomBuilder: true,
-  hideStatusBar: false,
-  mode: HideMode.SCROLL_UP_TO
-})
-.bindToScrollable([this.scroller])
-```
-
-仅在工程确需组件级安全区时，在 `titleBar` 对象中加入 `enableComponentSafeArea: true`。自定义区域中的按钮按各自入口配置材质，不给整个 Builder 根容器统一铺设材质。以上片段按需合并到工程，保留原有菜单、业务内容、版本保护及安全区扩展规则。
-
-标题栏包含菜单按钮时，菜单对象必须使用 HDS 的明确类型 `HdsNavigationMenuContentOptions`，并传给 `titleBar.content.menu`。不要把它声明成无类型对象、`object` 或动态类型；没有菜单时无需创建空对象。导入和声明示例：
-
-```typescript
-import {
-  HdsNavigation,
-  HdsNavigationMenuContentOptions,
-  HdsNavigationTitleMode,
-  ScrollEffectType,
-  hdsMaterial
-} from '@kit.UIDesignKit';
-
-private menus: HdsNavigationMenuContentOptions = {
-  value: [
-    {
-      content: {
-        label: '编辑',
-        icon: $r('sys.symbol.square_and_pencil')
-      }
-    },
-    {
-      content: {
-        label: '更多',
-        icon: $r('sys.symbol.more')
-      }
-    }
-  ]
-};
-```
-
-改造真实工程时，继续使用源程序原有菜单项、顺序、图标、文案、点击行为和可访问性信息，只把容器声明对齐到 `HdsNavigationMenuContentOptions`；不要用示例菜单替换业务菜单。
-
-```typescript
-HdsNavigation() {
-  // 页面内容
-}
-.titleBar({
-  content: {
-    title: {
-      mainTitle: 'Title'
-    },
-    menu: this.menus
-  },
-  style: {
-    scrollEffectOpts: {
-      enableScrollEffect: true,
-      scrollEffectType: ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
-    },
-    systemMaterialEffect: {
-      materialType: hdsMaterial.MaterialType.ADAPTIVE,
-      materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-    }
-  }
-})
-.dynamicHideTitleBar({
-  hideTitleArea: true,
-  hideStatusBar: true,
-  mode: HideMode.SCROLL_UP_TO
-})
-.bindToScrollable([this.scroller])
-```
-
-`IMMERSIVE_GRADIENT_BLUR` 从透明渐变到模糊，范围更大；`GRADIENT_BLUR` 从半透明渐变到模糊，表现更克制。根据页面背景和滚动内容选择，不要把滚动模糊当作材质本身。
-
-未开启窗口沉浸式时，标题栏沉浸光感需要布局延伸到状态栏下方，`dynamicHideTitleBar` 隐藏状态栏时同样依赖该延伸。先按[窗口沉浸状态规则](../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口，再沿 HdsNavigation/HdsNavDestination → 页面根容器 → 真实滚动容器逐组件配置 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])`，仅给滚动容器设置不足以完成整条链的扩展。同一组件同时处于悬浮 Tab 的底部扩展链时，一次调用 `.expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP])`，不拆成两次调用。已开启窗口沉浸式的窗口复用现有方案，不因本次接入重复添加安全区扩展。
-
-自定义标题按[共享标题栏规则](../../shared/validation.md#标题栏内容避让与自定义标题)明确占用高度，检查首项遮挡；需要避让时优先在真实滚动容器上设置 `contentStartOffset`，也允许随内容滚动的内部顶部占位，两者不重复补偿。不得用滚动容器自身或外层顶部 padding 缩短、下移滚动视口，保持内容能滚入标题栏下方。**标题栏中的按钮默认接入沉浸光感**：系统返回键和菜单使用 HDS 对应标题栏入口；自定义 Builder 须进入内部，逐个为受支持的实际按钮配置相应材质，不能用整个 Builder 根容器的材质代替按钮接入。
+按[窗口沉浸状态与栏间距](../../shared/validation.md#窗口沉浸状态与栏间距)核对顶部扩展链，按[标题栏内容避让与自定义标题](../../shared/validation.md#标题栏内容避让与自定义标题)核对首项及标题栏按钮。
 
 ## HDS 底部悬浮 Tab 迁移
 
-组件树只按运行 API 分支：API 23 及以上进入 HdsTabs 升级接入分支，低于 23 保留原 Tabs 及其原有设备适配；不以手机、平板、断点或材质能力作为升级分支的附加条件。材质不可用或关闭在 HdsTabs 分支内处理，不切回原 Tabs。最低兼容版本已达到 23 时无需新增低版本分支。
+按知识库查询流程读取《HDS 沉浸光感底部悬浮 Tab 迁移》的「HDS 底部悬浮 Tab 迁移」。
 
-`HdsTabs` 及链上的 `TabContent` 本身也要按[共享安全区规则](../../shared/validation.md#窗口沉浸状态与栏间距)配置 `.expandSafeArea([SafeAreaType.SYSTEM], [...])`，按需选择 BOTTOM、TOP 或一次合并两者，不能只扩展外围容器和内部页面。
-
-逐页扩展链与自定义组件内部节点按[共享安全区规则](../../shared/validation.md#窗口沉浸状态与栏间距)检查。**必须沿扩展链逐个父布局组件配置 `expandSafeArea`，从真实滚动容器一直覆盖到页面宿主，不能跳过中间层级。**
-
-先按[窗口沉浸状态与栏间距](../../shared/validation.md#窗口沉浸状态与栏间距)核对目标窗口、路线默认值及安全区扩展链。以下 `this.floatingBarBottomMargin` 使用按该规则确认的工程配置值。
-
-接入分支把手机、平板大断点和横屏主导航统一成底部悬浮 `HdsTabs`。核心配置如下；迁移规则与适用边界见[HDS 迁移参考](assets.md)。
-
-```typescript
-HdsTabs({
-  barPosition: BarPosition.End,
-  index: this.currentIndex,
-  controller: this.controller
-}) {
-  // 复用原 TabContent 与 tabBar builder
-}
-.scrollable(false)
-.vertical(false)
-.barHeight(56)
-.barOverlap(true)
-.barFloatingStyle({
-  barBottomMargin: this.floatingBarBottomMargin,
-  adaptToHandedness: true,
-  systemMaterialEffect: {
-    materialType: hdsMaterial.MaterialType.ADAPTIVE,
-    materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-  }
-})
-.onChange((index: number) => {
-  this.currentIndex = index;
-})
-```
+迁移按[复用流程](#复用流程)执行。先核对[窗口沉浸状态与栏间距](../../shared/validation.md#窗口沉浸状态与栏间距)，确定底部外边距并逐页追踪安全区扩展链。
 
 ### 可选 MiniBar
 
-MiniBar 是悬浮 `HdsTabs` 的可选折叠形态，不是沉浸光感的默认必选项。只在产品确有“折叠后继续显示摘要或快捷操作”的需求时启用；`miniBarBuilder` 必填，并应复用源程序的真实状态、控制器和操作，不要用演示文案替换业务内容。
+只在产品确有“折叠后继续显示摘要或快捷操作”的需求时，按知识库查询流程读取《HDS 沉浸光感 MiniBar》的「可选 MiniBar」并按需实施。
 
-MiniBar 核心接口从 API 23 起可用，包括 `barFloatingStyle.miniBar`、`miniBarBuilder`、`miniBarWidth`、`miniBarStyle`、`enableMiniBarBackground`、`enableMiniBarClip` 以及 `HdsTabsController.applyMiniBarStyle()`。基础组合示例：
+### 悬浮 Tab 迁移规则
 
-```typescript
-import {
-  HdsBarStyle,
-  HdsTabs,
-  HdsTabsController,
-  hdsMaterial
-} from '@kit.UIDesignKit';
+按知识库查询流程读取《HDS 沉浸光感底部悬浮 Tab 迁移》的「悬浮 Tab 迁移规则」。
 
-private controller: HdsTabsController = new HdsTabsController();
+### 核心配置
 
-@Builder
-private buildMiniBar() {
-  Row({ space: 8 }) {
-    Text(this.currentTitle)
-      .maxLines(1)
-      .textOverflow({ overflow: TextOverflow.Ellipsis })
-    Blank()
-    Button('暂停')
-      .onClick(() => this.onSourceMiniBarAction())
-  }
-  .width('100%')
-  .padding({ left: 12, right: 12 })
-}
+按知识库查询流程读取《HDS 沉浸光感底部悬浮 Tab 迁移》的「核心配置」。
 
-HdsTabs({
-  barPosition: BarPosition.End,
-  index: this.currentIndex,
-  controller: this.controller
-}) {
-  // 复用源程序的 TabContent 与 tabBar builder
-}
-.scrollable(false)
-.vertical(false)
-.barHeight(56)
-.barOverlap(true)
-.barFloatingStyle({
-  barBottomMargin: this.floatingBarBottomMargin,
-  adaptToHandedness: true,
-  systemMaterialEffect: {
-    materialType: hdsMaterial.MaterialType.ADAPTIVE,
-    materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
-  },
-  miniBar: {
-    miniBarBuilder: () => this.buildMiniBar(),
-    miniBarStyle: HdsBarStyle.EXPAND,
-    enableMiniBarBackground: true,
-    enableMiniBarClip: true
-  }
-})
-```
+### 尺寸与间距
 
-默认不设置 `miniBarWidth`，让 HDS 先按窗口自适应；确需约束时再用 `smallWidth`、`mediumWidth`、`largeWidth` 分段配置，并结合真实文案、字体放大、多语言、窗口尺寸和快捷操作数量校准。若需要由应用主动折叠或展开，可调用 `controller.applyMiniBarStyle(HdsBarStyle.COLLAPSE | HdsBarStyle.EXPAND)`，并确保切换不改变当前页签、播放/编辑状态或既有事件语义。
+按知识库查询流程读取《HDS 沉浸光感底部悬浮 Tab 迁移》的「尺寸与间距」。
 
-`barLayoutMode` 需要单独处理：它和 `HdsBarLayoutMode.HORIZONTAL` / `VERTICAL` 从 API 24 起才可用，不属于 API 23 MiniBar 基线。当 `compatibleSdkVersion < 24` 时，只能在 `deviceInfo.apiAvailable(24)` 的运行时分支中引用并配置 `barLayoutMode`；API 23 分支应省略该属性，继续使用 MiniBar 的默认排列。使用 `apiAvailable(24)` 需要 SDK 26.0.0+ 编译；不要把 API 24 属性放进两个分支共用、会被提前求值的配置对象。
+### 组合能力
 
-MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等于设备横竖屏；切换排列时仍要保留源程序已有的断点、方向、窗口模式、控制器、状态和操作。电视设备上 MiniBar 不生效，应按能力包的通用回退策略保留接入前组件树与交互。
-
-迁移时按下面的规则处理：
-
-- `BarPosition.End`、`scrollable(false)`、`barOverlap(true)`、`barFloatingStyle` 和 `ADAPTIVE + ADAPTIVE` 是悬浮底部导航的核心配置。
-- 56vp 是显示态栏高基线；需要随滚动隐藏时可在 56 和 0 之间切换。
-- HDS 的 `barHeight` 不支持 `'auto'`。原工程若设置 `.barHeight('auto')`，在 HDS 分支移除整项配置，不将其替换为另一个固定高度；通过变量、条件或封装传入时也要追踪实际值，确保 HDS 分支不会得到 `'auto'`。已有合法数值和动态显隐高度保留，低版本普通 `Tabs` 分支保持原配置。
-- 接入分支的栏宽与布局按[栏宽与断点规则](../../shared/validation.md#悬浮-tab-栏宽与断点)处理；内容容器宽度独立保留。
-- HDS 的 `barBottomMargin` 默认值为 0；接入时按窗口沉浸状态显式选择 28vp 或 0vp，并检查祖先 padding 的用途与分支，避免重复避让。
-- `animationDuration(0)`、透明 `gradientMask` 和透明背景按工程实际交互选择；`expandSafeArea` 按窗口沉浸状态规则处理，未开启窗口沉浸式时底部扩展覆盖所有一级页及完整父组件链，标题栏沉浸光感页面同样覆盖 TOP 扩展链，两场景共用组件一次传入 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]`。
-- `HdsTabsController` 继承 `TabsController`，既有 `changeIndex` 通常可继续使用；仍需扫描所有类型声明、控制器注入、双击、隐藏和刷新回调。
-- API 23/24 模板将 `HdsTabs` 从 `@hms.hds.hdsBaseComponent` 导入，当前 SDK 也可见 `@kit.UIDesignKit` 聚合入口。生成代码时沿用目标 SDK 与工程已验证的导入方式，最终以真实构建为准。
+涉及组合接入时，按知识库查询流程读取《HDS 沉浸光感底部悬浮 Tab 迁移》的「组合能力」。
 
 ### 底部间距归一化
+
+按知识库查询流程读取《HDS 沉浸光感悬浮 Tab 避让与低版本回退》的「底部间距归一化」。
 
 按原有 padding 的用途和实际分支决定底部避让：
 
@@ -342,44 +58,32 @@ MiniBar 与 TabBar 的 `HORIZONTAL` / `VERTICAL` 是产品布局选择，不等�
 4. 如果 bottom padding 只存在于某个 `TabContent` 的滚动内容内部、用途是避免末项被悬浮栏遮挡，保留其独立职责。其他布局用途的外层 padding 按实际作用判断，不机械删除或改写。
 5. 断点、窗口模式和分支切换后，核对普通 Tab 的导航条避让仍保持原行为，悬浮 Tab 下方没有因共用 padding 形成固定空白或重复间距。
 
-若两个分支共用的外层容器原本通过 `windowBottomPadding` 为普通 Tab 避让导航条，可将该容器的属性按实际悬浮分支条件设置：
-
-```typescript
-.padding({
-  bottom: this.useFloatingTab ? 0 : this.vm.windowModel.windowBottomPadding
-})
-```
-
-`useFloatingTab` 应替换为工程实际决定悬浮布局的条件，不仅是材质开关；这里的 0 只针对普通 Tab 导航条避让用途的外层 padding。实施报告记录用途与分支归属，并在有/无导航指示区、横竖屏、分屏和自由窗口下验证。
+实施报告记录用途与分支归属，并在有/无导航指示区、横竖屏、分屏和自由窗口下验证。
 
 ### 滚动 Tab 页尾部避让
 
+按知识库查询流程读取《HDS 沉浸光感悬浮 Tab 避让与低版本回退》的「滚动 Tab 页尾部避让」。
+
 按[滚动尾部避让](../../shared/validation.md#悬浮-tab-的滚动尾部避让)核对每页真实滚动容器、唯一补偿位置、栏高变化及回退分支，并执行[共享验收](../../shared/validation.md#共享验收标准)。
-
-无已有尾部间距时的 List 示例；已有配置在原处调整，保留基础间距且不重复补偿：
-
-```typescript
-List() {
-  LazyForEach(this.dataSource, (item: ItemModel) => {
-    ListItem() {
-      this.buildSourceItem(item)
-    }
-  })
-}
-.contentEndOffset(this.floatingTabOcclusionHeight)
-```
-
 
 ### 低版本分支必须保留源程序体验
 
-当 `compatibleSdkVersion < 23` 时，HDS 与普通 `Tabs` 是两棵运行时条件组件树。HDS 分支统一为底部悬浮，低版本普通 `Tabs` 分支必须保留接入前源程序的行为：
+按知识库查询流程读取《HDS 沉浸光感悬浮 Tab 避让与低版本回退》的「低版本分支必须保留源程序体验」。
 
-- 继续使用原有断点、横竖屏和窗口模式条件，保持对应的底部横向栏或侧边纵向栏；
-- 原样迁移这些条件控制的 `vertical`、`barPosition`、`barMode`、`barWidth`、`barHeight`、`divider` 和背景属性；
-- 保留原控制器、当前索引、页签顺序、自定义 TabBar、双击、隐藏、刷新和页面切换回调；
-- 只把公共 `TabContent` 抽成 Builder 复用，不要为了减少重复而丢失两个分支不同的导航外观和交互；
-- 在 API 23 以下设备分别覆盖原工程支持的手机、平板/大窗口、横屏、分屏与自由窗口矩阵。
+实施前先保存接入前 Tabs 属性与行为清单，实施后逐项对照。
 
-因此不能把能力包示例中的某个固定栏宽、栏高或 `BarPosition.End` 直接复制到所有普通 `Tabs` 降级分支。实施前先保存接入前 Tabs 属性与行为清单，实施后逐项对照。
+### 复用流程
+
+接入时先核对 SDK、版本策略、现有导航结构和大屏产品要求，再按本节对应的知识库示例提取最小改动。
+
+1. 先用本机 SDK 根清单和工程 compile/compatible/target API 确定 HDS 路线是否可用。
+2. 扫描主 Tabs 页面、每个 Tab 页的滚动容器与最后一个可操作项、控制器调用点、自定义 TabBar、断点侧栏逻辑、`HdsTabs` 父级/祖先 bottom padding、底部安全区和自研悬浮组件；如果 `compatibleSdkVersion < 23`，同时保存接入前普通 `Tabs` 的断点、横竖屏、窗口模式和全部条件属性组合。自研导航与 HdsTabs 功能重叠时，只在增强分支移除重复组件及同步逻辑，保留业务事件和内容裁剪。
+3. 接入分支在所有断点和窗口尺寸统一为底部横向悬浮 Tab，使用 `vertical(false)` 与 `BarPosition.End`；侧栏布局仅保留在低版本兼容分支。
+4. 以 `HdsTabs + BarPosition.End + scrollable(false) + barOverlap(true) + barFloatingStyle` 为悬浮底部方案核心，再按目标布局选择栏高、底部外边距、遮罩和动画。先追踪外层 bottom padding 的用途和分支：普通 Tab 的导航条避让仅保留在普通分支，悬浮分支由栏底部间距负责；其他布局用途按实际作用处理，不仅凭祖先存在 padding 就清零 `barBottomMargin`。
+5. 保留 `onChange`、外部 `changeIndex`、双击、隐藏、刷新等业务行为；`HdsTabsController extends TabsController`，但替换后仍要扫描所有控制器类型和调用点。低版本普通 `Tabs` 分支必须保留源程序原有体验，包括不同断点和横竖屏下的底部/侧边形态，不能照抄 HDS 分支的统一底部配置。
+6. 处理内容被悬浮栏遮挡、全屏视频深浅色、横竖屏、分屏/自由窗口和底部手势区；安全区写法按实际布局选择。每个可滚动 Tab 页在最后一个内容项之后保留足够的滚动尾部空间，使末项能够完整滚到悬浮栏上方；该空间只用于 HDS 悬浮分支，不得无条件改变低版本源程序的滚动范围。
+7. 接入真实调用链并执行静态验证和 Hvigor 构建；文档示例不构成目标工程编译证据。
+
+栏宽、底部间距、握姿偏移、深浅色和大屏位置必须按目标设备验证；不能以静态配置代替真机视觉验收。
 
 ArkUI 普通组件、菜单、弹窗和应用级材质不在本文件维护；组合路线继续读取[ArkUI 接入实现](../arkui/implementation.md)。

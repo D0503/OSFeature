@@ -18,7 +18,7 @@ API 26 及以上使用底部横向悬浮布局。材质关闭或设备不支持�
 
 `floatingBarBottomMargin` 根据目标窗口状态确定。显式构造材质时，从 `@kit.ArkUI` 导入 `uiMaterial`。
 
-本文涉及的窗口沉浸状态、栏间距、安全区扩展、外层 padding 和滚动尾部避让，统一见[沉浸光感悬浮 Tab 布局与避让](floating-tab-layout-and-clearance.md)。
+本文涉及的窗口沉浸状态、栏间距、安全区扩展、外层 padding 和滚动尾部避让，统一见[沉浸光感悬浮 Tab 布局与避让](../shared/floating-tab-layout-and-clearance.md)。
 
 ```typescript
 Tabs({ barPosition: BarPosition.End }) {
@@ -61,6 +61,6 @@ Tabs({ barPosition: BarPosition.End }) {
 
 ## 栏宽、断点与切换动画
 
-API 26 悬浮分支在所有断点、横竖屏和窗口尺寸下都保持底部横向Tab： `vertical(false)` 与 `BarPosition.End`。接入分支移除外层 `.barWidth(...)` 和侧栏切换条件及其专属布局配置，由 `barFloatingStyle.barWidth` 或系统默认行为控制栏宽。内容区宽度独立处理，复用原控制器、页签状态和事件。
+API 26 悬浮分支在所有断点、横竖屏和窗口尺寸下都保持底部横向Tab： `vertical(false)` 与 `BarPosition.End`。接入分支移除外层 `.barWidth(...)` 和侧栏切换条件及其专属布局配置，由 `barFloatingStyle.barWidth` 或系统默认行为控制栏宽。内容区宽度独立处理，复用原控制器、页签状态和事件。两条路线的完整规则见[沉浸光感悬浮 Tab 栏宽与断点](../shared/floating-tab-width.md#悬浮-tab-栏宽与断点)。
 
 接入沉浸光感悬浮分支时，删除接入前 Tabs 上的 `.animation(...)` 页签切换动效配置，例如 `.animation({ duration: 200, curve: Curve.EaseInOut })`。悬浮重叠布局与材质背板下不再保留切换动画，避免原有切换动效与悬浮材质渲染冲突或产生多余过渡。仅低版本兼容分支保留接入前的动画配置；材质关闭或设备不支持时仅回退材质，不恢复已删除的切换动画。

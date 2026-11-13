@@ -1,102 +1,38 @@
 # 沉浸光感兼容性与选型
 
+按[知识库查询流程](../../workflows/knowledge-query.md)逐节读取当前任务所需正文。
+
 ## 版本矩阵
 
-| 能力 | 起始版本 | 限制 |
-|---|---:|---|
-| HDS 组件家族起点 | HarmonyOS 5.1.0、API 18 | 表示 HDS 组件开始出现，不代表沉浸光感材质可用 |
-| `HdsNavigation` / `HdsNavDestination` 组件 | HarmonyOS 5.1.0、API 18 | 仅为导航组件自身的起始版本；Stage 模型 |
-| `HdsTabs` 组件 | HarmonyOS 6.0.0、API 20 | 仅为页签组件自身的起始版本；Stage 模型 |
-| HDS 沉浸光感材质接口 | HarmonyOS 6.1.0、API 23 | `hdsMaterial`、`systemMaterialEffect`、`barFloatingStyle` 等能力从此版本可用；Stage 模型 |
-| ArkUI `ImmersiveMaterial` 与 `systemMaterial` | API 26，且 `targetAPIVersion >= 26.0.0` | 用于原生 Navigation/Tabs、支持通用属性的组件、弹窗和交互组件；Stage 模型 |
-| API 26 应用级开关 | ArkUI 路线门禁已满足 | 额外要求配置位于 `entry` 类型 module 的 `module.json5` |
-| API 26 跨版本调用 | `compatibleSdkVersion < 26` | 使用 `deviceInfo.apiAvailable('26.0.0')` 保护新增接口调用和配置；涉及组件、布局或导航结构变化时使用组件树分支，进入 API 26 路径后再做材质能力判断 |
-| 升级接入（通用） | 工程低于路线门槛时 | 安装或切换本机 SDK，并将 `targetSdkVersion` 升至 23（HDS）或 26（ArkUI），无需显式配置 `compileSdkVersion`，`compatibleSdkVersion` 保持不变；低版本设备需运行时保护，并保留源程序接入前的布局、交互和普通视觉样式；是否升级与路线由用户决定 |
+按知识库查询流程读取《沉浸光感版本矩阵与本机 SDK 举证》的「版本矩阵」。
 
-这里必须区分“组件存在”和“特性可用”：API 18 工程可以使用 `HdsNavigation`，API 20 工程可以使用 `HdsTabs`，但二者都不能证明沉浸光感材质已可用。沉浸光感的 HDS 路线门槛仍是 API 23。API 23～25 只选择 HDS 材质路线；API 26+ 可以继续用 HDS 承担 HDS 导航，并用 ArkUI `uiMaterial` 改造原生 Navigation/Tabs、普通组件、弹窗和交互组件。工程 API 低于 23 时按通用[兼容性模型](../../shared/compatibility-model.md)的升级接入处理，不直接判为不支持。
-
-路线采用可组合模型。`availableRoutes` 表示版本与本机 SDK 允许考虑的路线，`selectedRoutes` 表示根据工程组件信号和当前目标实际加载的路线。API 26 工程若同时改造 HDS 导航/页签与 ArkUI 普通组件，应返回 `selectedRoutes: ["hds", "arkui"]` 并分别加载两套资料；`recommendedRoute` 只是主要建议和旧接口兼容字段，不表示必须二选一。
+按[能力入口的路线选择](README.md#路线选择)确认升级及路线。
 
 ## 本机 SDK 举证
 
-工程版本配置按[兼容性模型](../../shared/compatibility-model.md)核实目标 SDK 及配套构建工具的规定后写入。API 23 的 `"6.1.0(23)"` 和 API 26 的 `"26.0.0"` 是格式示例，不代替对目标版本规范的核验。工具内部归一化的 API 数值仅用于门禁比较，不直接作为生成配置的值。无需新增 `compileSdkVersion`；`compatibleSdkVersion` 保留原值与格式，除非已明确决定提高最低兼容版本。
+按知识库查询流程读取《沉浸光感版本矩阵与本机 SDK 举证》的「本机 SDK 举证」。
 
-选路前必须验证实际参与构建的本机 SDK，不以工程 target API 代替：
-
-- HDS 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 23；
-- ArkUI 路线要求 SDK 根目录 `sdk-pkg.json` 的 `apiVersion` 达到 26；
-- 路线阶段不扫描 `.d.ts`、`.d.ets`、SDK 子包或具体接口符号；具体接口由实施后的源码检查和真实工程构建确认；
-- 有效 compile API 也必须达到路线门槛；无需显式配置 `compileSdkVersion`，未配置时取已验证的活动 SDK API。`compatibleSdkVersion` 决定旧设备范围，`targetSdkVersion` 决定目标行为，两者都不能单独证明接口可编译。
-
-本机 SDK 路由只比较根清单 API 与沉浸光感路线门槛 23，不通过扫描 HDS 组件符号推断材质能力。工程扫描发现 `HdsNavigation` 或 `HdsTabs` 时，只能说明项目采用了相应组件体系；若 SDK 或有效 compile API 仍处于 18～22，结果应为可升级接入，而不是 HDS 沉浸光感已支持。
+工程版本配置按[兼容性模型](../../shared/compatibility-model.md)核实目标 SDK 及配套构建工具的规定后写入。选路前验证实际参与构建的本机 SDK 根清单，记录有效 compile API、compatible API 和 target API。路线阶段不扫描具体接口符号，实施后用源码检查和目标工程真实构建确认。
 
 ## HDS 支持范围
 
-| 组件 | 入口 | 作用 |
-|---|---|---|
-| `HdsNavigation` / `HdsNavDestination` | `TitleBarStyleOptions.systemMaterialEffect` | 标题栏返回按钮、菜单按钮材质 |
-| `HdsTabs` | `HdsTabsFloatingStyle.systemMaterialEffect` | 悬浮胶囊式底部页签 |
-| HDS 标题栏 | `scrollEffectOpts` | `GRADIENT_BLUR` 或 `IMMERSIVE_GRADIENT_BLUR` 滚动渐变模糊 |
-| HDS 底部页签 | `barFloatingStyle.miniBar` | 可折叠 MiniBar，可与沉浸光感组合 |
-
-MiniBar 核心能力从 API 23 起可用，但 `barLayoutMode` 及 `HdsBarLayoutMode` 从 API 24 起才可用。工程需要兼容 API 23 时，可以使用 MiniBar，但必须省略 `barLayoutMode`；若同时需要自定义 MiniBar 与 TabBar 的横向或纵向排列，则用 `deviceInfo.apiAvailable(24)` 建立单独的运行时分支。MiniBar 在 TV 设备上不生效，不能把它作为关键操作的唯一入口。
-
-HDS 材质接口覆盖 Phone、Tablet、PC/2in1。默认优先使用 `ADAPTIVE` 材质类型和等级；自定义档位前先调用 `hdsMaterial.getSystemMaterialTypes()` 查询设备能力。
+按知识库查询流程读取《沉浸光感支持范围与特殊限制》的「HDS 支持范围」。
 
 ## ArkUI 支持范围
 
-API 26 起，达到 target API 26 的工程可为支持的组件显式设置材质。原生导航、弹出类和选择类入口包括：
-
-| 场景 | 接口 |
-|---|---|
-| Navigation/NavDestination 标题栏 | `NavigationTitleOptions.systemMaterial`；推荐同时使用 `BarStyle.STACK` |
-| 原生 Tabs 底部悬浮栏 | 有效 `barFloatingStyle` 默认使用 `THIN`；组件级自定义可用 `FloatingTabBarStyle.systemMaterial`；要求 `barOverlap(true)`、`vertical(false)`、`BarPosition.End`；`maskColor` 接入时默认显式透明 |
-| AlphabetIndexer 提示弹窗 | `popupBackground`、`popupBackgroundBlurStyle` 均未设置或为 `undefined` 时默认开启；主动设置背景属性与材质互斥 |
-| Toast | `ShowToastOptions.systemMaterial` |
-| Popup | `PopupOptions.systemMaterial` |
-| Tips | `TipsOptions.systemMaterial` |
-| Sheet | `SheetOptions.systemMaterial` |
-| Menu | 对应实际调用入口的 Options，例如 `ContextMenuOptions.systemMaterial`；不得用泛化类型代替 |
-| Dialog | 对应 Options 的 `systemMaterial` |
-| Select | 按钮使用 `systemMaterial`，下拉菜单使用 `menuSystemMaterial` |
-| Toggle、Slider | `systemMaterial`；部分类型只把参数作为开启标记，按组件矩阵处理 |
-| ChipGroup | `backgroundSystemMaterial`、`selectedBackgroundSystemMaterial`、`iconBackgroundSystemMaterial` |
-| SegmentButton/V2 | 对应 Options 的 `backgroundSystemMaterial` |
-
-Toast 未主动指定材质时的默认表现仍会受到应用 `MaterialState` 和背景、模糊、阴影等冲突样式影响，不能只凭默认值断言最终视觉效果。
+按知识库查询流程读取《沉浸光感支持范围与特殊限制》的「ArkUI 支持范围」。
 
 ## 应用级 MaterialState
 
-ArkUI 路线本身要求 `targetAPIVersion >= 26.0.0`；应用级开关在此基础上只对 `entry` module 生效。
-
-| 配置值 | 枚举 | 行为 |
-|---|---|---|
-| `default` 或未配置 | `MaterialState.DEFAULT` | target 升级到 26+ 后，受支持组件可能采用系统默认材质；不能视为“无配置即无变化” |
-| `enable` | `MaterialState.ENABLE` | 扩大默认启用材质的组件范围 |
-| `disable` | `MaterialState.DISABLE` | 全局禁止；显式 `systemMaterial` 也不生效 |
-
-用 `uiMaterial.getMaterialInfo()` 读取实际配置。关闭普通组件使用 `uiMaterial.Material.empty`；`undefined` 表示恢复组件在当前 MaterialState 下的默认行为，不等价于统一关闭。Slider 等组件的专属语义按 `routes/arkui/component-profile.json` 处理。
+按知识库查询流程读取《沉浸光感支持范围与特殊限制》的「应用级 MaterialState」。
 
 ## 两套 MaterialLevel
 
-不要混用同名类型：
-
-| API | 含义 |
-|---|---|
-| `hdsMaterial.MaterialLevel` | 开发者选择的视觉强度：`EXQUISITE`、`GENTLE`、`SMOOTH`、`ADAPTIVE` |
-| `uiMaterial.MaterialLevel` | 设备算力档位；通过 `getGlobalMaterialLevel()` 获取，不可修改 |
-
-API 26 设备能力判断使用 `uiMaterial.isImmersiveMaterialSupported()`；不支持时设置材质不会报错，但不会产生材质效果。回退路径必须继续使用组件接入前的属性、状态、事件和业务行为，并保留原背景色、边框等普通视觉样式，不能只补一个背景色就视为已完成兼容。
+按知识库查询流程读取《沉浸光感支持范围与特殊限制》的「两套 MaterialLevel」。
 
 ## 特殊限制
 
-- `compatibleSdkVersion` 低于 23 时，HDS 组件在低版本设备不可用，需要按运行时判断做整树条件降级，而不只是属性级保护。
-- SDK 26.0.0+ 编译时，整树降级优先使用 `deviceInfo.apiAvailable` 检查运行设备版本：API 26+ 使用完整版本字符串，API 26 以下的公共接口使用数字 API 等级。该接口的编译 SDK 门槛不等于运行设备门槛；旧 SDK 无此声明时才沿用 `sdkApiVersion`，或确认升级编译 SDK。
-- 低版本整树分支必须保留源程序接入前的体验，不能用一个固定底部普通 `Tabs` 取代原有响应式导航。源程序若在不同断点、横竖屏或窗口模式下切换 `vertical`、`barPosition`、`barWidth`、`barHeight`、`divider` 等属性，降级分支继续沿用原有判断和值，并保留原控制器、自定义 TabBar、页签顺序和事件。
-- API 23 及以前 SDK 的 Web 同层渲染场景中，内嵌 ArkUI 控件开启光感可能变透明；关闭该控件光感或关闭同层渲染。
-- 应用级开关不能配置在非 `entry` module 后期待生效。
-- API 26 接口不能只依靠编译配置判断运行设备支持，还要进行运行时能力判断。
-- “沉浸光感”与窗口沉浸式、安全区、状态栏显隐无关；遇到后者应交由对应窗口适配流程。
+按知识库查询流程读取《沉浸光感支持范围与特殊限制》的「特殊限制」。
 
 ## 选型检查清单
 

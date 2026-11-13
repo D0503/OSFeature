@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import assert from "node:assert/strict"
-import { access, readFile } from "node:fs/promises"
-import { dirname, resolve } from "node:path"
+import { access, readdir, readFile } from "node:fs/promises"
+import { dirname, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { headingAnchors, markdownLinks } from "../scripts/lib/document-links.mjs"
 import { validateRegistry, validateSkillStructure } from "../scripts/validate-structure.mjs"
 
 const evalDir = dirname(fileURLToPath(import.meta.url))
@@ -77,7 +78,7 @@ assert.match(skill, /sdk-pkg\.json/)
 assert.match(skill, /所有低版本、不支持、未授权或特性关闭路径都必须保留接入前的源程序状态/)
 
 const entry = await readFile(resolve(featureDir, "README.md"), "utf8")
-const compatibility = await readFile(resolve(featureDir, "compatibility.md"), "utf8")
+const compatibilityIndex = await readFile(resolve(featureDir, "compatibility.md"), "utf8")
 const implementationIndex = entry
 const validationIndex = entry
 const assetsIndex = entry
@@ -85,15 +86,65 @@ const hdsImplementation = await readFile(resolve(featureDir, "routes", "hds", "i
 const arkuiImplementation = await readFile(resolve(featureDir, "routes", "arkui", "implementation.md"), "utf8")
 const arkuiNavigation = await readFile(resolve(featureDir, "routes", "arkui", "components", "navigation.md"), "utf8")
 const arkuiOverlays = await readFile(resolve(featureDir, "routes", "arkui", "components", "overlays.md"), "utf8")
-const implementation = [hdsImplementation, arkuiImplementation].join("\n")
 const sharedValidation = await readFile(resolve(featureDir, "shared", "validation.md"), "utf8")
 const hdsValidation = await readFile(resolve(featureDir, "routes", "hds", "validation.md"), "utf8")
 const arkuiValidation = await readFile(resolve(featureDir, "routes", "arkui", "validation.md"), "utf8")
-const validation = [sharedValidation, hdsValidation, arkuiValidation].join("\n")
-const hdsAssetsCatalog = await readFile(resolve(featureDir, "routes", "hds", "assets.md"), "utf8")
 const arkuiAssetsCatalog = await readFile(resolve(featureDir, "routes", "arkui", "assets.md"), "utf8")
-const assetsCatalog = [hdsAssetsCatalog, arkuiAssetsCatalog].join("\n")
 const sharedFallback = await readFile(resolve(featureDir, "shared", "fallback.md"), "utf8")
+const compatibilityAudit = await readFile(resolve(featureDir, "compatibility-audit.md"), "utf8")
+
+const corpusDir = resolve(skillRoot, "..", "knowledge-corpus", "immersive-light")
+const knowledgeByTitle = new Map()
+const knowledgeByFile = new Map()
+
+async function loadKnowledge(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const file = resolve(directory, entry.name)
+    if (entry.isDirectory()) {
+      await loadKnowledge(file)
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      const text = await readFile(file, "utf8")
+      const title = JSON.parse(text.match(/^title: (.+)$/m)[1])
+      assert.ok(!knowledgeByTitle.has(title), `Duplicate knowledge title: ${title}`)
+      knowledgeByTitle.set(title, text)
+      knowledgeByFile.set(file, text)
+    }
+  }
+}
+
+await loadKnowledge(corpusDir)
+
+function readKnowledge(index) {
+  const articles = new Set()
+  for (const [, title, section] of index.matchAll(/《([^》]+)》(?:的「([^」]+)」)?/g)) {
+    const article = knowledgeByTitle.get(title)
+    assert.ok(article, `Missing knowledge article: ${title}`)
+    if (section) assert.ok(article.split(/\r?\n/).some((line) => line.replace(/^#+ /, "") === section),
+      `Missing knowledge section: ${title} / ${section}`)
+    articles.add(article)
+  }
+  assert.ok(articles.size > 0)
+  return [index, ...articles].join("\n")
+}
+
+for (const [file, text] of knowledgeByFile) {
+  for (const link of markdownLinks(text)) {
+    const [target, anchor] = link.split("#")
+    const article = target ? knowledgeByFile.get(resolve(dirname(file), target)) : text
+    const location = `${relative(corpusDir, file)} -> ${link}`
+    assert.ok(article, `Broken knowledge link: ${location}`)
+    if (anchor) assert.ok(headingAnchors(article).has(anchor), `Missing knowledge anchor: ${location}`)
+  }
+}
+
+const compatibility = readKnowledge(compatibilityIndex)
+const hdsKnowledge = readKnowledge(hdsImplementation)
+const implementation = [hdsKnowledge, arkuiImplementation].join("\n")
+const layoutKnowledge = readKnowledge(sharedValidation)
+const validation = [layoutKnowledge, readKnowledge(hdsValidation), readKnowledge(arkuiValidation)].join("\n")
+const fallbackKnowledge = readKnowledge(sharedFallback)
+readKnowledge(compatibilityAudit)
+
 const arkuiGuardAsset = await readFile(resolve(featureDir, "assets", "ImmersiveMaterialGuard.ets"), "utf8")
 const profile = JSON.parse(await readFile(resolve(featureDir, "profile.json"), "utf8"))
 const arkuiComponentProfile = JSON.parse(await readFile(resolve(featureDir, "routes", "arkui", "component-profile.json"), "utf8"))
@@ -112,7 +163,7 @@ assert.match(entry, /API 26\+[\s\S]*uiMaterial/)
 assert.match(entry, /compatibility\.md/)
 assert.match(entry, /implementation\.md/)
 assert.match(entry, /shared\/validation\.md/)
-assert.match(entry, /routes\/hds\/assets\.md/)
+assert.match(entry, /routes\/hds\/implementation\.md#复用流程/)
 assert.match(entry, /悬浮导航Tab/)
 assert.match(entry, /selectedRoutes/)
 
@@ -121,9 +172,8 @@ assert.match(implementationIndex, /routes\/arkui\/implementation\.md/)
 assert.match(implementationIndex, /shared\/fallback\.md/)
 assert.match(validationIndex, /routes\/hds\/validation\.md/)
 assert.match(validationIndex, /routes\/arkui\/validation\.md/)
-assert.match(assetsIndex, /routes\/hds\/assets\.md/)
 assert.match(assetsIndex, /routes\/arkui\/assets\.md/)
-assert.doesNotMatch(hdsImplementation, /new uiMaterial\.ImmersiveMaterial/)
+assert.doesNotMatch(hdsKnowledge, /new uiMaterial\.ImmersiveMaterial/)
 assert.doesNotMatch(arkuiImplementation, /HdsTabs\(/)
 assert.match(arkuiImplementation, /### 能力查询时机/)
 assert.match(arkuiImplementation, /components\/navigation\.md/)
@@ -147,8 +197,8 @@ assert.match(implementation, /deviceInfo\.apiAvailable\('26\.0\.0'\)/)
 assert.match(implementation, /uiMaterial\.isImmersiveMaterialSupported\(\)/)
 assert.match(implementation, /barOverlap\(true\)/)
 assert.match(implementation, /barHeight\(56\)/)
-assert.match(sharedValidation, /所有断点、横竖屏和窗口尺寸均使用底部横向 Tab：`vertical\(false\)`、`BarPosition.End`/)
-assert.match(sharedValidation, /删除外层 `\.barWidth\(\.\.\.\)`/)
+assert.match(layoutKnowledge, /所有断点、横竖屏和窗口尺寸均使用底部横向 Tab：`vertical\(false\)`、`BarPosition.End`/)
+assert.match(layoutKnowledge, /删除外层 `\.barWidth\(\.\.\.\)`/)
 assert.match(implementation, /低版本分支必须保留源程序体验/)
 assert.match(implementation, /### 可选 MiniBar/)
 assert.match(implementation, /`miniBarBuilder` 必填/)
@@ -176,6 +226,7 @@ const arkuiKnowledgeEntries = [
 ]
 for (const [entry, titles] of arkuiKnowledgeEntries) {
   assert.match(entry, /knowledge-query\.md/)
+  readKnowledge(entry)
   for (const title of titles) {
     assert.ok(entry.includes(`《${title}》`), `Missing knowledge title: ${title}`)
   }
@@ -187,21 +238,21 @@ assert.match(sharedValidation, /## 普通与悬浮 Tab 的外层避让/)
 assert.match(sharedValidation, /## 悬浮 Tab 的滚动尾部避让/)
 assert.match(sharedValidation, /未执行逐页滚动时报告未验证/)
 
-assert.match(assetsCatalog, /所有断点.*底部 `HdsTabs`/)
-assert.match(assetsCatalog, /56vp.*显示态基线/)
-assert.match(assetsCatalog, /animationDuration\(0\).*不属于悬浮材质必需属性/)
-assert.match(assetsCatalog, /expandSafeArea[\s\S]*未开启窗口沉浸式时[\s\S]*全部父组件/)
-assert.match(assetsCatalog, /barFloatingStyle\.barWidth/)
-assert.match(assetsCatalog, /低版本普通 `Tabs` 分支必须保留源程序原有体验/)
-assert.match(assetsCatalog, /普通 Tab 的导航条避让仅保留在普通分支/)
+assert.match(hdsKnowledge, /所有断点.*底部 `HdsTabs`/)
+assert.match(hdsKnowledge, /56vp.*显示态基线/)
+assert.match(hdsKnowledge, /animationDuration\(0\).*不属于悬浮材质必需属性/)
+assert.match(hdsKnowledge, /expandSafeArea[\s\S]*未开启窗口沉浸式时[\s\S]*全部父组件/)
+assert.match(hdsKnowledge, /barFloatingStyle\.barWidth/)
+assert.match(hdsImplementation, /低版本普通 `Tabs` 分支必须保留源程序原有体验/)
+assert.match(hdsImplementation, /普通 Tab 的导航条避让仅保留在普通分支/)
 assert.match(arkuiAssetsCatalog, /components\/navigation\.md/)
 assert.match(arkuiAssetsCatalog, /不宣称新资产等同于目标工程编译/)
 assert.match(arkuiGuardAsset, /ARKUI_MIN_API_VERSION: number = 26/)
 assert.match(arkuiGuardAsset, /deviceInfo\.apiAvailable\('26\.0\.0'\)/)
 assert.doesNotMatch(arkuiGuardAsset, /SDK d\.ts 证据/)
-assert.match(sharedFallback, /compatibleSdkVersion >= 26[\s\S]*无需增加 API 26 版本分支/)
-assert.match(sharedFallback, /仅增加材质属性[\s\S]*复用原组件/)
-assert.match(sharedFallback, /仅保护材质值不足以保护链式属性调用本身/)
+assert.match(fallbackKnowledge, /compatibleSdkVersion >= 26[\s\S]*无需增加 API 26 版本分支/)
+assert.match(fallbackKnowledge, /仅增加材质属性[\s\S]*复用原组件/)
+assert.match(fallbackKnowledge, /仅保护材质值不足以保护链式属性调用本身/)
 
 assert.match(validation, /高、中、低算力设备/)
 assert.match(validation, /Web 同层渲染/)
@@ -228,7 +279,7 @@ assert.deepEqual(hdsRoute?.componentBaselines, [
 ])
 assert.equal(hdsRoute?.documents.implementation, "routes/hds/implementation.md")
 assert.equal(hdsRoute?.documents.validation, "routes/hds/validation.md")
-assert.equal(hdsRoute?.documents.assets, "routes/hds/assets.md")
+assert.equal(hdsRoute?.documents.assets, hdsRoute?.documents.implementation)
 assert.equal(arkuiRoute?.minApi, 26)
 assert.equal(arkuiRoute?.minTargetApi, 26)
 assert.equal(arkuiRoute?.applicationLevel.minTargetApi, 26)

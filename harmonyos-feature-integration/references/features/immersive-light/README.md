@@ -54,7 +54,7 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 
 ## 按任务加载资料
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 候选路线的实现与资产说明、[共享回退](shared/fallback.md)、[共享验证](shared/validation.md)及候选路线验证；整体方案另按下表读取覆盖资料；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，沿原章节顺序读取所需正文。标明完整标题与章节的条目按[知识库查询流程](../../workflows/knowledge-query.md)取得正文。方案设计先读取候选路线的实现与资产说明、[共享回退](shared/fallback.md)、[共享验证](shared/validation.md)及候选路线验证；整体方案另按下表读取覆盖资料；不因设计读取而实施可选功能。
 
 | 用户任务 | 必读文件 |
 |---|---|
@@ -64,11 +64,11 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 | 版本判断、路线选择、前置检查 | [compatibility.md](compatibility.md) |
 | 所有实现与回退 | [共享回退](shared/fallback.md)，再按下列 HDS/ArkUI 行加载实际选中路线 |
 | 内容区滚动时标题固定到标题栏、分类栏滚入标题栏、沉浸光感标题栏滚动吸顶 | [ArkUI 接入入口](routes/arkui/implementation.md)及[滚动内容切换到标题栏](routes/arkui/components/navigation.md#可选滚动内容切换到标题栏)；仅按用户要求实施该交互，普通列表内部吸顶不适用 |
-| HDS 导航、悬浮 Tab、MiniBar | [routes/hds/implementation.md](routes/hds/implementation.md)、[routes/hds/assets.md](routes/hds/assets.md) |
+| HDS 导航、悬浮 Tab、MiniBar | [HDS 接入实现](routes/hds/implementation.md)，按目标读取原章节对应的正文；迁移悬浮 Tab 时同时执行[复用流程](routes/hds/implementation.md#复用流程) |
 | ArkUI 开启策略、原生 Navigation/Tabs、普通组件、菜单、弹窗 | [routes/arkui/implementation.md](routes/arkui/implementation.md)，再按目标加载该入口列出的分类资料 |
-| 示例资产选择入口 | 按 `selectedRoutes` 读取 [HDS 资产](routes/hds/assets.md)或 [ArkUI 资产](routes/arkui/assets.md) |
+| 示例资产选择入口 | 按 `selectedRoutes` 读取 [HDS 接入实现](routes/hds/implementation.md)对应的知识库示例或 [ArkUI 资产](routes/arkui/assets.md) |
 | 性能评审、测试与验收 | [共享验证](shared/validation.md)，以及选中路线的 [HDS 验证](routes/hds/validation.md)／[ArkUI 验证](routes/arkui/validation.md) |
-| 材质无效、透明、卡顿或样式冲突排查 | [compatibility.md](compatibility.md)、[shared/validation.md](shared/validation.md)及选中路线的验证文件 |
+| 材质无效、透明、卡顿或样式冲突排查 | [兼容性与选型](compatibility.md)、[共享验证](shared/validation.md)及选中路线的常见问题正文，[HDS](routes/hds/validation.md#常见问题)／[ArkUI](routes/arkui/validation.md#常见问题) |
 
 标题栏滚动吸顶场景针对内容标题或分类栏由标题栏接替显示，按上表读取 ArkUI 接入入口及滚动内容切换文档，完成 ArkUI 前置门禁后再实施。已在沉浸光感改造上下文中时，后续同义请求沿用该场景路由。普通列表内部吸顶、sticky 分组不据此触发；命中该场景不扩大为全工程材质改造。
 

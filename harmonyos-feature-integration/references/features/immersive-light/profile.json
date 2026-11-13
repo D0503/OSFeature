@@ -60,7 +60,7 @@
       "documents": {
         "implementation": "routes/hds/implementation.md",
         "validation": "routes/hds/validation.md",
-        "assets": "routes/hds/assets.md"
+        "assets": "routes/hds/implementation.md"
       }
     },
     {

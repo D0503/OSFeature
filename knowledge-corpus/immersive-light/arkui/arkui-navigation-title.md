@@ -44,9 +44,11 @@ tags: ["HarmonyOS","沉浸光感","ArkUI","Navigation","NavDestination","标题�
 
 与底部悬浮 Tabs 共用的节点用一次调用合并 `[SafeAreaEdge.BOTTOM, SafeAreaEdge.TOP]`，并保留原有仍适用的类型与方向。安全区扩展随目标页面和实际布局分支生效。
 
-窗口状态判断和安全区扩展的共用规则，详见[沉浸光感悬浮 Tab 布局与避让](floating-tab-layout-and-clearance.md#窗口沉浸状态与栏间距)中的「窗口沉浸状态与栏间距」。
+窗口状态判断和安全区扩展的共用规则，详见[沉浸光感悬浮 Tab 布局与避让](../shared/floating-tab-layout-and-clearance.md#窗口沉浸状态与栏间距)中的「窗口沉浸状态与栏间距」。
 
 ## 自定义标题高度与内容避让
+
+两条路线的共用要求见[沉浸光感标题栏内容避让与自定义标题](../shared/shared-title-clearance.md#标题栏内容避让与自定义标题)。
 
 搜索区域随滚动收缩时，结合内容起始偏移、标题高度、位移、透明度与搜索组件材质。实现见[ArkUI 沉浸光感标题栏滚动联动正例](arkui-title-scroll.md#正例一搜索框标题栏随滚动收缩)中的「正例一：搜索框标题栏随滚动收缩」。
 
