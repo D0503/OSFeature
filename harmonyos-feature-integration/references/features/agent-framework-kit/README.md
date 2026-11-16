@@ -6,13 +6,16 @@
 
 ## 按任务加载
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [前置条件](prerequisites.md)、[实现约束](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-- SDK、应用类型与设备门禁：[兼容性](compatibility.md)。
-- 尚未创建 Agent、缺少 ID 或未关联应用：[前置操作指引](prerequisites.md)。不要求开发者把平台凭据或签名私钥交给 Skill。
-- 工程实施：[实施](implementation.md)、[回退](fallback.md)和[代码资产](assets-catalog.md)。
-- 静态检查、构建和真机验收：[性能与验证](performance-validation.md)。
-- 无入口、无法拉起或授权错误：[排障](troubleshooting.md)。只诊断请求不修改工程。
+设计/实施先读[公共实现](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| Function 图标或按钮；设计候选、实施选定入口时 | [实施约束](implementation.md) | [资产说明](assets-catalog.md)、[Agent.ets](assets/Agent.ets) | [点击、拉起与关闭验收](performance-validation.md) |
+| 缺少 Agent、ID、关联或测试发布；需要说明外部准备时 | [前置操作](prerequisites.md) | 按前置操作指引准备，不写入示例 ID | [平台条件与真机验收](performance-validation.md) |
 
 应用从 API 20 开始；元服务与 `ICON_ABOVE_TITLE` 从 API 21 开始。只支持 Stage、Phone/Tablet 和中国境内（不含港澳台），不支持模拟器。SDK/compile 满足要求不代表 Agent 已可用。
 

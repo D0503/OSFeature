@@ -6,14 +6,17 @@
 
 ## 按任务加载
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [场景](scenarios.md)、[实现约束](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；设置与风险提示仅在涉及时读取[专项资料](settings-and-information.md)；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-- 门禁、权限和设备：[兼容性](compatibility.md)。
-- 金融、短视频和即时通讯等目标：[场景选择](scenarios.md)，只实施用户要求的保护内容。
-- 实施：[开发步骤](implementation.md)，状态感知按主流程接入，系统蒙层按第 6 步选配。
-- 设置弹框与风险提示：[设置与提示](settings-and-information.md)，两项均为 API23 可选能力。
-- 代码：[工具资产](assets-catalog.md)；异常：[回退](fallback.md)；问题：[排障](troubleshooting.md)。
-- 验收：[性能与验证](performance-validation.md)。
+设计/实施先读[公共实现](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| 状态查询或监听；设计保护内容、实施状态感知时 | [场景选择](scenarios.md)、[开发步骤](implementation.md) | [工具说明](assets-catalog.md)、[AntiPeepUtils.ets](assets/AntiPeepUtils.ets)，只取所需函数 | [状态响应与内容保护](performance-validation.md) |
+| 系统防窥蒙层；明确选择该能力时 | [开发步骤中的蒙层分支](implementation.md#6-按需增加系统蒙层) | [工具说明](assets-catalog.md)、[AntiPeepUtils.ets](assets/AntiPeepUtils.ets) | [目标窗口与失败场景](performance-validation.md) |
+| 设置弹窗或风险提示；请求或方案涉及对应可选能力时 | [设置与提示](settings-and-information.md) | [主动开启步骤](implementation.md#可选用户主动开启防窥)、[工具说明](assets-catalog.md) | [所选能力的验收](performance-validation.md) |
 
 ## 接入前澄清
 

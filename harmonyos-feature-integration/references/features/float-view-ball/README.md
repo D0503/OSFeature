@@ -6,14 +6,18 @@
 
 ## 按任务加载
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [公共实现](implementation.md)、候选路线、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；防窥联动仅在明确要求时加载；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-- SDK、权限、设备与版本：[兼容性](compatibility.md)。
-- 实施：[实施入口](implementation.md)，再按 selectedRoutes 读取 [闪控窗](routes/float-view.md) 、[闪控球](routes/floating-ball.md) 或 [绑定](routes/binding.md)。
-- 路线 ID：`float-view` 为独立窗，`floating-ball` 为独立球，`binding` 为[窗球绑定](routes/binding.md)。绑定只选 binding，内部复用两端能力；两个独立实现同时出现不等于绑定。
-- 代码：[资产](assets-catalog.md)；失败和旧版本：[回退](fallback.md)。
-- 验收：[性能与验证](performance-validation.md)；诊断：[排障](troubleshooting.md)。
-- 用户明确要求闪控窗防窥时，读取[防窥联动](anti-peep-integration.md)，按其中要求加载独立的[防窥能力](../dlp-anti-peep/README.md)。
+设计/实施先读[公共实现](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| 独立窗 `float-view`；候选或已选窗路线时 | [窗路线](routes/float-view.md) | [资产说明](assets-catalog.md)、[FloatViewController.ets](assets/FloatViewController.ets) | [窗状态、更新与关闭](performance-validation.md) |
+| 独立球 `floating-ball`；候选或已选球路线时 | [球路线](routes/floating-ball.md) | [资产说明](assets-catalog.md)、[FloatingBallController.ets](assets/FloatingBallController.ets) | [球交互与清理](performance-validation.md) |
+| 绑定切换 `binding`；明确需要窗球切换时 | [绑定流程](routes/binding.md)；绑定只选 binding，内部复用两端能力；两个独立实现同时出现不等于绑定 | [组合资产说明](assets-catalog.md)、[FloatViewBallController.ets](assets/FloatViewBallController.ets)、[窗控制器](assets/FloatViewController.ets)、[球控制器](assets/FloatingBallController.ets) | [绑定与双端终态验收](performance-validation.md) |
+| 闪控窗防窥；用户明确要求联动时 | [防窥联动](anti-peep-integration.md)、独立[防窥能力入口](../dlp-anti-peep/README.md) | 按两包已选能力读取资产，不扩展为球窗口保护 | [窗球验收](performance-validation.md)及[防窥窗口验收](../dlp-anti-peep/performance-validation.md) |
 
 依据 2026-10-20 本地官方资料快照整理：[闪控窗指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/float-view-guide)、[窗 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatview)、[球指南](https://developer.huawei.com/consumer/cn/doc/doccenter-capabilities/floatingball-guide)、[球 API](https://developer.huawei.com/consumer/cn/doc/harmonyos-references/js-apis-floatingball)。版本冲突时核对对应接口与目标 SDK 声明，不按样例工程版本反推 API 起点。
 

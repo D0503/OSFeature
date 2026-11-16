@@ -4,15 +4,17 @@
 
 ## 按需加载
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [配置确认](configuration-confirmation.md)、[配置规则](configuration.md)、候选路线、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-| 任务 | 读取资料 |
-|---|---|
-| 任意平行视界请求 | [profile.json](profile.json)、[兼容性](compatibility.md) |
-| 设计或实施 | [实施入口](implementation.md)、[配置确认](configuration-confirmation.md)、[配置规则](configuration.md)，再读取选中路线 |
-| 取用配置 | [资产目录](assets-catalog.md) |
-| 验证和性能检查 | [验证](performance-validation.md)、[回退](fallback.md) |
-| 排障 | [故障排查](troubleshooting.md) |
+设计/实施先读[公共实现](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| Router 分栏；工程使用 Router 且该路线为候选或已选 | [Router 实施](routes/router/implementation.md)、[配置规则](configuration.md) | [Router 配置资产](assets-catalog.md) | [公共验收](performance-validation.md)、[Router 路线验收](routes/router/implementation.md#路线验收) |
+| Navigation 分栏；工程使用 Navigation 且该路线为候选或已选 | [Navigation 实施](routes/navigation/implementation.md)、[配置规则](configuration.md) | [Navigation 配置资产](assets-catalog.md) | [公共验收](performance-validation.md)、[Navigation 路线验收](routes/navigation/implementation.md#路线验收) |
+| 配置业务页面、模式与启动全屏页；设计与写入前 | [配置确认](configuration-confirmation.md) | 上述选中路线的最小配置 | [页面跳转、分栏与关闭回退](performance-validation.md) |
 
 `router` 与 `navigation` 是互斥技术路线；导航模式和购物模式是路线内部的交互方式。识别工程后列出路线、建议及依据；多条路线可选或需要升级时由用户确认，不能把路由框架迁移当作默认配套改动。`selectedRoutes` 只包含一项。
 

@@ -20,14 +20,18 @@
 
 ## 按任务加载
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [公共实现与跟手模式](implementation.md)、候选感知路线、[资产说明](assets-catalog.md)、[回退](fallback.md)和[验证](performance-validation.md)；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-- 选型、权限、SDK 门禁：读 [兼容性](compatibility.md)。设备型号、元服务支持等未确认事实不得从示例推断。
-- 工程实施：读 [实施入口](implementation.md)、[回退](fallback.md)，再按 `selectedRoutes` 读对应路线的实现、资产及验证资料。
-- 自定义握持感知：按 [页面接入步骤](routes/holding-hand/implementation.md) 完成权限声明、页面监听、位置状态、转场及关闭处理。
-- 示例复用：读 [资产目录](assets-catalog.md)。资源已包含在本能力包，不依赖原始抓取目录。
-- 验证：读 [性能与验证](performance-validation.md)，按所选路线分别验证并汇总为一份报告。
-- 故障排查：读 [排障](troubleshooting.md)。只诊断请求不修改工程。
+设计/实施先读[公共实现](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| 系统组件原生跟手 `native-component`；原生属性符合目标时 | [原生路线](routes/native-component/implementation.md) | [原生属性资产](routes/native-component/assets.md) | [原生验收](routes/native-component/validation.md) |
+| 操作手感知 `operating-hand`；目标依据触控操作手移动时 | [操作手路线](routes/operating-hand/implementation.md) | [操作手资产与接入](routes/operating-hand/implementation.md#资产与接入) | [操作手验收](routes/operating-hand/validation.md) |
+| 握持手感知 `holding-hand`；目标依据握持手移动时 | [握持手路线](routes/holding-hand/implementation.md) | [握持手资产与接入](routes/holding-hand/implementation.md#资产与接入) | [握持手验收](routes/holding-hand/validation.md) |
+| 新增同步跟手组件；用户明确选择保留原入口并新增时 | [跟手模式与共同约束](implementation.md#跟手模式) | 所选感知路线资产，复用同一业务状态 | [同步、重复操作与真机验证](performance-validation.md) |
 
 本包面向 Stage 应用的 entry/feature HAP。库内实现须追踪实际承载 HAP；权限不能在无关模块中补齐。无需因示例而增加账号、网络服务或第三方依赖；正常构建安装仍使用用户工程自身的 SDK、签名和设备。
 

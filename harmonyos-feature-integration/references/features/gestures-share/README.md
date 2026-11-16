@@ -10,17 +10,17 @@
 
 ## 按任务加载
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 [实现约束](implementation.md)、[回退](fallback.md)和[双端验证](performance-validation.md)；链接直达涉及时另读[App Linking](app-linking.md)；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-| 任务 | 资料 |
-|---|---|
-| 版本、设备、开关、权限与账号 | [兼容性与前置条件](compatibility.md) |
-| 页面或 VM 内的监听、文件/链接数据与生命周期 | [实现](implementation.md) |
-| 可选 App Linking：应用域名关联与参数接收 | [链接直达](app-linking.md) |
-| 旧版本、能力不足与异常处理、回退实测 | [回退规则](fallback.md) |
-| 静态、构建、双端运行及负向验收 | [验证](performance-validation.md) |
-| 已接入工程扫描与回退判定 | [扫描与回退](compatibility-audit.md) |
-| 故障定位 | [排障](troubleshooting.md) |
+设计/实施先读[公共实现](implementation.md)、[接入片段](implementation.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| 当前页面传文件；分享内容已确定为文件时 | [监听、数据与生命周期](implementation.md) | [实现文件中的接入片段](implementation.md) | [抓取、接收与后台清理](performance-validation.md) |
+| 当前页面传链接；分享内容已确定为链接时 | [链接数据与生命周期](implementation.md) | [实现文件中的接入片段](implementation.md) | [双端内容一致性](performance-validation.md) |
+| 链接直达应用内容；明确要求 App Linking 时 | [域名关联与参数接收](app-linking.md) | [链接接入片段](app-linking.md) | [冷暖启动及双端验证](performance-validation.md)、[开发者配置指导](app-linking.md#接入完成后向开发者展示) |
 
 隔空传送接入完成后，必须在交付回复中展示[手机设置和真机操作步骤](compatibility.md#系统设置和信任)，包含华为分享、隔空传送开关的设置路径、双端信任与“一抓一放”验证，文件传送和链接分享均须提醒。选择链接直达时，再按[开发者配置指导](app-linking.md#接入完成后向开发者展示)展示应用接收端的配置步骤、官网链接及“App Linking 只能使用手动签名，不能使用自动签名”的提醒；仅给本地文档链接不满足交付要求。未选择链接直达时保持可选，不要求完成无关平台配置。
 

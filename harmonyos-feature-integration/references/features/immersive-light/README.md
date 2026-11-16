@@ -54,21 +54,19 @@ HDS 与 ArkUI 是可组合路线，不是互斥选择。工程同时包含 HDS �
 
 ## 按任务加载资料
 
-按[任务读取表](../../shared/document-loading.md#任务读取表)合并公共与路线资料，索引须继续读取到相关正文。方案设计先读取 候选路线的实现与资产说明、[共享回退](shared/fallback.md)、[共享验证](shared/validation.md)及候选路线验证；整体方案另按下表读取覆盖资料；不因设计读取而实施可选功能。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-| 用户任务 | 必读文件 |
-|---|---|
-| 工程整体接入与候选盘点 | [工程发现与覆盖](shared/validation.md#工程发现) |
-| 工程整体接入方案设计 | 先完成工程发现与候选盘点，再完整读取[整体接入方案](shared/validation.md#整体接入方案) |
-| 工程整体接入完成后复核 | 完整读取[整体接入复核](shared/validation.md#整体接入复核)，与实施前逐实例清单核对 |
-| 版本判断、路线选择、前置检查 | [compatibility.md](compatibility.md) |
-| 所有实现与回退 | [共享回退](shared/fallback.md)，再按下列 HDS/ArkUI 行加载实际选中路线 |
-| 内容区滚动时标题固定到标题栏、分类栏滚入标题栏、沉浸光感标题栏滚动吸顶 | [ArkUI 接入入口](routes/arkui/implementation.md)及[滚动内容切换到标题栏](routes/arkui/components/navigation.md#可选滚动内容切换到标题栏)；仅按用户要求实施该交互，普通列表内部吸顶不适用 |
-| HDS 导航、悬浮 Tab、MiniBar | [routes/hds/implementation.md](routes/hds/implementation.md)、[routes/hds/assets.md](routes/hds/assets.md) |
-| ArkUI 开启策略、原生 Navigation/Tabs、普通组件、菜单、弹窗 | [routes/arkui/implementation.md](routes/arkui/implementation.md)，再按目标加载该入口列出的分类资料 |
-| 示例资产选择入口 | 按 `selectedRoutes` 读取 [HDS 资产](routes/hds/assets.md)或 [ArkUI 资产](routes/arkui/assets.md) |
-| 性能评审、测试与验收 | [共享验证](shared/validation.md)，以及选中路线的 [HDS 验证](routes/hds/validation.md)／[ArkUI 验证](routes/arkui/validation.md) |
-| 材质无效、透明、卡顿或样式冲突排查 | [compatibility.md](compatibility.md)、[shared/validation.md](shared/validation.md)及选中路线的验证文件 |
+设计/实施读取[共享回退](shared/fallback.md)和[共享验证](shared/validation.md)，再按下表加载候选或选中路线。验证读取共享及所选路线验收；诊断读取下表所选路线的验证文档（含排障章节）。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| HDS 导航、悬浮 Tab；候选或已选 HDS 路线时，MiniBar 仅按已有或明确需求处理 | [HDS 实现](routes/hds/implementation.md) | [HDS 迁移资产](routes/hds/assets.md) | [HDS 验收](routes/hds/validation.md) |
+| 原生 Navigation/Tabs、普通组件、菜单或弹窗；候选或已选 ArkUI 路线时 | [ArkUI 入口](routes/arkui/implementation.md)，再按目标类别读取正文 | [ArkUI 资产](routes/arkui/assets.md) | [ArkUI 验收](routes/arkui/validation.md) |
+| 内容标题固定或分类栏滚入标题栏；明确要求该交互时 | [滚动内容切换到标题栏](routes/arkui/components/navigation.md#可选滚动内容切换到标题栏) | [滚动标题示例](routes/arkui/components/title-scroll-examples.md)、[ArkUI 资产](routes/arkui/assets.md) | [ArkUI 验收](routes/arkui/validation.md)；普通列表内部吸顶不适用 |
+| 工程整体接入；用户授权全工程覆盖时 | [工程发现与覆盖](shared/validation.md#工程发现)、[整体方案](shared/validation.md#整体接入方案) | 有候选的 HDS/ArkUI 类别资产 | [整体复核](shared/validation.md#整体接入复核)及各选中路线验收 |
+| 悬浮 Tab 有可滚动内容；修改布局前 | [滚动尾部避让](shared/validation.md#悬浮-tab-的滚动尾部避让) | 对应 HDS/ArkUI 资产 | [共享验收](shared/validation.md#共享验收标准) |
 
 标题栏滚动吸顶场景针对内容标题或分类栏由标题栏接替显示，按上表读取 ArkUI 接入入口及滚动内容切换文档，完成 ArkUI 前置门禁后再实施。已在沉浸光感改造上下文中时，后续同义请求沿用该场景路由。普通列表内部吸顶、sticky 分组不据此触发；命中该场景不扩大为全工程材质改造。
 

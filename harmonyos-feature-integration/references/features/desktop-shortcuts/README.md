@@ -12,19 +12,20 @@
 
 ## 按任务加载
 
-合并[公共任务读取表](../../shared/document-loading.md#任务读取表)与下表，索引继续读到正文。选中路线分别加载；共用资料只读一次。
+按[任务读取表](../../shared/document-loading.md#任务读取表)确定阶段。所有任务先读 [profile.json](profile.json)与[兼容性](compatibility.md)；只查询接口时不进入工程实施。
 
-| 任务 | 必读资料 |
-|---|---|
-| 版本、应用类型、设备、权限、签名与外部条件 | [兼容性](compatibility.md) |
-| 设计与实施 | [公共实施](implementation.md)、[资产目录](assets-catalog.md)、[回退](fallback.md)、[验收](performance-validation.md)，以及选中路线正文 |
-| 静态路线 | [静态配置与资产](routes/static-shortcut.md) |
-| 动态路线 | [动态流程与资产](routes/dynamic-shortcut.md)；预置资源另读静态路线的配置段落 |
-| 查询、显示隐藏、删除或设备支持查询 | [管理能力](management.md)，仅按需加载 |
-| 桌面图标格式、尺寸、分层资源与解析限制 | [图标资源规范](assets-catalog.md#图标资源规范) |
-| 验证 | [验收与证据](performance-validation.md)，以及被验收路线正文 |
-| 已接入工程的低版本回退扫描与修复 | [扫描与回退方案](compatibility-audit.md)、对应路线和可选能力资料 |
-| 诊断 | [故障排查](troubleshooting.md)、对应兼容性与路线资料 |
+设计/实施先读[公共实现](implementation.md)、[资产说明](assets-catalog.md)、[回退](fallback.md)和[公共验收](performance-validation.md)。验证读取回退与公共验收，诊断读取[排障](troubleshooting.md)；只诊断请求不修改工程。
+
+下表是条件必读索引：设计读候选场景的约束与资产说明；实施只读已确认场景的具体资产；验证只读实际启用场景的验收。公共要求与场景要求合并，同文件只读一次，不因读取可选场景而增加功能。
+
+| 场景与加载条件 | 方案与实现 | 代码或配置资产 | 验收入口 |
+|---|---|---|---|
+| 静态快捷方式 `static-shortcut`；候选或已选静态入口时 | [静态配置与跳转](routes/static-shortcut.md) | [静态路线配置片段](routes/static-shortcut.md)、[资产说明](assets-catalog.md) | [静态入口与业务到达验收](performance-validation.md) |
+| 动态快捷方式 `dynamic-shortcut`；候选或已选应用内加桌时 | [动态开发步骤](routes/dynamic-shortcut.md) | [动态路线调用片段](routes/dynamic-shortcut.md)；预置资源另读[静态配置](routes/static-shortcut.md) | [校验、用户确认与结果验收](performance-validation.md) |
+| 查询、显隐、删除或设备支持查询；明确需要管理能力时 | [管理能力](management.md) | [管理调用片段](management.md) | [所选管理能力验收](performance-validation.md) |
+| 图标资源；准备预置或自定义图标时 | [图标资源规范](assets-catalog.md#图标资源规范) | 工程实际媒体资源或沙箱文件 | [图标与解析验收](performance-validation.md) |
+
+兼容性扫描/修复读取[扫描与回退方案](compatibility-audit.md)，再加载涉及的路线和可选管理能力。
 
 ## 来源与版本
 
