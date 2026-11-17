@@ -212,7 +212,7 @@ export function verifyDesktopShortcuts(inspection, compatibility, routeOption = 
   }
   for (const [i, issue] of scan.issues.entries()) add(`configuration-${i}`, 'fail', issue.message, [issue])
   for (const [i, warning] of (scan.warnings ?? []).entries()) add(`display-${i}`, 'warn', warning.message, [warning])
-  add('routing-and-fallback', 'warn', '复核冷暖启动、页面就绪、业务目标白名单与事件消费；旧版本及失败保留原业务和已有入口')
+  add('routing-and-fallback', 'warn', '复核冷暖启动、页面就绪、业务目标白名单与事件消费。目标为 Tab 且可能被详情页覆盖时，验证主 Tab 不变的情况下再次点击能退出详情页并到达目标 Tab。核对旧版本及失败时原业务与已有入口仍可用')
   add('optional-capabilities', 'warn', '配置查询不等于已加桌查询，隐藏不等于删除；可选能力须经需求确认并独立门禁')
   const counts = Object.fromEntries(['pass', 'warn', 'fail', 'not_applicable'].map(s => [s, checks.filter(c => c.status === s).length]))
   return { schemaVersion: '1.0', featureId: FEATURE, route: routes.length === 1 ? routes[0] : 'composed', routes, status: counts.fail ? 'failed' : counts.warn ? 'warnings' : 'passed', checks, counts }
