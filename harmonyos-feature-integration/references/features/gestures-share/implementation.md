@@ -79,6 +79,27 @@ aboutToDisappear() {
 
 注册与退订使用同一页面所属上下文，确认两次获取的是同一目标窗口；多窗口工程按真实分享窗口核对。沿用已有可见状态判断，确保窗口查询返回时页面仍可分享。不带窗口的 API20 重载仅在工程已有明确作用域时使用；on/off 的重载与实际回调须配对。
 
+## 多实例目标页与注册收敛
+
+上述“页面实例各自 on/off”的模式仅适用于目标页单实例入栈。**路由或 App Linking 连续直达可能把同名目标页叠加多份入栈**（例如连续接收两条链接形成 [详情1, 详情2]），此时每个实例各自持有回调并各自 on/off 存在两个不可控时序：
+
+- pop 返回时下层 `onShown` 可能先于上层 `onHidden`/`aboutToDisappear` 触发（转场期间两层同时可见），新实例的 `on` 落在旧实例尚未 `off` 的窗口期，因同窗口多回调共存语义未获承诺而注册失败或被后续 `off` 波及；
+- `window.getLastWindow` 两次调用的异步返回顺序不保证 FIFO，on/off 交错结果不可预测。
+
+最终表现为侧滑返回下层页后监听丢失（页面不再响应隔空传送）或误拆其他实例的注册。目标页可能多实例入栈时，不得按页面实例各自注册系统监听，应收敛为**应用级唯一回调**：
+
+```typescript
+// 应用级注册中心（静态单例，全局唯一系统回调）：
+// - 页面可见时 acquire(context, provider) 登记数据提供者，隐藏/销毁时 release(provider) 注销，
+//   只切换登记指针，不触碰系统监听；release 匹配自身 provider 才注销，台前已换页时不动作。
+// - 系统回调内动态调用当前登记的 provider 取当前页面数据；无登记时 reject(NO_CONTENT_ERROR)。
+// - 需要挂载时在同一 getLastWindow 回调内「先 off 自身旧回调再 on」幂等重挂，
+//   同步顺序确定，可自愈任何残留注册状态。
+// - 应用退后台统一卸载、回前台且仍有登记时幂等重挂；页面切换全程不产生 on/off 交错。
+```
+
+页面侧仍按上文生命周期挂接 `acquire/release`（方法名可保持 start/stop），签名稳定则页面代码零改动。单实例页面采用收敛模式同样安全；不确定目标页是否多实例时优先按收敛模式实现。
+
 ## 数据构造与发出
 
 收到 SharableTarget 后建议3秒内调用 `target.share(data)`。提前准备文件、封面和链接，回调中从当前业务数据构造 SharedData；不在回调中等待网络下载或视频转码。
@@ -114,7 +135,7 @@ private getGestureShareData(): systemShare.SharedData | undefined {
 }
 ```
 
-路径必须存在且可读；网络 URL 不冒充本地文件 URI，已是有效 URI 的数据不重复转换。UTD 按真实扩展名和业务类型生成，无匹配时按实际 SDK 文档处理。空选择返回 undefined，由事件回调以 NO_CONTENT_ERROR 拒绝。至少一条记录，最多500条且元数据总大小不超过200KB；原始缩略图字节字段 `thumbnail` 限32KB以下，不把文件体塞进元数据。文件与封面在传送结束前保持有效。
+路径必须存在且可读；网络 URL 不冒充本地文件 URI，已是有效 URI 的数据不重复转换。`$r` 资源转本地文件时用 resourceManager 读字节：资源定义在 HSP 模块时宿主 resourceManager 查不到其 id（ArkUI 组件能正常显示该资源，不能据此认为可按 id 读取），需经 `application.createModuleContext(context, moduleName)`（@since 12）用模块级 resourceManager 读取，失败按无内容回退。UTD 按真实扩展名和业务类型生成，无匹配时按实际 SDK 文档处理。空选择返回 undefined，由事件回调以 NO_CONTENT_ERROR 拒绝。至少一条记录，最多500条且元数据总大小不超过200KB；原始缩略图字节字段 `thumbnail` 限32KB以下，不把文件体塞进元数据。文件与封面在传送结束前保持有效。
 
 链接场景使用以下 `getGestureShareData()`。`currentContent` 表示页面已有的当前内容，`appLink` 为当前内容的 HTTPS 分享链接，`coverUri` 为已准备好的封面 URI；字段按实际业务类型映射：
 

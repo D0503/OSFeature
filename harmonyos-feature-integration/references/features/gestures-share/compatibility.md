@@ -8,6 +8,7 @@
 | `on/off('gesturesShare', SendCapabilityRegistry, callback)` | API20，按目标窗口注册 |
 | `SharableTarget.share(SharedData)` | API12 起，不可用此较早版本降低隔空传送路线门槛 |
 | `SharableTarget.reject(SharableErrorCode)` | API15 起，路线内仍整体要求 API20 |
+| `on/off('gesturesShare', SendCapabilityRegistry, callback)` 多回调语义 | SDK 未承诺同窗口多 callback 共存；off 传入 callback 时移除对应监听，不传 callback 移除全部。多实例目标页须按实现文档的注册收敛模式处理，不得依赖多回调共存 |
 | SysCap | `SystemCapability.Collaboration.HarmonyShare` |
 | App Linking 应用链接 | API12 起；与隔空事件的 API20 门槛分别判断 |
 
