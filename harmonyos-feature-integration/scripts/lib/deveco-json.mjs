@@ -2,7 +2,7 @@ import { stripVTControlCharacters } from "node:util"
 
 function notice(line) {
   const text = stripVTControlCharacters(line).trim()
-  return !text || /^New (?:cli|docs) version \d+\.\d+\.\d+(?:[-+][\w.-]+)? available(?:, run `devecocli (?:docs )?update` to upgrade)?$/.test(text) ||
+  return !text || /^New (?:cli|docs) version \d+\.\d+\.\d+(?:[-+][\w.-]+)? available(?:, run `devecocli (?:docs )?update` to (?:update|upgrade))?$/.test(text) ||
     /^[-✔✓]?\s*Dumping layout(?:\.{3}|…)?$/.test(text)
 }
 

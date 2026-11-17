@@ -164,7 +164,7 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --manual
   "provenance": "说明转入手动的具体阻断、采集设备、完整安装产物与本轮构建的关联依据及实际采集过程",
   "files": [
     { "key": "install", "type": "install_log", "path": "安装与启动日志绝对路径", "sha256": "实际哈希" },
-    { "key": "modules", "type": "installed_modules", "path": "安装后从该设备查询的应用信息原始JSON绝对路径", "sha256": "实际哈希" },
+    { "key": "modules", "type": "installed_modules", "path": "安装后从该设备查询的应用信息原始 stdout JSON 文件绝对路径", "sha256": "实际哈希" },
     { "key": "home", "type": "component_tree", "path": "目标页组件树绝对路径", "sha256": "实际哈希" },
     { "key": "dialog", "type": "screenshot", "path": "打开状态截图绝对路径（PNG 或 JPEG）", "sha256": "实际哈希" }
   ],
@@ -175,7 +175,7 @@ node scripts/verify-development.mjs --project <工程> --resume <runId> --manual
 }
 ```
 
-- `files` 支持 `screenshot`、`component_tree`、`runtime_log`、`install_log`、`navigation_log`、`device_info`、`installed_modules`。`key` 唯一；文件哈希须匹配。截图接受 PNG 与 JPEG（设备端 `snapshot_display`/`uitest` 采集的 JPEG 可直接提供，脚本按实际格式校验与保存）。效果类改造须包含操作前与操作后（或保护前与保护后）至少两张不同截图，不得因格式或采集不便省略。需要补充设备身份时，用可选 `deviceInfo` 引用 `device_info` 的 key，内容须为原始设备查询 JSON，序列号须与本轮设备一致；不得用补录覆盖明确模拟器事实。
+- `files` 支持 `screenshot`、`component_tree`、`runtime_log`、`install_log`、`navigation_log`、`device_info`、`installed_modules`。`key` 唯一；文件哈希须匹配。`installed_modules` 与 `device_info` 须为对应查询命令的原始 stdout JSON 文件（JSON 为主体，首尾允许出现 CLI 升级提示等已被识别的提示行），须重新执行查询并将标准输出另存为独立文件；执行器输出的带命令行、退出码与 `--- stdout ---` 分节标记的 E*.log 日志不是合法内容，直接引用会解析失败。截图接受 PNG 与 JPEG（设备端 `snapshot_display`/`uitest` 采集的 JPEG 可直接提供，脚本按实际格式校验与保存）。效果类改造须包含操作前与操作后（或保护前与保护后）至少两张不同截图，不得因格式或采集不便省略。需要补充设备身份时，用可选 `deviceInfo` 引用 `device_info` 的 key，内容须为原始设备查询 stdout JSON，序列号须与本轮设备一致；不得用补录覆盖明确模拟器事实。
 - 先阅读日志、组件树和截图，核实同设备、同目标及本轮构建产物的关联，再填写清单。`stages` 可省略或仅包含有证据的阶段；`passed`、`failed`、`inconclusive` 均需说明和文件引用。安装通过须引用安装及启动日志，并以 `installedModules` 指定同次导入的设备应用信息 JSON（在该阶段的 `evidence` 中引用）。执行器验证本轮产物清单的哈希与当前文件一致，再复用 `verifyInstalledModules` 核对 bundle、versionCode、完整模块集合及设备返回的模块版本；缺 HSP、版本不符、旧模块残留或无法解析时拒绝安装通过。仅有构建日志哈希、`install successfully` 或首页截图不满足要求。导航通过须安装已通过完整部署核验并有页面断言日志或组件树。缺原始证据时保留未确认，不根据聊天总结补造成功日志。
 - 导入仅记录阶段及证据，截图和运行日志不会自动生成效果通过。使用返回的证据 ID/哈希，按上文 `--judgment` 补录运行、视觉和静态复核结论。能力包要求的场景和目标一致性仍须逐项验证。截图证明的现象与未覆盖的回退、平台条件分别记录。
 
