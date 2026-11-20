@@ -13,10 +13,10 @@ const featureDir = resolve(skillRoot, "references", "features", "immersive-light
 
 const structure = await validateSkillStructure(skillRoot)
 assert.deepEqual(structure.errors, [])
-assert.deepEqual(structure.counts, { features: 8, ready: 8 })
+assert.deepEqual(structure.counts, { features: 9, ready: 9 })
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"))
-assert.equal(registry.features.length, 8)
+assert.equal(registry.features.length, 9)
 assert.deepEqual({ ...registry.features[0], aliases: [...registry.features[0].aliases].sort() }, {
   id: "immersive-light",
   displayName: "沉浸光感",
@@ -49,6 +49,8 @@ for (const prompt of ["HdsTabs", "普通单手布局", "一般手势识别"]) as
 for (const prompt of ["智能体框架服务", "Agent Framework Kit", "AgentFrameworkKit", "FunctionComponent", "FunctionController", "通过 Function 组件拉起智能体"]) assert.equal(matchFeature(prompt)?.id, "agent-framework-kit")
 for (const prompt of ["Agent", "Function", "开发聊天页面", "A2A", "AgentExtensionAbility"]) assert.equal(matchFeature(prompt), null)
 assert.equal(matchFeature("请接入碰一碰"), null)
+for (const prompt of ["请接入图像超分", "图片超分", "Image Super Resolution", "ImageSRAnalyzer"]) assert.equal(matchFeature(prompt)?.id, "image-super-resolution")
+for (const prompt of ["普通图片缩放和裁剪", "视频超分", "Core Vision Kit OCR", "Android HMS Core 图片增强"]) assert.equal(matchFeature(prompt), null)
 assert.equal(matchFeature("帮我实现窗口沉浸式并处理安全区"), null)
 
 const invalidStatus = structuredClone(registry)
@@ -324,7 +326,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-feature-integration")
-assert.equal(evals.evals.length, 81)
+assert.equal(evals.evals.length, 84)
 assert.equal(new Set(evals.evals.map((item) => item.id)).size, evals.evals.length)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)

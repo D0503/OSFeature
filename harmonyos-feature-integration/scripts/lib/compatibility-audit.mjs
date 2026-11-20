@@ -8,6 +8,7 @@ const slash = s => s.replaceAll('\\', '/')
 const line = (s, i) => s.slice(0, i).split('\n').length
 const anchors = {
   'desktop-shortcuts': /(?!)/g,
+  'image-super-resolution': /(?!)/g,
   'gestures-share': /(?!)/g,
   'immersive-light': /\b(?:HdsNavigation|HdsNavDestination|HdsTabs|uiMaterial|systemMaterial|barFloatingStyle|miniBar|miniBarBuilder|miniBarWidth|applyMiniBarStyle|HdsBarStyle|HdsBarLayoutMode)\b/g,
   'easygo-parallel': /\b(?:isEasySplit|easyGo)\b/g,
@@ -97,6 +98,12 @@ export async function auditProject(skillRoot, options) {
       if (feature.id === 'gestures-share') {
         const events = (inspection.gesturesShare?.usages ?? []).filter(u => u.path === slash(relative(root, file.path)))
         for (const u of events) eventHits.push({ index: file.content.split('\n').slice(0, u.line - 1).reduce((n, s) => n + s.length + 1, 0), 0: u.operation })
+      }
+      if (feature.id === 'image-super-resolution') {
+        const path = slash(relative(root, file.path))
+        for (const usage of inspection.imageSuperResolution.usages.filter(usage => usage.path === path)) {
+          eventHits.push({ index: usage.index, 0: usage.operation })
+        }
       }
       if (feature.id === 'desktop-shortcuts') {
         const scan = inspection.desktopShortcuts

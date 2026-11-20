@@ -1,6 +1,6 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）、隔空传送（Gestures Share、gesturesShare）和桌面快捷方式（静态快捷方式、动态快捷方式）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）、隔空传送（Gestures Share、gesturesShare）、桌面快捷方式（静态快捷方式、动态快捷方式）和图像超分（imageSuperResolution、ImageSRAnalyzer）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -68,6 +68,8 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 | 验证结果 | [验证闭环](references/workflows/verification.md) |
 | 排查问题 | [故障排查](references/workflows/troubleshooting.md) |
 
+所有能力的设备验证在选用工具前，先读[设备操作与取证顺序](references/workflows/verification.md#设备操作与取证顺序)。能力包的验收文档补充各场景的操作和证据要求。
+
 ### 方案设计
 
 读取能力入口和兼容性资料，先验证本机 SDK 根清单与 API 版本，再扫描用户工程中可发现的 compile/target/compatible API、模型、module、组件体系与目标位置。输出 SDK 证据、可选路线与升级选项、建议路线和理由、改动范围、兼容降级、性能风险和验证计划，不修改文件。未确认的路线和升级选项可作为备选写入方案，最终实施路线及升级须在修改前确认。
@@ -90,7 +92,7 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 
 ## 当前已注册能力
 
-当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护、隔空传送和桌面快捷方式能力。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护、隔空传送、桌面快捷方式和图像超分。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
 [智能体框架服务](references/features/agent-framework-kit/README.md)仅实现 Function 组件拉起智能体；开发 Agent、关联应用与测试发布等前置操作按能力包提供指导。A2A、AgentExtensionAbility 或后端开发请求即使命中 Kit 名称，也不属于当前实现范围；普通 Agent/Function 请求不能据此自动命中。其运行与视觉验证必须使用已确认的 Phone/Tablet 真机，按能力包采集点击、打开及关闭证据，不能以按钮显示替代拉起成功。
 
@@ -101,6 +103,8 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 [隔空传送](references/features/gestures-share/README.md)通过 API20 起的 gesturesShare 事件分享文件或 App Linking 链接。接入隔空传送前必须按[接入范围与澄清](references/features/gestures-share/README.md#接入范围与澄清)主动询问开发者是否接入 App Linking 链接直达，未明确选择前不默认接入。仅在目标可分享页面前台可见时监听，退出及后台精确退订，恢复时按当前页面重新注册；双端真机验证抓取、释放和接收内容，隔空传送不支持元服务；可选链接直达验证应用域名关联、手动签名、参数接收与冷暖启动。接入完成后先按[手机设置指引](references/features/gestures-share/compatibility.md#系统设置和信任)展示华为分享、隔空传送开关路径、双端信任及真机动作步骤；选择链接直达时，再按[开发者配置指导](references/features/gestures-share/app-linking.md#接入完成后向开发者展示)展示对应配置步骤、官网链接及 App Linking 的手动签名限制；隔空传送本身沿用工程原有签名方式。普通手势、隔空截屏、碰一碰、系统分享或单独 App Linking 不自动映射到本能力。
 
 [桌面快捷方式](references/features/desktop-shortcuts/README.md)提供 static-shortcut、dynamic-shortcut 两条可组合路线；动态路线含预置与自定义资源方式，管理能力按需加载。先确认真实业务目标、名称图标和路线，不默认创建管理页面。基础配置、参数与管理接口按能力包分别门禁；动态加桌仅用支持的真机验收，系统确认、桌面图标和点击目标须分别取证。普通键盘快捷键、安装图标、Form Kit 卡片或单独 App Linking 不自动映射到本能力。
+
+[图像超分](references/features/image-super-resolution/README.md)通过 Core Vision Kit 接入单张图片增强；复用现有图源和业务入口，失败保留原流程。普通图片缩放、其他 Core Vision 接口和视频超分不自动路由到本能力。
 
 ## 资源加载表
 

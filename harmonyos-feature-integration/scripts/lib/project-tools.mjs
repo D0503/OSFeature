@@ -1,5 +1,6 @@
 import { inspectGesturesShare, evaluateGesturesShare, verifyGesturesShare } from "./gestures-share-tools.mjs"
 import { inspectDesktopShortcuts, evaluateDesktopShortcuts, verifyDesktopShortcuts } from "./desktop-shortcuts-tools.mjs"
+import { inspectImageSuperResolution, evaluateImageSuperResolution, verifyImageSuperResolution } from "./image-super-resolution-tools.mjs"
 import { access, readdir, readFile, stat } from "node:fs/promises"
 import { isAbsolute, relative, resolve } from "node:path"
 
@@ -516,6 +517,7 @@ export async function inspectProject(projectPath, options = {}) {
     smartReach: inspectSmartReach(files, maskComments),
     gesturesShare: inspectGesturesShare(files, maskComments),
     desktopShortcuts: await inspectDesktopShortcuts(files, maskComments, projectRoot),
+    imageSuperResolution: inspectImageSuperResolution(files, maskComments),
     agentFramework: inspectAgentFramework(files, maskComments),
     ...inspectWindowPrivacy(files, maskComments),
     materialInventory: await inspectMaterialInventory(files, maskComments),
@@ -529,6 +531,7 @@ export async function inspectProject(projectPath, options = {}) {
 }
 
 export function evaluateCompatibility(inspection, profile) {
+  if (profile.featureId === "image-super-resolution") return evaluateImageSuperResolution(inspection, profile)
   if (profile.featureId === "desktop-shortcuts") return evaluateDesktopShortcuts(inspection, profile)
   if (profile.featureId === "gestures-share") return evaluateGesturesShare(inspection, profile)
   if (["float-view-ball", "dlp-anti-peep"].includes(profile.featureId)) return evaluateWindowPrivacy(inspection, profile)
@@ -725,6 +728,7 @@ function effectiveArkuiMaterialState(inspection) {
 }
 
 export function verifyInspection(inspection, compatibility, routeOption = "auto") {
+  if (compatibility.featureId === "image-super-resolution") return verifyImageSuperResolution(inspection, compatibility, routeOption)
   if (compatibility.featureId === "desktop-shortcuts") return verifyDesktopShortcuts(inspection, compatibility, routeOption)
   if (compatibility.featureId === "gestures-share") return verifyGesturesShare(inspection, compatibility, routeOption)
   if (["float-view-ball", "dlp-anti-peep"].includes(compatibility.featureId)) return verifyWindowPrivacy(inspection, compatibility, routeOption)

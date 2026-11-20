@@ -121,6 +121,14 @@
       "status": "ready",
       "entry": "references/features/desktop-shortcuts/README.md",
       "profile": "references/features/desktop-shortcuts/profile.json"
+    },
+    {
+      "id": "image-super-resolution",
+      "displayName": "图像超分",
+      "aliases": ["图片超分", "图像超分辨率", "Image Super Resolution", "imageSuperResolution", "ImageSRAnalyzer"],
+      "status": "ready",
+      "entry": "references/features/image-super-resolution/README.md",
+      "profile": "references/features/image-super-resolution/profile.json"
     }
   ]
 }

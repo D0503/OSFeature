@@ -251,6 +251,6 @@ tid 过期时清除本地校验结果，重新预校验并等待用户再次点�
 
 ## 点击快捷方式与验证
 
-两种方式均通过 Want 拉起实际 UIAbility。按[静态路线的参数接收与页面分发](static-shortcut.md#业务页面与参数分发)处理 onCreate/onNewWant，复用已有鉴权、导航及冷暖启动流程。
+两种方式均通过 Want 拉起实际 UIAbility。按[参数接收与页面分发](static-shortcut.md#业务页面与参数分发)处理 onCreate/onNewWant，并按[页面跳转规则](static-shortcut.md#页面按参数跳转)保留返回页、处理暖启动详情替换及同一目标重复点击。沿用已有鉴权和导航流程。
 
 按[验证方案](../performance-validation.md)在真机检查系统确认、实际桌面图标、点击后的业务目标，以及拒绝、过期和失败回退。校验成功或弹框出现不代表已完成加桌。
