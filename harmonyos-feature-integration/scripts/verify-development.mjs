@@ -15,6 +15,7 @@ import { readJsonFile } from "./lib/json-file.mjs"
 import { assertVerificationInputs, moduleArtifactHashes, projectInputHash } from "./lib/verification-inputs.mjs"
 import { desktopShortcutManagementOperations } from "./lib/desktop-shortcuts-tools.mjs"
 
+const coreVisionPhysicalFeatures = new Map([["image-super-resolution", "图像超分"], ["text-search-image", "文字搜索图片"]])
 const skillRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const check = (status, summary) => ({ status, summary })
 const requiredText = (v, name) => { if (typeof v !== "string" || !v.trim()) throw new Error(`${name} 必填`) }
@@ -72,7 +73,8 @@ export function detectAgentDeviceKind(deviceInfo, target) {
 }
 
 function requirePhysicalDevice(run) {
-  if (run.feature === "image-super-resolution" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("图像超分效果验收需要已确认的 Phone/Tablet/PC/2in1 真机")
+  const coreVisionName = coreVisionPhysicalFeatures.get(run.feature)
+  if (coreVisionName && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error(`${coreVisionName}效果验收需要已确认的 Phone/Tablet/PC/2in1 真机`)
   if (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("动态快捷方式验收需要已确认的 Phone/Tablet/PC/2in1 真机")
   if (run.feature === "smart-reach" && (run.deviceKind === "emulator" || detectDeviceKind(run.deviceInfo, run.device) !== "physical")) throw new Error("智感握姿效果验证仅允许已确认的真机，模拟器或设备类型未知不能验收")
   if (run.feature === "gestures-share" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") throw new Error("隔空传送验收需要已确认的 Phone/Tablet/PC/2in1 真机，并补录双端传送证据")
@@ -103,10 +105,19 @@ export function validateGesturesShareJudgment(run, level, item, evidence) {
 
 export function validateImageSuperResolutionJudgment(run, level, item, evidence) {
   if (run.feature !== "image-super-resolution" || level !== "runtime" || item.status !== "passed") return
-  for (const scenario of ["single-image-result", "source-state-fallback"]) {
+  validateCoreVisionScenarios("图像超分", ["single-image-result", "source-state-fallback"], item, evidence)
+}
+
+export function validateTextSearchImageJudgment(run, level, item, evidence) {
+  if (run.feature !== "text-search-image" || level !== "runtime" || item.status !== "passed") return
+  validateCoreVisionScenarios("文字搜索图片", ["index-and-search", "source-state-fallback"], item, evidence)
+}
+
+function validateCoreVisionScenarios(name, scenarios, item, evidence) {
+  for (const scenario of scenarios) {
     const observation = item.observations?.find(value => value.scenario === scenario)
-    requiredText(observation?.note, `图像超分 ${scenario} 观察说明`)
-    if (!observation.evidence?.length || observation.evidence.some(ref => !evidence.some(value => value.id === ref.id && value.sha256 === ref.sha256 && ["runtime_log", "component_tree"].includes(value.type)))) throw new Error(`图像超分 ${scenario} 须引用本轮运行日志或组件树证据`)
+    requiredText(observation?.note, `${name} ${scenario} 观察说明`)
+    if (!observation.evidence?.length || observation.evidence.some(ref => !evidence.some(value => value.id === ref.id && value.sha256 === ref.sha256 && ["runtime_log", "component_tree"].includes(value.type)))) throw new Error(`${name} ${scenario} 须引用本轮运行日志或组件树证据`)
   }
 }
 
@@ -167,7 +178,7 @@ async function importManualEvidence(run, runDirectory, manifest) {
     if ((device?.serial ?? device?.serialNumber) !== run.device) throw new Error("手动设备信息与本轮 device 不一致")
     if (run.deviceKind === "emulator") throw new Error("不能用手动证据覆盖本轮模拟器事实")
     run.deviceInfo = data
-    run.deviceKind = run.feature === "image-super-resolution" ? detectGesturesDeviceKind(data, run.device) : run.feature === "smart-reach" ? detectDeviceKind(data, run.device) : detectAgentDeviceKind(data, run.device)
+    run.deviceKind = coreVisionPhysicalFeatures.has(run.feature) ? detectGesturesDeviceKind(data, run.device) : run.feature === "smart-reach" ? detectDeviceKind(data, run.device) : detectAgentDeviceKind(data, run.device)
   }
   requirePhysicalDevice(run)
   const stages = manifest.stages ?? {}
@@ -301,6 +312,7 @@ export async function applyJudgment(run, judgment) {
     validateWindowPrivacyJudgment(run, level, item, evidence)
     validateGesturesShareJudgment(run, level, item, evidence)
     validateImageSuperResolutionJudgment(run, level, item, evidence)
+    validateTextSearchImageJudgment(run, level, item, evidence)
     validateDesktopShortcutJudgment(run, level, item, evidence)
     if (run.feature === "agent-framework-kit" && item.status === "passed") {
       if (level === "visual" && new Set(evidence.filter((e) => e.type === "screenshot").map((e) => e.sha256)).size < 2) throw new Error("Function 视觉通过需要入口与对话框打开状态两张不同截图")
@@ -372,7 +384,7 @@ export async function verifyDevelopment(request, options = {}) {
       const run = collection.runs.find((v) => v.runId === request.resume)
       if (!run) throw new Error("运行记录不存在或已被重验替换")
       await assertVerificationInputs(run, output)
-      if (["gestures-share", "image-super-resolution"].includes(run.feature)) run.deviceKind = detectGesturesDeviceKind(run.deviceInfo, run.device)
+      if (run.feature === "gestures-share" || coreVisionPhysicalFeatures.has(run.feature)) run.deviceKind = detectGesturesDeviceKind(run.deviceInfo, run.device)
       if (run.feature === "smart-reach" && run.deviceKind !== "emulator") run.deviceKind = detectDeviceKind(run.deviceInfo, run.device)
       if (run.feature === "agent-framework-kit" && run.deviceKind !== "emulator") run.deviceKind = detectAgentDeviceKind(run.deviceInfo, run.device)
       if (request.manualEvidence) await importManualEvidence(run, join(directory, run.runId), request.manualEvidence)
@@ -380,7 +392,7 @@ export async function verifyDevelopment(request, options = {}) {
         requiredText(request.screenshotScenario, "screenshot-scenario")
         if (request.device && request.device !== run.device) throw new Error("补采截图的设备必须与本轮安装设备一致")
         if (!run.device || run.checks.install.status !== "passed" || run.checks.navigation.status !== "passed") throw new Error("补采截图需要本轮安装和目标页导航已通过")
-        if (["smart-reach", "agent-framework-kit", "dlp-anti-peep", "gestures-share", "image-super-resolution"].includes(run.feature) || (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut")) {
+        if (["smart-reach", "agent-framework-kit", "dlp-anti-peep", "gestures-share"].includes(run.feature) || coreVisionPhysicalFeatures.has(run.feature) || (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut")) {
           const info = await (options.commandRunner ?? runDeveco)(["device", "view", "--target", run.device, "--format", "json"], request.project)
           const queryId = nextEvidenceId(run)
           const queryPath = join(directory, run.runId, `${queryId}.log`)
@@ -390,7 +402,7 @@ export async function verifyDevelopment(request, options = {}) {
           await saveReport(output, directory, collection)
           if (info.exitCode !== 0) throw new Error(`设备信息查询命令失败（退出码：${info.exitCode ?? "未知"}）；证据：${queryPath}`)
           const data = parseDevecoJson(info.stdout, "device")
-          const kind = ["gestures-share", "desktop-shortcuts", "image-super-resolution"].includes(run.feature) ? detectGesturesDeviceKind(data, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
+          const kind = (["gestures-share", "desktop-shortcuts"].includes(run.feature) || coreVisionPhysicalFeatures.has(run.feature)) ? detectGesturesDeviceKind(data, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(data, run.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(data, run.device) : detectDeviceKind(data, run.device)
           if (kind !== "physical") throw new Error("补采截图只能使用已确认的真机；Agent Framework Kit 还要求 Phone/Tablet")
           run.deviceKind = kind
           run.deviceInfo = data
@@ -499,15 +511,15 @@ export async function verifyDevelopment(request, options = {}) {
         try { run.deviceInfo = parseDevecoJson(info.stdout, "device") }
         catch (error) { deviceError = error.message }
       }
-      if (info.exitCode === 0) run.deviceKind = ["gestures-share", "image-super-resolution"].includes(run.feature) ? detectGesturesDeviceKind(run.deviceInfo, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(run.deviceInfo, request.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
+      if (info.exitCode === 0) run.deviceKind = (run.feature === "gestures-share" || coreVisionPhysicalFeatures.has(run.feature)) ? detectGesturesDeviceKind(run.deviceInfo, run.device) : run.feature === "dlp-anti-peep" ? detectPrivacyDeviceKind(run.deviceInfo, request.device) : run.feature === "agent-framework-kit" ? detectAgentDeviceKind(run.deviceInfo, request.device) : detectDeviceKind(run.deviceInfo, request.device)
       if (deviceError) {
         run.checks.install = { ...check("failed", deviceError), reportSummary: deviceError }
       } else if (run.feature === "desktop-shortcuts" && run.route === "dynamic-shortcut" && detectGesturesDeviceKind(run.deviceInfo, run.device) !== "physical") {
         run.checks.install = check("not_run", "动态快捷方式需要已确认的 Phone/Tablet/PC/2in1 真机，未执行安装运行")
       } else if (run.feature === "gestures-share" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "隔空传送需要已确认的双端真机，未执行安装运行")
-      } else if (run.feature === "image-super-resolution" && run.deviceKind !== "physical") {
-        run.checks.install = check("not_run", "图像超分需要已确认的 Phone/Tablet/PC/2in1 真机，未执行安装运行")
+      } else if (coreVisionPhysicalFeatures.has(run.feature) && run.deviceKind !== "physical") {
+        run.checks.install = check("not_run", `${coreVisionPhysicalFeatures.get(run.feature)}需要已确认的 Phone/Tablet/PC/2in1 真机，未执行安装运行`)
       } else if (run.feature === "agent-framework-kit" && run.deviceKind !== "physical") {
         run.checks.install = check("not_run", "Agent Framework Kit 需要已确认的 Phone/Tablet 真机，未执行安装运行")
       } else if (run.feature === "dlp-anti-peep" && run.deviceKind !== "physical") {

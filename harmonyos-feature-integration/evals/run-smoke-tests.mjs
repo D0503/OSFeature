@@ -13,10 +13,10 @@ const featureDir = resolve(skillRoot, "references", "features", "immersive-light
 
 const structure = await validateSkillStructure(skillRoot)
 assert.deepEqual(structure.errors, [])
-assert.deepEqual(structure.counts, { features: 9, ready: 9 })
+assert.deepEqual(structure.counts, { features: 10, ready: 10 })
 
 const registry = JSON.parse(await readFile(registryPath, "utf8"))
-assert.equal(registry.features.length, 9)
+assert.equal(registry.features.length, 10)
 assert.deepEqual({ ...registry.features[0], aliases: [...registry.features[0].aliases].sort() }, {
   id: "immersive-light",
   displayName: "沉浸光感",
@@ -51,6 +51,8 @@ for (const prompt of ["Agent", "Function", "开发聊天页面", "A2A", "AgentEx
 assert.equal(matchFeature("请接入碰一碰"), null)
 for (const prompt of ["请接入图像超分", "图片超分", "Image Super Resolution", "ImageSRAnalyzer"]) assert.equal(matchFeature(prompt)?.id, "image-super-resolution")
 for (const prompt of ["普通图片缩放和裁剪", "视频超分", "Core Vision Kit OCR", "Android HMS Core 图片增强"]) assert.equal(matchFeature(prompt), null)
+for (const prompt of ["请接入文字搜索图片", "通过文本搜索图片", "文字搜图", "文搜图", "以文搜图", "TEXTSEARCHIMAGE", "text-search-image"]) assert.equal(matchFeature(prompt)?.id, "text-search-image")
+for (const prompt of ["从图中提取文字", "按图查找相似图片", "用文字生成图像", "搜索系统图库"]) assert.equal(matchFeature(prompt), null)
 assert.equal(matchFeature("帮我实现窗口沉浸式并处理安全区"), null)
 
 const invalidStatus = structuredClone(registry)
@@ -326,7 +328,7 @@ assert.equal(combinedSkill.includes(removedState), false)
 
 const evals = JSON.parse(await readFile(resolve(evalDir, "evals.json"), "utf8"))
 assert.equal(evals.skill_name, "harmonyos-feature-integration")
-assert.equal(evals.evals.length, 84)
+assert.equal(evals.evals.length, 87)
 assert.equal(new Set(evals.evals.map((item) => item.id)).size, evals.evals.length)
 assert.ok(evals.evals.every((item) => item.prompt && item.expected_output && Array.isArray(item.expectations)))
 const floatingTabEval = evals.evals.find((item) => item.id === 5)

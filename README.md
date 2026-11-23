@@ -1,6 +1,6 @@
-# harmonyos-feature-integration —— HarmonyOS OS 新特性接入 Skill
+# harmonyos-feature-integration —— HarmonyOS 新特性接入 Skill
 
-本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 9 类能力，包含 17 条接入路线。
+本 Skill 通过注册表路由和标准化能力包，完成鸿蒙系统新特性的识别选型、工程接入、兼容回退、验证与排障。当前注册 10 类能力，包含 18 条接入路线。
 
 先识别任务和全部相关特性，读取能力入口/profile，再按[任务读取表](harmonyos-feature-integration/references/shared/document-loading.md#任务读取表)加载公共与路线资料。新接入先完成工程发现、SDK 核验与可行性；只设计或诊断时交付对应结论并停止，已授权实施/修复或运行验证时再构建、完整部署和取证。单独查询接口版本无需无关工程，验证已有接入不反推历史基线。
 
@@ -98,6 +98,10 @@
 ### 9. 图像超分（image-super-resolution）
 
 `core-vision-image-sr` 使用 Core Vision Kit 的 `ImageSRAnalyzer` 为 Stage 普通应用增强单张图片，SDK／compile 门槛为 API 26。复用现有图源和后续流程，低版本、不支持或处理失败保留原业务；超分效果在支持的真机验收。详见[图像超分能力包](harmonyos-feature-integration/references/features/image-super-resolution/README.md)。
+
+### 10. 文字搜索图片（text-search-image）
+
+`core-vision-text-search-image` 使用 Core Vision Kit 的 `textSearchImage` 建立应用沙箱图片索引并按文字描述检索。Stage 普通应用的 SDK／compile 门槛为 API 26，效果在支持的真机验收。低版本或服务不可用时沿用原搜索或浏览流程。详见[文字搜索图片能力包](harmonyos-feature-integration/references/features/text-search-image/README.md)。
 
 ### 通用能力
 
@@ -280,6 +284,7 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 | 窗球与防窥专项测试 | `node evals/run-window-privacy-tests.mjs` |
 | 桌面快捷方式专项测试 | `node evals/run-desktop-shortcuts-tests.mjs` |
 | 图像超分专项测试 | `node evals/run-image-super-resolution-tests.mjs`（Node.js 22.13+） |
+| 文字搜索图片专项测试 | `node evals/run-text-search-image-tests.mjs`（Node.js 22.13+） |
 | 隔空传送专项测试 | `node evals/run-gestures-share-tests.mjs` |
 | 闪控窗控制器测试 | `node evals/run-float-view-controller-tests.mjs` |
 | 闪控球控制器测试 | `node evals/run-floating-ball-controller-tests.mjs` |
@@ -305,6 +310,8 @@ node scripts/verify-development.mjs --project <工程> --feature <特性ID> --ro
 1. **安装 Skill**：将仓库中的 `harmonyos-feature-integration/` 目录复制到测试环境约定的 opencode 技能目录，Windows 为 `C:\Users\<用户名>\.config\opencode\skills\harmonyos-feature-integration`（macOS/Linux 为 `~/.config/opencode/skills/harmonyos-feature-integration/`），确保 `SKILL.md` 位于该目录根；重新打开测试会话加载 Skill。
 2. **准备模板工程**：在 DevEco Studio 中使用组件模板创建测试工程（如"快递物流"模板，自带底部 Tab 首页），在 opencode 中打开该工程作为当前工作目录。
 3. **逐特性实测示例**：在 opencode 中分别使用以下提示词，验证特性路由、SDK 门禁、路线确认、工程实施与验证闭环：
+
+详细验证表格示例可见链接https://docs.qq.com/sheet/DTU51dXRYeU9RQmhi?tab=BB08J2&_t=1793092672174&nlc=1&u=a9129cd6a03042c28406814b924b33b5
 
    | 特性 | 测试工程 | 提示词 |
    |---|---|---|

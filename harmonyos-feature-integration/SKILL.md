@@ -1,6 +1,6 @@
 ---
 name: harmonyos-feature-integration
-description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）、隔空传送（Gestures Share、gesturesShare）、桌面快捷方式（静态快捷方式、动态快捷方式）和图像超分（imageSuperResolution、ImageSRAnalyzer）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
+description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、实现、兼容性扫描、验证和排障。适用于沉浸光感（Immersive Light、HDS 材质、悬浮导航Tab）、平行视界（easyGo）、智感握姿（Smart Reach）、智能体框架服务（Agent Framework Kit、FunctionComponent）、闪控窗／球（floatView、floatingBall）、防窥保护（DlpAntiPeep）、隔空传送（Gestures Share、gesturesShare）、桌面快捷方式（静态快捷方式、动态快捷方式）、图像超分（imageSuperResolution、ImageSRAnalyzer）和文字搜索图片（文搜图、textSearchImage）。用户要求检查这些特性的版本守卫、查询 SDK @since 或修复低版本回退时也使用。不用于普通 ArkUI 开发、官方文档审查或窗口沉浸式与安全区适配。
 ---
 
 # HarmonyOS OS 新特性接入
@@ -92,7 +92,7 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 
 ## 当前已注册能力
 
-当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护、隔空传送、桌面快捷方式和图像超分。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
+当前注册表包含沉浸光感、平行视界、智感握姿、智能体框架服务、闪控窗／球、防窥保护、隔空传送、桌面快捷方式、图像超分和文字搜索图片。普通分栏或自适应布局不等于平行视界；普通单手布局、一般手势识别或单独出现 HdsTabs 不等于智感握姿，不能据此自动命中。智感握姿的视觉验证只能使用真机：模拟器不采集、不导入、不判定，须按[真机验证引导](references/features/smart-reach/performance-validation.md#真机视觉验证与开发者引导)引导开发者本人完成握姿动作，再由执行器截图或导入开发者真机截图后补录。版本、组件、设备和降级事实从注册项 `profile` 与能力包读取，不在主文件复制。
 
 [智能体框架服务](references/features/agent-framework-kit/README.md)仅实现 Function 组件拉起智能体；开发 Agent、关联应用与测试发布等前置操作按能力包提供指导。A2A、AgentExtensionAbility 或后端开发请求即使命中 Kit 名称，也不属于当前实现范围；普通 Agent/Function 请求不能据此自动命中。其运行与视觉验证必须使用已确认的 Phone/Tablet 真机，按能力包采集点击、打开及关闭证据，不能以按钮显示替代拉起成功。
 
@@ -105,6 +105,8 @@ description: 为 HarmonyOS／鸿蒙已注册 OS 新特性提供接入设计、�
 [桌面快捷方式](references/features/desktop-shortcuts/README.md)提供 static-shortcut、dynamic-shortcut 两条可组合路线；动态路线含预置与自定义资源方式，管理能力按需加载。先确认真实业务目标、名称图标和路线，不默认创建管理页面。基础配置、参数与管理接口按能力包分别门禁；动态加桌仅用支持的真机验收，系统确认、桌面图标和点击目标须分别取证。普通键盘快捷键、安装图标、Form Kit 卡片或单独 App Linking 不自动映射到本能力。
 
 [图像超分](references/features/image-super-resolution/README.md)通过 Core Vision Kit 接入单张图片增强；复用现有图源和业务入口，失败保留原流程。普通图片缩放、其他 Core Vision 接口和视频超分不自动路由到本能力。
+
+[文字搜索图片](references/features/text-search-image/README.md)用 Core Vision Kit 在应用沙箱图片索引中按描述检索。OCR、以图搜图、文生图和系统图库检索各有独立的适用范围。
 
 ## 资源加载表
 

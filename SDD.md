@@ -95,7 +95,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 
 ### 3.1 路线矩阵
 
-当前注册 9 类能力，共 17 条路线。下表为能力包的基础门槛；使用可选接口或配置时，实际要求可能提高。所有路线均要求 Stage，版本满足后仍须核对设备、权限和系统状态。
+当前注册 10 类能力，共 18 条路线。下表为能力包的基础门槛；使用可选接口或配置时，实际要求可能提高。所有路线均要求 Stage，版本满足后仍须核对设备、权限和系统状态。
 
 | 能力与入口 | 路线 ID | 基础 API | 组合关系及主要约束 |
 |---|---|---|---|
@@ -115,6 +115,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 | [隔空传送](harmonyos-feature-integration/references/features/gestures-share/README.md) | `gestures-share` | 20 | 单路线；验证发送、接收双端和实际内容，链接直达追加应用 App Linking 配置 |
 | [桌面快捷方式](harmonyos-feature-integration/references/features/desktop-shortcuts/README.md) | `static-shortcut` / `dynamic-shortcut` | 9 / 14 | 可组合；静态配置基于API9 Stage模型，wants.parameters携带业务参数；可选管理API20/24/26 |
 | [图像超分](harmonyos-feature-integration/references/features/image-super-resolution/README.md) | `core-vision-image-sr` | 26 | Stage 普通应用；单张 PixelMap，单飞，不可用时保留原图片业务 |
+| [文字搜索图片](harmonyos-feature-integration/references/features/text-search-image/README.md) | `core-vision-text-search-image` | 26 | Stage 普通应用；按作用域索引和检索应用沙箱图片，串行调用 |
 
 `routeComposition.mode` 表示能力内部允许的组合方式。`recommendedRoute` 是建议项，`selectedRoutes` 表示选中的路线集合；执行器一次接收一个 `--route`，组合路线由 AI 分别执行并汇总。
 
@@ -131,6 +132,7 @@ Skill 可执行资源位于 `harmonyos-feature-integration/`：`references/workf
 | 隔空传送 | API 资料涉及 Phone、Tablet、PC/2in1，但实际型号能力仍需确认；模拟器不能验收隔空传送；不支持元服务；元服务链接配置仅作为独立场景的补充知识 |
 | 桌面快捷方式 | 静态路线验证桌面入口、拖动加桌与点击启动；动态仅 Phone/Tablet/PC/2in1 真机，不支持模拟器或TV |
 | 图像超分 | Phone/Tablet/PC/2in1 真机；核验单图输出、回退和对照截图，模拟器不验收 |
+| 文字搜索图片 | Phone/Tablet/PC/2in1 真机；核验入库、查询、作用域隔离和原业务回退 |
 
 ## 4. 核心流程
 

@@ -129,6 +129,14 @@
       "status": "ready",
       "entry": "references/features/image-super-resolution/README.md",
       "profile": "references/features/image-super-resolution/profile.json"
+    },
+    {
+      "id": "text-search-image",
+      "displayName": "文字搜索图片",
+      "aliases": ["通过文本搜索图片", "文本搜索图片", "文字搜图", "文搜图", "以文搜图", "textSearchImage"],
+      "status": "ready",
+      "entry": "references/features/text-search-image/README.md",
+      "profile": "references/features/text-search-image/profile.json"
     }
   ]
 }

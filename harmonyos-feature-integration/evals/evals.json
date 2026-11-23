@@ -985,6 +985,27 @@
       "expected_output": "不自动路由到图像超分。",
       "files": [],
       "expectations": ["区分普通缩放、OCR 与 ImageSRAnalyzer", "不增加图像超分依赖和业务入口"]
+    },
+    {
+      "id": 85,
+      "prompt": "给现有应用内相册接入文搜图。活动 SDK 和 target 是 API 26，最低兼容 API 23，保留原浏览入口。",
+      "expected_output": "命中 text-search-image，复用相册数据和入口，按作用域串行入库和查询，保留低版本原流程。",
+      "files": [],
+      "expectations": ["守卫覆盖初始化和释放", "低版本无 Kit 调用且原浏览可用", "真机验证入库、匹配图片和作用域隔离"]
+    },
+    {
+      "id": 86,
+      "prompt": "textSearchImage.search 返回 1013100003，能不能只清当前相册？请先排查。",
+      "expected_output": "说明 clearData 作用于整个文搜图库，定位所有受影响作用域并核对可恢复来源，诊断阶段保持图库状态。",
+      "files": [],
+      "expectations": ["区分索引记录与原图", "清除成功后重建各作用域", "核对暂停、恢复、失败和中断场景"]
+    },
+    {
+      "id": 87,
+      "prompt": "请在普通图库应用做 OCR 和以图搜图。",
+      "expected_output": "不路由到文字搜索图片。",
+      "files": [],
+      "expectations": ["识别文字描述检索的边界", "不引入 textSearchImage"]
     }
   ]
 }

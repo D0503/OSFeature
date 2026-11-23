@@ -166,7 +166,7 @@ export async function saveReport(output, directory, collection) {
       if (!findings.length) lines.push("- 静态检查尚未完成复核，需重新检查并明确具体问题。")
       for (const finding of findings) {
         const locations = (finding.evidence ?? []).map((e) => typeof e === "string" ? e : e.path ? `${e.path}${e.line ? `:${e.line}` : ""}` : "").filter(Boolean)
-        const label = escape(findingLabels[finding.id] ?? (/^(easygo|smart-reach|agent-framework|float-view-ball|dlp-anti-peep|gestures-share|image-super-resolution)-/.test(finding.id) ? finding.message : `需人工复核检查项（${finding.id}）`))
+        const label = escape(findingLabels[finding.id] ?? (/^(easygo|smart-reach|agent-framework|float-view-ball|dlp-anti-peep|gestures-share|image-super-resolution|text-search-image)-/.test(finding.id) ? finding.message : `需人工复核检查项（${finding.id}）`))
         const location = locations.length ? `；位置：${[...new Set(locations)].slice(0, 3).map(escape).join("、")}` : ""
         if (finding.review) lines.push(`- ${finding.review.status === "passed" ? "已复核通过" : "复核确认问题"}：${label}${location}；${escape(finding.review.note)}。`)
         else lines.push(`- ${finding.status === "fail" ? "检查失败" : "待核对"}：${label}${location}。`)

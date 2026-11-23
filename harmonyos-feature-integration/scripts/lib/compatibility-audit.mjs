@@ -9,6 +9,7 @@ const line = (s, i) => s.slice(0, i).split('\n').length
 const anchors = {
   'desktop-shortcuts': /(?!)/g,
   'image-super-resolution': /(?!)/g,
+  'text-search-image': /(?!)/g,
   'gestures-share': /(?!)/g,
   'immersive-light': /\b(?:HdsNavigation|HdsNavDestination|HdsTabs|uiMaterial|systemMaterial|barFloatingStyle|miniBar|miniBarBuilder|miniBarWidth|applyMiniBarStyle|HdsBarStyle|HdsBarLayoutMode)\b/g,
   'easygo-parallel': /\b(?:isEasySplit|easyGo)\b/g,
@@ -83,6 +84,10 @@ export async function auditProject(skillRoot, options) {
   const config = readManifest(await readFile(configPath, 'utf8'))
   const products = productContexts(config, options.product)
   const inspection = await inspectProject(root, { sdkPath: options.sdk, product: options.product ?? products[0]?.product })
+  const coreVisionScans = {
+    'image-super-resolution': inspection.imageSuperResolution,
+    'text-search-image': inspection.textSearchImage
+  }
   const files = await walk(root, name => /\.(ets|ts|json5?)$/.test(name) && !/\.d\.(ts|ets)$/.test(name))
   const features = []
   for (const feature of registry.features.filter(f => !options.feature || f.id === options.feature)) {
@@ -99,9 +104,9 @@ export async function auditProject(skillRoot, options) {
         const events = (inspection.gesturesShare?.usages ?? []).filter(u => u.path === slash(relative(root, file.path)))
         for (const u of events) eventHits.push({ index: file.content.split('\n').slice(0, u.line - 1).reduce((n, s) => n + s.length + 1, 0), 0: u.operation })
       }
-      if (feature.id === 'image-super-resolution') {
+      if (coreVisionScans[feature.id]) {
         const path = slash(relative(root, file.path))
-        for (const usage of inspection.imageSuperResolution.usages.filter(usage => usage.path === path)) {
+        for (const usage of coreVisionScans[feature.id].usages.filter(usage => usage.path === path)) {
           eventHits.push({ index: usage.index, 0: usage.operation })
         }
       }
