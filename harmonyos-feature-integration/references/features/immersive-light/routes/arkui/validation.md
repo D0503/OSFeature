@@ -15,7 +15,7 @@
 - `DISABLE`、显式材质、`Material.empty`、`undefined` 四类优先关系；
 - 标题栏接入默认配置 `scrollEffectOptions.scrollEffectType: ScrollEffectType.GRADUAL_BLUR`，运行时验证滚动渐变模糊效果；
 - 采用[滚动内容切换到标题栏](components/navigation.md#可选滚动内容切换到标题栏)时，验证同坐标系测量、上滑接替与下滑恢复、临界防抖、隐藏占位及共享选择状态；快速滚动、回弹、窗口和字体变化、返回页面后不出现高度跳变、重复交互或失效测量；
-- 原生 Navigation 标题栏与原生 Tabs；Tabs 同时满足 `barFloatingStyle`、`barOverlap(true)`、`vertical(false)`、`BarPosition.End` 后应呈现系统默认 `THIN`，不强制显式材质；接入分支默认显式 `maskColor: Color.Transparent`，保留非透明遮罩的分支须有设计依据并验证滚动内容可视性；逐页验证所有可滚动 Tab 的末项和操作热区能滚到悬浮栏上方；
+- 原生 Navigation 标题栏与原生 Tabs；Tabs 同时满足 `barFloatingStyle`、`barOverlap(true)`、`vertical(false)`、`BarPosition.End` 后，检查接入分支显式配置 `FloatingTabBarStyle.systemMaterial` 且 `style` 为 `uiMaterial.ImmersiveStyle.THIN`；接入分支默认显式 `maskColor: Color.Transparent`，保留非透明遮罩的分支须有设计依据并验证滚动内容可视性；逐页验证所有可滚动 Tab 的末项和操作热区能滚到悬浮栏上方；
 - AlphabetIndexer、Toast、Popup、Tips、Menu、Dialog/Sheet、SelectionMenu 和文本选择菜单的 `DEFAULT`/`ENABLE` 默认状态、Options 类型和背景冲突；
 - `bindSheet` 即使处于应用级 `ENABLE`，也必须检查 `SheetOptions.systemMaterial` 已显式传入有效材质对象；核对 `style` 是否符合目标设计，允许定制厚度，不能把 `undefined` 或 Dialog 的默认材质作为已接入依据；
 - Button、Select、Toggle、Slider、Chip、ChipGroup/ChipGroupV2、SegmentButton/SegmentButtonV2 的专属入口、默认状态、生效域和预设视觉限制；
@@ -33,7 +33,7 @@
 | 现象 | 检查 | 处理 |
 |---|---|---|
 | 材质完全不生效 | API、Stage、module、应用状态、能力判断 | 对齐前置条件并保留普通样式 |
-| 原生 Tabs 材质不生效 | 应用状态、`barFloatingStyle`、`barOverlap`、`vertical`、`barPosition` | 满足完整悬浮条件后使用系统默认 `THIN`，不强制显式设置 `FloatingTabBarStyle.systemMaterial`；`DISABLE` 下不生效 |
+| 原生 Tabs 材质不生效 | 应用状态、`barFloatingStyle`、`barOverlap`、`vertical`、`barPosition` | 满足完整悬浮条件，并显式设置 `FloatingTabBarStyle.systemMaterial` 为 `THIN` 材质；`DISABLE` 下不生效 |
 | 悬浮栏周围内容被染色或压暗 | `barFloatingStyle.maskColor`、`maskHeight` | 接入分支默认显式 `maskColor: Color.Transparent`；设计明确需要渐变遮罩时才配置非透明值，并逐页验证滚动内容可视性 |
 | 接口存在但材质不生效 | 组件是否位于官方支持的生效域，运行日志是否出现 `Material inactive: out of scope...` | 将目标放到合法的标题栏、底部悬浮 TabBar 或全页面组件入口；静态层级不明确时人工核对 |
 | 原生 Tabs 最后一个列表项被遮挡 | 是否逐页检查真实滚动容器，尾部空间是否位于最后一个滚动项之后 | 使用 `contentEndOffset`、末尾 `Blank`、内容 bottom padding 或等价实现；按实际遮挡高度计算且不重复加入安全区 |

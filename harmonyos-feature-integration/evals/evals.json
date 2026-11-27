@@ -224,14 +224,14 @@
     {
       "id": 18,
       "prompt": "这是原生 ArkUI Tabs，不是 HdsTabs。我想给底部 TabBar 做沉浸光感悬浮效果，应该选哪条路线？",
-      "expected_output": "选择 ArkUI 路线。必须显式配置 barFloatingStyle，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End；接入分支默认在 barFloatingStyle 中显式设置 maskColor: Color.Transparent，仅设计明确需要渐变遮罩时改用非透明值。上述悬浮条件生效后系统默认启用 THIN 材质，不要求显式设置 FloatingTabBarStyle.systemMaterial；显式入口只用于自定义样式、赋色、反色、交互或流光。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
+      "expected_output": "选择 ArkUI 路线。必须显式配置 barFloatingStyle，并同时满足 barOverlap(true)、vertical(false) 和 BarPosition.End；接入分支默认在 barFloatingStyle 中显式设置 maskColor: Color.Transparent，仅设计明确需要渐变遮罩时改用非透明值。上述悬浮条件生效后系统默认启用 THIN 材质；本 Skill 接入时显式设置 FloatingTabBarStyle.systemMaterial 为 new uiMaterial.ImmersiveMaterial({ style: uiMaterial.ImmersiveStyle.THIN })，其他材质参数按需求定制。不要再用 barBackgroundColor 或 barBackgroundBlurStyle 遮挡材质，TabContent 本身也不支持材质。若工程另有 HdsTabs 需要改造，再组合选择 HDS 路线。",
       "files": [],
       "expectations": [
         "原生 Tabs 路由到 ArkUI 而不是 HDS",
-        "说明 ENABLE 下先显式配置 barFloatingStyle，完整悬浮条件生效后默认使用 THIN",
+        "说明 ENABLE 下先显式配置 barFloatingStyle，满足完整悬浮条件并显式配置 systemMaterial 为 THIN",
         "同时要求 barOverlap(true)、vertical(false) 和 BarPosition.End",
         "默认显式设置 maskColor: Color.Transparent，非透明遮罩仅保留在设计明确的分支",
-        "不按 DEFAULT 与 ENABLE 拆分 Tabs 接入路径，且不强制显式设置 FloatingTabBarStyle.systemMaterial",
+        "不按 DEFAULT 与 ENABLE 拆分 Tabs 接入路径，两者接入时均显式设置 FloatingTabBarStyle.systemMaterial 为 THIN",
         "说明背景冲突、TabContent 限制及组合路线条件"
       ]
     },
@@ -279,11 +279,11 @@
     {
       "id": 22,
       "prompt": "ArkUI 应用分别配置 default、enable、disable 时，Navigation 标题栏、底部悬浮 Tabs、Dialog 和 Menu 的沉浸光感默认行为有什么不同？",
-      "expected_output": "按 MaterialState 矩阵逐项回答，但 Tabs 不拆成两条接入路径：无论 DEFAULT 还是 ENABLE，都必须先让 barFloatingStyle、barOverlap(true)、vertical(false)、BarPosition.End 完整生效，接入分支默认显式设置 maskColor: Color.Transparent，随后使用系统默认 THIN，不强制显式设置 systemMaterial。Navigation、Dialog 和 Menu 仍按各自 DEFAULT/ENABLE 规则处理；DISABLE 覆盖应用默认与组件显式设置，所有材质均不生效。",
+      "expected_output": "按 MaterialState 矩阵逐项回答，但 Tabs 不拆成两条接入路径：无论 DEFAULT 还是 ENABLE，都必须先让 barFloatingStyle、barOverlap(true)、vertical(false)、BarPosition.End 完整生效，接入分支默认显式设置 maskColor: Color.Transparent，并显式配置 systemMaterial 的 style 为 uiMaterial.ImmersiveStyle.THIN；说明省略该字段时系统默认效果也是 THIN。Navigation、Dialog 和 Menu 仍按各自 DEFAULT/ENABLE 规则处理；DISABLE 覆盖应用默认与组件显式设置，所有材质均不生效。",
       "files": [],
       "expectations": [
         "区分 DEFAULT、ENABLE、DISABLE",
-        "说明 Tabs 在 DEFAULT 与 ENABLE 下采用同一组完整悬浮条件与默认 THIN 规则",
+        "说明 Tabs 在 DEFAULT 与 ENABLE 下采用同一组完整悬浮条件，接入代码显式配置 THIN 材质",
         "说明接入分支默认显式 maskColor: Color.Transparent",
         "说明 DEFAULT 下 Dialog 的背景条件和 Menu 默认关闭",
         "说明 DISABLE 覆盖显式设置"

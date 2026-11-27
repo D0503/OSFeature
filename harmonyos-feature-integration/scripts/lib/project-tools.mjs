@@ -952,16 +952,16 @@ export function verifyInspection(inspection, compatibility, routeOption = "auto"
         ? "not_applicable"
         : materialState === "disable"
           ? "fail"
-          : nativeTabsMaterialActive
+          : nativeTabsMaterial
             ? "pass"
-            : "fail",
+            : tabsSystemDefault ? "warn" : "fail",
       [...s.nativeTabsFloatingStyle.evidence, ...s.nativeTabsFloatingMaterial.evidence],
       materialState === "disable"
         ? "MaterialState.DISABLE prevents native Tabs material"
         : nativeTabsMaterial
-          ? "Explicit FloatingTabBarStyle.systemMaterial detected"
+          ? "Explicit FloatingTabBarStyle.systemMaterial detected; verify ImmersiveStyle.THIN in the integration branch"
           : tabsSystemDefault
-            ? "The complete floating layout uses the system default THIN material; explicit systemMaterial is optional"
+            ? "The complete floating layout uses the system default THIN material; this Skill requires explicit FloatingTabBarStyle.systemMaterial with ImmersiveStyle.THIN. Review wrappers and configuration ownership"
             : "Complete barFloatingStyle, barOverlap(true), vertical(false), and BarPosition.End"
     ))
     for (const [id, title, signal, message] of [

@@ -179,7 +179,7 @@ equal(compatibility26.decisionRequired, true)
 const verification26 = verifyInspection(inspection26, compatibility26, "auto")
 equal(verification26.status, "warnings")
 equal(verification26.counts.fail, 0)
-ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass"))
+ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "warn"))
 ok(verification26.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.message.includes("default THIN")))
 ok(verification26.checks.some((item) => item.id === "arkui-import" && item.status === "not_applicable"))
 ok(verification26.checks.some((item) => item.id === "capability-guard" && item.status === "not_applicable"))
@@ -190,7 +190,7 @@ defaultNativeTabs.modules[0].applicationMaterialState = null
 defaultNativeTabs.modules[0].effectiveApplicationMaterialState = "default"
 const passedDefaultNativeTabs = verifyInspection(defaultNativeTabs, compatibility26, "arkui")
 equal(passedDefaultNativeTabs.status, "warnings")
-ok(passedDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass" && item.message.includes("default THIN")))
+ok(passedDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "warn" && item.message.includes("default THIN")))
 
 const explicitDefaultNativeTabs = structuredClone(defaultNativeTabs)
 explicitDefaultNativeTabs.signals.uiMaterial = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:1"] }
@@ -199,7 +199,7 @@ explicitDefaultNativeTabs.signals.nativeTabsFloatingMaterial = { detected: true,
 explicitDefaultNativeTabs.signals.materialSupported = { detected: true, count: 1, evidence: ["entry/src/main/ets/pages/Index.ets:5"] }
 const passedExplicitDefaultNativeTabs = verifyInspection(explicitDefaultNativeTabs, compatibility26, "arkui")
 equal(passedExplicitDefaultNativeTabs.status, "warnings")
-ok(passedExplicitDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.message.includes("Explicit")))
+ok(passedExplicitDefaultNativeTabs.checks.some((item) => item.id === "arkui-native-tabs-floating-style" && item.status === "pass" && item.message.includes("Explicit")))
 
 const disabledNativeTabs = structuredClone(explicitDefaultNativeTabs)
 disabledNativeTabs.modules[0].applicationMaterialState = "disable"

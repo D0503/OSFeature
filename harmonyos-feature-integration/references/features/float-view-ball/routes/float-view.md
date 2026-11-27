@@ -233,12 +233,16 @@ export struct FloatViewContent {
     .height('100%')
     .justifyContent(FlexAlign.Center)
     // 顶部预留：常规态 32vp，mini 态 4vp。
-    .padding({ top: this.compact ? 4 : 32 })
+    .padding({
+      top: this.compact ? 4 : 32,
+      left: this.compact ? 0 : 8,
+      right: this.compact ? 0 : 8
+    })
   }
 }
 ```
 
-片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；页面根容器按当前形态预留顶部避让：常规态（展开矩形）padding 32vp、mini 态（紧凑横条）padding 4vp，随 compact 状态在 switchTemplate 成功后同步切换，mini 态还需在内容容器（包含摘要及展开按钮）设置左右 padding，分别取 `avoidArea.leftRect.width`、`avoidArea.rightRect.width` 经 `px2vp` 转换后的值，再各加 6vp 内容留白。6vp 是页面留白，不属于系统 avoidArea；不要在父子容器重复累加。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
+片段以目标模板的最大尺寸演示调用，实际替换为业务所需且满足模板约束的尺寸。文字替换为真实内容并沿用工程国际化；页面根容器按当前形态预留顶部避让：常规态（展开矩形）padding 32vp、mini 态（紧凑横条）padding 4vp，随 compact 状态在 switchTemplate 成功后同步切换；常规态左右 padding 默认各 8vp。mini 态还需在内容容器（包含摘要及展开按钮）设置左右 padding，分别取 `avoidArea.leftRect.width`、`avoidArea.rightRect.width` 经 `px2vp` 转换后的值，再各加 6vp 内容留白。常规态的 8vp 和 mini 态额外的 6vp 是页面留白，不属于系统 avoidArea；不要在父子容器重复累加。若展开、紧凑内容拆成子组件，可由父组件 `@Provide` 保存布局状态、子组件 `@Consume` 共享；仍在 switchTemplate 成功后修改状态，不另建控制器或重载页面。
 
 **请求尺寸不是保证值**：系统可能按模板约束调整请求的宽高（横条模板的实际高度常小于请求高度），最终矩形以 `onRectChange` 为准。因此内容行**不写固定 height**，由内容自适应高度，垂直位置交给根容器 `justifyContent(FlexAlign.Center)`——窗口无论实际多高内容都居中，不会偏下或底部裁剪（上方片段即此写法）。确需固定视觉行高的少数场景，才从 `onRectChange` 的 `windowRect.height` 换算实际高度并收敛行高，不凭请求值设定。
 
@@ -308,7 +312,11 @@ export struct FloatViewBreakpointSizer {
     }
     .width('100%')
     .height('100%')
-    .padding({ top: this.compact ? 4 : 32 })
+    .padding({
+      top: this.compact ? 4 : 32,
+      left: this.compact ? 0 : 8,
+      right: this.compact ? 0 : 8
+    })
   }
 }
 ```
@@ -386,7 +394,7 @@ FloatViewController.stopFloatView().catch((err: BusinessError) => {
 
 - 授权通过后前台创建、页面加载、STARTED、内容更新、关闭及再次开启。
 - 权限拒绝、查询失败、后台启动、无效页面、重复点击与已有球／画中画冲突，不误报启动成功。
-- 两类模板、尺寸与比例限制变化、实际矩形、顶部预留随形态在 32vp／4vp 间同步、交互避让区域、点击恢复正确业务页面。
+- 两类模板、尺寸与比例限制变化、实际矩形、顶部预留随形态在 32vp／4vp 间同步、常规态左右默认各 8vp 留白、交互避让区域、点击恢复正确业务页面。
 - 原工程已有断点或屏幕尺寸机制时，屏幕尺寸变化（折叠屏展开/折叠、旋转、分屏）下窗尺寸经该机制更新且仍满足当前模板限制，窗页面不重复订阅；原工程没有该机制时窗保持创建尺寸，不为窗新增监听。
 - 拖动、最小化进入侧栏、恢复、用户关闭、系统替换和主窗口销毁后监听与资源收敛；侧栏及垃圾桶操作按设备和模式支持条件验收。
 - 加载、启动及停止失败后保留可诊断状态，重试不产生重复监听。

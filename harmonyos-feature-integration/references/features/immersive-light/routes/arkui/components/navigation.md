@@ -112,6 +112,9 @@ Tabs({ barPosition: BarPosition.End }) {
 .barFloatingStyle({
   barBottomMargin: this.floatingBarBottomMargin,
   maskColor: Color.Transparent,
+  systemMaterial: new uiMaterial.ImmersiveMaterial({
+    style: uiMaterial.ImmersiveStyle.THIN
+  }),
   adaptToHandedness: true
 })
 ```
@@ -122,23 +125,11 @@ Tabs({ barPosition: BarPosition.End }) {
 2. `vertical(false)`；
 3. `barPosition: BarPosition.End`。
 
-必须由工程显式配置 `barFloatingStyle` 并满足上述三个布局条件。悬浮样式生效后，系统默认启用 `THIN` 材质，不要求显式设置 `FloatingTabBarStyle.systemMaterial`。
+必须由工程显式配置 `barFloatingStyle` 并满足上述三个布局条件。接入时显式设置 `systemMaterial: new uiMaterial.ImmersiveMaterial({ style: uiMaterial.ImmersiveStyle.THIN })`。
 
 接入分支默认在 `barFloatingStyle` 中显式设置 `maskColor: Color.Transparent`，不使用系统默认遮罩色，避免悬浮栏周围的内容被默认渐变遮罩染色或压暗。只有设计明确需要渐变遮罩时才配置非透明 `maskColor`，并可配合 `maskHeight` 控制遮罩高度；此时在方案中记录设计依据，并逐页验证滚动内容在遮罩区域的可视性。透明与其他遮罩配置只进入沉浸光感接入分支，低版本兼容分支保留接入前的遮罩与背景行为。
 
-需要覆盖系统默认样式、赋色、反色、交互或点光源时，再显式配置：
-
-```typescript
-.barFloatingStyle({
-  barBottomMargin: this.floatingBarBottomMargin,
-  maskColor: Color.Transparent,
-  systemMaterial: new uiMaterial.ImmersiveMaterial({
-    style: uiMaterial.ImmersiveStyle.THIN
-  })
-})
-```
-
-无论采用默认还是显式材质，都不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡效果；`TabContent` 本身不支持沉浸光感。
+需要定制赋色、反色、交互或点光源时，在上述材质对象中按需求增加参数。不要再用 `barBackgroundColor` 或 `barBackgroundBlurStyle` 遮挡效果；`TabContent` 本身不支持沉浸光感。
 
 ### 悬浮分支的页签切换动画
 
